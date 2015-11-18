@@ -1,6 +1,4 @@
-language:
-  - cpp
-  - python
+language: generic
 python:
   - "2.7"
 compiler:
