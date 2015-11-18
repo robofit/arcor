@@ -1,4 +1,4 @@
-# ar-table-table
+# ar-table-itable
 Experimental stuff.
 
 [![Build Status](https://travis-ci.org/robofit/ar-table-table.svg)](https://travis-ci.org/robofit/ar-table-table)
