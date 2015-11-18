@@ -1,0 +1,3 @@
+[submodule "ar-table-common"]
+	path = ar-table-common
+	url = https://github.com/robofit/ar-table-common
