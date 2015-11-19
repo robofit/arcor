@@ -1,7 +1,7 @@
 # ar-table-itable
 Experimental stuff.
 
-[![Build Status](https://travis-ci.org/robofit/ar-table-table.svg)](https://travis-ci.org/robofit/ar-table-table)
+[![Build Status](https://travis-ci.org/robofit/ar-table-itable.svg)](https://travis-ci.org/robofit/ar-table-itable)
 
 Related repositories:
  - https://github.com/robofit/ar-table-common
