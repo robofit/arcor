@@ -88,7 +88,7 @@ int main(int argc, char* argv[])
 {
 
     ros::init(argc, argv, "umf_localizer_node");
-    ros::NodeHandle n;
+    ros::NodeHandle n("~");
     
     umfLocalizerNode node(n);
     ros::spin();
