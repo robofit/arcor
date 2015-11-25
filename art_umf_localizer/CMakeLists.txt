@@ -4,6 +4,9 @@ set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g")
 
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  sensor_msgs
+  image_geometry
+  image_transport
   roscpp
   cmake_modules
 )
@@ -18,13 +21,14 @@ execute_process(
 )
 
 catkin_package(
-  INCLUDE_DIRS include 
+  INCLUDE_DIRS include
 #  LIBRARIES art_umf_localizer
   CATKIN_DEPENDS geometry_msgs roscpp
 #  DEPENDS system_lib
 )
 
 include_directories(
+  include/art_umf_localizer
   ${catkin_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
