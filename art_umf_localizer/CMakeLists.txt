@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   roscpp
   cmake_modules
+  cv_bridge
 )
 
 find_package(Eigen REQUIRED)

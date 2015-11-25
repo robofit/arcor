@@ -1,5 +1,7 @@
 #include "umf_localizer_node.h"
 #include <opencv2/core/eigen.hpp>
+#include <sensor_msgs/image_encodings.h>
+#include <cv_bridge/cv_bridge.h>
 
 using namespace umf_localizer_node;
 using namespace umf;
@@ -8,8 +10,14 @@ using namespace std;
 umfLocalizerNode::umfLocalizerNode(ros::NodeHandle& nh): it_(nh) {
 
   nh_ = nh;
+  nh_.param<std::string>("marker", marker_, "");
+  
   detector_.reset(new umf::UMFDetector<1>(UMF_FLAG_ITER_REFINE|UMF_FLAG_TRACK_POS| UMF_FLAG_SUBWINDOWS | UMF_FLAG_SUBPIXEL));
   detector_->setTrackingFlags(UMF_TRACK_MARKER | UMF_TRACK_SCANLINES);
+  detector_->loadMarker(marker_.c_str());
+  
+  float directions[2] = {static_cast<float>(M_PI_4), static_cast<float>(3*M_PI_4)}; // TODO co znamena toto?
+  detector_->edgelDetect.getOrientationFilter().update(directions);
   
   cam_info_sub_ = nh_.subscribe("cam_info_topic", 10, &umfLocalizerNode::cameraInfoCallback, this);
 
@@ -38,6 +46,38 @@ void umfLocalizerNode::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr&
 void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg) {
 
   ROS_INFO_ONCE("camera image received");
+  
+  cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::BGR8);
+  ImageGray *imgGray;
+  
+  // TODO ??????
+  
+  bool success = false;
+  
+  try{
+  
+      success = detector_->update(imgGray, -1.f);
+      
+  } catch(DetectionTimeoutException &)
+  {
+      ROS_WARN("detection timed out");
+  }
+  
+  if (success)
+  {
+
+    double cameraPos[3];
+    double rotationQuat[4];
+    Eigen::Vector3d angles;
+
+    detector_->model.getWorldPosRot(cameraPos, rotationQuat);
+    Eigen::Quaterniond p(rotationQuat[0], rotationQuat[1], rotationQuat[2], rotationQuat[3]);
+    angles = p.toRotationMatrix().eulerAngles(0, 1, 2);
+    
+     std::cout << cameraPos[0] << " " << cameraPos[1] << " " << cameraPos[2]
+          << " " << angles[0] << " " << angles[1] << " " << angles[2] << std::endl;
+      
+  }
 
 }
 
