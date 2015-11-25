@@ -16,10 +16,7 @@ umfLocalizerNode::umfLocalizerNode(ros::NodeHandle& nh): it_(nh) {
   detector_->setTrackingFlags(UMF_TRACK_MARKER | UMF_TRACK_SCANLINES);
   detector_->loadMarker(marker_.c_str());
   
-  float directions[2] = {static_cast<float>(M_PI_4), static_cast<float>(3*M_PI_4)}; // TODO co znamena toto?
-  detector_->edgelDetect.getOrientationFilter().update(directions);
-  
-  cam_info_sub_ = nh_.subscribe("cam_info_topic", 10, &umfLocalizerNode::cameraInfoCallback, this);
+  cam_info_sub_ = nh_.subscribe("cam_info_topic", 1, &umfLocalizerNode::cameraInfoCallback, this);
 
 }
 
@@ -39,7 +36,7 @@ void umfLocalizerNode::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr&
   
   cam_info_sub_.shutdown();
   
-  cam_image_sub_ = it_.subscribe("cam_image_topic", 10, &umfLocalizerNode::cameraImageCallback, this);
+  cam_image_sub_ = it_.subscribe("cam_image_topic", 1, &umfLocalizerNode::cameraImageCallback, this);
   
 }
 
@@ -47,10 +44,11 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
 
   ROS_INFO_ONCE("camera image received");
   
-  cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::BGR8);
-  ImageGray *imgGray;
-  
-  // TODO ??????
+  cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO8);
+  IplImage iplimg = cv_ptr->image;
+
+  ImageGray *imgGray = new ImageGray(iplimg.width, iplimg.height, false, iplimg.widthStep);
+  imgGray->data = iplimg.imageData;
   
   bool success = false;
   

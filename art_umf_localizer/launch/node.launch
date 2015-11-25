@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="art_umf_localizer" type="umf_localizer_node" name="umf_localizer_node" output="screen">
+    <param name="marker" textfile="$(find art_umf_localizer)/umflib/UMFDetectorLib/markers_with_renders/cga_8_6.csv" />
+    <remap from="cam_info_topic" to="/bla/bla/image"/>
+    <remap from="cam_image_topic" to="/bla/bla/info"/>
+  </node>
+</launch>
