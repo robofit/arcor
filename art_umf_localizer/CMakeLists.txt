@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   cmake_modules
   cv_bridge
+  tf
 )
 
 find_package(Eigen REQUIRED)

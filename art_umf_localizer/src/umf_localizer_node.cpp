@@ -10,15 +10,47 @@ using namespace std;
 umfLocalizerNode::umfLocalizerNode(ros::NodeHandle& nh): it_(nh) {
 
   nh_ = nh;
-  nh_.param<std::string>("marker", marker_, "");
-  
   detector_.reset(new umf::UMFDetector<1>(UMF_FLAG_ITER_REFINE|UMF_FLAG_TRACK_POS| UMF_FLAG_SUBWINDOWS | UMF_FLAG_SUBPIXEL));
   detector_->setTrackingFlags(UMF_TRACK_MARKER | UMF_TRACK_SCANLINES);
-  detector_->loadMarker(marker_.c_str());
   
-  cam_info_sub_ = nh_.subscribe("cam_info_topic", 1, &umfLocalizerNode::cameraInfoCallback, this);
-
+  cam_info_sub_ = nh_.subscribe("/cam_info_topic", 1, &umfLocalizerNode::cameraInfoCallback, this);
 }
+
+bool umfLocalizerNode::init() {
+
+  string marker;
+
+  if (nh_.hasParam("marker")) {
+  
+    nh_.param<std::string>("marker", marker, "");
+    if (!detector_->loadMarker(marker.c_str())) {
+    
+      ROS_ERROR("Error on loading marker file!");
+      return false;
+    
+    }
+  
+  } else if (nh_.hasParam("marker_xml")) {
+  
+    nh_.param<std::string>("marker_xml", marker, "");
+    if (!detector_->loadMarkerXML(marker.c_str())) {
+    
+      ROS_ERROR("Error on loading marker XML file!");
+      return false;
+    
+    }
+  
+  } else {
+  
+      ROS_ERROR("Marker (XML) file not specified!");
+      return false;
+  
+  }
+  
+  ROS_INFO("Ready");
+  return true;
+
+} 
 
 void umfLocalizerNode::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg) {
 
@@ -27,16 +59,20 @@ void umfLocalizerNode::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr&
   cam_model_.fromCameraInfo(msg);
   
   Eigen::Matrix3d cameraMatrix;
-  cv::cv2eigen(cam_model_.intrinsicMatrix(), cameraMatrix);
+  //cv::cv2eigen(cam_model_.intrinsicMatrix(), cameraMatrix);
+  for(int i = 0; i < 3; i++)
+  for(int j = 0; j < 3; j++)
+  cameraMatrix(i,j) = cam_model_.intrinsicMatrix()(i,j);
   
   Eigen::VectorXd distCoeffs(8);
-  cv::cv2eigen(cam_model_.distortionCoeffs(), distCoeffs);
+  //cv::cv2eigen(cam_model_.distortionCoeffs(), distCoeffs);
+  distCoeffs << 0, 0, 0, 0, 0, 0, 0, 0;
   
   detector_->model.setCameraProperties(cameraMatrix, distCoeffs);
   
   cam_info_sub_.shutdown();
   
-  cam_image_sub_ = it_.subscribe("cam_image_topic", 1, &umfLocalizerNode::cameraImageCallback, this);
+  cam_image_sub_ = it_.subscribe("/cam_image_topic", 1, &umfLocalizerNode::cameraImageCallback, this);
   
 }
 
@@ -58,7 +94,7 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
       
   } catch(DetectionTimeoutException &)
   {
-      ROS_WARN("detection timed out");
+      ROS_WARN("Detection timed out.");
   }
   
   if (success)
@@ -69,12 +105,19 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
     Eigen::Vector3d angles;
 
     detector_->model.getWorldPosRot(cameraPos, rotationQuat);
-    Eigen::Quaterniond p(rotationQuat[0], rotationQuat[1], rotationQuat[2], rotationQuat[3]);
-    angles = p.toRotationMatrix().eulerAngles(0, 1, 2);
-    
-     std::cout << cameraPos[0] << " " << cameraPos[1] << " " << cameraPos[2]
-          << " " << angles[0] << " " << angles[1] << " " << angles[2] << std::endl;
-      
+     
+    //std::cout << cameraPos[0] << " " << cameraPos[1] << " " << cameraPos[2] << std::endl;
+     
+    tf::Transform transform;
+    transform.setOrigin( tf::Vector3(cameraPos[0], cameraPos[1], cameraPos[2]) );
+    tf::Quaternion q(rotationQuat[0], rotationQuat[1], rotationQuat[2], rotationQuat[3]);
+    transform.setRotation(q);
+    br_.sendTransform(tf::StampedTransform(transform, msg->header.stamp, "marker", msg->header.frame_id));
+     
+  } else {
+  
+      ROS_WARN_THROTTLE(2.0, "Detection failed.");
+  
   }
 
 }
@@ -91,6 +134,7 @@ int main(int argc, char* argv[])
     ros::NodeHandle n("~");
     
     umfLocalizerNode node(n);
+    if (!node.init()) return -1;
     ros::spin();
     
     return 0;

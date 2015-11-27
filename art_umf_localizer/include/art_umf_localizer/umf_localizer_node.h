@@ -2,6 +2,7 @@
 #include <image_transport/image_transport.h>
 #include <image_geometry/pinhole_camera_model.h>
 #include <tf/tf.h>
+#include <tf/transform_broadcaster.h>
 #include "umf.h"
 
 
@@ -16,6 +17,8 @@ namespace umf_localizer_node {
     
       umfLocalizerNode(ros::NodeHandle& nh);
       ~umfLocalizerNode();
+      
+      bool init();
       
     private:
     
@@ -32,7 +35,7 @@ namespace umf_localizer_node {
       image_transport::ImageTransport it_;
       image_transport::Subscriber cam_image_sub_;
       
-      std::string marker_;
+      tf::TransformBroadcaster br_;
   
   };
 
