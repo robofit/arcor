@@ -10,7 +10,7 @@ using namespace std;
 umfLocalizerNode::umfLocalizerNode(ros::NodeHandle& nh): it_(nh) {
 
   nh_ = nh;
-  detector_.reset(new umf::UMFDetector<1>(UMF_FLAG_ITER_REFINE|UMF_FLAG_TRACK_POS| UMF_FLAG_SUBWINDOWS | UMF_FLAG_SUBPIXEL));
+  detector_.reset(new umf::UMFDetector<1>(UMF_FLAG_ITER_REFINE| /*UMF_FLAG_TRACK_POS|*/ UMF_FLAG_SUBWINDOWS | UMF_FLAG_SUBPIXEL));
   detector_->setTrackingFlags(UMF_TRACK_MARKER | UMF_TRACK_SCANLINES);
   
   cam_info_sub_ = nh_.subscribe("/cam_info_topic", 1, &umfLocalizerNode::cameraInfoCallback, this);
@@ -49,7 +49,7 @@ bool umfLocalizerNode::init() {
   
   }
   
-  nh_.param<std::string>("robot_frame", robot_frame_, "base_link");
+  nh_.param<std::string>("robot_frame", robot_frame_, "odom_combined");
   
   ROS_INFO("Ready");
   return true;
@@ -136,7 +136,7 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
     
     transform = transform*cam_to_base;
     
-    br_.sendTransform(tf::StampedTransform(transform, msg->header.stamp, "marker", "base_link"));
+    br_.sendTransform(tf::StampedTransform(transform, msg->header.stamp, "marker", robot_frame_));
     
     geometry_msgs::PoseStamped pose;
     pose.header.frame_id = "marker";

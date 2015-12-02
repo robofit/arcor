@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(art_umf_localizer)
-set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g")
+set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS} -g")
 
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
