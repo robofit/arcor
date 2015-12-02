@@ -3,6 +3,7 @@
 #include <image_geometry/pinhole_camera_model.h>
 #include <tf/tf.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 #include "umf.h"
 
 
@@ -36,6 +37,11 @@ namespace umf_localizer_node {
       image_transport::Subscriber cam_image_sub_;
       
       tf::TransformBroadcaster br_;
+      tf::TransformListener tfl_;
+      
+      ros::Publisher pose_pub_;
+      
+      std::string robot_frame_;
   
   };
 

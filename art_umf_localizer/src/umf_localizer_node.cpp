@@ -14,6 +14,8 @@ umfLocalizerNode::umfLocalizerNode(ros::NodeHandle& nh): it_(nh) {
   detector_->setTrackingFlags(UMF_TRACK_MARKER | UMF_TRACK_SCANLINES);
   
   cam_info_sub_ = nh_.subscribe("/cam_info_topic", 1, &umfLocalizerNode::cameraInfoCallback, this);
+  pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("pose", 10);
+  
 }
 
 bool umfLocalizerNode::init() {
@@ -47,6 +49,8 @@ bool umfLocalizerNode::init() {
   
   }
   
+  nh_.param<std::string>("robot_frame", robot_frame_, "base_link");
+  
   ROS_INFO("Ready");
   return true;
 
@@ -59,14 +63,21 @@ void umfLocalizerNode::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr&
   cam_model_.fromCameraInfo(msg);
   
   Eigen::Matrix3d cameraMatrix;
-  //cv::cv2eigen(cam_model_.intrinsicMatrix(), cameraMatrix);
+  //cv::cv2eigen(cam_model_.intrinsicMatrix(), cameraMatrix); // TODO fix this
   for(int i = 0; i < 3; i++)
   for(int j = 0; j < 3; j++)
   cameraMatrix(i,j) = cam_model_.intrinsicMatrix()(i,j);
   
   Eigen::VectorXd distCoeffs(8);
-  //cv::cv2eigen(cam_model_.distortionCoeffs(), distCoeffs);
-  distCoeffs << 0, 0, 0, 0, 0, 0, 0, 0;
+  //cv::cv2eigen(cam_model_.distortionCoeffs(), distCoeffs); // TODO fix this
+  distCoeffs << cam_model_.distortionCoeffs()(0),
+                cam_model_.distortionCoeffs()(1),
+                cam_model_.distortionCoeffs()(2),
+                cam_model_.distortionCoeffs()(3),
+                cam_model_.distortionCoeffs()(4),
+                cam_model_.distortionCoeffs()(5),
+                cam_model_.distortionCoeffs()(6),
+                cam_model_.distortionCoeffs()(7);
   
   detector_->model.setCameraProperties(cameraMatrix, distCoeffs);
   
@@ -79,6 +90,19 @@ void umfLocalizerNode::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr&
 void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg) {
 
   ROS_INFO_ONCE("camera image received");
+  
+  tf::StampedTransform cam_to_base;
+  
+  try {
+  
+    tfl_.lookupTransform(msg->header.frame_id, robot_frame_, msg->header.stamp, cam_to_base);
+    
+  }
+  catch (tf::TransformException ex) {
+  
+    ROS_ERROR("%s",ex.what());
+    return;
+  }
   
   cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO8);
   IplImage iplimg = cv_ptr->image;
@@ -102,17 +126,30 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
 
     double cameraPos[3];
     double rotationQuat[4];
-    Eigen::Vector3d angles;
 
     detector_->model.getWorldPosRot(cameraPos, rotationQuat);
-     
-    //std::cout << cameraPos[0] << " " << cameraPos[1] << " " << cameraPos[2] << std::endl;
      
     tf::Transform transform;
     transform.setOrigin( tf::Vector3(cameraPos[0], cameraPos[1], cameraPos[2]) );
     tf::Quaternion q(rotationQuat[0], rotationQuat[1], rotationQuat[2], rotationQuat[3]);
     transform.setRotation(q);
-    br_.sendTransform(tf::StampedTransform(transform, msg->header.stamp, "marker", msg->header.frame_id));
+    
+    transform = transform*cam_to_base;
+    
+    br_.sendTransform(tf::StampedTransform(transform, msg->header.stamp, "marker", "base_link"));
+    
+    geometry_msgs::PoseStamped pose;
+    pose.header.frame_id = "marker";
+    pose.header.stamp = msg->header.stamp;
+    pose.pose.position.x = transform.getOrigin().getX();
+    pose.pose.position.y = transform.getOrigin().getY();
+    pose.pose.position.z = transform.getOrigin().getZ();
+    pose.pose.orientation.x = transform.getRotation().getX();
+    pose.pose.orientation.y = transform.getRotation().getY();
+    pose.pose.orientation.z = transform.getRotation().getZ();
+    pose.pose.orientation.w = transform.getRotation().getW();
+    
+    pose_pub_.publish(pose);
      
   } else {
   
