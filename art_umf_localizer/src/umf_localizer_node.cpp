@@ -50,6 +50,7 @@ bool umfLocalizerNode::init() {
   }
   
   nh_.param<std::string>("robot_frame", robot_frame_, "odom_combined");
+  nh_.param<std::string>("world_frame", world_frame_, "marker");
   
   ROS_INFO("Ready");
   return true;
@@ -92,6 +93,13 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
   ROS_INFO_ONCE("camera image received");
   
   tf::StampedTransform cam_to_base;
+  
+  if (!tfl_.waitForTransform(robot_frame_, msg->header.frame_id, msg->header.stamp, ros::Duration(0.2))) {
+  
+    ROS_WARN_STREAM_THROTTLE(2.0, "Transform from " << msg->header.frame_id << " to " << robot_frame_ << " not available!");
+    return;
+  
+  }
   
   try {
   
@@ -136,10 +144,10 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
     
     transform = transform*cam_to_base;
     
-    br_.sendTransform(tf::StampedTransform(transform, msg->header.stamp, "marker", robot_frame_));
+    br_.sendTransform(tf::StampedTransform(transform, msg->header.stamp, world_frame_, robot_frame_));
     
     geometry_msgs::PoseStamped pose;
-    pose.header.frame_id = "marker";
+    pose.header.frame_id = world_frame_;
     pose.header.stamp = msg->header.stamp;
     pose.pose.position.x = transform.getOrigin().getX();
     pose.pose.position.y = transform.getOrigin().getY();

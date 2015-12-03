@@ -42,6 +42,7 @@ namespace umf_localizer_node {
       ros::Publisher pose_pub_;
       
       std::string robot_frame_;
+      std::string world_frame_;
   
   };
 
