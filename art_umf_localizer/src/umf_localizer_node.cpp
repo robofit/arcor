@@ -51,8 +51,9 @@ bool umfLocalizerNode::init() {
   
   nh_.param<std::string>("robot_frame", robot_frame_, "odom_combined");
   nh_.param<std::string>("world_frame", world_frame_, "marker");
+  nh_.param<double>("square_size", square_size_, 0.1);
   
-  ROS_INFO("Ready");
+  ROS_INFO_STREAM("Ready! Robot frame: " << robot_frame_ << ", world frame: " << world_frame_ << ", square size: " << square_size_ << ".");
   return true;
 
 } 
@@ -138,7 +139,7 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
     detector_->model.getWorldPosRot(cameraPos, rotationQuat);
      
     tf::Transform transform;
-    transform.setOrigin( tf::Vector3(cameraPos[0], cameraPos[1], cameraPos[2]) );
+    transform.setOrigin( square_size_ * tf::Vector3(cameraPos[0], cameraPos[1], cameraPos[2]) );
     tf::Quaternion q(rotationQuat[0], rotationQuat[1], rotationQuat[2], rotationQuat[3]);
     transform.setRotation(q);
     

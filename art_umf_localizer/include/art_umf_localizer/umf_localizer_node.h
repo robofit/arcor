@@ -43,6 +43,7 @@ namespace umf_localizer_node {
       
       std::string robot_frame_;
       std::string world_frame_;
+      double square_size_;
   
   };
 
