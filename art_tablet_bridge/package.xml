@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package>
+  <name>art_tablet_bridge</name>
+  <version>0.0.1</version>
+  <description>The art_tablet_bridge package</description>
+  <maintainer email="ikapinus@fit.vutbr.cz">Michal Kapinus</maintainer>
+  <license>BUT OPEN SOURCE LICENCE</license>
+
+  <url type="website">https://github.com/robofit/ar-table-itable/tree/master/art_tablet_bridge</url>
+
+  <author email="ikapinus@fit.vutbr.cz">Michal Kapinus</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>std_msgs</run_depend>
+
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+
+  </export>
+</package>
