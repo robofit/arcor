@@ -5,6 +5,7 @@ project(art_tablet_bridge)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
+  object_recognizer_msgs
 )
 
 ## Uncomment this if the package has a setup.py. This macro ensures
