@@ -4,6 +4,8 @@
 #include <tf/tf.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
+#include <actionlib/server/simple_action_server.h>
+#include <art_umf_localizer/LocalizeAgainstUMFAction.h>
 #include "umf.h"
 
 
@@ -48,7 +50,17 @@ namespace umf_localizer_node {
       double square_size_;
 
       bool continuous_mode_;
-  
+      ros::Duration localization_to_;
+      ros::Time localization_start_;
+
+      tf::StampedTransform tr_;
+      ros::Timer tr_timer_;
+      void trCallback(const ros::TimerEvent& event);
+
+      actionlib::SimpleActionServer<art_umf_localizer::LocalizeAgainstUMFAction> as_;
+      void goalCB();
+      void preemptCB();
+
   };
 
 }

@@ -12,6 +12,16 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   eigen_conversions
   tf
+  actionlib_msgs
+)
+
+add_action_files(
+  DIRECTORY action
+  FILES LocalizeAgainstUMF.action
+)
+
+generate_messages(
+  DEPENDENCIES actionlib_msgs
 )
 
 find_package(Eigen REQUIRED)
@@ -26,7 +36,7 @@ find_package(OpenCV REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES art_umf_localizer
-  CATKIN_DEPENDS geometry_msgs roscpp
+  CATKIN_DEPENDS geometry_msgs roscpp actionlib_msgs
 #  DEPENDS system_lib
 )
 

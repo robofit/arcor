@@ -8,7 +8,7 @@ using namespace umf_localizer_node;
 using namespace umf;
 using namespace std;
 
-umfLocalizerNode::umfLocalizerNode(ros::NodeHandle& nh): it_(nh) {
+umfLocalizerNode::umfLocalizerNode(ros::NodeHandle& nh): it_(nh), as_(nh, "localize", false){
 
   nh_ = nh;
   detector_.reset(new umf::UMFDetector<1>(UMF_FLAG_ITER_REFINE| UMF_FLAG_TRACK_POS | UMF_FLAG_MAX_PRECISION | UMF_FLAG_SUBWINDOWS | UMF_FLAG_SUBPIXEL));
@@ -18,14 +18,35 @@ umfLocalizerNode::umfLocalizerNode(ros::NodeHandle& nh): it_(nh) {
   
   cam_info_sub_ = nh_.subscribe("/cam_info_topic", 1, &umfLocalizerNode::cameraInfoCallback, this);
   pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("pose", 10);
-  
+
+  as_.registerGoalCallback(boost::bind(&umfLocalizerNode::goalCB, this));
+  as_.registerPreemptCallback(boost::bind(&umfLocalizerNode::preemptCB, this));
+
+  as_.start();
+
+}
+
+void umfLocalizerNode::goalCB() {
+
+    localization_to_ = as_.acceptNewGoal()->timeout;
+    localization_start_ = ros::Time::now();
+    cam_image_sub_ = it_.subscribe("/cam_image_topic", 1, &umfLocalizerNode::cameraImageCallback, this);
+    ROS_INFO("new goal");
+
+}
+
+void umfLocalizerNode::preemptCB() {
+
+    cam_image_sub_.shutdown();
+    as_.setPreempted();
+
 }
 
 bool umfLocalizerNode::init() {
 
   string marker;
 
-  //nh_.param("continuous_mode", continuous_mode_, true);
+  nh_.param("continuous_mode", continuous_mode_, false);
 
   if (nh_.hasParam("marker")) {
   
@@ -90,8 +111,15 @@ void umfLocalizerNode::cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr&
   
   cam_info_sub_.shutdown();
   
-  /*if (continuous_mode_)*/ cam_image_sub_ = it_.subscribe("/cam_image_topic", 1, &umfLocalizerNode::cameraImageCallback, this);
+  if (continuous_mode_) cam_image_sub_ = it_.subscribe("/cam_image_topic", 1, &umfLocalizerNode::cameraImageCallback, this);
   
+}
+
+void umfLocalizerNode::trCallback(const ros::TimerEvent& event) {
+
+    tr_.stamp_ = ros::Time::now();
+    br_.sendTransform(tr_);
+
 }
 
 geometry_msgs::Pose umfLocalizerNode::inverse(geometry_msgs::Pose pose) {
@@ -112,6 +140,17 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
   imgGray->data = iplimg.imageData;
   
   bool success = false;
+
+  if (!continuous_mode_ && (ros::Time::now() - localization_start_) > localization_to_) {
+
+      ROS_INFO("timeout");
+      art_umf_localizer::LocalizeAgainstUMFResult res;
+      res.result = res.RES_DETECTION_FAILED;
+      as_.setAborted(res);
+      cam_image_sub_.shutdown();
+      return;
+
+  }
   
   try{
   
@@ -166,16 +205,30 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
     tr.setOrigin(tf::Vector3(pose.pose.position.x, pose.pose.position.y, pose.pose.position.z));
     tr.setRotation(tf::Quaternion(pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w));
 
-    br_.sendTransform(tf::StampedTransform(tr.inverse(), msg->header.stamp, world_frame_, robot_frame_));
+    // TODO do some filtering - from more detections
+    tr_ = tf::StampedTransform(tr.inverse(), msg->header.stamp, world_frame_, robot_frame_);
+
+    br_.sendTransform(tr_);
+
+    if (!continuous_mode_) {
+
+        ROS_INFO("finished");
+        art_umf_localizer::LocalizeAgainstUMFResult res;
+        res.result = res.RES_FINISHED;
+        as_.setSucceeded(res);
+        cam_image_sub_.shutdown();
+
+        tr_timer_ = nh_.createTimer(ros::Duration(0.1), &umfLocalizerNode::trCallback, this);
+
+    }
 
   } else {
   
       ROS_WARN_THROTTLE(2.0, "Detection failed.");
-  
+
   }
 
 }
-
 
 umfLocalizerNode::~umfLocalizerNode() {
 
