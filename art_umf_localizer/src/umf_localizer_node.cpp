@@ -80,6 +80,8 @@ bool umfLocalizerNode::init() {
   nh_.param<double>("square_size", square_size_, 0.1);
   
   ROS_INFO_STREAM("Ready! Robot frame: " << robot_frame_ << ", world frame: " << world_frame_ << ", square size: " << square_size_ << ".");
+  if (continuous_mode_) ROS_INFO("Continuous mode.");
+  else ROS_INFO("Action server mode.");
   return true;
 
 } 
