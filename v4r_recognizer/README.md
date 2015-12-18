@@ -1,5 +1,5 @@
 # Installation
-Build v4r library from source
+## Build v4r library from source
 
 Firstly install the dependencies for the v4r library:
  - openni drivers: sudo apt-get install libopenni-dev libopenni-sensor-primesense0
@@ -16,24 +16,31 @@ Firstly install the dependencies for the v4r library:
 Run commands:
 
 cd ~/somewhere
+
 git clone 'https://github.com/strands-project/v4r'
+
 cd v4r
+
 mkdir build && cd build
+
 cmake ..
+
 make
+
 sudo make install
 
 
-# Install ROS wrapper
+## Install ROS wrapper
 
 Put the v4r_ros_wrappers, art_object_recognizer_msgs and v4r_recognizer_launch directories to your catkin workspace.
 Put the directory 'data' to your home directory.
 
-cd ~/<catkin_ws>
+cd ~/catkin_ws
+
 catkin_make
 
 
-## Using
+# Using object recognizer
 1. Run kinect2_bridge
 2. Run launcher for v4r recognizer:
 
@@ -47,5 +54,5 @@ rosrun rviz rviz
 
 rostopic echo /recognition_service/obj_instances_poses
 
-# Visualizing results
+## Visualizing results
 The model for recognized object will be published to the topic /recognition_service/sv_recogniced_object_instances
