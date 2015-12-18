@@ -1,0 +1,5 @@
+camera_tracker/include
+multiview_object_recognizer/include
+object_classifier/include
+segmentation/include
+singleview_object_recognizer/include
