@@ -29,6 +29,8 @@ namespace umf_localizer_node {
       
       void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg);
       void cameraImageCallback(const sensor_msgs::ImageConstPtr& msg);
+
+      geometry_msgs::Pose inverse(geometry_msgs::Pose pose);
       
       image_geometry::PinholeCameraModel cam_model_;
       
@@ -44,6 +46,8 @@ namespace umf_localizer_node {
       std::string robot_frame_;
       std::string world_frame_;
       double square_size_;
+
+      bool continuous_mode_;
   
   };
 

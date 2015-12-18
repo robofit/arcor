@@ -1,9 +1,10 @@
 <?xml version="1.0"?>
 <launch>
   <node pkg="art_umf_localizer" type="umf_localizer_node" name="umf_localizer_node" output="screen">
-    <param name="marker" textfile="$(find art_umf_localizer)/umflib/UMFDetectorLib/markers_with_renders/cga_8_6.csv" />
+    <param name="marker" textfile="$(find art_umf_localizer)/data/koberec.csv" />
     <!--param name="marker_xml" textfile="$(find art_umf_localizer)/data/arTable_2cm_modules.xml"/-->
-    <remap from="cam_info_topic" to="/camera_info"/>
-    <remap from="cam_image_topic" to="/image_raw"/>
+    <remap from="cam_info_topic" to="/kinect_head/rgb/camera_info"/>
+    <remap from="cam_image_topic" to="/kinect_head/rgb/image_raw"/>
+    <param name="square_size" value="0.075"/>
   </node>
 </launch>

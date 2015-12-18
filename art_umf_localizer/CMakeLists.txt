@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(art_umf_localizer)
-set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS} -g")
+set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g")
 
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   cmake_modules
   cv_bridge
+  eigen_conversions
   tf
 )
 
@@ -17,10 +18,10 @@ find_package(Eigen REQUIRED)
 find_package(OpenCV REQUIRED)
 
 # update git submodule
-execute_process(
-  COMMAND             git submodule update --init --recursive
-  WORKING_DIRECTORY   ${PROJECT_SOURCE_DIR}
-)
+#execute_process(
+#  COMMAND             git submodule update --init --recursive
+#  WORKING_DIRECTORY   ${PROJECT_SOURCE_DIR}
+#)
 
 catkin_package(
   INCLUDE_DIRS include
