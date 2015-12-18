@@ -10,22 +10,33 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   cmake_modules
   cv_bridge
+  eigen_conversions
   tf
+  actionlib_msgs
+)
+
+add_action_files(
+  DIRECTORY action
+  FILES LocalizeAgainstUMF.action
+)
+
+generate_messages(
+  DEPENDENCIES actionlib_msgs
 )
 
 find_package(Eigen REQUIRED)
 find_package(OpenCV REQUIRED)
 
 # update git submodule
-execute_process(
-  COMMAND             git submodule update --init --recursive
-  WORKING_DIRECTORY   ${PROJECT_SOURCE_DIR}
-)
+#execute_process(
+#  COMMAND             git submodule update --init --recursive
+#  WORKING_DIRECTORY   ${PROJECT_SOURCE_DIR}
+#)
 
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES art_umf_localizer
-  CATKIN_DEPENDS geometry_msgs roscpp
+  CATKIN_DEPENDS geometry_msgs roscpp actionlib_msgs
 #  DEPENDS system_lib
 )
 

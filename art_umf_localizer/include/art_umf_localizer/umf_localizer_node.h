@@ -4,6 +4,8 @@
 #include <tf/tf.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
+#include <actionlib/server/simple_action_server.h>
+#include <art_umf_localizer/LocalizeAgainstUMFAction.h>
 #include "umf.h"
 
 
@@ -29,6 +31,8 @@ namespace umf_localizer_node {
       
       void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg);
       void cameraImageCallback(const sensor_msgs::ImageConstPtr& msg);
+
+      geometry_msgs::Pose inverse(geometry_msgs::Pose pose);
       
       image_geometry::PinholeCameraModel cam_model_;
       
@@ -44,7 +48,19 @@ namespace umf_localizer_node {
       std::string robot_frame_;
       std::string world_frame_;
       double square_size_;
-  
+
+      bool continuous_mode_;
+      ros::Duration localization_to_;
+      ros::Time localization_start_;
+
+      tf::StampedTransform tr_;
+      ros::Timer tr_timer_;
+      void trCallback(const ros::TimerEvent& event);
+
+      actionlib::SimpleActionServer<art_umf_localizer::LocalizeAgainstUMFAction> as_;
+      void goalCB();
+      void preemptCB();
+
   };
 
 }

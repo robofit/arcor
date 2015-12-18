@@ -1,0 +1,11 @@
+#goal definition
+duration timeout
+---
+#result definition
+uint8 RES_FINISHED=0
+uint8 RES_DETECTION_FAILED=1
+uint8 RES_OTHER_ERROR=2
+uint8 result
+---
+#feedback
+float32 progress
