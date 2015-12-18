@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import jsonpickle
-from std_msgs.msg import Int64
-from geometry_msgs.msg import Pose, Point, Quaternion
-from object_recognizer_msgs.msg import InstancesArray, ObjInstance
+from art_object_recognizer_msgs.msg import InstancesArray, ObjInstance
 
 
 class BridgeToFile:
