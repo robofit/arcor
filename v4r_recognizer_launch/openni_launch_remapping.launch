@@ -1,5 +1,0 @@
-<launch>
-  <include file="$(find openni_launch)/launch/openni.launch">
-    <remap from="/camera/depth_registered/points" to="/remapped_cloud"/>
-  </include> 
-</launch>
