@@ -26,22 +26,24 @@ class ArCodeDetector:
 
     def ar_code_cb(self, data):
         rospy.logdebug("New arcodes arrived:")
-
+        instances = InstancesArray()
         for arcode in data.markers:
             obj = self.objects_table.find_one(obj_id=int(arcode.id))
             # rospy.logdebug(object if object is not None else "Object not in database")
             if obj is not None:
                 rospy.logdebug(obj)
-                instances = InstancesArray()
                 obj_in = ObjInstance()
                 obj_in.object_id = str(obj['obj_id'])
                 obj_in.pose = arcode.pose.pose
                 instances.instances.append(obj_in)
-                self.detected_objects_pub.publish(instances)
+
             else:
                 rospy.logdebug("Object not in database")
+
         if len(data.markers) == 0:
             rospy.logdebug("Empty")
+        else:
+            self.detected_objects_pub.publish(instances)
 
 
 if __name__ == '__main__':
