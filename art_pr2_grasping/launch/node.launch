@@ -8,7 +8,9 @@
   <!-- Launch pick and place -->
   <node name="pr2_pick_place" launch-prefix="$(arg launch_prefix)" pkg="art_pr2_grasping" 
 	type="pr2grasp" output="screen">
-    <rosparam command="load" file="$(find pr2_ft_moveit_config)/config/kinematics.yaml"/>
+    <!--rosparam command="load" file="$(find pr2_ft_moveit_config)/config/kinematics.yaml"/-->
+    <rosparam command="load" file="$(find pr2_moveit_config)/config/kinematics.yaml"/>
+    <rosparam command="load" file="$(find art_pr2_grasping)/config/pr2_grasp_data.gazebo.yaml"/>
   </node>
 
 </launch>
