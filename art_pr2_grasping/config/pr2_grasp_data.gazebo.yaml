@@ -33,7 +33,7 @@ left:
     #desired pose from end effector to grasp - [x,y,z]
     # TODO where is the eef here? At the groups parent link?
     # Then this is from there to tool frame
-    grasp_pose_to_eef : [-0.18, 0, 0]
+    grasp_pose_to_eef : [-0.13, 0, 0] # was -0.18, 0, 0
 
     #desired pose from end effector to grasp - [r, p, y]
     grasp_pose_to_eef_rotation : [0, 0, 0]
@@ -70,7 +70,7 @@ right:
     postplace_time_from_start : 25.0
 
     #desired pose from end effector to grasp - [x,y,z]
-    grasp_pose_to_eef : [-0.18, 0, 0]
+    grasp_pose_to_eef : [-0.13, 0, 0]
 
     #desired pose from end effector to grasp - [r, p, y]
     grasp_pose_to_eef_rotation : [0, 0, 0]

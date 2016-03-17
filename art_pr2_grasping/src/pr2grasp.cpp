@@ -31,13 +31,20 @@ int main(int argc, char **argv)
 
   ROS_INFO("ready");
 
+  float dx, dy;
+
   while(ros::ok()) {
 
-      ps.pose.position.y = 0.3;
+      dx = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/0.2)) - 0.1;
+      dy = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/0.2)) - 0.1;
+
+      ps.pose.position.x = 0.6 + dx;
+      ps.pose.position.y = 0.3 + dy;
 
       if (gr.pick("1", gr.LEFT, ps)) {
 
-          ps.pose.position.y = 0.2;
+          dy = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/0.2)) - 0.1;
+          ps.pose.position.y = 0.2 + dy;
 
           if (!gr.place("1", gr.LEFT, ps)) ROS_ERROR("left place failed");
 
@@ -46,11 +53,17 @@ int main(int argc, char **argv)
       gr.getReady(gr.LEFT);
 
 
-      ps.pose.position.y = -0.3;
+      dx = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/0.2)) - 0.1;
+      dy = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/0.2)) - 0.1;
+
+      ps.pose.position.x = 0.6 + dx;
+      ps.pose.position.y = -0.3 + dy;
 
       if (gr.pick("2", gr.RIGHT, ps)) {
 
-          ps.pose.position.y = -0.2;
+          dy = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/0.2)) - 0.1;
+
+          ps.pose.position.y = -0.2 + dy;
 
           if (!gr.place("2", gr.RIGHT, ps)) ROS_ERROR("right place failed");
 

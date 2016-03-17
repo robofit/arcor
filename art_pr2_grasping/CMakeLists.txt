@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   roscpp
   cmake_modules
+  pr2_controllers_msgs
+  actionlib
 )
 
 find_package(Eigen REQUIRED)

@@ -3,10 +3,15 @@
 #include <moveit_simple_grasps/simple_grasps.h>
 #include <moveit_visual_tools/visual_tools.h>
 #include <moveit_simple_grasps/grasp_data.h>
+#include <moveit_simple_grasps/grasp_filter.h>
+#include <actionlib/client/simple_action_client.h>
+#include <pr2_controllers_msgs/PointHeadAction.h>
 
 // adapted from https://github.com/davetcoleman/baxter_cpp/blob/hydro-devel/baxter_pick_place/src/block_pick_place.cpp
 
 namespace art_pr2_grasping {
+
+  typedef actionlib::SimpleActionClient<pr2_controllers_msgs::PointHeadAction> PointHeadClient;
 
   class artPlanningGroup {
 
@@ -25,6 +30,9 @@ namespace art_pr2_grasping {
       std::string group_name_;
 
       ros::NodeHandle nh_;
+
+      moveit_simple_grasps::GraspFilterPtr grasp_filter_;
+      planning_scene_monitor::PlanningSceneMonitorPtr planning_scene_monitor_;
 
       artPlanningGroup(std::string group_name)
         : nh_("~"),
@@ -47,8 +55,13 @@ namespace art_pr2_grasping {
           visual_tools_->setFloorToBaseHeight(0.0);
           visual_tools_->loadEEMarker(grasp_data_.ee_group_, group_name_ + + "_arm");
           visual_tools_->loadPlanningSceneMonitor();
+          visual_tools_->setLifetime(10.0);
 
           simple_grasps_.reset(new moveit_simple_grasps::SimpleGrasps(visual_tools_));
+
+          planning_scene_monitor_.reset(new planning_scene_monitor::PlanningSceneMonitor("robot_description"));
+          robot_state::RobotState robot_state = planning_scene_monitor_->getPlanningScene()->getCurrentState();
+          grasp_filter_.reset(new moveit_simple_grasps::GraspFilter(robot_state, visual_tools_) );
 
       }
 
@@ -62,6 +75,7 @@ namespace art_pr2_grasping {
 
       boost::scoped_ptr<artPlanningGroup> groups_[PLANNING_GROUPS];
       std::string group_name_[PLANNING_GROUPS];
+      boost::scoped_ptr<PointHeadClient> head_;
 
       ros::NodeHandle nh_;
       
@@ -79,9 +93,36 @@ namespace art_pr2_grasping {
               groups_[i]->visual_tools_->setMuted(false);
           }
 
+          head_.reset(new PointHeadClient("/head_traj_controller/point_head_action", true));
+          if (!head_->waitForServer(ros::Duration(5))) {
+
+              ROS_WARN("Point head action not available!");
+          }
+
       }
 
       enum planning_group {LEFT, RIGHT};
+
+      //! Points the high-def camera frame at a point in a given frame
+      void lookAt(geometry_msgs::Point pt)
+        {
+          //the goal message we will be sending
+          pr2_controllers_msgs::PointHeadGoal goal;
+
+          //the target point, expressed in the requested frame
+          geometry_msgs::PointStamped point;
+          point.header.frame_id = "base_footprint";
+          point.point = pt;
+          goal.target = point;
+          goal.pointing_frame = "high_def_frame"; // todo zmenit na kinect
+          goal.pointing_axis.x = 1;
+          goal.pointing_axis.y = 0;
+          goal.pointing_axis.z = 0;
+          goal.min_duration = ros::Duration(0.5);
+          goal.max_velocity = 0.5;
+          head_->sendGoal(goal);
+          head_->waitForResult(ros::Duration(2));
+        }
 
       bool getReady(const planning_group & group) {
 
@@ -98,7 +139,6 @@ namespace art_pr2_grasping {
           ps.pose.orientation.w = 0.947;
 
           if (group == RIGHT) ps.pose.position.y = -0.7;
-
 
           groups_[group]->move_group_->setPoseTarget(ps);
           return groups_[group]->move_group_->move();
@@ -134,11 +174,14 @@ namespace art_pr2_grasping {
       // todo remove id - the robot should know what's in his hand
       bool place(const std::string &id, const planning_group &group, const geometry_msgs::PoseStamped &ps) {
 
+          lookAt(ps.pose.position);
+
+          //groups_[group]->visual_tools_->publishBlock(ps.pose, moveit_visual_tools::ORANGE, 0.05);
+
           std::vector<moveit_msgs::PlaceLocation> place_locations;
 
           // todo transform ps into grasp_data_.base_link_
 
-          // Re-usable datastruct
           geometry_msgs::PoseStamped pose_stamped;
           pose_stamped.header.frame_id = groups_[group]->grasp_data_.base_link_;
           pose_stamped.header.stamp = ros::Time::now();
@@ -161,7 +204,7 @@ namespace art_pr2_grasping {
 
             place_loc.place_pose = pose_stamped;
 
-            groups_[group]->visual_tools_->publishBlock( place_loc.place_pose.pose, moveit_visual_tools::BLUE, 0.05);
+            groups_[group]->visual_tools_->publishBlock( place_loc.place_pose.pose, moveit_visual_tools::ORANGE, 0.05);
 
             // Approach
             moveit_msgs::GripperTranslation pre_place_approach;
@@ -200,12 +243,15 @@ namespace art_pr2_grasping {
 
       bool pick(const std::string &id, const planning_group &group, const geometry_msgs::PoseStamped &ps/*, const shape_msgs::SolidPrimitive & shape*/) {
 
+          lookAt(ps.pose.position);
+
           // todo check if something was picked-up before
 
           groups_[group]->visual_tools_->cleanupCO(id);
           groups_[group]->visual_tools_->cleanupACO(id);
 
-          //groups_[group]->visual_tools_->publishBlock(ps.pose, moveit_visual_tools::BLUE, 0.05);
+          groups_[group]->visual_tools_->publishBlock(ps.pose, moveit_visual_tools::BLUE, 0.05);
+          // todo use BB instead of block
           groups_[group]->visual_tools_->publishCollisionBlock(ps.pose, id, 0.05); // todo ps transformovat do grasp_data_.base_link_
 
           std::vector<moveit_msgs::Grasp> grasps;
@@ -217,13 +263,20 @@ namespace art_pr2_grasping {
               return false;
           }
 
-          /*if (!visual_tools_->publishGrasps(grasps, grasp_data_.ee_parent_link_)) {
+          std::vector<trajectory_msgs::JointTrajectoryPoint> ik_solutions; // save each grasps ik solution for visualization
+          if (!groups_[group]->grasp_filter_->filterGrasps(grasps, ik_solutions, true, groups_[group]->grasp_data_.ee_parent_link_, group_name_[group] + "_arm")) {
+
+              ROS_ERROR("Grasp filtering failed.");
+              return false;
+          }
+
+          /*if (!groups_[group]->visual_tools_->publishAnimatedGrasps(grasps, groups_[group]->grasp_data_.ee_parent_link_, 0.02)) {
 
               ROS_WARN("Grasp animation failed");
           }*/
 
           std::vector<std::string> allowed_touch_objects;
-          allowed_touch_objects.push_back("id");
+          allowed_touch_objects.push_back(id);
 
           // Add this list to all grasps
           for (std::size_t i = 0; i < grasps.size(); ++i)
