@@ -16,9 +16,9 @@ int main(int argc, char **argv)
   geometry_msgs::PoseStamped ps;
 
   ps.header.frame_id = "base_footprint";
-  ps.pose.position.x = 0.75;
+  ps.pose.position.x = 0.6;
   ps.pose.position.y = 0.3;
-  ps.pose.position.z = 0.75;
+  ps.pose.position.z = 0.8;
   ps.pose.orientation.x = 0.0;
   ps.pose.orientation.y = 0.0;
   ps.pose.orientation.z = 0.0;
@@ -26,22 +26,40 @@ int main(int argc, char **argv)
 
   gr.getReady();
 
+  if (!gr.addTable(0.75, 0, 0, 1.5, 0.75, 0.75, "table1")) ROS_ERROR("failed to add table");
+  ros::Duration(1).sleep();
+
   ROS_INFO("ready");
 
-  if (!gr.pick("1", "left_arm", ps)) {
+  while(ros::ok()) {
 
-      ROS_ERROR("pick failed");
-      ros::spin();
+      ps.pose.position.y = 0.3;
+
+      if (gr.pick("1", gr.LEFT, ps)) {
+
+          ps.pose.position.y = 0.2;
+
+          if (!gr.place("1", gr.LEFT, ps)) ROS_ERROR("left place failed");
+
+      } else ROS_ERROR("left pick failed");
+
+      gr.getReady(gr.LEFT);
+
+
+      ps.pose.position.y = -0.3;
+
+      if (gr.pick("2", gr.RIGHT, ps)) {
+
+          ps.pose.position.y = -0.2;
+
+          if (!gr.place("2", gr.RIGHT, ps)) ROS_ERROR("right place failed");
+
+      } else ROS_ERROR("right pick failed");
+
+      gr.getReady(gr.RIGHT);
+
   }
 
-  ps.pose.position.y = 0.1;
-
-  if (!gr.place("1", "left_arm", ps)) {
-
-      ROS_ERROR("place failed");
-  }
-
-  ros::spin();
 
   return 0;
 }
