@@ -12,9 +12,11 @@ uint8 PICK_AND_PLACE=2
 ---
 uint8 result
 uint8 SUCCESS=0
-uint8 FAILURE=1
+uint8 FAILURE=1 # todo indicate which operation failed?
 uint8 BUSY=2 # hand already holds object
 uint8 DROPPED=3 # object was dropped
 uint8 BAD_REQUEST=4
 ---
-# tbd
+uint8 operation
+uint8 attempt
+

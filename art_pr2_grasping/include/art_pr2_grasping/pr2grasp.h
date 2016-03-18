@@ -8,6 +8,7 @@
 #include <pr2_controllers_msgs/PointHeadAction.h>
 #include <actionlib/server/simple_action_server.h>
 #include <art_pr2_grasping/pickplaceAction.h>
+#include <tf/transform_listener.h>
 
 // adapted from https://github.com/davetcoleman/baxter_cpp/blob/hydro-devel/baxter_pick_place/src/block_pick_place.cpp
 
@@ -35,6 +36,9 @@ namespace art_pr2_grasping {
 
       moveit_simple_grasps::GraspFilterPtr grasp_filter_;
       planning_scene_monitor::PlanningSceneMonitorPtr planning_scene_monitor_;
+
+      // dimensions of the grasped object
+      float dim_; // todo udelat map: id/dim[]?
 
       artPlanningGroup(std::string group_name)
         : nh_("~"),
@@ -81,8 +85,6 @@ namespace art_pr2_grasping {
 
       ros::NodeHandle nh_;
 
-      float dim_; // udelat map: id/dim[]?
-      
     public:
     
       artPr2Grasping()
@@ -160,6 +162,7 @@ namespace art_pr2_grasping {
 
       }
 
+      // todo moznost zadat jako PoseStamped?
       bool addTable(double x, double y, double angle, double width, double height, double depth, std::string name) {
 
           ROS_INFO("Adding table: %s", name.c_str());
@@ -176,10 +179,10 @@ namespace art_pr2_grasping {
 
       }
 
-      // todo remove id - the robot should know what's in his hand
-      bool place(const std::string &id, const planning_group &group, const geometry_msgs::PoseStamped &ps) {
+      // todo remove id? - the robot should know what's in his hand
+      bool place(const std::string &id, const planning_group &group, const geometry_msgs::Pose &ps) {
 
-          lookAt(ps.pose.position);
+          lookAt(ps.position);
 
           //groups_[group]->visual_tools_->publishBlock(ps.pose, moveit_visual_tools::ORANGE, 0.05);
 
@@ -195,7 +198,7 @@ namespace art_pr2_grasping {
           // Create 360 degrees of place location rotated around a center
           for (double angle = 0; angle < 2*M_PI; angle += M_PI/2)
           {
-            pose_stamped.pose = ps.pose;
+            pose_stamped.pose = ps;
 
             // Orientation
             Eigen::Quaterniond quat(Eigen::AngleAxis<double>(double(angle), Eigen::Vector3d::UnitZ()));
@@ -209,7 +212,7 @@ namespace art_pr2_grasping {
 
             place_loc.place_pose = pose_stamped;
 
-            groups_[group]->visual_tools_->publishBlock( place_loc.place_pose.pose, moveit_visual_tools::ORANGE, dim_);
+            groups_[group]->visual_tools_->publishBlock( place_loc.place_pose.pose, moveit_visual_tools::ORANGE, groups_[group]->dim_);
 
             // Approach
             moveit_msgs::GripperTranslation pre_place_approach;
@@ -246,15 +249,20 @@ namespace art_pr2_grasping {
 
       }
 
-      bool pick(const std::string &id, const planning_group &group, const geometry_msgs::PoseStamped &ps, const shape_msgs::SolidPrimitive & shape) {
+      std::string getPlanningFrame(const planning_group &group) {
 
-          lookAt(ps.pose.position);
+          return groups_[group]->move_group_->getPlanningFrame();
+
+      }
+
+      bool pick(const std::string &id, const planning_group &group, const geometry_msgs::Pose &ps, const shape_msgs::SolidPrimitive & shape) {
+
+          lookAt(ps.position);
 
           // todo check if something was picked-up before
 
           groups_[group]->visual_tools_->cleanupCO(id);
           groups_[group]->visual_tools_->cleanupACO(id);
-
 
           // todo check type of the object
           // todo zapamatovat si id/shape
@@ -262,24 +270,22 @@ namespace art_pr2_grasping {
 
               ROS_ERROR("shape with no dimensions!");
               return false;
-
           }
 
-          dim_ = shape.dimensions[0];
+          groups_[group]->dim_ = shape.dimensions[0];
           for (int i = 1; i < 3; i++) {
 
-              if (dim_ < shape.dimensions[i]) dim_ = shape.dimensions[i];
+              if (groups_[group]->dim_ < shape.dimensions[i]) groups_[group]->dim_ = shape.dimensions[i];
           }
 
-
-          groups_[group]->visual_tools_->publishBlock(ps.pose, moveit_visual_tools::BLUE, dim_);
+          //groups_[group]->visual_tools_->publishBlock(ps, moveit_visual_tools::BLUE, groups_[group]->dim_);
           // todo use BB instead of block
-          groups_[group]->visual_tools_->publishCollisionBlock(ps.pose, id, dim_); // todo ps transformovat do grasp_data_.base_link_
+          groups_[group]->visual_tools_->publishCollisionBlock(ps, id, groups_[group]->dim_);
 
           std::vector<moveit_msgs::Grasp> grasps;
 
-          // todo use generateBoxGrasps ?
-          if (!groups_[group]->simple_grasps_->generateBlockGrasps( ps.pose, groups_[group]->grasp_data_, grasps )) {
+          // todo use generateBoxGrasps - nutno zkompilovat z gitu + vyresit dependency hell
+          if (!groups_[group]->simple_grasps_->generateBlockGrasps( ps, groups_[group]->grasp_data_, grasps )) {
 
               ROS_ERROR("No grasps found.");
               return false;
@@ -315,19 +321,22 @@ namespace art_pr2_grasping {
 
   public:
 
-      artActionServer(): nh_("~"), as_(nh_, "pp", boost::bind(&artActionServer::executeCB, this, _1), false) {
+      artActionServer(): nh_("~"),
+          as_(nh_, "pp", boost::bind(&artActionServer::executeCB, this, _1), false),
+          max_attempts_(3)
+      {
 
       }
 
       bool init() {
 
-        // todo - tohle poradi je dobre pro simulaci - v realu by to bylo lepsi naopak??
+        // todo - tohle poradi (ready, addtable) je dobre pro simulaci - v realu by to bylo lepsi naopak??
         if (!gr_.getReady()) return false;
 
         ros::Duration(1).sleep();
 
         // todo - read from param?
-        if (!gr_.addTable(0.75, 0, 0, 1.5, 0.75, 0.75, "table1")) {
+        if (!gr_.addTable(0.75, 0, 0, 1.5, 0.74, 0.80, "table1")) {
 
             ROS_ERROR("failed to add table");
             return false;
@@ -342,31 +351,85 @@ namespace art_pr2_grasping {
       ros::NodeHandle nh_;
       artPr2Grasping gr_;
       actionlib::SimpleActionServer<pickplaceAction> as_;
+      int max_attempts_;
+      tf::TransformListener tfl_;
 
       void executeCB(const pickplaceGoalConstPtr &goal) {
 
         pickplaceResult res;
+        pickplaceFeedback f;
         artPr2Grasping::planning_group g;
-
-        ROS_INFO("Got goal for group: %d, operation: %d", goal->arm, goal->operation);
 
         if (goal->arm == pickplaceGoal::LEFT_ARM) g = artPr2Grasping::LEFT;
         else if (goal->arm == pickplaceGoal::RIGHT_ARM) g = artPr2Grasping::RIGHT;
         else {
 
             res.result = pickplaceResult::BAD_REQUEST;
-            as_.setAborted(res);
+            as_.setAborted(res, "unknown planning group");
             return;
         }
 
-        if (goal->operation == pickplaceGoal::PICK_AND_PLACE) {
+        if (goal->operation != pickplaceGoal::PICK_AND_PLACE && goal->operation != pickplaceGoal::PICK && goal->operation != pickplaceGoal::PLACE) {
 
-            int tries = 3;
+            res.result = pickplaceResult::BAD_REQUEST;
+            as_.setAborted(res, "unknown operation");
+            return;
+        }
 
-            while (tries-- > 0) {
+        ROS_INFO("Got goal for group: %d, operation: %d", goal->arm, goal->operation);
 
-                ROS_INFO("Pick %d", tries);
-                if (gr_.pick(goal->id, g, goal->pose, goal->bb)) break;
+        if (goal->operation == pickplaceGoal::PICK_AND_PLACE || goal->operation == pickplaceGoal::PICK) {
+
+            if (goal->bb.dimensions.size() != 3) {
+
+                res.result = pickplaceResult::BAD_REQUEST;
+                as_.setAborted(res, "for pick/p&p a bounding box must be given ");
+                return;
+            }
+
+            int tries = max_attempts_;
+
+            geometry_msgs::PoseStamped pst;
+
+            if (goal->pose.header.frame_id == gr_.getPlanningFrame(g)) pst = goal->pose;
+            else {
+
+                bool err = false;
+
+                try {
+                    if (tfl_.waitForTransform(gr_.getPlanningFrame(g), goal->pose.header.frame_id, goal->pose.header.stamp, ros::Duration(5))) {
+                        tfl_.transformPose(gr_.getPlanningFrame(g), goal->pose, pst);
+                    } else err = true;
+                } catch(tf::TransformException ex) {
+                    ROS_ERROR("%s",ex.what());
+                    err = true;
+                }
+
+                if (err) {
+
+                    res.result = pickplaceResult::FAILURE;
+                    as_.setAborted(res, "failed to transform pose");
+                    return;
+                }
+
+            }
+
+            f.operation = goal->operation == pickplaceGoal::PICK;
+
+            while (tries > 0 && !as_.isPreemptRequested()) {
+
+                f.attempt = (max_attempts_ - tries) + 1;
+                ROS_INFO("Pick %d", f.attempt);
+                tries--;
+                as_.publishFeedback(f);
+                if (gr_.pick(goal->id, g, pst.pose, goal->bb)) break;
+            }
+
+            if (as_.isPreemptRequested()) {
+
+                gr_.getReady(g);
+                as_.setPreempted(res, "pick cancelled");
+                return;
             }
 
             if (tries == 0) {
@@ -377,12 +440,55 @@ namespace art_pr2_grasping {
                 return;
             }
 
-            tries = 3;
+            if (goal->operation == pickplaceGoal::PICK) gr_.getReady(g); // get ready and wait with object grasped
 
-            while (tries-- > 0) {
+        }
 
-                ROS_INFO("Place %d", tries);
-                if (gr_.place(goal->id, g, goal->pose2)) break;
+        if (goal->operation == pickplaceGoal::PICK_AND_PLACE || goal->operation == pickplaceGoal::PLACE) {
+
+            int tries = max_attempts_;
+
+            geometry_msgs::PoseStamped pst;
+
+            if (goal->pose2.header.frame_id == gr_.getPlanningFrame(g)) pst = goal->pose2;
+            else {
+
+                bool err = false;
+
+                try {
+                    if (tfl_.waitForTransform(gr_.getPlanningFrame(g), goal->pose2.header.frame_id, goal->pose.header.stamp, ros::Duration(5))) {
+                        tfl_.transformPose(gr_.getPlanningFrame(g), goal->pose2, pst);
+                    } else err = true;
+                } catch(tf::TransformException ex) {
+                    ROS_ERROR("%s",ex.what());
+                    err = true;
+                }
+
+                if (err) {
+
+                    res.result = pickplaceResult::FAILURE;
+                    as_.setAborted(res, "failed to transform pose");
+                    return;
+                }
+
+            }
+
+            f.operation = goal->operation == pickplaceGoal::PLACE;
+
+            while (tries > 0 && !as_.isPreemptRequested()) {
+
+                f.attempt = (max_attempts_ - tries) + 1;
+                ROS_INFO("Place %d", f.attempt);
+                tries--;
+                as_.publishFeedback(f);
+                if (gr_.place(goal->id, g, pst.pose)) break;
+            }
+
+            if (as_.isPreemptRequested()) {
+
+                gr_.getReady(g);
+                as_.setPreempted(res, "place cancelled");
+                return;
             }
 
             if (tries == 0) {
@@ -395,7 +501,7 @@ namespace art_pr2_grasping {
 
             gr_.getReady(g);
 
-        } else ROS_WARN("Not implemented yet!");
+        }
 
         res.result = pickplaceResult::SUCCESS;
         as_.setSucceeded(res);

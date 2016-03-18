@@ -25,7 +25,7 @@ def main():
     goal.pose.header.stamp = rospy.Time.now()
     goal.pose.pose.position.x = 0.6
     goal.pose.pose.position.y = 0.3
-    goal.pose.pose.position.z = 0.8
+    goal.pose.pose.position.z = 0.74+0.05/2 # vyska stolu + pulka kosticky
     goal.pose.pose.orientation.x = 0.0
     goal.pose.pose.orientation.y = 0.0
     goal.pose.pose.orientation.z = 0.0
@@ -36,7 +36,7 @@ def main():
     goal.pose2.header.stamp = rospy.Time.now()
     goal.pose2.pose.position.x = 0.5
     goal.pose2.pose.position.y = 0.1
-    goal.pose2.pose.position.z = 0.8
+    goal.pose2.pose.position.z = 0.74+0.05/2
     goal.pose2.pose.orientation.x = 0.0
     goal.pose2.pose.orientation.y = 0.0
     goal.pose2.pose.orientation.z = 0.707
