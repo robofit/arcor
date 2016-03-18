@@ -6,6 +6,8 @@
 #include <moveit_simple_grasps/grasp_filter.h>
 #include <actionlib/client/simple_action_client.h>
 #include <pr2_controllers_msgs/PointHeadAction.h>
+#include <actionlib/server/simple_action_server.h>
+#include <art_pr2_grasping/pickplaceAction.h>
 
 // adapted from https://github.com/davetcoleman/baxter_cpp/blob/hydro-devel/baxter_pick_place/src/block_pick_place.cpp
 
@@ -78,6 +80,8 @@ namespace art_pr2_grasping {
       boost::scoped_ptr<PointHeadClient> head_;
 
       ros::NodeHandle nh_;
+
+      float dim_; // udelat map: id/dim[]?
       
     public:
     
@@ -91,6 +95,7 @@ namespace art_pr2_grasping {
 
               groups_[i].reset(new artPlanningGroup(group_name_[i]));
               groups_[i]->visual_tools_->setMuted(false);
+              groups_[i]->visual_tools_->publishRemoveAllCollisionObjects();
           }
 
           head_.reset(new PointHeadClient("/head_traj_controller/point_head_action", true));
@@ -204,7 +209,7 @@ namespace art_pr2_grasping {
 
             place_loc.place_pose = pose_stamped;
 
-            groups_[group]->visual_tools_->publishBlock( place_loc.place_pose.pose, moveit_visual_tools::ORANGE, 0.05);
+            groups_[group]->visual_tools_->publishBlock( place_loc.place_pose.pose, moveit_visual_tools::ORANGE, dim_);
 
             // Approach
             moveit_msgs::GripperTranslation pre_place_approach;
@@ -241,7 +246,7 @@ namespace art_pr2_grasping {
 
       }
 
-      bool pick(const std::string &id, const planning_group &group, const geometry_msgs::PoseStamped &ps/*, const shape_msgs::SolidPrimitive & shape*/) {
+      bool pick(const std::string &id, const planning_group &group, const geometry_msgs::PoseStamped &ps, const shape_msgs::SolidPrimitive & shape) {
 
           lookAt(ps.pose.position);
 
@@ -250,9 +255,26 @@ namespace art_pr2_grasping {
           groups_[group]->visual_tools_->cleanupCO(id);
           groups_[group]->visual_tools_->cleanupACO(id);
 
-          groups_[group]->visual_tools_->publishBlock(ps.pose, moveit_visual_tools::BLUE, 0.05);
+
+          // todo check type of the object
+          // todo zapamatovat si id/shape
+          if (shape.dimensions.size() != 3) {
+
+              ROS_ERROR("shape with no dimensions!");
+              return false;
+
+          }
+
+          dim_ = shape.dimensions[0];
+          for (int i = 1; i < 3; i++) {
+
+              if (dim_ < shape.dimensions[i]) dim_ = shape.dimensions[i];
+          }
+
+
+          groups_[group]->visual_tools_->publishBlock(ps.pose, moveit_visual_tools::BLUE, dim_);
           // todo use BB instead of block
-          groups_[group]->visual_tools_->publishCollisionBlock(ps.pose, id, 0.05); // todo ps transformovat do grasp_data_.base_link_
+          groups_[group]->visual_tools_->publishCollisionBlock(ps.pose, id, dim_); // todo ps transformovat do grasp_data_.base_link_
 
           std::vector<moveit_msgs::Grasp> grasps;
 
@@ -288,5 +310,99 @@ namespace art_pr2_grasping {
       }
   
   };
+
+  class artActionServer {
+
+  public:
+
+      artActionServer(): nh_("~"), as_(nh_, "pp", boost::bind(&artActionServer::executeCB, this, _1), false) {
+
+      }
+
+      bool init() {
+
+        // todo - tohle poradi je dobre pro simulaci - v realu by to bylo lepsi naopak??
+        if (!gr_.getReady()) return false;
+
+        ros::Duration(1).sleep();
+
+        // todo - read from param?
+        if (!gr_.addTable(0.75, 0, 0, 1.5, 0.75, 0.75, "table1")) {
+
+            ROS_ERROR("failed to add table");
+            return false;
+        }
+
+        as_.start();
+        return true;
+      }
+
+  private:
+
+      ros::NodeHandle nh_;
+      artPr2Grasping gr_;
+      actionlib::SimpleActionServer<pickplaceAction> as_;
+
+      void executeCB(const pickplaceGoalConstPtr &goal) {
+
+        pickplaceResult res;
+        artPr2Grasping::planning_group g;
+
+        ROS_INFO("Got goal for group: %d, operation: %d", goal->arm, goal->operation);
+
+        if (goal->arm == pickplaceGoal::LEFT_ARM) g = artPr2Grasping::LEFT;
+        else if (goal->arm == pickplaceGoal::RIGHT_ARM) g = artPr2Grasping::RIGHT;
+        else {
+
+            res.result = pickplaceResult::BAD_REQUEST;
+            as_.setAborted(res);
+            return;
+        }
+
+        if (goal->operation == pickplaceGoal::PICK_AND_PLACE) {
+
+            int tries = 3;
+
+            while (tries-- > 0) {
+
+                ROS_INFO("Pick %d", tries);
+                if (gr_.pick(goal->id, g, goal->pose, goal->bb)) break;
+            }
+
+            if (tries == 0) {
+
+                gr_.getReady(g);
+                res.result = pickplaceResult::FAILURE;
+                as_.setAborted(res);
+                return;
+            }
+
+            tries = 3;
+
+            while (tries-- > 0) {
+
+                ROS_INFO("Place %d", tries);
+                if (gr_.place(goal->id, g, goal->pose2)) break;
+            }
+
+            if (tries == 0) {
+
+                gr_.getReady(g);
+                res.result = pickplaceResult::FAILURE;
+                as_.setAborted(res);
+                return;
+            }
+
+            gr_.getReady(g);
+
+        } else ROS_WARN("Not implemented yet!");
+
+        res.result = pickplaceResult::SUCCESS;
+        as_.setSucceeded(res);
+
+        }
+
+      };
+
 
 }
