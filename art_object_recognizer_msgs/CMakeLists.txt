@@ -4,6 +4,7 @@ project(art_object_recognizer_msgs)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  shape_msgs
   geometry_msgs
   message_generation
 )
@@ -17,7 +18,8 @@ add_message_files(
 
 generate_messages(
   DEPENDENCIES
-  std_msgs 
+  std_msgs
+  shape_msgs
   geometry_msgs
 )
 
