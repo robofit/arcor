@@ -1,0 +1,20 @@
+string id # name of the object
+geometry_msgs/PoseStamped pose # target/destination pose for pick / place
+geometry_msgs/PoseStamped pose2 # place pose for pick_and_place operation
+shape_msgs/SolidPrimitive bb # only needed for pick or pick_and_place
+uint8 arm # which arm to use (only need to be filled for pick operation)
+uint8 LEFT_ARM=0
+uint8 RIGHT_ARM=1
+uint8 operation
+uint8 PICK=0
+uint8 PLACE=1
+uint8 PICK_AND_PLACE=2
+---
+uint8 result
+uint8 SUCCESS=0
+uint8 FAILURE=1
+uint8 BUSY=2 # hand already holds object
+uint8 DROPPED=3 # object was dropped
+uint8 BAD_REQUEST=4
+---
+# tbd

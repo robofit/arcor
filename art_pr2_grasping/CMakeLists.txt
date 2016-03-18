@@ -13,15 +13,27 @@ find_package(catkin REQUIRED COMPONENTS
   cmake_modules
   pr2_controllers_msgs
   actionlib
+  actionlib_msgs
+  shape_msgs
 )
 
 find_package(Eigen REQUIRED)
 #find_package(Boost REQUIRED system thread)
 
+add_action_files(
+  DIRECTORY action
+  FILES pickplace.action
+)
+
+generate_messages(
+  DEPENDENCIES actionlib_msgs shape_msgs
+)
+
 catkin_package(
   INCLUDE_DIRS include
   CATKIN_DEPENDS 
     moveit_simple_grasps
+    actionlib_msgs
 )
 
 # Enable gdb to show line numbers
