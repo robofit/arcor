@@ -1,0 +1,11 @@
+<launch>
+  <node name="recognition_service" pkg="singleview_object_recognizer" type="recognition_service">
+    <param name="models_dir" value="/home/artable/data/models"/>
+    <param name="training_dir" value="/home/artable/data/recognition_structure"/>
+    <param name="knn_sift" value="3"/>
+    <param name="chop_z" value="2.5"/>
+  </node>
+  <node name="test_single_view_recognition" pkg="singleview_object_recognizer" type= "test_single_view_recognition">
+    <param name="topic" value="/kinect2/sd/points"/>
+  </node>
+</launch>
