@@ -7,7 +7,7 @@ from std_msgs.msg import String
 
 class BridgeToFile:
 
-    marker_scale = 0
+    marker_scale = 1
     marker_size = 6.52 #cm
 
     def __init__(self):
@@ -39,13 +39,7 @@ class BridgeToFile:
                                                                             'z': obj.pose.orientation.z,
                                                                             'w': obj.pose.orientation.w}}
             objects.append(to_json)
-        #rospy.loginfo(jsonpickle.encode({'objects': objects}))
-        #with open('/home/ikapinus/www/examplewww.json', 'w') as f:
-        with open('/var/www/html/examplewww.json', 'w') as f:
-            f.write(jsonpickle.encode(objects))
-        
-
-
+        self.pub.publish(jsonpickle.encode(objects))
 
 
 if __name__ == '__main__':
