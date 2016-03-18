@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 
   artActionServer as;
   ros::Duration(1).sleep();
-  as.init();
+  if (!as.init()) return 0;
   ros::spin();
 
   return 0;
