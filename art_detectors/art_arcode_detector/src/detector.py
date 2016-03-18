@@ -12,10 +12,10 @@ class ArCodeDetector:
     objects_table = None
 
     def __init__(self):
-        self.objects_db = dataset.connect('sqlite:///objdatabase.db')
+        self.objects_db = dataset.connect('sqlite:////home/artable/objdatabase.db')
         self.objects_table = self.objects_db['objects']
-        # self.objects_table.insert(dict(name="box", model_url="blablabla", obj_id=14))
-        # self.objects_table.insert(dict(name="cup", model_url="blablabla", obj_id=9))
+        #self.objects_table.insert(dict(name="juice", model_url="blablabla", obj_id=14))
+        #self.objects_table.insert(dict(name="tea", model_url="blablabla", obj_id=1))
         # self.objects_table.update(dict(name="juice", model_url="blablabla", obj_id=0), ['name'])
         self.ar_code_sub = rospy.Subscriber("ar_pose_marker", AlvarMarkers, self.ar_code_cb)
         self.detected_objects_pub = rospy.Publisher("/art_object_detector/object", InstancesArray, queue_size=10)
@@ -33,7 +33,7 @@ class ArCodeDetector:
             if obj is not None:
                 rospy.logdebug(obj)
                 obj_in = ObjInstance()
-                obj_in.object_id = str(obj['obj_id'])
+                obj_in.object_id = str(obj['name'])
                 obj_in.pose = arcode.pose.pose
                 instances.instances.append(obj_in)
 
