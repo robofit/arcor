@@ -1,5 +1,14 @@
 Actionlib server for pick&place with PR2 robot. Can do pick&place, or pick and then (a bit later) place.
 
+Tested only on ROS Hydro!
+
+How to install dependencies:
+
+````cd catkin_ws/src
+git clone -b origin/hydro-devel https://github.com/dornhege/moveit_simple_grasps.git
+git clone -b origin/hydro-devel https://github.com/dornhege/moveit_visual_tools.git
+git clone -b tags/1.5.0 https://github.com/davetcoleman/rviz_visual_tools.git````
+
 How to run it:
  - roslaunch pr2_moveit_config move_group.launch (in simulation)
  - roslaunch pr2_ft_moveit_config move_group.launch (with the real robot with FT sensor)
