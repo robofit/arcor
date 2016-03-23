@@ -4,10 +4,12 @@ Tested only on ROS Hydro!
 
 How to install dependencies:
 
-````cd catkin_ws/src
+```
+cd catkin_ws/src
 git clone -b origin/hydro-devel https://github.com/dornhege/moveit_simple_grasps.git
 git clone -b origin/hydro-devel https://github.com/dornhege/moveit_visual_tools.git
-git clone -b tags/1.5.0 https://github.com/davetcoleman/rviz_visual_tools.git````
+git clone -b tags/1.5.0 https://github.com/davetcoleman/rviz_visual_tools.git
+```
 
 How to run it:
  - roslaunch pr2_moveit_config move_group.launch (in simulation)
