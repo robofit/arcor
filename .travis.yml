@@ -100,8 +100,8 @@ before_script:
   - wstool up
   # package depdencies: install using rosdep.
   - cd ~/catkin_ws
-  # kind of hack - rosdep installs mongodb which asks for something so "--force-yes" is required
-  - sudo apt-get install -y --force-yes mongodb
+  # kind of hack - rosdep installs mongodb which asks for something...
+  - sudo apt-get install -y mongodb-clients mongodb-server -o Dpkg::Options::="--force-confdef" # default actions
   - rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
 
 # Compile and test. If the CATKIN_OPTIONS file exists, use it as an argument to
