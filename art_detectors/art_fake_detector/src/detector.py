@@ -25,7 +25,7 @@ class ArCodeDetector:
             obj_in.pose.orientation.y = 0
             obj_in.pose.orientation.z = 0
             obj_in.pose.orientation.w = 1.0
-            obj_in.bbox.dimensions = [0.07, 0.07, 0.07]
+            obj_in.bbox.dimensions = [0.05, 0.05, 0.1]
             obj_in.bbox.type = SolidPrimitive.BOX
 
             instances.header.frame_id = "/marker"
