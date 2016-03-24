@@ -2,6 +2,7 @@
 
 from ar_track_alvar_msgs.msg import AlvarMarkers, AlvarMarker
 from art_object_recognizer_msgs.msg import ObjInstance, InstancesArray
+from shape_msgs.msg import SolidPrimitive
 import sys
 import rospy
 import dataset
@@ -35,6 +36,10 @@ class ArCodeDetector:
                 obj_in = ObjInstance()
                 obj_in.object_id = str(obj['name'])
                 obj_in.pose = arcode.pose.pose
+                obj_in.bbox.dimensions = [0.05, 0.05, 0.1]
+                obj_in.bbox.type = SolidPrimitive.BOX
+
+                instances.header.frame_id = "/marker"
                 instances.instances.append(obj_in)
 
             else:
