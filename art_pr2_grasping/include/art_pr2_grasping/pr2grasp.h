@@ -105,6 +105,7 @@ namespace art_pr2_grasping {
               groups_[i].reset(new artPlanningGroup(group_name_[i]));
               groups_[i]->visual_tools_->setMuted(false);
               groups_[i]->visual_tools_->publishRemoveAllCollisionObjects();
+              groups_[i]->grasped_object_.reset();
           }
 
           head_.reset(new PointHeadClient("/head_traj_controller/point_head_action", true));
@@ -174,12 +175,17 @@ namespace art_pr2_grasping {
 
           ROS_INFO("Adding table: %s", name.c_str());
 
+
           for (int i = 0; i < PLANNING_GROUPS; i++) {
 
               groups_[i]->visual_tools_->cleanupCO(name);
-              if (!groups_[i]->visual_tools_->publishCollisionTable(x, y, angle, width, height, depth, name)) return false;
-              groups_[i]->move_group_->setSupportSurfaceName(name);
-              ros::Duration(1).sleep();
+
+              for (int j = 0; j < 3; j++) // hmm, sometimes the table is not added
+              {
+                  if (!groups_[i]->visual_tools_->publishCollisionTable(x, y, angle, width, height, depth, name)) return false;
+                  groups_[i]->move_group_->setSupportSurfaceName(name);
+                  ros::Duration(1).sleep();
+            }
           }
 
           return true;
@@ -287,13 +293,22 @@ namespace art_pr2_grasping {
         collision_obj.primitive_poses.resize(1);
         collision_obj.primitive_poses[0] = block_pose;
 
-        //return groups_[group]->visual_tools_->processCollisionObjectMsg(collision_obj);
-        return groups_[group]->visual_tools_->publishCollisionObjectMsg(collision_obj);
+        for (int j = 0; j < 3; j++) {
+
+            if (!groups_[group]->visual_tools_->publishCollisionObjectMsg(collision_obj)) return false;
+        }
+
+        return true;
+      }
+
+      bool hasGraspedObject(const planning_group &group) {
+
+          return groups_[group]->grasped_object_;
       }
 
       bool pick(const std::string &id, const planning_group &group, const geometry_msgs::Pose &ps, const shape_msgs::SolidPrimitive & shape) {
 
-          if (groups_[group]->grasped_object_) {
+          if (hasGraspedObject(group)) {
 
               ROS_ERROR("Can't grasp another object.");
               return false;
@@ -476,13 +491,16 @@ namespace art_pr2_grasping {
 
             f.operation = goal->operation == pickplaceGoal::PICK;
 
+            bool grasped = false;
+
             while (tries > 0 && !as_.isPreemptRequested()) {
 
                 f.attempt = (max_attempts_ - tries) + 1;
                 ROS_INFO("Pick %d", f.attempt);
                 tries--;
                 as_.publishFeedback(f);
-                if (gr_.pick(goal->id, g, pst.pose, goal->bb)) break; // todo flag if it make sense to try again (type of failure)
+                grasped = gr_.pick(goal->id, g, pst.pose, goal->bb); // todo flag if it make sense to try again (type of failure)
+                if (grasped) break;
             }
 
             if (as_.isPreemptRequested()) {
@@ -492,7 +510,7 @@ namespace art_pr2_grasping {
                 return;
             }
 
-            if (tries == 0) {
+            if (!grasped && tries == 0) {
 
                 gr_.getReady(g);
                 res.result = pickplaceResult::FAILURE;
@@ -505,6 +523,14 @@ namespace art_pr2_grasping {
         }
 
         if (goal->operation == pickplaceGoal::PICK_AND_PLACE || goal->operation == pickplaceGoal::PLACE) {
+
+            if (!gr_.hasGraspedObject(g)) {
+
+                ROS_ERROR("No object grasped - can't do PLACE.");
+                res.result = pickplaceResult::FAILURE;
+                as_.setAborted(res, "No object grasped!");
+                return;
+            }
 
             int tries = max_attempts_;
 
