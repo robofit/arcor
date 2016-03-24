@@ -156,7 +156,15 @@ namespace art_pr2_grasping {
           if (group == RIGHT) ps.pose.position.y = -0.7;
 
           groups_[group]->move_group_->setPoseTarget(ps);
-          return groups_[group]->move_group_->move();
+          
+          if (!groups_[group]->move_group_->move()) {
+          
+            ROS_WARN("Failed to get readyÅ.");
+            return false;
+
+           }
+
+         return true;
       }
 
       bool getReady() {
@@ -267,6 +275,8 @@ namespace art_pr2_grasping {
 
           if (placed) {
 
+              groups_[group]->visual_tools_->cleanupCO(groups_[group]->grasped_object_->id);
+              groups_[group]->visual_tools_->cleanupACO(groups_[group]->grasped_object_->id);
               groups_[group]->grasped_object_.reset();
               return true;
           }
@@ -386,6 +396,7 @@ namespace art_pr2_grasping {
               return true;
             }
 
+          ROS_WARN("Failed to pick");
           return false;
 
       }
@@ -510,7 +521,7 @@ namespace art_pr2_grasping {
                 return;
             }
 
-            if (!grasped && tries == 0) {
+            if (!grasped) {
 
                 gr_.getReady(g);
                 res.result = pickplaceResult::FAILURE;
@@ -536,13 +547,15 @@ namespace art_pr2_grasping {
 
             geometry_msgs::PoseStamped pst;
 
+            std::cout << "goal " << goal->pose2.header.frame_id << " planningFrame " << gr_.getPlanningFrame(g) << std::endl;
+            //pst = goal->pose2;
             if (goal->pose2.header.frame_id == gr_.getPlanningFrame(g)) pst = goal->pose2;
             else {
 
                 bool err = false;
 
                 try {
-                    if (tfl_.waitForTransform(gr_.getPlanningFrame(g), goal->pose2.header.frame_id, goal->pose.header.stamp, ros::Duration(5))) {
+                    if (tfl_.waitForTransform(gr_.getPlanningFrame(g), goal->pose2.header.frame_id, goal->pose.header.stamp, ros::Duration(10))) {
                         tfl_.transformPose(gr_.getPlanningFrame(g), goal->pose2, pst);
                     } else err = true;
                 } catch(tf::TransformException ex) {
@@ -561,13 +574,16 @@ namespace art_pr2_grasping {
 
             f.operation = goal->operation == pickplaceGoal::PLACE;
 
+            bool placed = false;
+
             while (tries > 0 && !as_.isPreemptRequested()) {
 
                 f.attempt = (max_attempts_ - tries) + 1;
                 ROS_INFO("Place %d", f.attempt);
                 tries--;
                 as_.publishFeedback(f);
-                if (gr_.place(g, pst.pose, true)) break; // todo free_z_axis -> action
+                placed = gr_.place(g, pst.pose, true); // todo free_z_axis -> action
+                if (placed) break;
             }
 
             if (as_.isPreemptRequested()) {
@@ -577,7 +593,7 @@ namespace art_pr2_grasping {
                 return;
             }
 
-            if (tries == 0) {
+            if (!placed) {
 
                 gr_.getReady(g);
                 res.result = pickplaceResult::FAILURE;
