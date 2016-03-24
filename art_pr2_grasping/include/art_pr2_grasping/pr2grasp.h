@@ -16,6 +16,13 @@ namespace art_pr2_grasping {
 
   typedef actionlib::SimpleActionClient<pr2_controllers_msgs::PointHeadAction> PointHeadClient;
 
+  typedef struct {
+
+    shape_msgs::SolidPrimitive shape;
+    std::string id;
+
+  } graspedObject;
+
   class artPlanningGroup {
 
   public:
@@ -38,7 +45,7 @@ namespace art_pr2_grasping {
       planning_scene_monitor::PlanningSceneMonitorPtr planning_scene_monitor_;
 
       // dimensions of the grasped object
-      float dim_; // todo udelat map: id/dim[]?
+      boost::shared_ptr<graspedObject> grasped_object_;
 
       artPlanningGroup(std::string group_name)
         : nh_("~"),
@@ -179,24 +186,31 @@ namespace art_pr2_grasping {
 
       }
 
-      // todo remove id? - the robot should know what's in his hand
-      bool place(const std::string &id, const planning_group &group, const geometry_msgs::Pose &ps) {
+      bool place(const planning_group &group, const geometry_msgs::Pose &ps, bool free_z_axis = false) {
+
+          if (!groups_[group]->grasped_object_) {
+
+              ROS_ERROR("No object to place.");
+              return false;
+          }
 
           lookAt(ps.position);
 
-          //groups_[group]->visual_tools_->publishBlock(ps.pose, moveit_visual_tools::ORANGE, 0.05);
-
           std::vector<moveit_msgs::PlaceLocation> place_locations;
 
-          // todo transform ps into grasp_data_.base_link_
-
           geometry_msgs::PoseStamped pose_stamped;
-          pose_stamped.header.frame_id = groups_[group]->grasp_data_.base_link_;
+          pose_stamped.header.frame_id = groups_[group]->move_group_->getPlanningFrame();
           pose_stamped.header.stamp = ros::Time::now();
+          pose_stamped.pose = ps;
 
+          groups_[group]->visual_tools_->publishBlock(ps, moveit_visual_tools::ORANGE, groups_[group]->grasped_object_->shape.dimensions[0], groups_[group]->grasped_object_->shape.dimensions[1], groups_[group]->grasped_object_->shape.dimensions[2]);
+
+          double angle_increment = 0;
+
+          if (free_z_axis) angle_increment = M_PI/8;
 
           // Create 360 degrees of place location rotated around a center
-          for (double angle = 0; angle < 2*M_PI; angle += M_PI/2)
+          for (double angle = 0; angle < 2*M_PI; angle += angle_increment)
           {
             pose_stamped.pose = ps;
 
@@ -211,8 +225,6 @@ namespace art_pr2_grasping {
             moveit_msgs::PlaceLocation place_loc;
 
             place_loc.place_pose = pose_stamped;
-
-            groups_[group]->visual_tools_->publishBlock( place_loc.place_pose.pose, moveit_visual_tools::ORANGE, groups_[group]->dim_);
 
             // Approach
             moveit_msgs::GripperTranslation pre_place_approach;
@@ -245,8 +257,15 @@ namespace art_pr2_grasping {
           // Prevent collision with table
           //move_group_->setSupportSurfaceName(SUPPORT_SURFACE3_NAME);
 
-          return groups_[group]->move_group_->place(id, place_locations);
+          bool placed = groups_[group]->move_group_->place(groups_[group]->grasped_object_->id, place_locations);
 
+          if (placed) {
+
+              groups_[group]->grasped_object_.reset();
+              return true;
+          }
+
+          return false;
       }
 
       std::string getPlanningFrame(const planning_group &group) {
@@ -255,7 +274,43 @@ namespace art_pr2_grasping {
 
       }
 
+      bool publishCollisionBB(geometry_msgs::Pose block_pose, std::string block_name, const planning_group &group, const shape_msgs::SolidPrimitive & shape)
+      {
+        moveit_msgs::CollisionObject collision_obj;
+
+        collision_obj.header.stamp = ros::Time::now();
+        collision_obj.header.frame_id = groups_[group]->move_group_->getPlanningFrame();
+        collision_obj.id = block_name;
+        collision_obj.operation = moveit_msgs::CollisionObject::ADD;
+        collision_obj.primitives.resize(1);
+        collision_obj.primitives[0] = shape;
+        collision_obj.primitive_poses.resize(1);
+        collision_obj.primitive_poses[0] = block_pose;
+
+        //return groups_[group]->visual_tools_->processCollisionObjectMsg(collision_obj);
+        return groups_[group]->visual_tools_->publishCollisionObjectMsg(collision_obj);
+      }
+
       bool pick(const std::string &id, const planning_group &group, const geometry_msgs::Pose &ps, const shape_msgs::SolidPrimitive & shape) {
+
+          if (groups_[group]->grasped_object_) {
+
+              ROS_ERROR("Can't grasp another object.");
+              return false;
+          }
+
+          // todo add support for cylinder
+          if (shape.type != shape_msgs::SolidPrimitive::BOX/* && shape.type != shape_msgs::SolidPrimitive::CYLINDER*/) {
+
+              ROS_ERROR("Unsuported object type.");
+              return false;
+          }
+
+          if (shape.dimensions.size() < 2 || shape.dimensions.size() > 3) {
+
+              ROS_ERROR("Strange dimensions!");
+              return false;
+          }
 
           lookAt(ps.position);
 
@@ -264,28 +319,22 @@ namespace art_pr2_grasping {
           groups_[group]->visual_tools_->cleanupCO(id);
           groups_[group]->visual_tools_->cleanupACO(id);
 
-          // todo check type of the object
-          // todo zapamatovat si id/shape
-          if (shape.dimensions.size() != 3) {
+          if (!publishCollisionBB(ps, id, group, shape)) {
 
-              ROS_ERROR("shape with no dimensions!");
+              ROS_ERROR("Failed to add collision shape.");
               return false;
           }
 
-          groups_[group]->dim_ = shape.dimensions[0];
-          for (int i = 1; i < 3; i++) {
-
-              if (groups_[group]->dim_ < shape.dimensions[i]) groups_[group]->dim_ = shape.dimensions[i];
-          }
-
-          //groups_[group]->visual_tools_->publishBlock(ps, moveit_visual_tools::BLUE, groups_[group]->dim_);
-          // todo use BB instead of block
-          groups_[group]->visual_tools_->publishCollisionBlock(ps, id, groups_[group]->dim_);
-
           std::vector<moveit_msgs::Grasp> grasps;
 
-          // todo use generateBoxGrasps - nutno zkompilovat z gitu + vyresit dependency hell
-          if (!groups_[group]->simple_grasps_->generateBlockGrasps( ps, groups_[group]->grasp_data_, grasps )) {
+          geometry_msgs::PoseStamped p;
+          p.header.frame_id = groups_[group]->move_group_->getPlanningFrame();
+          p.header.stamp = ros::Time::now();
+          p.pose = ps;
+
+          groups_[group]->visual_tools_->publishBlock(ps, moveit_visual_tools::ORANGE, shape.dimensions[0], shape.dimensions[1], shape.dimensions[2]);
+
+          if (!groups_[group]->simple_grasps_->generateShapeGrasps(shape, true, true, p, groups_[group]->grasp_data_, grasps)) {
 
               ROS_ERROR("No grasps found.");
               return false;
@@ -312,7 +361,18 @@ namespace art_pr2_grasping {
             grasps[i].allowed_touch_objects = allowed_touch_objects;
           }
 
-          return groups_[group]->move_group_->pick(id, grasps);
+          bool grasped = groups_[group]->move_group_->pick(id, grasps);
+
+          if (grasped) {
+
+              groups_[group]->grasped_object_.reset(new graspedObject());
+              groups_[group]->grasped_object_->shape = shape;
+              groups_[group]->grasped_object_->id = id;
+              return true;
+            }
+
+          return false;
+
       }
   
   };
@@ -422,7 +482,7 @@ namespace art_pr2_grasping {
                 ROS_INFO("Pick %d", f.attempt);
                 tries--;
                 as_.publishFeedback(f);
-                if (gr_.pick(goal->id, g, pst.pose, goal->bb)) break;
+                if (gr_.pick(goal->id, g, pst.pose, goal->bb)) break; // todo flag if it make sense to try again (type of failure)
             }
 
             if (as_.isPreemptRequested()) {
@@ -481,7 +541,7 @@ namespace art_pr2_grasping {
                 ROS_INFO("Place %d", f.attempt);
                 tries--;
                 as_.publishFeedback(f);
-                if (gr_.place(goal->id, g, pst.pose)) break;
+                if (gr_.place(g, pst.pose, true)) break; // todo free_z_axis -> action
             }
 
             if (as_.isPreemptRequested()) {
