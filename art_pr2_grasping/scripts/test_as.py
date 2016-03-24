@@ -23,9 +23,9 @@ def main():
     goal.pose = PoseStamped()
     goal.pose.header.frame_id = "base_footprint"
     goal.pose.header.stamp = rospy.Time.now()
-    goal.pose.pose.position.x = 0.6
+    goal.pose.pose.position.x = 0.7
     goal.pose.pose.position.y = 0.3
-    goal.pose.pose.position.z = 0.74+0.05/2 # vyska stolu + pulka kosticky
+    goal.pose.pose.position.z = 0.74+0.13 # vyska stolu + pulka kosticky
     goal.pose.pose.orientation.x = 0.0
     goal.pose.pose.orientation.y = 0.0
     goal.pose.pose.orientation.z = 0.0
@@ -34,18 +34,19 @@ def main():
     goal.pose2 = PoseStamped()
     goal.pose2.header.frame_id = "base_footprint"
     goal.pose2.header.stamp = rospy.Time.now()
-    goal.pose2.pose.position.x = 0.5
+    goal.pose2.pose.position.x = 0.6
     goal.pose2.pose.position.y = 0.1
-    goal.pose2.pose.position.z = 0.74+0.05/2
+    goal.pose2.pose.position.z = 0.74+0.13
     goal.pose2.pose.orientation.x = 0.0
     goal.pose2.pose.orientation.y = 0.0
     goal.pose2.pose.orientation.z = 0.707
     goal.pose2.pose.orientation.w = 0.707
     
     goal.bb = SolidPrimitive()
+    goal.bb.type = SolidPrimitive.BOX
     goal.bb.dimensions.append(0.05)
     goal.bb.dimensions.append(0.05)
-    goal.bb.dimensions.append(0.05)
+    goal.bb.dimensions.append(0.15)
 
     rospy.loginfo('sending goal')
     client.send_goal(goal)

@@ -12,7 +12,8 @@ int main(int argc, char **argv)
   artActionServer as;
   ros::Duration(1).sleep();
   if (!as.init()) return 0;
-  ros::spin();
+
+  ros::waitForShutdown();
 
   return 0;
 }
