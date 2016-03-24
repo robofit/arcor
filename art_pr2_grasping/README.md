@@ -23,11 +23,10 @@ Usage (pickplace.action description):
  - id: arbitrary name of the object
  - pose: pose for picking the object
  - pose2: pose where to place the object
- - bb: currently only BOX is supported and the largest dimension is chosen as the cube size
+ - bb: currently only BOX is supported
  - arm: which arm to use
  - operation: what to do
  
 TODO:
  - more checks (e.g. check tactile sensors and detect object drop)
- - ability to use bounding box for grasp planning (not possible with moveit_simple_grasps released into ROS Hydro)
  - better configurability (e.g. read table size/pose from param)
