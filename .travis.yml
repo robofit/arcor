@@ -90,7 +90,7 @@ install:
   - cd ~/catkin_ws/src
   - ln -s $CI_SOURCE_PATH .
   - wstool init .
-  - wstool merge ar-table-pr2/art_pr2_grasping/artpr2grasping.rosinstall
+  - wstool merge https://raw.githubusercontent.com/robofit/ar-table-pr2/master/art_pr2_grasping/artpr2grasping.rosinstall
   - wstool update
 
 # Install all dependencies, using wstool and rosdep.
