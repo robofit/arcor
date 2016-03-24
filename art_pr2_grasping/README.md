@@ -6,9 +6,11 @@ How to install dependencies:
 
 ```
 cd catkin_ws/src
-git clone -b origin/hydro-devel https://github.com/dornhege/moveit_simple_grasps.git
-git clone -b pub-coll-obj https://github.com/zdenekm/moveit_visual_tools.git
-git clone -b tags/1.5.0 https://github.com/davetcoleman/rviz_visual_tools.git
+wstool init .
+wstool merge https://raw.githubusercontent.com/robofit/ar-table-pr2/master/art_pr2_grasping/artpr2grasping.rosinstall
+wstool update
+cd ..
+rosdep install --from-paths src --ignore-src --rosdistro $ROS_DISTRO -y
 ```
 
 How to run it:
