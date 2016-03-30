@@ -2,6 +2,7 @@ string id # name of the object
 geometry_msgs/PoseStamped pose # target/destination pose for pick / place
 geometry_msgs/PoseStamped pose2 # place pose for pick_and_place operation
 shape_msgs/SolidPrimitive bb # only needed for pick or pick_and_place
+uint8 free_z_axis # true = placed object z-axis orientation does not matter
 uint8 arm # which arm to use (only need to be filled for pick operation)
 uint8 LEFT_ARM=0
 uint8 RIGHT_ARM=1
