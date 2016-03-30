@@ -210,7 +210,7 @@ private:
         ROS_INFO("Place %d", f.attempt);
         tries--;
         as_.publishFeedback(f);
-        placed = gr_.place(g, p2.pose, goal->free_z_axis);
+        placed = gr_.place(g, p2.pose, goal->z_axis_angle_increment, goal->keep_orientation);
         if (placed) break;
       }
 

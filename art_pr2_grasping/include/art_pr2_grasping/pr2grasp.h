@@ -91,6 +91,7 @@ public:
 
     if (group == RIGHT) ps.pose.position.y = -0.7;
 
+    groups_[group]->move_group_->clearPathConstraints();
     groups_[group]->move_group_->setPoseTarget(ps);
 
     if (!groups_[group]->move_group_->move())
@@ -141,7 +142,7 @@ public:
     return true;
   }
 
-  bool place(const planning_group &group, const geometry_msgs::Pose &ps, bool free_z_axis = false)
+  bool place(const planning_group &group, const geometry_msgs::Pose &ps, double z_axis_angle_increment = 0.0, bool keep_orientation = false)
   {
 
     if (!groups_[group]->grasped_object_)
@@ -162,12 +163,11 @@ public:
 
     groups_[group]->visual_tools_->publishBlock(ps, moveit_visual_tools::ORANGE, groups_[group]->grasped_object_->shape.dimensions[0], groups_[group]->grasped_object_->shape.dimensions[1], groups_[group]->grasped_object_->shape.dimensions[2]);
 
-    double angle_increment = 0;
-
-    if (free_z_axis) angle_increment = M_PI / 8;
+    if (z_axis_angle_increment < 0) z_axis_angle_increment *= -1.0; // only positive increment allowed
+    if (z_axis_angle_increment == 0) z_axis_angle_increment = 2 * M_PI; // for 0 we only want one cycle (only given orientation)
 
     // Create 360 degrees of place location rotated around a center
-    for (double angle = 0; angle < 2 * M_PI; angle += angle_increment)
+    for (double angle = 0; angle < 2 * M_PI; angle += z_axis_angle_increment)
     {
       pose_stamped.pose = ps;
 
@@ -197,7 +197,12 @@ public:
       // Retreat
       moveit_msgs::GripperTranslation post_place_retreat;
       post_place_retreat.direction.header.stamp = ros::Time::now();
-      post_place_retreat.desired_distance = groups_[group]->grasp_data_.approach_retreat_desired_dist_; // The distance the origin of a robot link needs to travel
+
+      // todo is box_z always height of the object?
+      // assume that robot holds the object in the middle of its height
+      double des_dist = std::max(groups_[group]->grasp_data_.approach_retreat_desired_dist_, 0.05 + 0.5*groups_[group]->grasped_object_->shape.dimensions[shape_msgs::SolidPrimitive::BOX_Z]);
+
+      post_place_retreat.desired_distance = des_dist; // The distance the origin of a robot link needs to travel -> depends on the object size
       post_place_retreat.min_distance = groups_[group]->grasp_data_.approach_retreat_min_dist_; // half of the desired? Untested.
       post_place_retreat.direction.header.frame_id = groups_[group]->grasp_data_.base_link_;
       post_place_retreat.direction.vector.x = 0;
@@ -211,15 +216,34 @@ public:
       place_locations.push_back(place_loc);
     }
 
+    if (keep_orientation) {
+
+        ROS_INFO("Applying orientation constraint...");
+
+        moveit_msgs::OrientationConstraint ocm;
+        ocm.link_name = groups_[group]->move_group_->getEndEffectorLink();
+        ocm.header.frame_id = groups_[group]->move_group_->getPlanningFrame();
+        ocm.orientation = groups_[group]->move_group_->getCurrentPose().pose.orientation;
+        ocm.absolute_x_axis_tolerance = 0.2;
+        ocm.absolute_y_axis_tolerance = 0.2;
+        ocm.absolute_z_axis_tolerance = M_PI;
+        ocm.weight = 1.0;
+
+        moveit_msgs::Constraints c;
+        c.orientation_constraints.push_back(ocm);
+
+        groups_[group]->move_group_->setPathConstraints(c);
+    }
+
     // Prevent collision with table
     //move_group_->setSupportSurfaceName(SUPPORT_SURFACE3_NAME);
 
     if (groups_[group]->move_group_->place(groups_[group]->grasped_object_->id, place_locations))
     {
-
       groups_[group]->visual_tools_->cleanupCO(groups_[group]->grasped_object_->id);
       groups_[group]->visual_tools_->cleanupACO(groups_[group]->grasped_object_->id);
       groups_[group]->grasped_object_.reset();
+      groups_[group]->move_group_->clearPathConstraints();
       return true;
     }
 
