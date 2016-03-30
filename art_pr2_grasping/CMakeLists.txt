@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   actionlib_msgs
   shape_msgs
+  roslint
+  message_generation
 )
 
 find_package(Eigen REQUIRED)
@@ -34,6 +36,9 @@ catkin_package(
   CATKIN_DEPENDS 
     moveit_simple_grasps
     actionlib_msgs
+    message_runtime
+    shape_msgs
+    pr2_controllers_msgs
 )
 
 # Enable gdb to show line numbers
@@ -49,6 +54,9 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 
 # Main executable
 add_executable(pr2grasp src/pr2grasp.cpp)
+add_dependencies(pr2grasp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 #target_link_libraries(pr2grasp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(pr2grasp ${catkin_LIBRARIES})
+
+roslint_cpp()
 
