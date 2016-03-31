@@ -23,4 +23,6 @@ catkin_package(
     actionlib_msgs
     shape_msgs
     std_msgs
-    geometry_msgs)
+    geometry_msgs
+    message_runtime
+    )
