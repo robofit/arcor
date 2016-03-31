@@ -1,6 +1,6 @@
 #include "art_pr2_grasping/pr2grasp.h"
 #include <actionlib/server/simple_action_server.h>
-#include <art_pr2_grasping/pickplaceAction.h>
+#include <art_msgs/pickplaceAction.h>
 #include <tf/transform_listener.h>
 
 #ifndef ART_PR2_GRASPING_ACTION_SERVER_H
@@ -43,7 +43,7 @@ public:
 private:
   ros::NodeHandle nh_;
   artPr2Grasping gr_;
-  actionlib::SimpleActionServer<pickplaceAction> as_;
+  actionlib::SimpleActionServer<art_msgs::pickplaceAction> as_;
   int max_attempts_;
   tf::TransformListener tfl_;
 
@@ -77,27 +77,27 @@ private:
     return true;
   }
 
-  void executeCB(const pickplaceGoalConstPtr &goal)
+  void executeCB(const art_msgs::pickplaceGoalConstPtr &goal)
   {
 
-    pickplaceResult res;
-    pickplaceFeedback f;
+    art_msgs::pickplaceResult res;
+    art_msgs::pickplaceFeedback f;
     artPr2Grasping::planning_group g;
 
-    if (goal->arm == pickplaceGoal::LEFT_ARM) g = artPr2Grasping::LEFT;
-    else if (goal->arm == pickplaceGoal::RIGHT_ARM) g = artPr2Grasping::RIGHT;
+    if (goal->arm == art_msgs::pickplaceGoal::LEFT_ARM) g = artPr2Grasping::LEFT;
+    else if (goal->arm == art_msgs::pickplaceGoal::RIGHT_ARM) g = artPr2Grasping::RIGHT;
     else
     {
 
-      res.result = pickplaceResult::BAD_REQUEST;
+      res.result = art_msgs::pickplaceResult::BAD_REQUEST;
       as_.setAborted(res, "unknown planning group");
       return;
     }
 
-    if (goal->operation != pickplaceGoal::PICK_AND_PLACE && goal->operation != pickplaceGoal::PICK && goal->operation != pickplaceGoal::PLACE)
+    if (goal->operation != art_msgs::pickplaceGoal::PICK_AND_PLACE && goal->operation != art_msgs::pickplaceGoal::PICK && goal->operation != art_msgs::pickplaceGoal::PLACE)
     {
 
-      res.result = pickplaceResult::BAD_REQUEST;
+      res.result = art_msgs::pickplaceResult::BAD_REQUEST;
       as_.setAborted(res, "unknown operation");
       return;
     }
@@ -108,44 +108,44 @@ private:
     geometry_msgs::PoseStamped p2 = goal->pose2; // place goal
 
     // do all transformations in advance - before timestamps get too old
-    if (goal->operation == pickplaceGoal::PICK_AND_PLACE || goal->operation == pickplaceGoal::PICK)
+    if (goal->operation == art_msgs::pickplaceGoal::PICK_AND_PLACE || goal->operation == art_msgs::pickplaceGoal::PICK)
     {
 
       if (!transformPose(g, p1))
       {
 
-        res.result = pickplaceResult::FAILURE;
+        res.result = art_msgs::pickplaceResult::FAILURE;
         as_.setAborted(res, "failed to transform pick pose");
         return;
       }
     }
 
-    if (goal->operation == pickplaceGoal::PICK_AND_PLACE || goal->operation == pickplaceGoal::PLACE)
+    if (goal->operation == art_msgs::pickplaceGoal::PICK_AND_PLACE || goal->operation == art_msgs::pickplaceGoal::PLACE)
     {
 
       if (!transformPose(g, p2))
       {
 
-        res.result = pickplaceResult::FAILURE;
+        res.result = art_msgs::pickplaceResult::FAILURE;
         as_.setAborted(res, "failed to transform pose");
         return;
       }
     }
 
-    if (goal->operation == pickplaceGoal::PICK_AND_PLACE || goal->operation == pickplaceGoal::PICK)
+    if (goal->operation == art_msgs::pickplaceGoal::PICK_AND_PLACE || goal->operation == art_msgs::pickplaceGoal::PICK)
     {
 
       if (goal->bb.dimensions.size() != 3)
       {
 
-        res.result = pickplaceResult::BAD_REQUEST;
+        res.result = art_msgs::pickplaceResult::BAD_REQUEST;
         as_.setAborted(res, "for pick/p&p a bounding box must be given ");
         return;
       }
 
       int tries = max_attempts_;
 
-      f.operation = pickplaceGoal::PICK;
+      f.operation = art_msgs::pickplaceGoal::PICK;
 
       bool grasped = false;
 
@@ -174,32 +174,32 @@ private:
 
         ROS_ERROR("Unable to pick the object.");
         gr_.getReady(g);
-        res.result = pickplaceResult::FAILURE;
+        res.result = art_msgs::pickplaceResult::FAILURE;
         as_.setAborted(res, "pick failed");
         return;
       }
 
       ROS_INFO("Picked the object.");
 
-      if (goal->operation == pickplaceGoal::PICK) gr_.getReady(g); // get ready and wait with object grasped
+      if (goal->operation == art_msgs::pickplaceGoal::PICK) gr_.getReady(g); // get ready and wait with object grasped
 
     }
 
-    if (goal->operation == pickplaceGoal::PICK_AND_PLACE || goal->operation == pickplaceGoal::PLACE)
+    if (goal->operation == art_msgs::pickplaceGoal::PICK_AND_PLACE || goal->operation == art_msgs::pickplaceGoal::PLACE)
     {
 
       if (!gr_.hasGraspedObject(g))
       {
 
         ROS_ERROR("No object grasped - can't do PLACE.");
-        res.result = pickplaceResult::FAILURE;
+        res.result = art_msgs::pickplaceResult::FAILURE;
         as_.setAborted(res, "No object grasped!");
         return;
       }
 
       int tries = max_attempts_;
 
-      f.operation = goal->operation == pickplaceGoal::PLACE;
+      f.operation = goal->operation == art_msgs::pickplaceGoal::PLACE;
 
       bool placed = false;
 
@@ -227,7 +227,7 @@ private:
 
         ROS_ERROR("Unable to place the object.");
         gr_.getReady(g);
-        res.result = pickplaceResult::FAILURE;
+        res.result = art_msgs::pickplaceResult::FAILURE;
         as_.setAborted(res, "place failed");
         return;
       }
@@ -237,7 +237,7 @@ private:
       gr_.getReady(g);
     }
 
-    res.result = pickplaceResult::SUCCESS;
+    res.result = art_msgs::pickplaceResult::SUCCESS;
     as_.setSucceeded(res);
 
   }
