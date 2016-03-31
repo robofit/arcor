@@ -16,29 +16,20 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   shape_msgs
   roslint
-  message_generation
+  art_msgs
 )
 
 find_package(Eigen REQUIRED)
 #find_package(Boost REQUIRED system thread)
-
-add_action_files(
-  DIRECTORY action
-  FILES pickplace.action
-)
-
-generate_messages(
-  DEPENDENCIES actionlib_msgs shape_msgs
-)
 
 catkin_package(
   INCLUDE_DIRS include
   CATKIN_DEPENDS 
     moveit_simple_grasps
     actionlib_msgs
-    message_runtime
     shape_msgs
     pr2_controllers_msgs
+    art_msgs
 )
 
 # Enable gdb to show line numbers
@@ -54,7 +45,6 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 
 # Main executable
 add_executable(pr2grasp src/pr2grasp.cpp)
-add_dependencies(pr2grasp ${${PROJECT_NAME}_EXPORTED_TARGETS})
 #target_link_libraries(pr2grasp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(pr2grasp ${catkin_LIBRARIES})
 
