@@ -98,6 +98,10 @@ before_script:
   - wstool init .
   - wstool merge https://raw.githubusercontent.com/robofit/ar-table-pr2/master/art_pr2_grasping/artpr2grasping.rosinstall
   - wstool up
+  - cd ar-table-pr2
+  - git submodule update --init
+  # temporary "fix" until detector will be public
+  - touch ar-table-common/art_umf_localizer/CATKIN_IGNORE
   # package depdencies: install using rosdep.
   - cd ~/catkin_ws
   # kind of hack - rosdep installs mongodb which asks for something...
