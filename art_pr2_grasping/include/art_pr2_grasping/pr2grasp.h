@@ -32,7 +32,7 @@ public:
   {
 
     group_name_[LEFT] = "left";
-    group_name_[RIGHT] = "right";
+    //group_name_[RIGHT] = "right";
 
     for (int i = 0; i < PLANNING_GROUPS; i++)
     {
