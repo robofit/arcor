@@ -1,9 +1,11 @@
 #! /usr/bin/env python
-import roslib; roslib.load_manifest('art_pr2_grasping')
+import roslib; roslib.load_manifest('art_simple_tracker')
 import rospy
 from art_object_recognizer_msgs.msg import InstancesArray, ObjInstance
 import tf
 from geometry_msgs.msg import Pose, PoseStamped
+from math import sqrt
+import numpy as np
 
 # "tracking" of static objects
 class tracker:
@@ -14,15 +16,15 @@ class tracker:
     self.listener = tf.TransformListener()
     self.sub = rospy.Subscriber("/art_object_detector/object", InstancesArray, self.cb)
     self.pub = rospy.Publisher("/art_object_detector/object_filtered", InstancesArray)
-    self.timer = rospy.Timer(rospy.Duration(0.5), self.timer_cb)
+    self.timer = rospy.Timer(rospy.Duration(1.0), self.timer_cb)
     self.objects = {}
     
     # should be in (0,1)
-    self.ap = 0.2 # filtering cooeficient - position
-    self.ao = 0.2 # filtering cooeficient - orientation
+    self.ap = 0.1 # filtering cooeficient - position
+    self.ao = 0.1 # filtering cooeficient - orientation
     
     self.min_cnt = 5 # publish object after it has been seen x times at least
-    self.max_age = rospy.Duration(2)
+    self.max_age = rospy.Duration(5)
   
   def timer_cb(self, event):
   
@@ -45,8 +47,9 @@ class tracker:
         
       obj = ObjInstance()
       obj.pose = v["pose"].pose
+      obj.pose.orientation = self.normalize(obj.pose.orientation)
       obj.bbox = v["bbox"]
-      
+      obj.object_id = k
       ia.instances.append(obj)
     
     # TODO also publish TF for each object???
@@ -60,14 +63,27 @@ class tracker:
       
     if len(objects_to_prune) > 0:
     
-      rospy.loginfo("Pruned " + len(objects_to_prune) + " objects")
+      rospy.loginfo("Pruned " + str(len(objects_to_prune)) + " objects")
   
+  def normalize(self, q, tolerance=0.00001):
+    v = (q.x, q.y, q.z, q.w)
+    mag2 = sum(n * n for n in v)
+    if abs(mag2 - 1.0) > tolerance:
+        mag = sqrt(mag2)
+        q.x /= mag
+        q.y /= mag
+        q.z /= mag
+        q.w /= mag
+    return q
+
   def transform(self, header, pose):
   
     ps = PoseStamped()
     ps.header = header
     ps.pose = pose
     
+    if self.target_frame == header.frame_id: return ps
+
     if not self.listener.waitForTransform(self.target_frame, header.frame_id, header.stamp, rospy.Duration(4.0)):
     
       rospy.logwarn("Transform between " + self.target_frame + " and " + header.frame_id + " not available!")
@@ -83,13 +99,23 @@ class tracker:
       return None
       
     return ps
-    
+  
+  def q2a(self, q):
+  
+    return [q.x, q.y, q.z, q.w]
+  
+  # here we assume that quaternions are close (object is static) -> averaging should be fine
   def filterPose(self, old, new):
   
-    # TODO detect big difference (object was moved) and do 'return new' instead of filtering?
-    # TODO use UKF?
-  
     p = Pose()
+    
+    # check for q == -q and correct
+    if (np.dot(self.q2a(old.orientation), self.q2a(new.orientation))) < 0.0:
+    
+        new.orientation.x *= -1.0
+        new.orientation.y *= -1.0
+        new.orientation.z *= -1.0
+        new.orientation.w *= -1.0
     
     p.position.x = (1.0 - self.ap)*old.position.x + self.ap*new.position.x
     p.position.y = (1.0 - self.ap)*old.position.y + self.ap*new.position.y
@@ -114,12 +140,12 @@ class tracker:
     
       if inst.object_id in self.objects:
       
-        rospy.loginfo("Updating object: " + inst.object_id)
+        rospy.logdebug("Updating object: " + inst.object_id)
         
         self.objects[inst.object_id]["bbox"] = inst.bbox # should be same...
         self.objects[inst.object_id]["cnt"] += 1
         self.objects[inst.object_id]["pose"].header = ps.header
-        self.objects[inst.object_id]["pose"].pose = self.filterPose(self.objects[inst.object_id]["pose"], ps.pose)
+        self.objects[inst.object_id]["pose"].pose = self.filterPose(self.objects[inst.object_id]["pose"].pose, ps.pose)
         
       else:
       
