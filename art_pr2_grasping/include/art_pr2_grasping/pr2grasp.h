@@ -18,7 +18,7 @@ class artPr2Grasping
 {
 
 private:
-  static const int PLANNING_GROUPS = 2;
+  static const int PLANNING_GROUPS = 1; // 2; -> TODO only left arm - for testing purposes
 
   boost::scoped_ptr<artPlanningGroup> groups_[PLANNING_GROUPS];
   std::string group_name_[PLANNING_GROUPS];
@@ -32,7 +32,7 @@ public:
   {
 
     group_name_[LEFT] = "left";
-    group_name_[RIGHT] = "right";
+    //group_name_[RIGHT] = "right";
 
     for (int i = 0; i < PLANNING_GROUPS; i++)
     {
