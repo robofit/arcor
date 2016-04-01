@@ -1,3 +1,0 @@
-#empty list to load all models
-std_msgs/String[] load_ids
----
