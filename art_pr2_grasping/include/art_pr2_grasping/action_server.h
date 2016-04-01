@@ -85,7 +85,7 @@ private:
     artPr2Grasping::planning_group g;
 
     if (goal->arm == art_msgs::pickplaceGoal::LEFT_ARM) g = artPr2Grasping::LEFT;
-    else if (goal->arm == art_msgs::pickplaceGoal::RIGHT_ARM) g = artPr2Grasping::RIGHT;
+    //else if (goal->arm == art_msgs::pickplaceGoal::RIGHT_ARM) g = artPr2Grasping::RIGHT; TODO commented for testing purposes
     else
     {
 
