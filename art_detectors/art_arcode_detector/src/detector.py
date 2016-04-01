@@ -15,15 +15,13 @@ class ArCodeDetector:
     def __init__(self):
         self.objects_db = dataset.connect('sqlite:////home/artable/objdatabase.db')
         self.objects_table = self.objects_db['objects']
-        #self.objects_table.insert(dict(name="juice", model_url="blablabla", obj_id=14))
-        #self.objects_table.insert(dict(name="tea", model_url="blablabla", obj_id=1))
-        # self.objects_table.update(dict(name="juice", model_url="blablabla", obj_id=0), ['name'])
+        #self.objects_table.insert(dict(name="profile_3", model_url="blablabla", obj_id=16))
+        #self.objects_table.insert(dict(name="profile_2", model_url="blablabla", obj_id=16))
+        #self.objects_table.update(dict(name="profile_3", model_url="blablabla", obj_id=15), ['name'])
         self.ar_code_sub = rospy.Subscriber("ar_pose_marker", AlvarMarkers, self.ar_code_cb)
         self.detected_objects_pub = rospy.Publisher("/art_object_detector/object", InstancesArray, queue_size=10)
         for ar in self.objects_table:
             print ar
-        while not rospy.is_shutdown():
-            pass
 
     def ar_code_cb(self, data):
         rospy.logdebug("New arcodes arrived:")
@@ -38,8 +36,8 @@ class ArCodeDetector:
                 obj_in.pose = arcode.pose.pose
                 obj_in.bbox.dimensions = [0.05, 0.05, 0.1]
                 obj_in.bbox.type = SolidPrimitive.BOX
-
-                instances.header.frame_id = "/marker"
+		instances.header.stamp = arcode.header.stamp
+                instances.header.frame_id = arcode.header.frame_id
                 instances.instances.append(obj_in)
 
             else:
@@ -56,5 +54,6 @@ if __name__ == '__main__':
     # rospy.init_node('art_arcode_detector', log_level=rospy.DEBUG)
     try:
         node = ArCodeDetector()
+        rospy.spin()
     except rospy.ROSInterruptException:
         pass
