@@ -5,6 +5,7 @@ from art_object_recognizer_msgs.msg import InstancesArray, ObjInstance
 import tf
 from geometry_msgs.msg import Pose, PoseStamped
 from math import sqrt
+import numpy as np
 
 # "tracking" of static objects
 class tracker:
@@ -45,7 +46,8 @@ class tracker:
         continue
         
       obj = ObjInstance()
-      obj.pose = self.normalize(v["pose"].pose)
+      obj.pose = v["pose"].pose
+      obj.pose.orientation = self.normalize(obj.pose.orientation)
       obj.bbox = v["bbox"]
       obj.object_id = k
       ia.instances.append(obj)
@@ -64,7 +66,7 @@ class tracker:
       rospy.loginfo("Pruned " + str(len(objects_to_prune)) + " objects")
   
   def normalize(self, q, tolerance=0.00001):
-    v = tuple(q.x, q.y, q.z, q.w)
+    v = (q.x, q.y, q.z, q.w)
     mag2 = sum(n * n for n in v)
     if abs(mag2 - 1.0) > tolerance:
         mag = sqrt(mag2)
@@ -97,13 +99,23 @@ class tracker:
       return None
       
     return ps
-    
+  
+  def q2a(self, q):
+  
+    return [q.x, q.y, q.z, q.w]
+  
+  # here we assume that quaternions are close (object is static) -> averaging should be fine
   def filterPose(self, old, new):
   
-    # TODO detect big difference (object was moved) and do 'return new' instead of filtering?
-    # TODO how to filter quaternion correctly? / use UKF?
-  
     p = Pose()
+    
+    # check for q == -q and correct
+    if (np.dot(self.q2a(old.orientation), self.q2a(new.orientation))) < 0.0:
+    
+        new.orientation.x *= -1.0
+        new.orientation.y *= -1.0
+        new.orientation.z *= -1.0
+        new.orientation.w *= -1.0
     
     p.position.x = (1.0 - self.ap)*old.position.x + self.ap*new.position.x
     p.position.y = (1.0 - self.ap)*old.position.y + self.ap*new.position.y
