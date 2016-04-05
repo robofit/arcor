@@ -8,7 +8,7 @@ angular_discretization: 0.39269908169872415480  # 22.5 deg/16 steps in 360 deg
 edge_holdoff: 0.02
 
 # =====================================================
-left:
+left_arm:
     end_effector_name: 'left_gripper'  #ee group name FIXME: moveit group name, not eef name?!?
 
     #actuated joints in end effector    FIXME
@@ -46,7 +46,7 @@ left:
     approach_retreat_min_dist: 0.05
 
 # =====================================================
-right:
+right_arm:
     end_effector_name: 'right_gripper'  #ee group name
 
     #actuated joints in end effector

@@ -8,11 +8,31 @@ from shape_msgs.msg import SolidPrimitive
 import random
 from art_object_recognizer_msgs.msg import InstancesArray, ObjInstance
 
+def getRandomObject():
+
+    tmp = ObjInstance()
+    tmp.object_id = "object_" + str(random.randint(1,10000))
+    tmp.pose.position.x = random.uniform(0.5, 0.9)
+    tmp.pose.position.y = random.uniform(-0.8, 0.8)
+    tmp.pose.position.z = 0.74 + 0.1 # vyska stolu + pulka kosticky
+    tmp.pose.orientation.x = 0.0
+    tmp.pose.orientation.y = 0.0
+    tmp.pose.orientation.z = 0.0
+    tmp.pose.orientation.w = 1.0
+    
+    tmp.bbox = SolidPrimitive()
+    tmp.bbox.type = SolidPrimitive.BOX
+    tmp.bbox.dimensions.append(0.05)
+    tmp.bbox.dimensions.append(0.05)
+    tmp.bbox.dimensions.append(0.2)
+    
+    return tmp
+
 def main():
 
     pub = rospy.Publisher("/art_object_detector/object_filtered", InstancesArray)
     
-    client = actionlib.SimpleActionClient('/pr2_pick_place/pp', art_msgs.msg.pickplaceAction)
+    client = actionlib.SimpleActionClient('/pr2_pick_place_left/pp', art_msgs.msg.pickplaceAction)
     client.wait_for_server()
     
     arr = InstancesArray()
@@ -22,8 +42,8 @@ def main():
     obj = ObjInstance()
     obj.object_id = "my_object"
     obj.pose.position.x = random.uniform(0.4, 0.7)
-    obj.pose.position.y = random.uniform(-0.5, 0.5)
-    obj.pose.position.z = 0.74 + 0.05/2 # vyska stolu + pulka kosticky
+    obj.pose.position.y = random.uniform(-0.2, 0.5)
+    obj.pose.position.z = 0.74 + 0.1 # vyska stolu + pulka kosticky
     obj.pose.orientation.x = 0.0
     obj.pose.orientation.y = 0.0
     obj.pose.orientation.z = 0.0
@@ -31,33 +51,18 @@ def main():
     
     obj.bbox = SolidPrimitive()
     obj.bbox.type = SolidPrimitive.BOX
+    obj.bbox.dimensions.append(0.05)
+    obj.bbox.dimensions.append(0.05)
     obj.bbox.dimensions.append(0.2)
-    obj.bbox.dimensions.append(0.05)
-    obj.bbox.dimensions.append(0.05)
 
     arr.instances.append(obj)
     
-    obj2 = ObjInstance()
-    obj2.object_id = "another_object"
-    obj2.pose.position.x = random.uniform(0.4, 0.7)
-    obj2.pose.position.y = random.uniform(-0.5, 0.5)
-    obj2.pose.position.z = 0.74 + 0.05/2 # vyska stolu + pulka kosticky
-    obj2.pose.orientation.x = 0.0
-    obj2.pose.orientation.y = 0.0
-    obj2.pose.orientation.z = 0.0
-    obj2.pose.orientation.w = 1.0
-    
-    obj2.bbox = SolidPrimitive()
-    obj2.bbox.type = SolidPrimitive.BOX
-    obj2.bbox.dimensions.append(0.2)
-    obj2.bbox.dimensions.append(0.05)
-    obj2.bbox.dimensions.append(0.05)
-    
-    arr.instances.append(obj2)
+    #arr.instances.append(getRandomObject())
+    #arr.instances.append(getRandomObject())
     
     pub.publish(arr)
-    #pub.publish(arr)
-    #pub.publish(arr)
+    
+    rospy.sleep(2.0)
 
     goal = art_msgs.msg.pickplaceGoal()
     
@@ -67,16 +72,12 @@ def main():
     #goal.z_axis_angle_increment = 0
     goal.keep_orientation = False
     
-    #arms = [goal.LEFT_ARM, goal.RIGHT_ARM]
-    #goal.arm = random.choice(arms)
-    goal.arm = goal.LEFT_ARM
-    
     goal.place_pose = PoseStamped()
     goal.place_pose.header.frame_id = "base_footprint"
     goal.place_pose.header.stamp = rospy.Time.now()
     goal.place_pose.pose.position.x = random.uniform(0.4, 0.7)
-    goal.place_pose.pose.position.y = random.uniform(-0.5, 0.5)
-    goal.place_pose.pose.position.z = 0.74 + 0.05/2
+    goal.place_pose.pose.position.y = random.uniform(-0.2, 0.5)
+    goal.place_pose.pose.position.z = 0.74 + 0.1
     goal.place_pose.pose.orientation.x = 0.0
     goal.place_pose.pose.orientation.y = 0.0
     goal.place_pose.pose.orientation.z = 0.0
