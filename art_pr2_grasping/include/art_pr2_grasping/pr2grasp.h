@@ -26,6 +26,8 @@ private:
 
   ros::NodeHandle nh_;
 
+  bool enable_looking_;
+
 public:
   artPr2Grasping()
     : nh_("~")
@@ -33,6 +35,8 @@ public:
 
     group_name_[LEFT] = "left";
     //group_name_[RIGHT] = "right";
+
+    nh_.param("enable_looking", enable_looking_, false);
 
     for (int i = 0; i < PLANNING_GROUPS; i++)
     {
@@ -58,6 +62,8 @@ public:
   void lookAt(geometry_msgs::Point pt)
   {
 
+    if (!enable_looking_) return;
+
     pr2_controllers_msgs::PointHeadGoal goal;
     geometry_msgs::PointStamped point;
     point.header.frame_id = "base_footprint"; // todo - group/its planning frame as method param
@@ -70,6 +76,7 @@ public:
     goal.min_duration = ros::Duration(0.5);
     goal.max_velocity = 0.5;
     head_->sendGoal(goal);
+
     //head_->waitForResult(ros::Duration(2));
   }
 
