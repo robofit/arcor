@@ -3,6 +3,8 @@
 #include "art_pr2_grasping/planning_group.h"
 #include <pr2_controllers_msgs/PointHeadAction.h>
 #include <actionlib/client/simple_action_client.h>
+#include "art_object_recognizer_msgs/InstancesArray.h"
+#include <tf/transform_listener.h>
 
 // adapted from https://github.com/davetcoleman/baxter_cpp/blob/hydro-devel/baxter_pick_place/src/block_pick_place.cpp
 
@@ -13,6 +15,14 @@ namespace art_pr2_grasping
 {
 
 typedef actionlib::SimpleActionClient<pr2_controllers_msgs::PointHeadAction> PointHeadClient;
+
+typedef struct {
+
+    std_msgs::Header h;
+    shape_msgs::SolidPrimitive bb;
+    geometry_msgs::Pose p;
+
+} tobj;
 
 class artPr2Grasping
 {
@@ -28,16 +38,25 @@ private:
 
   bool enable_looking_;
 
+  ros::Subscriber obj_sub_;
+
+  std::map<std::string, tobj> objects_;
+
+  boost::shared_ptr<tf::TransformListener> tfl_;
+
 public:
   artPr2Grasping()
     : nh_("~")
   {
+
+    tfl_.reset(new tf::TransformListener());
 
     group_name_[LEFT] = "left";
     //group_name_[RIGHT] = "right";
 
     nh_.param("enable_looking", enable_looking_, false);
 
+    // todo try to use "arms" group with appropriate end eff. name
     for (int i = 0; i < PLANNING_GROUPS; i++)
     {
 
@@ -54,6 +73,110 @@ public:
       ROS_WARN("Point head action not available!");
     }
 
+    obj_sub_ = nh_.subscribe("/art_object_detector/object_filtered", 1, &artPr2Grasping::detectedObjectsCallback, this);
+
+  }
+
+  bool transformPose(std::string target_frame, geometry_msgs::PoseStamped &ps)
+  {
+
+    try
+    {
+
+      if (tfl_->waitForTransform(target_frame, ps.header.frame_id, ps.header.stamp, ros::Duration(5)))
+      {
+
+        tfl_->transformPose(target_frame, ps, ps);
+
+      }
+      else
+      {
+
+        ROS_ERROR_STREAM("Transform between" << target_frame << "and " << ps.header.frame_id << " not available!");
+        return false;
+      }
+
+    }
+    catch (tf::TransformException ex)
+    {
+
+      ROS_ERROR("%s", ex.what());
+      return false;
+    }
+
+    return true;
+  }
+
+  void detectedObjectsCallback(const art_object_recognizer_msgs::InstancesArrayConstPtr &msg) {
+
+      ROS_INFO_ONCE("InstancesArray received");
+
+      // remove outdated objects
+      std::map<std::string, tobj>::iterator it;
+      for ( it = objects_.begin(); it != objects_.end(); it++ ) {
+
+          bool found = false;
+
+          for(int i = 0; i < msg->instances.size(); i++) {
+
+              if (msg->instances[i].object_id == it->first) {
+
+                  found = true;
+                  break;
+
+              }
+          }
+
+          if (!found) {
+
+            // don't clear attached objects - they might be used
+            //for (int i = 0; i < PLANNING_GROUPS; i++)
+            //{
+            groups_[0]->visual_tools_->cleanupCO(it->first);
+            //}
+
+          }
+      }
+
+      objects_.clear();
+
+      // add and publish currently detected objects
+      for(int i = 0; i < msg->instances.size(); i++) {
+
+        if (msg->instances[i].bbox.type != shape_msgs::SolidPrimitive::BOX) continue;
+        if (msg->instances[i].bbox.dimensions.size() != 3) continue;
+
+        tobj ob;
+        ob.h = msg->header;
+        ob.bb = msg->instances[i].bbox;
+        ob.p = msg->instances[i].pose;
+        objects_[msg->instances[i].object_id] = ob;
+
+        //for (int i = 0; i < PLANNING_GROUPS; i++)
+        //{
+        geometry_msgs::PoseStamped ps;
+
+        ps.header = msg->header;
+        ps.pose = msg->instances[i].pose;
+
+        // assume that all groups have same planningFrame
+        if (!transformPose(getPlanningFrame(0), ps)) {
+
+            ROS_WARN("Failed to transform object.");
+            continue;
+        }
+
+        publishCollisionBB(ps.pose, msg->instances[i].object_id, (planning_group)/*i*/0, msg->instances[i].bbox);
+        //}
+
+      }
+
+  }
+
+  bool isKnownObject(std::string id) {
+
+      std::map<std::string, tobj>::iterator it = objects_.find(id);
+      return it != objects_.end();
   }
 
   enum planning_group {LEFT, RIGHT};
@@ -265,6 +388,13 @@ public:
 
   }
 
+  std::string getPlanningFrame(const int &group)
+  {
+
+    return getPlanningFrame((planning_group)group);
+
+  }
+
   void publishCollisionBB(geometry_msgs::Pose block_pose, std::string block_name, const planning_group &group, const shape_msgs::SolidPrimitive & shape)
   {
     moveit_msgs::CollisionObject collision_obj;
@@ -302,7 +432,7 @@ public:
     return groups_[group]->grasped_object_;
   }
 
-  bool pick(const std::string &id, const planning_group &group, const geometry_msgs::Pose &ps, const shape_msgs::SolidPrimitive & shape)
+  bool pick(const std::string &id, const planning_group &group/*, const geometry_msgs::Pose &ps, const shape_msgs::SolidPrimitive & shape*/)
   {
 
     if (hasGraspedObject(group))
@@ -312,36 +442,32 @@ public:
       return false;
     }
 
-    // todo add support for cylinder
-    if (shape.type != shape_msgs::SolidPrimitive::BOX/* && shape.type != shape_msgs::SolidPrimitive::CYLINDER*/)
-    {
-
-      ROS_ERROR("Unsuported object type.");
-      return false;
-    }
-
-    if (shape.dimensions.size() != 3)
-    {
-
-      ROS_ERROR("Strange dimensions!");
-      return false;
-    }
-
-    lookAt(ps.position);
-
-    publishCollisionBB(ps, id, group, shape);
-
     std::vector<moveit_msgs::Grasp> grasps;
+
+    geometry_msgs::PoseStamped ps;
+    ps.header.frame_id = objects_[id].h.frame_id;
+    ps.header.stamp = ros::Time(0);
+    ps.pose = objects_[id].p;
+
+    if (!transformPose(getPlanningFrame(group), ps)) {
+
+        ROS_ERROR("Pick: transformation failed.");
+        return false;
+    }
+
+    lookAt(ps.pose.position);
+
+    publishCollisionBB(ps.pose, id, group, objects_[id].bb);
 
     geometry_msgs::PoseStamped p;
     p.header.frame_id = getPlanningFrame(group);
     p.header.stamp = ros::Time::now();
-    p.pose = ps;
+    p.pose = ps.pose;
 
     // visualization only
-    groups_[group]->visual_tools_->publishBlock(ps, moveit_visual_tools::ORANGE, shape.dimensions[0], shape.dimensions[1], shape.dimensions[2]);
+    groups_[group]->visual_tools_->publishBlock(ps.pose, moveit_visual_tools::ORANGE, objects_[id].bb.dimensions[0], objects_[id].bb.dimensions[1], objects_[id].bb.dimensions[2]);
 
-    if (!groups_[group]->simple_grasps_->generateShapeGrasps(shape, true, true, p, groups_[group]->grasp_data_, grasps))
+    if (!groups_[group]->simple_grasps_->generateShapeGrasps(objects_[id].bb, true, true, p, groups_[group]->grasp_data_, grasps))
     {
 
       ROS_ERROR("No grasps found.");
@@ -382,7 +508,7 @@ public:
     {
 
       groups_[group]->grasped_object_.reset(new graspedObject());
-      groups_[group]->grasped_object_->shape = shape;
+      groups_[group]->grasped_object_->shape = objects_[id].bb; // todo remember only id?
       groups_[group]->grasped_object_->id = id;
       return true;
     }

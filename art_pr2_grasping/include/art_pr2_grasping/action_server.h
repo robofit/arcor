@@ -17,7 +17,7 @@ public:
     as_(nh_, "pp", boost::bind(&artActionServer::executeCB, this, _1), false),
     max_attempts_(3)
   {
-
+      tfl_.reset(new tf::TransformListener());
   }
 
   bool init()
@@ -45,18 +45,19 @@ private:
   artPr2Grasping gr_;
   actionlib::SimpleActionServer<art_msgs::pickplaceAction> as_;
   int max_attempts_;
-  tf::TransformListener tfl_;
+  boost::shared_ptr<tf::TransformListener> tfl_;
 
+  // todo avoid code duplication with pr2grasps
   bool transformPose(const artPr2Grasping::planning_group &g, geometry_msgs::PoseStamped &ps)
   {
 
     try
     {
 
-      if (tfl_.waitForTransform(gr_.getPlanningFrame(g), ps.header.frame_id, ps.header.stamp, ros::Duration(5)))
+      if (tfl_->waitForTransform(gr_.getPlanningFrame(g), ps.header.frame_id, ps.header.stamp, ros::Duration(5)))
       {
 
-        tfl_.transformPose(gr_.getPlanningFrame(g), ps, ps);
+        tfl_->transformPose(gr_.getPlanningFrame(g), ps, ps);
 
       }
       else
@@ -102,24 +103,18 @@ private:
       return;
     }
 
-    ROS_INFO("Got goal for group: %d, operation: %d", goal->arm, goal->operation);
+    if (!gr_.isKnownObject(goal->id)) {
 
-    geometry_msgs::PoseStamped p1 = goal->pose; // pick goal
-    geometry_msgs::PoseStamped p2 = goal->pose2; // place goal
-
-    // do all transformations in advance - before timestamps get too old
-    if (goal->operation == art_msgs::pickplaceGoal::PICK_AND_PLACE || goal->operation == art_msgs::pickplaceGoal::PICK)
-    {
-
-      if (!transformPose(g, p1))
-      {
-
-        res.result = art_msgs::pickplaceResult::FAILURE;
-        as_.setAborted(res, "failed to transform pick pose");
-        return;
-      }
+      res.result = art_msgs::pickplaceResult::BAD_REQUEST;
+      as_.setAborted(res, "unknown object id");
+      return;
     }
 
+    ROS_INFO("Got goal for group: %d, operation: %d", goal->arm, goal->operation);
+
+    geometry_msgs::PoseStamped p2 = goal->place_pose; // place goal
+
+    // do transformation in advance - before timestamp get too old
     if (goal->operation == art_msgs::pickplaceGoal::PICK_AND_PLACE || goal->operation == art_msgs::pickplaceGoal::PLACE)
     {
 
@@ -135,14 +130,6 @@ private:
     if (goal->operation == art_msgs::pickplaceGoal::PICK_AND_PLACE || goal->operation == art_msgs::pickplaceGoal::PICK)
     {
 
-      if (goal->bb.dimensions.size() != 3)
-      {
-
-        res.result = art_msgs::pickplaceResult::BAD_REQUEST;
-        as_.setAborted(res, "for pick/p&p a bounding box must be given ");
-        return;
-      }
-
       int tries = max_attempts_;
 
       f.operation = art_msgs::pickplaceGoal::PICK;
@@ -157,7 +144,7 @@ private:
         tries--;
         as_.publishFeedback(f);
 
-        grasped = gr_.pick(goal->id, g, p1.pose, goal->bb); // todo flag if it make sense to try again (type of failure)
+        grasped = gr_.pick(goal->id, g); // todo flag if it make sense to try again (type of failure)
         if (grasped) break;
       }
 

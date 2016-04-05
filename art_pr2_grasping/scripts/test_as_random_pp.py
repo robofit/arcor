@@ -6,13 +6,58 @@ import art_msgs.msg
 from geometry_msgs.msg import PoseStamped
 from shape_msgs.msg import SolidPrimitive
 import random
+from art_object_recognizer_msgs.msg import InstancesArray, ObjInstance
 
 def main():
 
+    pub = rospy.Publisher("/art_object_detector/object_filtered", InstancesArray)
+    
     client = actionlib.SimpleActionClient('/pr2_pick_place/pp', art_msgs.msg.pickplaceAction)
     client.wait_for_server()
+    
+    arr = InstancesArray()
+    arr.header.frame_id = "base_footprint"
+    arr.header.stamp = rospy.Time.now()
+    
+    obj = ObjInstance()
+    obj.object_id = "my_object"
+    obj.pose.position.x = random.uniform(0.4, 0.7)
+    obj.pose.position.y = random.uniform(-0.5, 0.5)
+    obj.pose.position.z = 0.74 + 0.05/2 # vyska stolu + pulka kosticky
+    obj.pose.orientation.x = 0.0
+    obj.pose.orientation.y = 0.0
+    obj.pose.orientation.z = 0.0
+    obj.pose.orientation.w = 1.0
+    
+    obj.bbox = SolidPrimitive()
+    obj.bbox.type = SolidPrimitive.BOX
+    obj.bbox.dimensions.append(0.2)
+    obj.bbox.dimensions.append(0.05)
+    obj.bbox.dimensions.append(0.05)
 
-    rospy.loginfo('sending goal')
+    arr.instances.append(obj)
+    
+    obj2 = ObjInstance()
+    obj2.object_id = "another_object"
+    obj2.pose.position.x = random.uniform(0.4, 0.7)
+    obj2.pose.position.y = random.uniform(-0.5, 0.5)
+    obj2.pose.position.z = 0.74 + 0.05/2 # vyska stolu + pulka kosticky
+    obj2.pose.orientation.x = 0.0
+    obj2.pose.orientation.y = 0.0
+    obj2.pose.orientation.z = 0.0
+    obj2.pose.orientation.w = 1.0
+    
+    obj2.bbox = SolidPrimitive()
+    obj2.bbox.type = SolidPrimitive.BOX
+    obj2.bbox.dimensions.append(0.2)
+    obj2.bbox.dimensions.append(0.05)
+    obj2.bbox.dimensions.append(0.05)
+    
+    arr.instances.append(obj2)
+    
+    pub.publish(arr)
+    #pub.publish(arr)
+    #pub.publish(arr)
 
     goal = art_msgs.msg.pickplaceGoal()
     
@@ -20,39 +65,22 @@ def main():
     goal.operation = goal.PICK_AND_PLACE
     goal.z_axis_angle_increment = (2*3.14)/360*180
     #goal.z_axis_angle_increment = 0
-    goal.keep_orientation = True
+    goal.keep_orientation = False
     
-    arms = [goal.LEFT_ARM, goal.RIGHT_ARM]
+    #arms = [goal.LEFT_ARM, goal.RIGHT_ARM]
+    #goal.arm = random.choice(arms)
+    goal.arm = goal.LEFT_ARM
     
-    goal.arm = random.choice(arms)
-    
-    goal.bb = SolidPrimitive()
-    goal.bb.type = SolidPrimitive.BOX
-    goal.bb.dimensions.append(0.2)
-    goal.bb.dimensions.append(0.05)
-    goal.bb.dimensions.append(0.05)
-
-    goal.pose = PoseStamped()
-    goal.pose.header.frame_id = "base_footprint"
-    goal.pose.header.stamp = rospy.Time.now()
-    goal.pose.pose.position.x = random.uniform(0.4, 0.7)
-    goal.pose.pose.position.y = random.uniform(-0.5, 0.5)
-    goal.pose.pose.position.z = 0.74 + goal.bb.dimensions[2]/2 # vyska stolu + pulka kosticky
-    goal.pose.pose.orientation.x = 0.0
-    goal.pose.pose.orientation.y = 0.0
-    goal.pose.pose.orientation.z = 0.0
-    goal.pose.pose.orientation.w = 1.0
-    
-    goal.pose2 = PoseStamped()
-    goal.pose2.header.frame_id = "base_footprint"
-    goal.pose2.header.stamp = rospy.Time.now()
-    goal.pose2.pose.position.x = random.uniform(0.4, 0.7)
-    goal.pose2.pose.position.y = random.uniform(-0.5, 0.5)
-    goal.pose2.pose.position.z = 0.74 + goal.bb.dimensions[2]/2
-    goal.pose2.pose.orientation.x = 0.0
-    goal.pose2.pose.orientation.y = 0.0
-    goal.pose2.pose.orientation.z = 0.0
-    goal.pose2.pose.orientation.w = 1.0
+    goal.place_pose = PoseStamped()
+    goal.place_pose.header.frame_id = "base_footprint"
+    goal.place_pose.header.stamp = rospy.Time.now()
+    goal.place_pose.pose.position.x = random.uniform(0.4, 0.7)
+    goal.place_pose.pose.position.y = random.uniform(-0.5, 0.5)
+    goal.place_pose.pose.position.z = 0.74 + 0.05/2
+    goal.place_pose.pose.orientation.x = 0.0
+    goal.place_pose.pose.orientation.y = 0.0
+    goal.place_pose.pose.orientation.z = 0.0
+    goal.place_pose.pose.orientation.w = 1.0
 
     rospy.loginfo('sending goal')
     client.send_goal(goal)
