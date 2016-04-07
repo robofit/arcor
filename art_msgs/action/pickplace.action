@@ -1,12 +1,7 @@
 string id # name of the object
-geometry_msgs/PoseStamped pose # target/destination pose for pick / place
-geometry_msgs/PoseStamped pose2 # place pose for pick_and_place operation
-shape_msgs/SolidPrimitive bb # only needed for pick or pick_and_place
+geometry_msgs/PoseStamped place_pose # place pose for pick_and_place operation
 float32 z_axis_angle_increment # 0 -> place with exactly given orientation, i.e. 1.57 -> object can be place rotated 90deg around z-axis
 uint8 keep_orientation
-uint8 arm # which arm to use (only need to be filled for pick operation)
-uint8 LEFT_ARM=0
-uint8 RIGHT_ARM=1
 uint8 operation
 uint8 PICK=0
 uint8 PLACE=1
