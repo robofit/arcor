@@ -14,6 +14,12 @@ add_action_files(
   FILES pickplace.action
 )
 
+add_message_files(
+  FILES
+  ObjInstance.msg
+  InstancesArray.msg
+)
+
 generate_messages(
   DEPENDENCIES actionlib_msgs shape_msgs
 )
