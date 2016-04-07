@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import jsonpickle
-from art_object_recognizer_msgs.msg import InstancesArray, ObjInstance
+from art_msgs.msg import InstancesArray, ObjInstance
 from std_msgs.msg import String
 
 
