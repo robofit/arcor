@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-from art_object_recognizer_msgs.msg import ObjInstance, InstancesArray
+from art_msgs.msg import ObjInstance, InstancesArray
 from geometry_msgs.msg import Pose, Point, Quaternion
 
 if __name__ == '__main__':

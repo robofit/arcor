@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 import roslib; roslib.load_manifest('art_simple_tracker')
 import rospy
-from art_object_recognizer_msgs.msg import InstancesArray, ObjInstance
+from art_msgs.msg import InstancesArray, ObjInstance
 import tf
 from geometry_msgs.msg import Pose, PoseStamped
 from math import sqrt
