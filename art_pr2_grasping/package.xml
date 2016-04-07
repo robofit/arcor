@@ -18,6 +18,12 @@
   <build_depend>geometry_msgs</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>cmake_modules</build_depend>
+  <build_depend>pr2_controllers_msgs</build_depend>
+  <build_depend>actionlib</build_depend>
+  <build_depend>actionlib_msgs</build_depend>
+  <build_depend>shape_msgs</build_depend>
+  <build_depend>roslint</build_depend>
+  <build_depend>art_msgs</build_depend>
 
   <run_depend>moveit_core</run_depend>
   <run_depend>moveit_ros</run_depend>
@@ -29,5 +35,10 @@
   <run_depend>moveit_plugins</run_depend>
   <run_depend>moveit_simple_controller_manager</run_depend>
   <run_depend>moveit_simple_grasps</run_depend>
+  <run_depend>pr2_controllers_msgs</run_depend>
+  <run_depend>actionlib</run_depend>
+  <run_depend>actionlib_msgs</run_depend>
+  <run_depend>shape_msgs</run_depend>
+  <run_depend>art_msgs</run_depend>
 
 </package>
