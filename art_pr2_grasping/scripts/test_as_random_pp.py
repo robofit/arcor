@@ -57,11 +57,7 @@ def main():
 
     arr.instances.append(obj)
     
-    #arr.instances.append(getRandomObject())
-    #arr.instances.append(getRandomObject())
-    
     pub.publish(arr)
-    
     rospy.sleep(2.0)
 
     goal = art_msgs.msg.pickplaceGoal()
