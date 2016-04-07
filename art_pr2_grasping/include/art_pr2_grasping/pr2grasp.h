@@ -3,7 +3,7 @@
 #include <ros/ros.h>
 #include <pr2_controllers_msgs/PointHeadAction.h>
 #include <actionlib/client/simple_action_client.h>
-#include "art_object_recognizer_msgs/InstancesArray.h"
+#include "art_msgs/InstancesArray.h"
 #include <tf/transform_listener.h>
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit_simple_grasps/simple_grasps.h>
@@ -149,7 +149,7 @@ public:
     return true;
   }
 
-  void detectedObjectsCallback(const art_object_recognizer_msgs::InstancesArrayConstPtr &msg) {
+  void detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr &msg) {
 
       ROS_INFO_ONCE("InstancesArray received");
 

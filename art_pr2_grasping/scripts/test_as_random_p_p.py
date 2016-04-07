@@ -6,7 +6,7 @@ import art_msgs.msg
 from geometry_msgs.msg import PoseStamped
 from shape_msgs.msg import SolidPrimitive
 import random
-from art_object_recognizer_msgs.msg import InstancesArray, ObjInstance
+from art_msgs.msg import InstancesArray, ObjInstance
 
 def getRandomObject():
 
