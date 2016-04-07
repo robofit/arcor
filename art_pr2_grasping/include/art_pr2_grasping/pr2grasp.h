@@ -99,7 +99,14 @@ public:
     visual_tools_->setLifetime(10.0);
 
     visual_tools_->setMuted(false);
-    visual_tools_->publishRemoveAllCollisionObjects();
+
+    for (int j = 0; j < 3; j++)
+    {
+      visual_tools_->publishRemoveAllCollisionObjects();
+      ros::Duration(0.1).sleep();
+    }
+
+
     grasped_object_.reset();
 
     simple_grasps_.reset(new moveit_simple_grasps::SimpleGrasps(visual_tools_));
@@ -185,7 +192,12 @@ public:
           std::map<std::string, tobj>::iterator it;
           it = objects_.find(ids_to_remove[i]);
           objects_.erase(it);
-          visual_tools_->cleanupCO(it->first);
+
+          for (int j = 0; j < 3; j++) // todo is it necessary?
+          {
+            visual_tools_->cleanupCO(it->first);
+            ros::Duration(0.1).sleep();
+          }
       }
 
       // add and publish currently detected objects
@@ -205,14 +217,28 @@ public:
             continue;
         }
 
-        publishCollisionBB(ps.pose, msg->instances[i].object_id, msg->instances[i].bbox);
+        if (isKnownObject(msg->instances[i].object_id)) {
 
-        tobj ob;
-        ob.h = ps.header;
-        ob.bb = msg->instances[i].bbox;
-        ob.p = ps.pose;
-        //std::cout << ob.p.position.x << " " << ob.p.position.y << " " << ob.p.position.z << " " << std::endl;
-        objects_[msg->instances[i].object_id] = ob;
+            objects_[msg->instances[i].object_id].h = ps.header;
+            objects_[msg->instances[i].object_id].bb = msg->instances[i].bbox;
+            objects_[msg->instances[i].object_id].p = ps.pose;
+
+        } else {
+
+            tobj ob;
+            ob.h = ps.header;
+            ob.bb = msg->instances[i].bbox;
+            ob.p = ps.pose;
+            //std::cout << ob.p.position.x << " " << ob.p.position.y << " " << ob.p.position.z << " " << std::endl;
+            objects_[msg->instances[i].object_id] = ob;
+
+        }
+
+        // don't publish for grasped object
+        if (!(grasped_object_ && grasped_object_->id == msg->instances[i].object_id)) {
+
+            publishCollisionBB(ps.pose, msg->instances[i].object_id, msg->instances[i].bbox);
+        }
 
       }
 
@@ -289,7 +315,7 @@ public:
     {
       if (!visual_tools_->publishCollisionTable(x, y, angle, width, height, depth, name)) return false;
       move_group_->setSupportSurfaceName(name);
-      ros::Duration(1).sleep();
+      ros::Duration(0.1).sleep();
     }
 
     return true;
@@ -393,8 +419,6 @@ public:
 
     if (move_group_->place(grasped_object_->id, place_locations))
     {
-      visual_tools_->cleanupCO(grasped_object_->id);
-      visual_tools_->cleanupACO(grasped_object_->id);
       grasped_object_.reset();
       move_group_->clearPathConstraints();
       return true;
@@ -427,17 +451,11 @@ public:
     for (int j = 0; j < 3; j++)
     {
 
-      visual_tools_->cleanupCO(block_name);
-      visual_tools_->cleanupACO(block_name);
-      ros::Duration(0.1).sleep();
-    }
-
-    for (int j = 0; j < 3; j++)
-    {
-
       visual_tools_->publishCollisionObjectMsg(collision_obj);
       ros::Duration(0.1).sleep();
     }
+
+    visual_tools_->publishBlock(objects_[block_name].p, moveit_visual_tools::BLUE, objects_[block_name].bb.dimensions[0], objects_[block_name].bb.dimensions[1], objects_[block_name].bb.dimensions[2]);
 
     return;
   }
@@ -468,10 +486,8 @@ public:
     p.header.stamp = ros::Time::now();
     p.pose = objects_[id].p;
 
-    // visualization only
-    visual_tools_->publishBlock(objects_[id].p, moveit_visual_tools::ORANGE, objects_[id].bb.dimensions[0], objects_[id].bb.dimensions[1], objects_[id].bb.dimensions[2]);
-
-    moveit_simple_grasps::GraspData gd;
+    // visualization only -> published by publishCollisionBB
+    //visual_tools_->publishBlock(objects_[id].p, moveit_visual_tools::ORANGE, objects_[id].bb.dimensions[0], objects_[id].bb.dimensions[1], objects_[id].bb.dimensions[2]);
 
     if (!simple_grasps_->generateShapeGrasps(objects_[id].bb, true, true, p, grasp_data_, grasps))
     {

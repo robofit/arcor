@@ -56,6 +56,8 @@ def main():
     obj.bbox.dimensions.append(0.2)
 
     arr.instances.append(obj)
+    arr.instances.append(getRandomObject())
+    arr.instances.append(getRandomObject())
     
     pub.publish(arr)
     rospy.sleep(2.0)
@@ -64,8 +66,7 @@ def main():
     
     goal.id = "my_object"
     goal.operation = goal.PICK_AND_PLACE
-    goal.z_axis_angle_increment = (2*3.14)/360*180
-    #goal.z_axis_angle_increment = 0
+    goal.z_axis_angle_increment = (2*3.14)/360*90
     goal.keep_orientation = False
     
     goal.place_pose = PoseStamped()
