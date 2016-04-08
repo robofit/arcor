@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from art_object_recognizer_msgs.msg import ObjInstance, InstancesArray
+from art_msgs.msg import ObjInstance, InstancesArray
 from shape_msgs.msg import SolidPrimitive
 import sys
 import rospy

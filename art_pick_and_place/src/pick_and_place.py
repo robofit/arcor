@@ -7,7 +7,7 @@ import actionlib
 import random
 import math
 
-from art_object_recognizer_msgs.msg import InstancesArray, ObjInstance
+from art_msgs.msg import InstancesArray, ObjInstance
 from art_msgs.msg import pickplaceAction, pickplaceGoal
 from std_msgs.msg import String
 from geometry_msgs.msg import PoseStamped

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from ar_track_alvar_msgs.msg import AlvarMarkers, AlvarMarker
-from art_object_recognizer_msgs.msg import ObjInstance, InstancesArray
+from art_msgs.msg import ObjInstance, InstancesArray
 from shape_msgs.msg import SolidPrimitive
 import sys
 import rospy
