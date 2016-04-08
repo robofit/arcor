@@ -18,8 +18,8 @@ class ArCodeDetector:
 
             obj_in = ObjInstance()
             obj_in.object_id = str('box')
-            obj_in.pose.position.x = 10
-            obj_in.pose.position.y = 10
+            obj_in.pose.position.x = 0.5
+            obj_in.pose.position.y = 0.5
             obj_in.pose.position.z = 0
             obj_in.pose.orientation.x = 0
             obj_in.pose.orientation.y = 0
