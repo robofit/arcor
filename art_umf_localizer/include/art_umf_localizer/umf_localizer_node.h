@@ -61,6 +61,12 @@ namespace umf_localizer_node {
       void goalCB();
       void preemptCB();
 
+      int detection_cnt_;
+      geometry_msgs::PoseStamped pose_filtered_;
+
+      float filt_coef_pos_;
+      float filt_coef_rot_;
+
   };
 
 }
