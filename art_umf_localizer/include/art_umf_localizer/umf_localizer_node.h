@@ -5,7 +5,7 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 #include <actionlib/server/simple_action_server.h>
-#include <art_umf_localizer/LocalizeAgainstUMFAction.h>
+#include <art_msgs/LocalizeAgainstUMFAction.h>
 #include "umf.h"
 
 
@@ -57,7 +57,7 @@ namespace umf_localizer_node {
       ros::Timer tr_timer_;
       void trCallback(const ros::TimerEvent& event);
 
-      actionlib::SimpleActionServer<art_umf_localizer::LocalizeAgainstUMFAction> as_;
+      actionlib::SimpleActionServer<art_msgs::LocalizeAgainstUMFAction> as_;
       void goalCB();
       void preemptCB();
 
