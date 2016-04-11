@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_action_files(
   DIRECTORY action
-  FILES pickplace.action
+  FILES pickplace.action LocalizeAgainstUMF.action
 )
 
 add_message_files(
