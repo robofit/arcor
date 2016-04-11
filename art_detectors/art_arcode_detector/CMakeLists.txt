@@ -6,7 +6,7 @@ project(art_arcode_detector)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   ar_track_alvar
-  art_object_recognizer_msgs
+  art_msgs
   rospy
   std_msgs
 )

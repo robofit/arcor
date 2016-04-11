@@ -5,7 +5,7 @@ project(art_tablet_bridge)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
-  art_object_recognizer_msgs
+  art_msgs
 )
 
 
