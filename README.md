@@ -1,5 +1,5 @@
 # ar-table-common
-Experimental stuff - common packages for iTable, PR2 and handheld.
+Experimental stuff - common packages for iTable, PR2 and handheld. 
 
 [![Build Status](https://travis-ci.org/robofit/ar-table-common.svg)](https://travis-ci.org/robofit/ar-table-common)
  
