@@ -15,15 +15,6 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
 )
 
-add_action_files(
-  DIRECTORY action
-  FILES LocalizeAgainstUMF.action
-)
-
-generate_messages(
-  DEPENDENCIES actionlib_msgs
-)
-
 find_package(Eigen REQUIRED)
 find_package(OpenCV REQUIRED)
 
@@ -90,7 +81,7 @@ add_library(umflib umflib/UMFDetectorLib/src/umf.cpp
 target_link_libraries(umflib ${OpenCV_LIBS} ${Eigen_LIBRARIES})
 
 add_executable(umf_localizer_node src/umf_localizer_node.cpp)
-add_dependencies(umf_localizer_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(umf_localizer_node ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(umf_localizer_node
    ${catkin_LIBRARIES}

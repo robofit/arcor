@@ -146,7 +146,7 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
   if (!continuous_mode_ && (ros::Time::now() - localization_start_) > localization_to_) {
 
       ROS_INFO("timeout");
-      art_umf_localizer::LocalizeAgainstUMFResult res;
+      art_msgs::LocalizeAgainstUMFResult res;
       res.result = res.RES_DETECTION_FAILED;
       as_.setAborted(res);
       cam_image_sub_.shutdown();
@@ -215,7 +215,7 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
     if (!continuous_mode_) {
 
         ROS_INFO("finished");
-        art_umf_localizer::LocalizeAgainstUMFResult res;
+        art_msgs::LocalizeAgainstUMFResult res;
         res.result = res.RES_FINISHED;
         as_.setSucceeded(res);
         cam_image_sub_.shutdown();
