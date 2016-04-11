@@ -99,7 +99,7 @@ before_script:
   - if [[ -f $ROSINSTALL_FILE ]] ; then wstool merge $ROSINSTALL_FILE ; fi
   - wstool up
   # package depdencies: install using rosdep.
-  - cd ~/catkin_ws/ar-table-itable
+  - cd ~/catkin_ws/src/ar-table-itable
   - git submodule update --init
   - touch ar-table-common/art_umf_localizer/CATKIN_IGNORE
   - cd ~/catkin_ws
