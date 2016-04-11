@@ -14,7 +14,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>ar_track_alvar</build_depend>
-  <build_depend>art_object_recognizer_msgs</build_depend>
+  <build_depend>art_msgs</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
   <run_depend>ar_track_alvar</run_depend>
