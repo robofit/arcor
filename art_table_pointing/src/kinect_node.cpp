@@ -25,7 +25,7 @@ ArtTablePointingKinect::ArtTablePointingKinect()  {
     ROS_INFO_STREAM("table_frame: " << table_frame_.c_str());
 
 
-    dt = 0.5;
+    dt = 0.05;
     a = 0.85;
     b = 0.005;
     xk_1 = 0;
@@ -87,7 +87,7 @@ void ArtTablePointingKinect::visualizeArrow(tf::StampedTransform elbow, int id) 
     marker.pose.orientation.y = elbow.getRotation().y();
     marker.pose.orientation.z = elbow.getRotation().z();
     marker.pose.orientation.w = elbow.getRotation().w();
-    marker.header.frame_id = "/marker";
+    marker.header.frame_id = table_frame_;
     marker.header.stamp = ros::Time::now();
     marker.id = id;
 
@@ -96,7 +96,12 @@ void ArtTablePointingKinect::visualizeArrow(tf::StampedTransform elbow, int id) 
 
 void ArtTablePointingKinect::visualizeIntersection(tf::Vector3 point, int id) {
     visualization_msgs::Marker marker;
+    marker.action = marker.ADD;
     marker.type = marker.CUBE;
+    marker.color.r = 0;
+    marker.color.g = 1;
+    marker.color.b = 0;
+    marker.color.a = 1;
     marker.scale.x = 0.02;
     marker.scale.y = 0.02;
     marker.scale.z = 0.02;
@@ -107,7 +112,7 @@ void ArtTablePointingKinect::visualizeIntersection(tf::Vector3 point, int id) {
     marker.pose.orientation.y = 0;
     marker.pose.orientation.z = 0;
     marker.pose.orientation.w = 1;
-    marker.header.frame_id = "/marker";
+    marker.header.frame_id = table_frame_;
     marker.header.stamp = ros::Time::now();
     marker.id = id;
 
@@ -127,12 +132,12 @@ void ArtTablePointingKinect::process(std::string user_id) {
             transform_elbow_left, transform_table;
     try {
 
-        listener_.lookupTransform("/marker", "/left_hand_" + user_id, ros::Time(0), transform_hand_right);
-        listener_.lookupTransform("/marker", "/left_elbow_" + user_id, ros::Time(0), transform_elbow_right);
-        listener_.lookupTransform("/marker", "/right_hand_" + user_id, ros::Time(0), transform_hand_left);
-        listener_.lookupTransform("/marker", "/right_elbow_" + user_id, ros::Time(0), transform_elbow_left);
-        //listener_.lookupTransform("/marker", "/head_1", ros::Time(0), transform_head_right);
-       // node.listener_.lookupTransform("/marker", "/left_wrist_1", ros::Time(0), transform_head_right);
+        listener_.lookupTransform(table_frame_, "/left_hand_" + user_id, ros::Time(0), transform_hand_right);
+        listener_.lookupTransform(table_frame_, "/left_elbow_" + user_id, ros::Time(0), transform_elbow_right);
+        listener_.lookupTransform(table_frame_, "/right_hand_" + user_id, ros::Time(0), transform_hand_left);
+        listener_.lookupTransform(table_frame_, "/right_elbow_" + user_id, ros::Time(0), transform_elbow_left);
+        //listener_.lookupTransform(table_frame_, "/head_1", ros::Time(0), transform_head_right);
+       // node.listener_.lookupTransform(table_frame_, "/left_wrist_1", ros::Time(0), transform_head_right);
     }
     catch (tf::TransformException ex) {
         ROS_WARN("No transform %s", ex.what());
@@ -150,7 +155,7 @@ void ArtTablePointingKinect::process(std::string user_id) {
 
     tf::Vector3 point_right, point_left;
     point_right = computeIntersection(transform_elbow_right, transform_hand_right, transform_table, table_normal);
-    point_left = computeIntersection(transform_elbow_right, transform_hand_right, transform_table, table_normal);
+    point_left = computeIntersection(transform_elbow_left, transform_hand_left, transform_table, table_normal);
 
     if (show_arrows_) {
         visualizeArrow(transform_elbow_right, 0);
@@ -167,7 +172,7 @@ void ArtTablePointingKinect::process(std::string user_id) {
     pose.pose.position.z = 0;
     pose.pose.orientation.w = 1;
     pose.header.stamp = ros::Time::now();
-    pose.header.frame_id = "/marker";
+    pose.header.frame_id = table_frame_;
 
 
 
@@ -190,8 +195,9 @@ void ArtTablePointingKinect::process(std::string user_id) {
 
     yk_1 = yk;
     vyk_1 = vyk;
-
-    printf( "%f \t %f\n", xm, xk_1 );
+    point_right.setX(xk);
+    point_right.setY(yk);
+    ;
     
 
     if (pointingAtTable(point_right, transform_elbow_right, transform_hand_right)) {
@@ -224,8 +230,11 @@ int main(int argc, char **argv) {
 
     while (nh.ok()) {
         for (int i = 1; i <= 6; ++i) {
-            if (node.listener_.frameExists("/head_") + std::to_string(i).c_str()) {
-                node.process(std::to_string(i));
+	    //ROS_INFO_STREAM(node.listener_.frameExists("/head_" + std::to_string(i)));
+            //if (node.listener_.frameExists("/head_" + std::to_string(i))) {
+            //ROS_INFO_STREAM(i << " " << node.listener_.canTransform(node.table_frame_, "/head_" + std::to_string(i), ros::Time(0), NULL));
+		if (node.listener_.canTransform(node.table_frame_, "/head_" + std::to_string(i), ros::Time(0), NULL)) {
+		  node.process(std::to_string(i));
                 break;
             }
 

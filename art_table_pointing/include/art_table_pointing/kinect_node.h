@@ -16,10 +16,8 @@
 #include <tf/transform_listener.h>
 
  #include <actionlib/client/simple_action_client.h>
-#include <pr2_controllers_msgs/PointHeadAction.h>
 
-#include <ar_track_alvar_msgs/AlvarMarkers.h>
-#include <ar_track_alvar_msgs/AlvarMarker.h>
+
 #include <geometry_msgs/Pose.h>
 #include <vector>
 #include <iostream>
@@ -44,15 +42,14 @@ public:
     tf::TransformListener listener_;
     ros::Publisher markers_pub_;
 	
-	void lookAt(std::string frame_id, double x, double y, double z);
+    std::string table_frame_;
 
 private:
 
-	ros::Subscriber markers_sub_;
     ros::Publisher point_right_pub_, point_left_pub_;
 
     double table_width_, table_height_, x_offset_, y_offset_;
-    std::string table_frame_;
+    
     tf::Vector3 computeIntersection(tf::StampedTransform point1, tf::StampedTransform point2,
                                     tf::StampedTransform plane, tf::Vector3 plane_normal);
 
@@ -69,10 +66,7 @@ private:
 	
 	ros::NodeHandle nh_;
     int current_marker_id_, current_calib_detections_;
-    bool calibration_done_;
 	std::vector<geometry_msgs::Pose> markers_;
-	void addNewMarkerData(geometry_msgs::Pose data);
-	void publish_tf(const ros::TimerEvent& e);
 	ros::Timer timer_;
 	tf::TransformBroadcaster br_;
 
