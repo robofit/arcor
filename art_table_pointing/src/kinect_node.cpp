@@ -25,6 +25,13 @@ ArtTablePointingKinect::ArtTablePointingKinect()  {
     ROS_INFO_STREAM("table_frame: " << table_frame_.c_str());
 
 
+    dt = 0.5;
+    a = 0.85;
+    b = 0.005;
+    xk_1 = 0;
+    yk_1 = 0;
+    vxk_1 = 0;
+    vyk_1 = 0;
 
 
     ROS_INFO_STREAM("Kinect pointing node initialized.");
@@ -162,9 +169,34 @@ void ArtTablePointingKinect::process(std::string user_id) {
     pose.header.stamp = ros::Time::now();
     pose.header.frame_id = "/marker";
 
+
+
+    xk = xk_1 + ( vxk_1 * dt );
+    vxk = vxk_1;
+    yk = yk_1 + ( vyk_1 * dt );
+
+    rxk = point_right.x() - xk;
+    ryk = point_right.y() - yk;
+
+    xk += a * rxk;
+    vxk += ( b * rxk ) / dt;
+    yk += a * ryk;
+    vyk += ( b * ryk ) / dt;
+
+
+    xk_1 = xk;
+    vxk_1 = vxk;
+
+
+    yk_1 = yk;
+    vyk_1 = vyk;
+
+    printf( "%f \t %f\n", xm, xk_1 );
+    
+
     if (pointingAtTable(point_right, transform_elbow_right, transform_hand_right)) {
-        pose.pose.position.x = point_right.x();
-        pose.pose.position.y = point_right.y();
+        pose.pose.position.x = xk;
+        pose.pose.position.y = yk;
         point_right_pub_.publish(pose);
 
     }

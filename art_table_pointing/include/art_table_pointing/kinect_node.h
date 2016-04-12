@@ -56,6 +56,12 @@ private:
     tf::Vector3 computeIntersection(tf::StampedTransform point1, tf::StampedTransform point2,
                                     tf::StampedTransform plane, tf::Vector3 plane_normal);
 
+    float dt;
+    float xk_1, yk_1, vxk_1, vyk_1, a, b;
+
+    float xk, yk, vxk, vyk, rxk, ryk;
+    float xm, ym;
+
 
     void visualizeArrow(tf::StampedTransform elbow, int id);
     void visualizeIntersection(tf::Vector3 point, int id);
