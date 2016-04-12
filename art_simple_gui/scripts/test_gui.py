@@ -4,6 +4,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from shape_msgs.msg import SolidPrimitive
 from art_msgs.msg import InstancesArray, ObjInstance
+import random
 
 def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
     return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
@@ -11,7 +12,8 @@ def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
 def main():
 
     pub = rospy.Publisher("/art_object_detector/object_filtered", InstancesArray, queue_size=10)
-    pub_point = rospy.Publisher("/pointing_point", PoseStamped, queue_size=10)
+    pub_point_left = rospy.Publisher("/pointing_left", PoseStamped, queue_size=10)
+    pub_point_right = rospy.Publisher("/pointing_right", PoseStamped, queue_size=10)
     
     arr = InstancesArray()
     arr.header.frame_id = "marker"
@@ -64,11 +66,33 @@ def main():
     ps.pose.orientation.z = 0.0
     ps.pose.orientation.w = 1.0
     
+    psr = PoseStamped()
+    psr.header.stamp = rospy.Time.now()
+    psr.header.frame_id = "marker"
+    psr.pose.position.x = 0.0
+    psr.pose.position.y = 0.3
+    psr.pose.position.z = 0
+    psr.pose.orientation.x = 0.0
+    psr.pose.orientation.y = 0.0
+    psr.pose.orientation.z = 0.0
+    psr.pose.orientation.w = 1.0
+    
     while(not rospy.is_shutdown()):
+    
+        if psr.pose.position.x < 0.8:
+        
+            psr.pose.position.x += 0.002
+            
+        else:
+        
+            psr.pose.position.x = 0
+            
+        pub_point_right.publish(psr)   
+    
     
         if ps.pose.position.x < 0.8:
         
-            ps.pose.position.x += 0.001
+            ps.pose.position.x += 0.002
             
         else:
         
@@ -76,32 +100,22 @@ def main():
             
         if isclose(ps.pose.position.x, 0.5):
         
-            rospy.sleep(0.5)
-            pub.publish(arr)
-            pub_point.publish(ps)
-            rospy.sleep(0.5)
-            pub.publish(arr)
-            pub_point.publish(ps)
-            rospy.sleep(0.5)
-            pub.publish(arr)
-            pub_point.publish(ps)
-            rospy.sleep(0.5)
+            for i in range(0, 300):
+
+                pub.publish(arr)
+                pub_point_left.publish(ps)
+                rospy.sleep(0.01)
             
-        if isclose(ps.pose.position.x, 0.7):
+        if isclose(ps.pose.position.x, 0.6):
          
-            rospy.sleep(0.5)
-            pub.publish(arr)
-            pub_point.publish(ps)
-            rospy.sleep(0.5)
-            pub.publish(arr)
-            pub_point.publish(ps)
-            rospy.sleep(0.5)
-            pub.publish(arr)
-            pub_point.publish(ps)
-            rospy.sleep(0.5)
-    
+           for i in range(0, 300):
+         
+                pub.publish(arr)
+                pub_point_left.publish(ps)
+                rospy.sleep(0.01)
+            
         pub.publish(arr)
-        pub_point.publish(ps)
+        pub_point_left.publish(ps)
         
         rospy.sleep(0.01)
     

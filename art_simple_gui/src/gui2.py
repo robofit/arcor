@@ -12,6 +12,8 @@ from art_msgs.msg import InstancesArray
 from geometry_msgs.msg import PoseStamped
 from std_srvs.srv import Empty, EmptyResponse
 
+from helper_objects import scene_place,  scene_object,  pointing_point
+
 # 12.5 x 10
 
 # TODO notifications ?
@@ -23,17 +25,21 @@ def sigint_handler(*args):
     sys.stderr.write('\r')
     QtGui.QApplication.quit()
 
+
 class simple_gui(QtGui.QWidget):
 
     def __init__(self):
        
        super(simple_gui, self).__init__()
        
+       self.inited = False
+       
        rospack = rospkg.RosPack()
        self.img_path = rospack.get_path('art_simple_gui') + '/imgs'
        
        self.obj_sub = rospy.Subscriber('/art_object_detector/object_filtered', InstancesArray, self.object_cb)
-       self.point_sub = rospy.Subscriber('/pointing_right', PoseStamped, self.pointing_point) # TODO left!
+       self.point_left_sub = rospy.Subscriber('/pointing_left', PoseStamped, self.pointing_point_left_cb)
+       self.point_right_sub = rospy.Subscriber('/pointing_right', PoseStamped, self.pointing_point_right_cb)
        
        self.selected_object_pub = rospy.Publisher("/art_simple_gui/selected_object", String, queue_size=10)
        self.selected_place_pub = rospy.Publisher("/art_simple_gui/selected_place", PoseStamped, queue_size=10)
@@ -45,25 +51,13 @@ class simple_gui(QtGui.QWidget):
        self.marker_box_size = rospy.get_param("/art_params/marker_box_size", 0.0685)
        
        self.objects = None
-       self.objects_ellipses = {}
-       self.objects_labels = {}
-
-       self.preselected_object = None # pre-select (gray)
-       self.selected_at = None
-       self.selection_conf = False
-       self.selected_objects = []
-       
-       self.px = None
-       self.py = None
-       self.pointing_point = None
-       
-       self.last_px = None
-       self.last_py = None
-       
-       self.place_selection_time = None
-       self.selected_places = []
+       self.viz_objects = {}
+       self.viz_places = []
        
        self.initUI()
+       
+       self.pointing_left = pointing_point("left", self.scene)
+       self.pointing_right = pointing_point("right", self.scene)
        
        QtCore.QObject.connect(self, QtCore.SIGNAL('objects()'), self.objects_evt)
        QtCore.QObject.connect(self, QtCore.SIGNAL('pointing_point()'), self.pointing_point_evt)
@@ -71,11 +65,14 @@ class simple_gui(QtGui.QWidget):
        QtCore.QObject.connect(self, QtCore.SIGNAL('show_marker()'), self.show_marker_evt)
        QtCore.QObject.connect(self, QtCore.SIGNAL('hide_marker()'), self.hide_marker_evt)
        
-       self.timer = QtCore.QTimer()
-       self.timer.start(100)
-       self.timer.timeout.connect(self.timer_evt)
+       #self.timer = QtCore.QTimer()
+       #self.timer.start(500)
+       #self.timer.timeout.connect(self.timer_evt)
+       
+       self.inited = True
     
     def show_marker(self, req):
+        
         self.emit(QtCore.SIGNAL('show_marker()'))
         return EmptyResponse()
         
@@ -85,6 +82,7 @@ class simple_gui(QtGui.QWidget):
         self.update()
         
     def hide_marker(self, req):
+        
         self.emit(QtCore.SIGNAL('hide_marker()'))
         return EmptyResponse()
     
@@ -95,13 +93,12 @@ class simple_gui(QtGui.QWidget):
     
     def clear_all_evt(self):
     
-        if self.preselected_object is not None: self.scene.removeItem(self.preselected_object)
-        self.preselected_object = None
-        for it in self.selected_objects:
-            self.scene.removeItem(it)
-        self.selected_objects = []
-        for it in self.selected_places:
-            self.scene.removeItem(it)
+        for k,  v in self.viz_objects.iteritems():
+            
+            v.unselect()
+    
+        for it in self.viz_places:
+            it.remove()
         self.selected_places = []
         
     def clear_all(self, req):
@@ -126,28 +123,7 @@ class simple_gui(QtGui.QWidget):
     
     def timer_evt(self):
     
-        # TODO check for missing pointing point and do something about it
-    
-        if self.preselected_object is not None:
-        
-            if (rospy.Time.now() - self.selected_at > rospy.Duration(2)):
-            
-                for k,v in self.objects_ellipses.iteritems():
-                    if v is self.preselected_object.parentItem():
-                        self.selected_object_pub.publish(k)
-                        
-                        sel = self.scene.addEllipse(0, 0, 180, 180, QtCore.Qt.green, QtCore.Qt.green)
-                        sel.setParentItem(self.preselected_object.parentItem())
-                        sel.setPos(150/2 + 180/2, 150/2 + 180/2)
-                        sel.setFlag(QtGui.QGraphicsItem.ItemStacksBehindParent)
-                        
-                        self.selected_objects.append(sel)
-                        
-                        self.scene.removeItem(self.preselected_object)
-                        self.preselected_object = None
-                        self.selected_at = None
-                        
-                        break
+        pass
     
     def on_resize(self, event):
     
@@ -159,99 +135,34 @@ class simple_gui(QtGui.QWidget):
         self.marker.setPixmap(self.pm.scaled(self.size(), QtCore.Qt.KeepAspectRatio))
       
     def object_cb(self, msg):
+        
+        if not self.inited: return
    
-       self.objects = msg.instances
-       self.emit(QtCore.SIGNAL('objects()'))
+        self.objects = msg.instances
+        self.emit(QtCore.SIGNAL('objects()'))
     
     def pointing_point_evt(self):
+        
+        points = [self.pointing_left,  self.pointing_right]
+        
+        for pt in points:
     
-        if self.pointing_point is None:
-        
-            self.pointing_point = self.scene.addEllipse(0, 0, 50, 50, QtCore.Qt.blue, QtCore.Qt.blue)
-            self.pointing_point.setPos(self.px + 25, self.py + 25)
-            self.pointing_point.setZValue(100)
-            
-        else:
-        
-            self.pointing_point.setPos(self.px, self.py)
-            
-        items = self.pointing_point.collidingItems()
-        
-        
-        if len(items) == 0:
-        
-            # clear preselect
-            if self.preselected_object is not None:
-                rospy.loginfo("Clearing pre-select of the object xyz") # TODO object name
-                self.scene.removeItem(self.preselected_object)
-                self.preselected_object = None
-                self.selected_at = None
-        
-            # intersection with no object might mean we are selecting a place!
-            if self.last_px is None:
-            
-                self.last_px = self.px
-                self.last_py = self.py
+            if not pt.is_active(): continue
                 
-            else:
-            
-                #print(abs(self.px - self.last_px))
-            
-                if abs(self.px - self.last_px) < self.width()*0.01 and abs(self.py - self.last_py) < self.height()*0.01:
+            for k, v in self.viz_objects.iteritems():
                 
-                    if self.place_selection_time is None:
-                    
-                        self.place_selection_time = rospy.Time.now()
-                        
-                    else:
-                    
-                        if rospy.Time.now() - self.place_selection_time > rospy.Duration(2):
-                        
-                            if self.scene.itemAt(QtCore.QPointF(self.px, self.py)) not in self.selected_places:
-                        
-                                rospy.loginfo("New place selected")
-                        
-                                pl = self.scene.addEllipse(0, 0, 100, 100, QtCore.Qt.cyan, QtCore.Qt.cyan)
-                                pl.setPos(self.px + 100/2, self.py + 100/2)
-                            
-                                self.selected_places.append(pl)
-                                
-                                self.selected_place_pub.publish(self.get_pose(self.px, self.py))
-                                
-                            else:
-                            
-                                rospy.loginfo("Already selected place")
-                    
-                else:
-                
-                    self.place_selection_time = None
-                    
-                self.last_px = self.px
-                self.last_py = self.py
+                v.pointing(pt.viz)
         
-        already_selected = False
-        
-        for it in items:
-        
-            if it not in self.objects_ellipses.values(): continue
-        
-            for so in self.selected_objects:
+            if pt.viz is None: continue
             
-                if so.parentItem() is it:
-                    already_selected = True
-                    break
-        
-            if already_selected: continue
-        
-            if self.preselected_object is None:
+            items = pt.viz.collidingItems()
             
-                self.preselected_object = self.scene.addEllipse(0, 0, 180, 180, QtCore.Qt.gray, QtCore.Qt.gray)
-                self.preselected_object.setParentItem(it)
-                self.selected_at = rospy.Time.now()
-                
-            self.preselected_object.setPos(150/2 + 180/2, 150/2 + 180/2)
-            self.preselected_object.setFlag(QtGui.QGraphicsItem.ItemStacksBehindParent)
-            break
+            if len(items) == 0 and pt.is_active() and not pt.is_moving():
+
+                rospy.loginfo("New place selected")
+                self.viz_places.append(scene_place(self.scene,  pt.pos,  self.marker_box_size,  self.selected_place_pub))
+        
+        self.update()        
         
     def objects_evt(self):
     
@@ -262,51 +173,29 @@ class simple_gui(QtGui.QWidget):
                current_objects[obj.object_id] = None
        
                (px, py) = self.get_px(obj.pose)
-       
-               if obj.object_id not in self.objects_ellipses:
-           
-                   self.objects_ellipses[obj.object_id] = self.scene.addEllipse(0, 0, 150, 150, QtCore.Qt.white, QtCore.Qt.white)
-                   self.objects_ellipses[obj.object_id].setPos(px + 150/2, py + 150/2)
-                   
-                   self.objects_labels[obj.object_id] = self.scene.addText(obj.object_id, QtGui.QFont('Arial', 16))
-                   self.objects_labels[obj.object_id].setPos(px + 120, py + 10)
-                   self.objects_labels[obj.object_id].rotate(180)
-                   self.objects_labels[obj.object_id].setDefaultTextColor(QtCore.Qt.white)
-                   
+  
+               if obj.object_id not in self.viz_objects:
+                    
+                    sobj = scene_object(self.scene,  obj.object_id,  (px,  py),  self.selected_object_pub)
+                    self.viz_objects[obj.object_id] = sobj
+                    
                else:
-               
-                   self.objects_ellipses[obj.object_id].setPos(px + 150/2, py + 150/2)
-                   self.objects_labels[obj.object_id].setPos(px + 120 + 150/2, py + 10 + 150/2)
+                   
+                   self.viz_objects[obj.object_id].set_pos((px,  py))
        
        to_delete = []            
-       for k, v in self.objects_ellipses.iteritems():
+       for k, v in self.viz_objects.iteritems():
        
            if k not in current_objects:
            
                to_delete.append(k)
+               v.remove()
                
        for d in to_delete:
        
-           self.scene.removeItem(self.objects_ellipses[d])
-           self.scene.removeItem(self.objects_labels[d])
-       
-           del self.objects_ellipses[d]
-           del self.objects_labels[d]
-            
-    def get_pose(self, px, py):
-    
-        ps = PoseStamped()
-        ps.header.frame_id = "marker"
-        ps.header.stamp = rospy.Time.now()
-        ps.pose.position.x = (self.width() - px)*self.marker_box_size/(self.height()/10.0)
-        ps.pose.position.y = py*self.marker_box_size/(self.height()/10.0)
-        ps.pose.position.z = 0.0
-        ps.pose.orientation.x = 0.0
-        ps.pose.orientation.y = 0.0
-        ps.pose.orientation.z = 0.0
-        ps.pose.orientation.w = 1.0
-        
-        return ps
+           del self.viz_objects[d]
+           
+       self.update()
     
     def get_px(self, pose):
     
@@ -315,16 +204,28 @@ class simple_gui(QtGui.QWidget):
        
        return (px, py)
      
-    def pointing_point(self, msg):
+    def pointing_point_left_cb(self, msg):
+        
+        if not self.inited: return
        
-       (px, py) = self.get_px(msg.pose)
+        (px, py) = self.get_px(msg.pose)
        
-       if (px in range(0, self.width()) and py in range(0, self.height())):
+        if (px in range(0, self.width()) and py in range(0, self.height())):
+           
+           self.pointing_left.set_pos((px,  py))
+           #print("px: " + str(px) + " py: " + str(py))
+           self.emit(QtCore.SIGNAL('pointing_point()'))
+           
+    def pointing_point_right_cb(self, msg):
+        
+        if not self.inited: return
        
-           self.px = px
-           self.py = py
+        (px, py) = self.get_px(msg.pose)
        
-           #print("px: " + str(self.px) + " py: " + str(self.py))
+        if (px in range(0, self.width()) and py in range(0, self.height())):
+       
+           self.pointing_right.set_pos((px,  py))
+           #print("px: " + str(px) + " py: " + str(py))
            self.emit(QtCore.SIGNAL('pointing_point()'))
        
 def main(args):
@@ -337,7 +238,7 @@ def main(args):
     window = simple_gui()
     
     desktop = QtGui.QDesktopWidget()
-    geometry = desktop.screenGeometry(1)
+    geometry = desktop.screenGeometry(1) # 1
     window.move(geometry.left(), geometry.top())
     window.resize(geometry.width(), geometry.height())
     window.showFullScreen()
