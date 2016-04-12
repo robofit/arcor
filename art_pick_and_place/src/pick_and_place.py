@@ -21,7 +21,8 @@ timestamp = None
 
 class PickAndPlace:
     def __init__(self):
-        self.client = actionlib.SimpleActionClient('/pr2_pick_place/pp', pickplaceAction)
+        self.client = actionlib.SimpleActionClient('/pr2_pick_place_left/pp', pickplaceAction)
+        print "waiting for server"
         self.client.wait_for_server()
         self.goal_id = 0
 
@@ -29,46 +30,48 @@ class PickAndPlace:
         goal = pickplaceGoal()
 
         self.goal_id += 1
-        goal.id = "asdf"
-
+        goal.id = obj
+        
         goal.operation = goal.PICK
 
         goal.keep_orientation = False
         print "asdf \n\n"
         print obj
-        goal.bb = obj['bbox']
+        #goal.bb = obj['bbox']
 
-        goal.arm = goal.LEFT_ARM
+        
 
-        goal.pose = PoseStamped()
+        '''goal.pose = PoseStamped()
         goal.pose.header.frame_id = obj['frame_id']
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.pose = obj['pose']
         goal.pose.pose.position.z -= obj['bbox'].dimensions[2]/2
-
+        '''
         rospy.loginfo('sending goal')
         self.client.send_goal(goal)
 
         self.client.wait_for_result()
         pass
 
-    def place(self, pose, obj):
+    def place(self, pose):
         """
 
         :type pose: PoseStamped
         :return:
         """
+        print "placing"
         goal = pickplaceGoal()
         goal.operation = goal.PLACE
-        goal.z_axis_angle_increment = (2*3.14)/360*90
+        #goal.z_axis_angle_increment = (2*3.14)/360*90
         self.goal_id += 1
-        goal.id = self.goal_id
-        goal.pose2 = PoseStamped()
+        goal.id = "asdf"
+        goal.place_pose = PoseStamped()
 
-        goal.pose2 = pose
-        goal.pose2.header.stamp = rospy.Time.now()
-        goal.pose2.pose.position.z = 0.74 + 0.06# + obj.bbox.dimensions[2]/2
-
+        goal.place_pose = pose
+        goal.place_pose.header.stamp = rospy.Time.now()
+        goal.place_pose.pose.position.z = 0.74 + 0.06# + obj.bbox.dimensions[2]/2
+        self.client.send_goal(goal)
+        self.client.wait_for_result()
 
 def obj_cb(objects_data):
     global objects
@@ -113,7 +116,7 @@ def point_cb(point_data):
 def main(args):
 
     rospy.init_node('art_pick_and_place')
-    point_sub = rospy.Subscriber('/pointing_point', PoseStamped, point_cb)
+    #point_sub = rospy.Subscriber('/pointing_point', PoseStamped, point_cb)
     global object_key
     obj_sub = rospy.Subscriber('/art_object_detector/object_filtered', InstancesArray, obj_cb)
     state = NOTHING
@@ -125,21 +128,26 @@ def main(args):
         while not rospy.is_shutdown():
             #print state
             if state == NOTHING:
-                #obj_id = rospy.wait_for_message("/object_to_pick", String)
-                if object_key is not None:
-		
-                    
-                    if object_key in objects.keys():
-                        holding_obj_id = object_key
-                        pick_and_place.pick(objects[holding_obj_id])
+                obj_id = rospy.wait_for_message("/art_simple_gui/selected_object", String)
+                print obj_id
+                #if object_key is not None:
+		obj_id = obj_id.data
+		if obj_id is not None:
+                    print "ok"
+                    print objects.keys()
+                    if obj_id in objects.keys():
+                        holding_obj_id = obj_id
+                        print "call pick"
+                        #pick_and_place.pick(objects[holding_obj_id])
+                        pick_and_place.pick(holding_obj_id)
                         state = PICKED
                     object_key = None
             elif state == PICKED:
                 if holding_obj_id is not None:
-                    place_to_put = rospy.wait_for_message("/place_to_put", PoseStamped)
+                    place_to_put = rospy.wait_for_message("/art_simple_gui/selected_place", PoseStamped)
                     print place_to_put
 
-                    pick_and_place.place(place_to_put, objects[holding_obj_id])
+                    pick_and_place.place(place_to_put)
 
                 state = NOTHING
     except KeyboardInterrupt:

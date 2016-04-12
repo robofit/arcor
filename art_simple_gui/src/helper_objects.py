@@ -74,6 +74,8 @@ class scene_object():
         
         self.pos = pos
         self.viz.setPos(self.pos[0] - 150/2, self.pos[1] - 150/2)
+        #self.viz.setPos(self.pos[0] + 150/2, self.pos[1] + 150/2)
+        #self.viz.setPos(self.pos[0], self.pos[1])
         self.label.setPos(120,  -10)
     
     def timer_evt(self):
@@ -91,7 +93,6 @@ class scene_object():
     def remove(self):
         
         self.scene.removeItem(self.viz)
-        self.scene.removeItem(self.label)
         self.viz = None
         self.label = None
         
@@ -167,7 +168,7 @@ class pointing_point():
         self.moving = False
         
         self.timer = QtCore.QTimer()
-        self.timer.start(500)
+        self.timer.start(100)
         self.timer.timeout.connect(self.timer_evt)
     
     def is_moving(self):
@@ -190,10 +191,12 @@ class pointing_point():
 
     def is_active(self):
         
-        if self.timestamp is None: return False
+        if self.timestamp is None or self.last_timer_pos is None: return False
         else: return True
 
     def timer_evt(self):
+        
+        # TODO buffer pos for 1/2 secs and look for mean and std dev
         
         if self.timestamp is None: return
         
@@ -202,14 +205,15 @@ class pointing_point():
             dx = abs(self.pos[0] - self.last_timer_pos[0])
             dy = abs(self.pos[1] - self.last_timer_pos[1])
             m = min(self.scene.width(),  self.scene.height())
-            
-            if dx  > m*0.001 or dy > m*0.001:
+
+            if dx  > m*0.01 or dy > m*0.01:
                 
                 self.last_move = rospy.Time.now()
                 
-            if rospy.Time.now() - self.last_move > rospy.Duration(2):
+            if rospy.Time.now() - self.last_move > rospy.Duration(1):
                 self.moving = False
-            else: self.moving = True
+            else:
+                self.moving = True
         
         self.last_timer_pos = self.pos
         
