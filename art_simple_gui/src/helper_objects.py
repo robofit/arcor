@@ -1,6 +1,7 @@
 import rospy
 from PyQt4 import QtGui, QtCore
 from geometry_msgs.msg import PoseStamped
+import numpy as np
 
 class scene_place():
     
@@ -158,29 +159,32 @@ class pointing_point():
         self.scene = scene
         
         self.pos = (0,  0)
-        self.last_pos = (0,  0)
-        self.last_timer_pos = (0,  0)
         
         self.viz = None
         self.timestamp = None
         
-        self.last_move = None
-        self.moving = False
+        self.x = []
+        self.y = []
+        self.pointed_pos = None
         
         self.timer = QtCore.QTimer()
         self.timer.start(100)
         self.timer.timeout.connect(self.timer_evt)
-    
-    def is_moving(self):
+
+    def get_pointed_place(self):
         
-        return self.moving
+        return self.pointed_pos
     
     def set_pos(self,  pos):
         
         self.timestamp = rospy.Time.now()
-        self.last_pos = self.pos
         self.pos = pos
-        #print("set_pos for :" + self.id)
+        
+        self.x.append(self.pos[0])
+        self.y.append(self.pos[1])
+        
+        if len(self.x) > 10: self.x.pop(0)
+        if len(self.y) > 10: self.y.pop(0)
         
         if self.viz is None:
         
@@ -191,34 +195,35 @@ class pointing_point():
 
     def is_active(self):
         
-        if self.timestamp is None or self.last_timer_pos is None: return False
+        if self.timestamp is None: return False
         else: return True
 
     def timer_evt(self):
         
-        # TODO buffer pos for 1/2 secs and look for mean and std dev
-        
         if self.timestamp is None: return
         
-        if self.last_timer_pos is not None:
+        if len(self.x) == 10:
         
-            dx = abs(self.pos[0] - self.last_timer_pos[0])
-            dy = abs(self.pos[1] - self.last_timer_pos[1])
-            m = min(self.scene.width(),  self.scene.height())
-
-            if dx  > m*0.01 or dy > m*0.01:
-                
-                self.last_move = rospy.Time.now()
-                
-            if rospy.Time.now() - self.last_move > rospy.Duration(1):
-                self.moving = False
-            else:
-                self.moving = True
-        
-        self.last_timer_pos = self.pos
-        
-        if rospy.Time.now() - self.timestamp > rospy.Duration(1):
+            xm = np.mean(self.x)
+            ym = np.mean(self.y)
             
+            xs = np.std(self.x)
+            ys = np.std(self.y)
+            
+            if xs > 0.01 and xs < 10.0 and ys > 0.01 and ys < 10.0:
+                
+                self.pointed_pos = (xm,  ym)
+                
+            else:
+                
+                self.pointed_pos = None
+            
+        
+        if rospy.Time.now() - self.timestamp > rospy.Duration(2):
+            
+            self.x = []
+            self.y = []
+            self.pointed_pos = None
             self.scene.removeItem(self.viz)
             self.viz = None
             self.timestamp = None

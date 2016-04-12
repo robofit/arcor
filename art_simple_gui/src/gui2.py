@@ -157,10 +157,11 @@ class simple_gui(QtGui.QWidget):
             
             items = pt.viz.collidingItems()
             
-            if len(items) == 0 and pt.is_active() and not pt.is_moving():
+            pointed_place = pt.get_pointed_place()
+            if len(items) == 0 and pointed_place is not None:
 
                 rospy.loginfo("New place selected")
-                self.viz_places.append(scene_place(self.scene,  pt.pos,  self.marker_box_size,  self.selected_place_pub))
+                self.viz_places.append(scene_place(self.scene,  pointed_place,  self.marker_box_size,  self.selected_place_pub))
         
         self.update()        
         
