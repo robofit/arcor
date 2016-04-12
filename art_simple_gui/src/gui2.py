@@ -33,7 +33,7 @@ class simple_gui(QtGui.QWidget):
        self.img_path = rospack.get_path('art_simple_gui') + '/imgs'
        
        self.obj_sub = rospy.Subscriber('/art_object_detector/object_filtered', InstancesArray, self.object_cb)
-       self.point_sub = rospy.Subscriber('/pointing_point', PoseStamped, self.pointing_point)
+       self.point_sub = rospy.Subscriber('/pointing_right', PoseStamped, self.pointing_point) # TODO left!
        
        self.selected_object_pub = rospy.Publisher("/art_simple_gui/selected_object", String, queue_size=10)
        self.selected_place_pub = rospy.Publisher("/art_simple_gui/selected_place", PoseStamped, queue_size=10)
@@ -42,7 +42,7 @@ class simple_gui(QtGui.QWidget):
        self.srv_hide_marker = rospy.Service('/art_simple_gui/hide_marker', Empty, self.hide_marker)
        self.srv_clear_all = rospy.Service('/art_simple_gui/clear_all', Empty, self.clear_all) # clear all selections etc.
        
-       self.marker_box_size = rospy.get_param("/art_params/marker_box_size", 0.075)
+       self.marker_box_size = rospy.get_param("/art_params/marker_box_size", 0.0685)
        
        self.objects = None
        self.objects_ellipses = {}
@@ -68,21 +68,31 @@ class simple_gui(QtGui.QWidget):
        QtCore.QObject.connect(self, QtCore.SIGNAL('objects()'), self.objects_evt)
        QtCore.QObject.connect(self, QtCore.SIGNAL('pointing_point()'), self.pointing_point_evt)
        QtCore.QObject.connect(self, QtCore.SIGNAL('clear_all()'), self.clear_all_evt)
+       QtCore.QObject.connect(self, QtCore.SIGNAL('show_marker()'), self.show_marker_evt)
+       QtCore.QObject.connect(self, QtCore.SIGNAL('hide_marker()'), self.hide_marker_evt)
        
        self.timer = QtCore.QTimer()
        self.timer.start(100)
        self.timer.timeout.connect(self.timer_evt)
     
     def show_marker(self, req):
-        # TODO use signal
-        self.marker.show()
+        self.emit(QtCore.SIGNAL('show_marker()'))
         return EmptyResponse()
+        
+    def show_marker_evt(self):
+        
+        self.marker.show()
+        self.update()
         
     def hide_marker(self, req):
-        # TODO use signal
-        self.marker.hide()
+        self.emit(QtCore.SIGNAL('hide_marker()'))
         return EmptyResponse()
+    
+    def hide_marker_evt(self):
         
+        self.marker.hide()
+        self.update()
+    
     def clear_all_evt(self):
     
         if self.preselected_object is not None: self.scene.removeItem(self.preselected_object)
@@ -128,7 +138,7 @@ class simple_gui(QtGui.QWidget):
                         
                         sel = self.scene.addEllipse(0, 0, 180, 180, QtCore.Qt.green, QtCore.Qt.green)
                         sel.setParentItem(self.preselected_object.parentItem())
-                        sel.setPos(150/2 - 180/2, 150/2 - 180/2)
+                        sel.setPos(150/2 + 180/2, 150/2 + 180/2)
                         sel.setFlag(QtGui.QGraphicsItem.ItemStacksBehindParent)
                         
                         self.selected_objects.append(sel)
@@ -158,7 +168,7 @@ class simple_gui(QtGui.QWidget):
         if self.pointing_point is None:
         
             self.pointing_point = self.scene.addEllipse(0, 0, 50, 50, QtCore.Qt.blue, QtCore.Qt.blue)
-            self.pointing_point.setPos(self.px - 25, self.py - 25)
+            self.pointing_point.setPos(self.px + 25, self.py + 25)
             self.pointing_point.setZValue(100)
             
         else:
@@ -202,7 +212,7 @@ class simple_gui(QtGui.QWidget):
                                 rospy.loginfo("New place selected")
                         
                                 pl = self.scene.addEllipse(0, 0, 100, 100, QtCore.Qt.cyan, QtCore.Qt.cyan)
-                                pl.setPos(self.px - 100/2, self.py - 100/2)
+                                pl.setPos(self.px + 100/2, self.py + 100/2)
                             
                                 self.selected_places.append(pl)
                                 
@@ -239,7 +249,7 @@ class simple_gui(QtGui.QWidget):
                 self.preselected_object.setParentItem(it)
                 self.selected_at = rospy.Time.now()
                 
-            self.preselected_object.setPos(150/2 - 180/2, 150/2 - 180/2)
+            self.preselected_object.setPos(150/2 + 180/2, 150/2 + 180/2)
             self.preselected_object.setFlag(QtGui.QGraphicsItem.ItemStacksBehindParent)
             break
         
@@ -256,17 +266,17 @@ class simple_gui(QtGui.QWidget):
                if obj.object_id not in self.objects_ellipses:
            
                    self.objects_ellipses[obj.object_id] = self.scene.addEllipse(0, 0, 150, 150, QtCore.Qt.white, QtCore.Qt.white)
-                   self.objects_ellipses[obj.object_id].setPos(px - 150/2, py - 150/2)
+                   self.objects_ellipses[obj.object_id].setPos(px + 150/2, py + 150/2)
                    
                    self.objects_labels[obj.object_id] = self.scene.addText(obj.object_id, QtGui.QFont('Arial', 16))
-                   self.objects_labels[obj.object_id].setPos(px + 120, py - 10)
+                   self.objects_labels[obj.object_id].setPos(px + 120, py + 10)
                    self.objects_labels[obj.object_id].rotate(180)
                    self.objects_labels[obj.object_id].setDefaultTextColor(QtCore.Qt.white)
                    
                else:
                
-                   self.objects_ellipses[obj.object_id].setPos(px - 150/2, py - 150/2)
-                   self.objects_labels[obj.object_id].setPos(px + 120 - 150/2, py - 10 - 150/2)
+                   self.objects_ellipses[obj.object_id].setPos(px + 150/2, py + 150/2)
+                   self.objects_labels[obj.object_id].setPos(px + 120 + 150/2, py + 10 + 150/2)
        
        to_delete = []            
        for k, v in self.objects_ellipses.iteritems():
@@ -327,7 +337,7 @@ def main(args):
     window = simple_gui()
     
     desktop = QtGui.QDesktopWidget()
-    geometry = desktop.screenGeometry(0) # 1
+    geometry = desktop.screenGeometry(1)
     window.move(geometry.left(), geometry.top())
     window.resize(geometry.width(), geometry.height())
     window.showFullScreen()
