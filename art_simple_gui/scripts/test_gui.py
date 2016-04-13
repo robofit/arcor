@@ -83,7 +83,7 @@ def main():
     
         if psr.pose.position.x < 0.8:
         
-            psr.pose.position.x += 0.002
+            psr.pose.position.x += 0.003
             
         else:
         
@@ -100,7 +100,7 @@ def main():
         else:
         
             ps.pose.position.x = 0
-            psr.pose.position.y = 0.5
+            ps.pose.position.y = 0.5
             
         if isclose(ps.pose.position.x, 0.5):
         

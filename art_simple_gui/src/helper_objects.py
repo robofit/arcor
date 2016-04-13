@@ -114,7 +114,7 @@ class scene_object():
         
     def pointing(self,  pointing_obj):
         
-        if self.viz not in pointing_obj.collidingItems(): return
+        if self.viz not in pointing_obj.collidingItems(): return False
         
         self.pointed_at = rospy.Time.now()
         
@@ -130,12 +130,12 @@ class scene_object():
             self.viz_preselect.setPos(150/2 - 180/2, 150/2 - 180/2)
             self.viz_preselect.setFlag(QtGui.QGraphicsItem.ItemStacksBehindParent)
             
-            return
+            return False
         
         if not self.selected:
            
           if rospy.Time.now() - self.preselected_at > rospy.Duration(1): self.selected = True
-          else: return
+          else: return False
         
         # TODO how to unselect by user?
       
@@ -150,6 +150,7 @@ class scene_object():
             self.viz_selected.setFlag(QtGui.QGraphicsItem.ItemStacksBehindParent)
             self.scene.removeItem(self.viz_preselect)
             self.viz_preselect = None
+            return True
 
 class pointing_point():
     
@@ -179,10 +180,13 @@ class pointing_point():
         self.timestamp = rospy.Time.now()
         self.pos = pos
         
+        # TODO what to do if pos differs much? like from 1280 to 0 or so
+        
         self.xyt.append([self.pos, rospy.Time.now()])
         
         if self.viz is None:
         
+            rospy.loginfo("Enabling pointing-point: " + self.id)
             self.viz = self.scene.addEllipse(0, 0, 50, 50, QtCore.Qt.blue, QtCore.Qt.blue)
             self.viz.setZValue(100)
             
@@ -197,13 +201,15 @@ class pointing_point():
         
         if self.timestamp is None: return
         
+        now = rospy.Time.now()
+        
         # throw away older data
-        while len(self.xyt) > 0 and self.timestamp - self.xyt[0][1] > rospy.Duration(2):
+        while len(self.xyt) > 0 and now - self.xyt[0][1] > rospy.Duration(2):
             
             self.xyt.pop(0)
         
         # wait until we have some data
-        if len(self.xyt) > 0 and self.timestamp - self.xyt[0][1] > rospy.Duration(1.5):
+        if len(self.xyt) > 10 and now - self.xyt[0][1] > rospy.Duration(1.5):
             
             x = []
             y = []
@@ -221,16 +227,17 @@ class pointing_point():
             
             # if "cursor" position move a bit (noise) but doesn't move too much - the user is pointing somewhere
             if xs > 0.01 and xs < 10.0 and ys > 0.01 and ys < 10.0:
+            #if xs < 10.0 and ys < 10.0: # -> this is only for testing
                 
-                self.pointed_pos = (xm,  ym)
+                self.pointed_pos = (int(xm),  int(ym))
                 
             else:
                 
                 self.pointed_pos = None
         
-        
         if len(self.xyt) == 0:
             
+            rospy.loginfo("Disabling pointing-point: " + self.id)
             self.pointed_pos = None
             self.scene.removeItem(self.viz)
             self.viz = None
