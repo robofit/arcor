@@ -163,8 +163,7 @@ class pointing_point():
         self.viz = None
         self.timestamp = None
         
-        self.x = []
-        self.y = []
+        self.xyt = []
         self.pointed_pos = None
         
         self.timer = QtCore.QTimer()
@@ -180,11 +179,7 @@ class pointing_point():
         self.timestamp = rospy.Time.now()
         self.pos = pos
         
-        self.x.append(self.pos[0])
-        self.y.append(self.pos[1])
-        
-        if len(self.x) > 10: self.x.pop(0)
-        if len(self.y) > 10: self.y.pop(0)
+        self.xyt.append([self.pos, rospy.Time.now()])
         
         if self.viz is None:
         
@@ -202,14 +197,29 @@ class pointing_point():
         
         if self.timestamp is None: return
         
-        if len(self.x) == 10:
+        # throw away older data
+        while len(self.xyt) > 0 and self.timestamp - self.xyt[0][1] > rospy.Duration(2):
+            
+            self.xyt.pop(0)
         
-            xm = np.mean(self.x)
-            ym = np.mean(self.y)
+        # wait until we have some data
+        if len(self.xyt) > 0 and self.timestamp - self.xyt[0][1] > rospy.Duration(1.5):
             
-            xs = np.std(self.x)
-            ys = np.std(self.y)
+            x = []
+            y = []
             
+            for it in self.xyt:
+                
+                x.append(it[0][0])
+                y.append(it[0][1])
+        
+            xm = np.mean(x)
+            ym = np.mean(y)
+            
+            xs = np.std(x)
+            ys = np.std(y)
+            
+            # if "cursor" position move a bit (noise) but doesn't move too much - the user is pointing somewhere
             if xs > 0.01 and xs < 10.0 and ys > 0.01 and ys < 10.0:
                 
                 self.pointed_pos = (xm,  ym)
@@ -217,12 +227,10 @@ class pointing_point():
             else:
                 
                 self.pointed_pos = None
-            
         
-        if rospy.Time.now() - self.timestamp > rospy.Duration(2):
+        
+        if len(self.xyt) == 0:
             
-            self.x = []
-            self.y = []
             self.pointed_pos = None
             self.scene.removeItem(self.viz)
             self.viz = None

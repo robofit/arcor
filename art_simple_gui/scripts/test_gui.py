@@ -6,7 +6,7 @@ from shape_msgs.msg import SolidPrimitive
 from art_msgs.msg import InstancesArray, ObjInstance
 import random
 
-def isclose(a, b, rel_tol=0.02, abs_tol=0.0):
+def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
     return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
 def main():
@@ -84,8 +84,6 @@ def main():
         if psr.pose.position.x < 0.8:
         
             psr.pose.position.x += 0.002
-            #psr.pose.position.x += 0.002 + random.uniform(-noise, noise)
-            #psr.pose.position.x +=  + random.uniform(-noise, noise)
             
         else:
         
@@ -97,8 +95,7 @@ def main():
     
         if ps.pose.position.x < 0.8:
         
-            ps.pose.position.x += 0.002 + random.uniform(-noise, noise)
-            ps.pose.position.y += random.uniform(-noise, noise)
+            ps.pose.position.x += 0.002
             
         else:
         
