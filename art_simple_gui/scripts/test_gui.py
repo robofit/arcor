@@ -77,15 +77,18 @@ def main():
     psr.pose.orientation.z = 0.0
     psr.pose.orientation.w = 1.0
     
+    noise = 0.0001
+    
     while(not rospy.is_shutdown()):
     
         if psr.pose.position.x < 0.8:
         
-            psr.pose.position.x += 0.002
+            psr.pose.position.x += 0.003
             
         else:
         
             psr.pose.position.x = 0
+            psr.pose.position.y = 0.3
             
         pub_point_right.publish(psr)   
     
@@ -97,6 +100,7 @@ def main():
         else:
         
             ps.pose.position.x = 0
+            ps.pose.position.y = 0.5
             
         if isclose(ps.pose.position.x, 0.5):
         

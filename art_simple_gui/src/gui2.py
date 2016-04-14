@@ -13,10 +13,12 @@ from geometry_msgs.msg import PoseStamped
 from std_srvs.srv import Empty, EmptyResponse
 
 from helper_objects import scene_place,  scene_object,  pointing_point
+import numpy as np
 
-# 12.5 x 10
-
-# TODO notifications ?
+# TODO modes of operation (states) - currently only pick (object selection) and place (place selection)
+# TODO step back?
+# TODO fix place selection when marker is shown (self.ignored_items ?? -> also label should be there)
+# TODO notifications / state information ?
 # TODO draw bottom side of bounding box
 # TODO fix position of object_id
 
@@ -24,7 +26,6 @@ def sigint_handler(*args):
     """Handler for the SIGINT signal."""
     sys.stderr.write('\r')
     QtGui.QApplication.quit()
-
 
 class simple_gui(QtGui.QWidget):
 
@@ -54,20 +55,29 @@ class simple_gui(QtGui.QWidget):
        self.viz_objects = {}
        self.viz_places = []
        
+       self.object_selected = False
+       self.place_selected = False
+       
        self.initUI()
        
        self.pointing_left = pointing_point("left", self.scene)
        self.pointing_right = pointing_point("right", self.scene)
        
        QtCore.QObject.connect(self, QtCore.SIGNAL('objects()'), self.objects_evt)
-       QtCore.QObject.connect(self, QtCore.SIGNAL('pointing_point()'), self.pointing_point_evt)
+       QtCore.QObject.connect(self, QtCore.SIGNAL('pointing_point_left'), self.pointing_point_left_evt)
+       QtCore.QObject.connect(self, QtCore.SIGNAL('pointing_point_right'), self.pointing_point_right_evt)
        QtCore.QObject.connect(self, QtCore.SIGNAL('clear_all()'), self.clear_all_evt)
        QtCore.QObject.connect(self, QtCore.SIGNAL('show_marker()'), self.show_marker_evt)
        QtCore.QObject.connect(self, QtCore.SIGNAL('hide_marker()'), self.hide_marker_evt)
        
-       #self.timer = QtCore.QTimer()
-       #self.timer.start(500)
-       #self.timer.timeout.connect(self.timer_evt)
+       self.timer = QtCore.QTimer()
+       self.timer.start(500)
+       self.timer.timeout.connect(self.timer_evt)
+       
+       self.label = self.scene.addText("Waiting for user",  QtGui.QFont('Arial', 26))
+       self.label.rotate(180)
+       self.label.setDefaultTextColor(QtCore.Qt.white)
+       self.label.setZValue(200)
        
        self.inited = True
     
@@ -79,7 +89,6 @@ class simple_gui(QtGui.QWidget):
     def show_marker_evt(self):
         
         self.marker.show()
-        self.update()
         
     def hide_marker(self, req):
         
@@ -89,9 +98,12 @@ class simple_gui(QtGui.QWidget):
     def hide_marker_evt(self):
         
         self.marker.hide()
-        self.update()
     
     def clear_all_evt(self):
+        
+        self.object_selected = False
+        self.place_selected = False
+        self.label.setPlainText("Waiting for user")
     
         for k,  v in self.viz_objects.iteritems():
             
@@ -99,7 +111,7 @@ class simple_gui(QtGui.QWidget):
     
         for it in self.viz_places:
             it.remove()
-        self.selected_places = []
+        self.viz_places = []
         
     def clear_all(self, req):
     
@@ -112,6 +124,7 @@ class simple_gui(QtGui.QWidget):
        self.scene.setBackgroundBrush(QtCore.Qt.black)
        self.view = QtGui.QGraphicsView(self.scene, self)
        self.view.setRenderHint(QtGui.QPainter.Antialiasing)
+       self.view.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
        #self.view.setViewport(QtOpenGL.QGLWidget())
        
        self.pm = QtGui.QPixmap(self.img_path + "/koberec.png")
@@ -123,7 +136,9 @@ class simple_gui(QtGui.QWidget):
     
     def timer_evt(self):
     
-        pass
+        if not self.pointing_left.is_active() and not self.pointing_right.is_active():
+            
+            self.label.setPlainText("Waiting for user")
     
     def on_resize(self, event):
     
@@ -133,36 +148,76 @@ class simple_gui(QtGui.QWidget):
         self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff);
         self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff);
         self.marker.setPixmap(self.pm.scaled(self.size(), QtCore.Qt.KeepAspectRatio))
+        self.label.setPos(self.width() - 70,  70)
       
     def object_cb(self, msg):
-        
-        if not self.inited: return
-   
-        self.objects = msg.instances
+
+        self.objects = msg.instances # TODO send as signal argument?
         self.emit(QtCore.SIGNAL('objects()'))
     
-    def pointing_point_evt(self):
-        
-        points = [self.pointing_left,  self.pointing_right]
-        
-        for pt in points:
-    
-            if not pt.is_active(): continue
+    def pointing_point_left_evt(self,  pos):
+
+        if (pos[0] in range(0, self.width()) and pos[1] in range(0, self.height())):
                 
+           self.pointing_left.set_pos(pos)
+           self.pointing_point(self.pointing_left)
+           
+    def pointing_point_right_evt(self,  pos):
+        
+        if (pos[0] in range(0, self.width()) and pos[1] in range(0, self.height())):
+           
+           self.pointing_right.set_pos(pos)
+           self.pointing_point(self.pointing_right)
+    
+    def pointing_point(self,  pt):
+        
+        if self.place_selected:
+
+            self.label.setPlainText("Wait please...")
+            return
+        
+        if not self.object_selected: # TODO special topic user_present?
+            
+            self.label.setPlainText("Select an object")
+             
+        else:
+            
+            self.label.setPlainText("Select a place")
+        
+        if not pt.is_active() or pt.viz is None: return
+        
+        if not self.object_selected:
+            
             for k, v in self.viz_objects.iteritems():
                 
-                v.pointing(pt.viz)
+                if v.pointing(pt.viz) is True:
+                    
+                    rospy.loginfo("Object selected, now select place") # TODO "attach" object shape to the pointing point(s)?
+                    self.object_selected = True
+                    break
         
-            if pt.viz is None: continue
+        if self.object_selected is False: return
+        
+        items = self.scene.collidingItems(pt.viz)
+        pointed_place = pt.get_pointed_place()
+        
+        if len(items) == 0 and (pointed_place is not None):
             
-            items = pt.viz.collidingItems()
-            
-            if len(items) == 0 and pt.is_active() and not pt.is_moving():
+            # TODO how to keep some minimal spacing between places?
+            skip = False
+            for pl in self.viz_places:
+                
+                if np.linalg.norm(np.array(pl.pos) - np.array(pointed_place)) < 150:
+                    
+                    rospy.logwarn(pt.id + ": place near to x=" + str(pointed_place[0]) + ", y=" + str(pointed_place[1]) + " already exists")
+                    skip = True
+                    break
 
-                rospy.loginfo("New place selected")
-                self.viz_places.append(scene_place(self.scene,  pt.pos,  self.marker_box_size,  self.selected_place_pub))
-        
-        self.update()        
+            if skip: return
+
+            rospy.loginfo(pt.id + ": new place selected at x=" + str(pointed_place[0]) + ", y=" + str(pointed_place[1]))
+            self.viz_places.append(scene_place(self.scene,  pointed_place,  self.marker_box_size,  self.selected_place_pub))
+            self.place_selected = True
         
     def objects_evt(self):
     
@@ -199,7 +254,7 @@ class simple_gui(QtGui.QWidget):
     
     def get_px(self, pose):
     
-       px = self.width() - int((pose.position.x / self.marker_box_size) * self.height()/10.0)
+       px = int(self.width() - int((pose.position.x / self.marker_box_size) * self.height()/10.0))
        py = int((pose.position.y / self.marker_box_size) * self.height()/10.0)
        
        return (px, py)
@@ -208,25 +263,15 @@ class simple_gui(QtGui.QWidget):
         
         if not self.inited: return
        
-        (px, py) = self.get_px(msg.pose)
-       
-        if (px in range(0, self.width()) and py in range(0, self.height())):
-           
-           self.pointing_left.set_pos((px,  py))
-           #print("px: " + str(px) + " py: " + str(py))
-           self.emit(QtCore.SIGNAL('pointing_point()'))
+        pos = self.get_px(msg.pose)
+        self.emit(QtCore.SIGNAL('pointing_point_left'),  pos)
            
     def pointing_point_right_cb(self, msg):
         
         if not self.inited: return
        
-        (px, py) = self.get_px(msg.pose)
-       
-        if (px in range(0, self.width()) and py in range(0, self.height())):
-       
-           self.pointing_right.set_pos((px,  py))
-           #print("px: " + str(px) + " py: " + str(py))
-           self.emit(QtCore.SIGNAL('pointing_point()'))
+        pos = self.get_px(msg.pose)
+        self.emit(QtCore.SIGNAL('pointing_point_right'),  pos)
        
 def main(args):
     
