@@ -24,11 +24,20 @@ umfLocalizerNode::umfLocalizerNode(ros::NodeHandle& nh): it_(nh), as_(nh, "local
 
   as_.start();
 
+  nh_.param("filt_coef_pos", filt_coef_pos_, 0.1);
+  nh_.param("filt_coef_rot", filt_coef_rot_, 0.1);
+  nh_.param<std::string>("robot_frame", robot_frame_, "odom_combined");
+  nh_.param<std::string>("world_frame", world_frame_, "marker");
+  nh_.param<double>("square_size", square_size_, 0.1);
+  nh_.param("continuous_mode", continuous_mode_, false);
+
 }
 
 void umfLocalizerNode::goalCB() {
 
+    detection_cnt_ = 0;
     localization_to_ = as_.acceptNewGoal()->timeout;
+    if (localization_to_ < ros::Duration(0.5)) localization_to_ = ros::Duration(0.5);
     localization_start_ = ros::Time::now();
     cam_image_sub_ = it_.subscribe("/cam_image_topic", 1, &umfLocalizerNode::cameraImageCallback, this);
     ROS_INFO("new goal");
@@ -45,8 +54,6 @@ void umfLocalizerNode::preemptCB() {
 bool umfLocalizerNode::init() {
 
   string marker;
-
-  nh_.param("continuous_mode", continuous_mode_, false);
 
   if (nh_.hasParam("marker")) {
   
@@ -74,10 +81,6 @@ bool umfLocalizerNode::init() {
       return false;
   
   }
-  
-  nh_.param<std::string>("robot_frame", robot_frame_, "odom_combined");
-  nh_.param<std::string>("world_frame", world_frame_, "marker");
-  nh_.param<double>("square_size", square_size_, 0.1);
   
   ROS_INFO_STREAM("Ready! Robot frame: " << robot_frame_ << ", world frame: " << world_frame_ << ", square size: " << square_size_ << ".");
   if (continuous_mode_) ROS_INFO("Continuous mode.");
@@ -134,6 +137,40 @@ geometry_msgs::Pose umfLocalizerNode::inverse(geometry_msgs::Pose pose) {
 void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg) {
 
   ROS_INFO_ONCE("camera image received");
+
+  // TODO move to separate timer?
+  if (!continuous_mode_ && (ros::Time::now() - localization_start_) > localization_to_) {
+
+      cam_image_sub_.shutdown();
+
+      if (detection_cnt_ > 0) {
+
+          tf::Quaternion q(pose_filtered_.pose.orientation);
+          q.normalize();
+
+          tf::Transform tr;
+          tr.setOrigin(tf::Vector3(pose_filtered_.pose.position.x, pose_filtered_.pose.position.y, pose_filtered_.pose.position.z));
+          tr.setRotation(q);
+
+          tr_ = tf::StampedTransform(tr.inverse(), ros::Time::now(), world_frame_, robot_frame_);
+
+          ROS_INFO("Finished");
+          art_msgs::LocalizeAgainstUMFResult res;
+          res.result = res.RES_FINISHED;
+          as_.setSucceeded(res);
+          tr_timer_ = nh_.createTimer(ros::Duration(0.1), &umfLocalizerNode::trCallback, this);
+          return;
+
+      }
+
+      ROS_INFO("Timeout");
+      art_msgs::LocalizeAgainstUMFResult res;
+      res.result = res.RES_DETECTION_FAILED;
+      as_.setAborted(res, "No detection");
+      cam_image_sub_.shutdown();
+      return;
+
+  }
   
   cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO8);
   IplImage iplimg = cv_ptr->image;
@@ -143,17 +180,6 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
   
   bool success = false;
 
-  if (!continuous_mode_ && (ros::Time::now() - localization_start_) > localization_to_) {
-
-      ROS_INFO("timeout");
-      art_umf_localizer::LocalizeAgainstUMFResult res;
-      res.result = res.RES_DETECTION_FAILED;
-      as_.setAborted(res);
-      cam_image_sub_.shutdown();
-      return;
-
-  }
-  
   try{
   
       success = detector_->update(imgGray, -1.f);
@@ -201,28 +227,48 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
         return;
       }
 
-    pose_pub_.publish(pose);
-
-    tf::Transform tr;
-    tr.setOrigin(tf::Vector3(pose.pose.position.x, pose.pose.position.y, pose.pose.position.z));
-    tr.setRotation(tf::Quaternion(pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w));
-
-    // TODO do some filtering - from more detections
-    tr_ = tf::StampedTransform(tr.inverse(), msg->header.stamp, world_frame_, robot_frame_);
-
-    br_.sendTransform(tr_);
-
     if (!continuous_mode_) {
 
-        ROS_INFO("finished");
-        art_umf_localizer::LocalizeAgainstUMFResult res;
-        res.result = res.RES_FINISHED;
-        as_.setSucceeded(res);
-        cam_image_sub_.shutdown();
+        detection_cnt_++;
 
-        tr_timer_ = nh_.createTimer(ros::Duration(0.1), &umfLocalizerNode::trCallback, this);
+        if (detection_cnt_ == 1) pose_filtered_ = pose;
+        else {
+
+            pose_filtered_.header = pose.header;
+            pose_filtered_.pose.position.x = (1.0 - filt_coef_pos_)*pose_filtered_.pose.position.x + filt_coef_pos_*pose.pose.position.x;
+            pose_filtered_.pose.position.y = (1.0 - filt_coef_pos_)*pose_filtered_.pose.position.y + filt_coef_pos_*pose.pose.position.y;
+            pose_filtered_.pose.position.z = (1.0 - filt_coef_pos_)*pose_filtered_.pose.position.z + filt_coef_pos_*pose.pose.position.z;
+
+            if (tf::dot(pose_filtered_.pose.orientation, pose.pose.orientation) < 0) {
+
+                pose.pose.orientation.x *= -1.0;
+                pose.pose.orientation.y *= -1.0;
+                pose.pose.orientation.z *= -1.0;
+                pose.pose.orientation.w *= -1.0;
+
+            }
+
+            pose_filtered_.pose.orientation.x = (1.0 - filt_coef_rot_)*pose_filtered_.pose.orientation.x + filt_coef_rot_*pose.pose.orientation.x;
+            pose_filtered_.pose.orientation.y = (1.0 - filt_coef_rot_)*pose_filtered_.pose.orientation.y + filt_coef_rot_*pose.pose.orientation.y;
+            pose_filtered_.pose.orientation.z = (1.0 - filt_coef_rot_)*pose_filtered_.pose.orientation.z + filt_coef_rot_*pose.pose.orientation.z;
+            pose_filtered_.pose.orientation.w = (1.0 - filt_coef_rot_)*pose_filtered_.pose.orientation.w + filt_coef_rot_*pose.pose.orientation.w;
+
+        }
+
+    } else {
+
+        pose_pub_.publish(pose);
+
+        tf::Transform tr;
+        tr.setOrigin(tf::Vector3(pose.pose.position.x, pose.pose.position.y, pose.pose.position.z));
+        tr.setRotation(tf::Quaternion(pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w));
+
+        tr_ = tf::StampedTransform(tr.inverse(), msg->header.stamp, world_frame_, robot_frame_);
+
+        br_.sendTransform(tr_);
 
     }
+
 
   } else {
   

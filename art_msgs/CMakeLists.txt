@@ -19,6 +19,7 @@ add_message_files(
   ObjInstance.msg
   InstancesArray.msg
   ObjectsCentroids.msg
+  UserStatus.msg
 )
 
 generate_messages(
