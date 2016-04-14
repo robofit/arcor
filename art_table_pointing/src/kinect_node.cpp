@@ -9,6 +9,8 @@ ArtTablePointingKinect::ArtTablePointingKinect()  {
     point_right_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/pointing_right", 1);
     point_left_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/pointing_left", 1);
 
+    user_status_sub_ = nh_.subscribe("/art_table_pointing/user_status", 1, &ArtTablePointingKinect::user_status, this);
+
 
     ros::NodeHandle nh("~");
     nh.param<double>("x_offset", x_offset_, -1);
@@ -24,22 +26,17 @@ ArtTablePointingKinect::ArtTablePointingKinect()  {
     ROS_INFO_STREAM("table_width: " << table_width_ << " table_height: " << table_height_);
     ROS_INFO_STREAM("table_frame: " << table_frame_.c_str());
 
-
-    dt = 0.05;
-    a = 0.85;
-    b = 0.005;
-    xk_1 = 0;
-    yk_1 = 0;
-    vxk_1 = 0;
-    vyk_1 = 0;
-
-
+    user_id = 0;
     ROS_INFO_STREAM("Kinect pointing node initialized.");
 
 }
 
 ArtTablePointingKinect::~ArtTablePointingKinect() {
 
+}
+
+void ArtTablePointingKinect::user_status(art_msgs::UserStatusConstPtr data) {
+    user_id = data->user_id;
 }
 
 
@@ -175,34 +172,9 @@ void ArtTablePointingKinect::process(std::string user_id) {
     pose.header.frame_id = table_frame_;
 
 
-
-    xk = xk_1 + ( vxk_1 * dt );
-    vxk = vxk_1;
-    yk = yk_1 + ( vyk_1 * dt );
-
-    rxk = point_right.x() - xk;
-    ryk = point_right.y() - yk;
-
-    xk += a * rxk;
-    vxk += ( b * rxk ) / dt;
-    yk += a * ryk;
-    vyk += ( b * ryk ) / dt;
-
-
-    xk_1 = xk;
-    vxk_1 = vxk;
-
-
-    yk_1 = yk;
-    vyk_1 = vyk;
-    point_right.setX(xk);
-    point_right.setY(yk);
-    ;
-    
-
     if (pointingAtTable(point_right, transform_elbow_right, transform_hand_right)) {
-        pose.pose.position.x = xk;
-        pose.pose.position.y = yk;
+        pose.pose.position.x = point_right.x();
+        pose.pose.position.y = point_right.y();
         point_right_pub_.publish(pose);
 
     }
@@ -227,20 +199,14 @@ int main(int argc, char **argv) {
     art_table_pointing_kinect::ArtTablePointingKinect node;
 
     ros::NodeHandle nh;
-
+    ros::Rate r(60);
     while (nh.ok()) {
-        for (int i = 1; i <= 6; ++i) {
-	    //ROS_INFO_STREAM(node.listener_.frameExists("/head_" + std::to_string(i)));
-            //if (node.listener_.frameExists("/head_" + std::to_string(i))) {
-            //ROS_INFO_STREAM(i << " " << node.listener_.canTransform(node.table_frame_, "/head_" + std::to_string(i), ros::Time(0), NULL));
-		if (node.listener_.canTransform(node.table_frame_, "/head_" + std::to_string(i), ros::Time(0), NULL)) {
-		  node.process(std::to_string(i));
-                break;
-            }
-
+        if (node.user_id > 0) {
+            node.process(std::to_string(node.user_id));
         }
-        ros::Duration(0.03).sleep();
 
+        ros::spinOnce();
+        r.sleep();
     }
 	return 0;
 }

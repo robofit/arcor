@@ -24,6 +24,7 @@
 #include <string>
 #include <visualization_msgs/Marker.h>
 #include <tf/transform_broadcaster.h>
+#include <art_msgs/UserStatus.h>
 
 
 namespace art_table_pointing_kinect {
@@ -44,20 +45,20 @@ public:
 	
     std::string table_frame_;
 
+    int user_id;
+
 private:
 
     ros::Publisher point_right_pub_, point_left_pub_;
+    ros::Subscriber user_status_sub_;
+
+    void user_status(art_msgs::UserStatusConstPtr data);
 
     double table_width_, table_height_, x_offset_, y_offset_;
     
     tf::Vector3 computeIntersection(tf::StampedTransform point1, tf::StampedTransform point2,
                                     tf::StampedTransform plane, tf::Vector3 plane_normal);
 
-    float dt;
-    float xk_1, yk_1, vxk_1, vyk_1, a, b;
-
-    float xk, yk, vxk, vyk, rxk, ryk;
-    float xm, ym;
 
 
     void visualizeArrow(tf::StampedTransform elbow, int id);
