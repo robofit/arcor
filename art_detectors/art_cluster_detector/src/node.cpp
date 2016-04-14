@@ -20,6 +20,8 @@
 
 #include <visualization_msgs/Marker.h>
 #include <pcl/segmentation/extract_clusters.h>
+#include <geometry_msgs/PointStamped.h>
+#include <art_msgs/ObjectsCentroids.h>
 
 
 
@@ -31,15 +33,17 @@ typedef PointCloud::Ptr PointCloudPtr;
 class ClusterDetector {
 public:
     ClusterDetector() {
-        sub = nh.subscribe ("/kinect_pcd", 1, &ClusterDetector::cloud_cb, this);
+        sub = nh.subscribe ("/kinect2/qhd/points", 1, &ClusterDetector::cloud_cb, this);
 
         // Create a ROS publisher for the output point cloud
         pub = nh.advertise<sensor_msgs::PointCloud2> ("/output", 1);
         vis_pub = nh.advertise<visualization_msgs::Marker> ("/visualization", 1);
+        objects_pub = nh.advertise<geometry_msgs::PointStamped> ("/art_detectors/objects_centroids", 10);
     }
 
 private:
     ros::Publisher pub;
+    ros::Publisher objects_pub;
     ros::Publisher vis_pub;
     ros::Subscriber sub;
     tf::TransformListener listener_;
@@ -57,11 +61,11 @@ private:
         pcl::PCLPointCloud2 temp_cloud;
         pcl::IndicesPtr indices1 (new std::vector <int>), indices2 (new std::vector <int>);
         pcl_conversions::toPCL(*input, temp_cloud);
-        temp_cloud.header.stamp = ros::Time::now().toSec()*1000000;
+        //temp_cloud.header.stamp = ros::Time::now().toSec()*1000000;
         PointCloudPtr pc(new PointCloud);
         pcl::fromPCLPointCloud2(temp_cloud, *pc);
         PointCloudPtr pc_transformed(new PointCloud);
-        pcl_ros::transformPointCloud("/table", *pc, *pc_transformed, listener_);
+        pcl_ros::transformPointCloud("/marker", *pc, *pc_transformed, listener_);
 
         pcl::search::Search <PointType>::Ptr tree = boost::shared_ptr<pcl::search::Search<PointType> > (new pcl::search::KdTree<PointType>);
 
@@ -97,6 +101,9 @@ private:
         ec.setInputCloud (pc_filtered);
         ec.extract (cluster_indices);
 
+        art_msgs::ObjectsCentroids centroids;
+        centroids.header.frame_id = "/marker";
+
         int j = 0;
         for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
         {
@@ -128,7 +135,9 @@ private:
             vis_pub.publish( marker );
             j++;
 
-            ROS_INFO_STREAM("x: " << centroid[0] << " y: " << centroid[1] << " z: " << centroid[2]);
+
+
+
          }
 
 
