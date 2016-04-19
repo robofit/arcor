@@ -24,8 +24,8 @@ umfLocalizerNode::umfLocalizerNode(ros::NodeHandle& nh): it_(nh), as_(nh, "local
 
   as_.start();
 
-  nh_.param("filt_coef_pos", filt_coef_pos_, 0.1);
-  nh_.param("filt_coef_rot", filt_coef_rot_, 0.1);
+  nh_.param("filt_coef_pos", filt_coef_pos_, 0.1f);
+  nh_.param("filt_coef_rot", filt_coef_rot_, 0.1f);
   nh_.param<std::string>("robot_frame", robot_frame_, "odom_combined");
   nh_.param<std::string>("world_frame", world_frame_, "marker");
   nh_.param<double>("square_size", square_size_, 0.1);
@@ -145,7 +145,8 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
 
       if (detection_cnt_ > 0) {
 
-          tf::Quaternion q(pose_filtered_.pose.orientation);
+          tf::Quaternion q;
+	      tf::quaternionMsgToTF(pose_filtered_.pose.orientation, q);
           q.normalize();
 
           tf::Transform tr;
@@ -239,7 +240,12 @@ void umfLocalizerNode::cameraImageCallback(const sensor_msgs::ImageConstPtr& msg
             pose_filtered_.pose.position.y = (1.0 - filt_coef_pos_)*pose_filtered_.pose.position.y + filt_coef_pos_*pose.pose.position.y;
             pose_filtered_.pose.position.z = (1.0 - filt_coef_pos_)*pose_filtered_.pose.position.z + filt_coef_pos_*pose.pose.position.z;
 
-            if (tf::dot(pose_filtered_.pose.orientation, pose.pose.orientation) < 0) {
+            tf::Quaternion q1;
+            tf::Quaternion q2;
+	        tf::quaternionMsgToTF(pose_filtered_.pose.orientation, q1);
+	        tf::quaternionMsgToTF(pose.pose.orientation, q2);
+
+            if (tf::dot(q1, q2) < 0) {
 
                 pose.pose.orientation.x *= -1.0;
                 pose.pose.orientation.y *= -1.0;
