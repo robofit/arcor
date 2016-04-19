@@ -8,7 +8,7 @@ import signal
 import cv2
 from std_msgs.msg import String
 from PyQt4 import QtGui, QtCore, QtOpenGL
-from art_msgs.msg import InstancesArray
+from art_msgs.msg import InstancesArray,  UserStatus
 from geometry_msgs.msg import PoseStamped
 from std_srvs.srv import Empty, EmptyResponse
 
@@ -16,9 +16,8 @@ from helper_objects import scene_place,  scene_object,  pointing_point
 import numpy as np
 
 # TODO modes of operation (states) - currently only pick (object selection) and place (place selection)
-# TODO step back?
-# TODO fix place selection when marker is shown (self.ignored_items ?? -> also label should be there)
-# TODO notifications / state information ?
+# TODO step back btn / some menu?
+# TODO notifications / state information (smart label)
 # TODO draw bottom side of bounding box
 # TODO fix position of object_id
 
@@ -41,6 +40,7 @@ class simple_gui(QtGui.QWidget):
        self.obj_sub = rospy.Subscriber('/art_object_detector/object_filtered', InstancesArray, self.object_cb)
        self.point_left_sub = rospy.Subscriber('/pointing_left', PoseStamped, self.pointing_point_left_cb)
        self.point_right_sub = rospy.Subscriber('/pointing_right', PoseStamped, self.pointing_point_right_cb)
+       self.user_status_sub = rospy.Subscriber('/art_table_pointing/user_status',  UserStatus,  self.user_status_cb)
        
        self.selected_object_pub = rospy.Publisher("/art_simple_gui/selected_object", String, queue_size=10)
        self.selected_place_pub = rospy.Publisher("/art_simple_gui/selected_place", PoseStamped, queue_size=10)
@@ -56,9 +56,22 @@ class simple_gui(QtGui.QWidget):
        self.viz_places = []
        
        self.object_selected = False
+       self.object_selected_at = None
        self.place_selected = False
        
-       self.initUI()
+       self.scene=QtGui.QGraphicsScene(self)
+       self.scene.setBackgroundBrush(QtCore.Qt.black)
+       self.view = QtGui.QGraphicsView(self.scene, self)
+       self.view.setRenderHint(QtGui.QPainter.Antialiasing)
+       self.view.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
+       #self.view.setViewport(QtOpenGL.QGLWidget()) # rendering using OpenGL -> somehow broken :(
+       
+       self.pm = QtGui.QPixmap(self.img_path + "/koberec.png")
+       self.marker = self.scene.addPixmap(self.pm.scaled(self.size(), QtCore.Qt.KeepAspectRatio))
+       self.marker.setZValue(-100)
+       self.marker.hide()
+       
+       self.resizeEvent = self.on_resize
        
        self.pointing_left = pointing_point("left", self.scene)
        self.pointing_right = pointing_point("right", self.scene)
@@ -69,18 +82,35 @@ class simple_gui(QtGui.QWidget):
        QtCore.QObject.connect(self, QtCore.SIGNAL('clear_all()'), self.clear_all_evt)
        QtCore.QObject.connect(self, QtCore.SIGNAL('show_marker()'), self.show_marker_evt)
        QtCore.QObject.connect(self, QtCore.SIGNAL('hide_marker()'), self.hide_marker_evt)
+       QtCore.QObject.connect(self, QtCore.SIGNAL('user_status'), self.user_status_evt)
        
        self.timer = QtCore.QTimer()
        self.timer.start(500)
        self.timer.timeout.connect(self.timer_evt)
        
+       # TODO "smart" label - able to show messages for defined time, more messages at the time, images (?) etc.
        self.label = self.scene.addText("Waiting for user",  QtGui.QFont('Arial', 26))
        self.label.rotate(180)
        self.label.setDefaultTextColor(QtCore.Qt.white)
        self.label.setZValue(200)
        
+       self.user_status = None
+       
+       self.ignored_objects = [self.label,  self.marker]
+       
        self.inited = True
     
+    def user_status_cb(self,  msg):
+        
+        self.emit(QtCore.SIGNAL('user_status'),  msg)
+    
+    def user_status_evt(self,  msg):
+    
+        self.user_status = msg
+        
+        if self.user_status.header.stamp == rospy.Time(0):
+            self.user_status.header.stamp = rospy.Time.now()
+       
     def show_marker(self, req):
         
         self.emit(QtCore.SIGNAL('show_marker()'))
@@ -118,31 +148,30 @@ class simple_gui(QtGui.QWidget):
         self.emit(QtCore.SIGNAL('clear_all()'))
         return EmptyResponse()
        
-    def initUI(self):
-       
-       self.scene=QtGui.QGraphicsScene(self)
-       self.scene.setBackgroundBrush(QtCore.Qt.black)
-       self.view = QtGui.QGraphicsView(self.scene, self)
-       self.view.setRenderHint(QtGui.QPainter.Antialiasing)
-       self.view.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
-       #self.view.setViewport(QtOpenGL.QGLWidget())
-       
-       self.pm = QtGui.QPixmap(self.img_path + "/koberec.png")
-       self.marker = self.scene.addPixmap(self.pm.scaled(self.size(), QtCore.Qt.KeepAspectRatio))
-       self.marker.setZValue(-100)
-       self.marker.hide()
-       
-       self.resizeEvent = self.on_resize
-    
     def timer_evt(self):
-    
-        if not self.pointing_left.is_active() and not self.pointing_right.is_active():
+        
+        if self.user_status is not None and rospy.Time.now() - self.user_status.header.stamp > rospy.Duration(2):
             
-            self.label.setPlainText("Waiting for user")
+            self.user_status = None
+        
+        if self.user_status is None:
+            
+            self.label.setPlainText('Waiting for user tracking...')
+    
+        elif self.user_status.user_state == UserStatus.NO_USER:
+            
+            self.label.setPlainText('Waiting for user...')
+            
+        elif self.user_status.user_state == UserStatus.USER_NOT_CALIBRATED:
+            
+            self.label.setPlainText('Please make a calibration pose')
+            
+        elif (self.user_status.user_state == UserStatus.USER_CALIBRATED) and not (self.pointing_left.is_active() or self.pointing_right.is_active()):
+            
+            self.label.setPlainText('Point at objects or places to select them')
     
     def on_resize(self, event):
     
-        print "on_resize"
         self.view.setFixedSize(self.width(), self.height())
         self.view.setSceneRect(QtCore.QRectF(0, 0, self.width(), self.height()))
         self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff);
@@ -152,8 +181,7 @@ class simple_gui(QtGui.QWidget):
       
     def object_cb(self, msg):
 
-        self.objects = msg.instances # TODO send as signal argument?
-        self.emit(QtCore.SIGNAL('objects()'))
+        self.emit(QtCore.SIGNAL('objects'),  msg)
     
     def pointing_point_left_evt(self,  pos):
 
@@ -176,13 +204,17 @@ class simple_gui(QtGui.QWidget):
             self.label.setPlainText("Wait please...")
             return
         
-        if not self.object_selected: # TODO special topic user_present?
+        if self.user_status is None or self.user_status.user_state != UserStatus.USER_CALIBRATED:
+            return
+        
+        if not self.object_selected:
             
             self.label.setPlainText("Select an object")
              
         else:
             
             self.label.setPlainText("Select a place")
+            if rospy.Time.now() - self.object_selected_at < rospy.Duration(2): return
         
         if not pt.is_active() or pt.viz is None: return
         
@@ -194,11 +226,17 @@ class simple_gui(QtGui.QWidget):
                     
                     rospy.loginfo("Object selected, now select place") # TODO "attach" object shape to the pointing point(s)?
                     self.object_selected = True
+                    self.object_selected_at = rospy.Time.now()
                     break
         
         if self.object_selected is False: return
         
         items = self.scene.collidingItems(pt.viz)
+        
+        for iit in self.ignored_items: # TODO test it
+            
+            if iit in items: items.remove(iit)
+        
         pointed_place = pt.get_pointed_place()
         
         if len(items) == 0 and (pointed_place is not None):
@@ -216,10 +254,12 @@ class simple_gui(QtGui.QWidget):
             if skip: return
 
             rospy.loginfo(pt.id + ": new place selected at x=" + str(pointed_place[0]) + ", y=" + str(pointed_place[1]))
-            self.viz_places.append(scene_place(self.scene,  pointed_place,  self.marker_box_size,  self.selected_place_pub))
+            self.viz_places.append(scene_place(self.scene,  pointed_place,  self.marker_box_size,  self.selected_place_pub, self.size()))
             self.place_selected = True
         
-    def objects_evt(self):
+    def objects_evt(self,  msg):
+        
+       self.objects = msg.instances
     
        current_objects = {}
     
