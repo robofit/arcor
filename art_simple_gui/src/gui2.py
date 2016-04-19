@@ -56,6 +56,7 @@ class simple_gui(QtGui.QWidget):
        self.viz_places = []
        
        self.object_selected = False
+       self.object_selected_at = None
        self.place_selected = False
        
        self.initUI()
@@ -183,6 +184,7 @@ class simple_gui(QtGui.QWidget):
         else:
             
             self.label.setPlainText("Select a place")
+            if rospy.Time.now() - self.object_selected_at < rospy.Duration(2): return
         
         if not pt.is_active() or pt.viz is None: return
         
@@ -194,6 +196,7 @@ class simple_gui(QtGui.QWidget):
                     
                     rospy.loginfo("Object selected, now select place") # TODO "attach" object shape to the pointing point(s)?
                     self.object_selected = True
+                    self.object_selected_at = rospy.Time.now()
                     break
         
         if self.object_selected is False: return
@@ -216,7 +219,7 @@ class simple_gui(QtGui.QWidget):
             if skip: return
 
             rospy.loginfo(pt.id + ": new place selected at x=" + str(pointed_place[0]) + ", y=" + str(pointed_place[1]))
-            self.viz_places.append(scene_place(self.scene,  pointed_place,  self.marker_box_size,  self.selected_place_pub))
+            self.viz_places.append(scene_place(self.scene,  pointed_place,  self.marker_box_size,  self.selected_place_pub, self.size()))
             self.place_selected = True
         
     def objects_evt(self):
