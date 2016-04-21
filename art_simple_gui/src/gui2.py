@@ -76,7 +76,7 @@ class simple_gui(QtGui.QWidget):
        self.pointing_left = pointing_point("left", self.scene)
        self.pointing_right = pointing_point("right", self.scene)
        
-       QtCore.QObject.connect(self, QtCore.SIGNAL('objects()'), self.objects_evt)
+       QtCore.QObject.connect(self, QtCore.SIGNAL('objects'), self.objects_evt)
        QtCore.QObject.connect(self, QtCore.SIGNAL('pointing_point_left'), self.pointing_point_left_evt)
        QtCore.QObject.connect(self, QtCore.SIGNAL('pointing_point_right'), self.pointing_point_right_evt)
        QtCore.QObject.connect(self, QtCore.SIGNAL('clear_all()'), self.clear_all_evt)
@@ -258,7 +258,7 @@ class simple_gui(QtGui.QWidget):
             self.place_selected = True
         
     def objects_evt(self,  msg):
-        
+    
        self.objects = msg.instances
     
        current_objects = {}
