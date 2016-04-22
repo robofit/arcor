@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_action_files(
   DIRECTORY action
-  FILES pickplace.action LocalizeAgainstUMF.action
+  FILES pickplace.action LocalizeAgainstUMF.action RobotProgram.action
 )
 
 add_message_files(
@@ -20,6 +20,9 @@ add_message_files(
   InstancesArray.msg
   ObjectsCentroids.msg
   UserStatus.msg
+  ProgramItem.msg
+  Program.msg
+  ProgramArray.msg
 )
 
 generate_messages(
