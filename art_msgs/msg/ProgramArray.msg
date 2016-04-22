@@ -1,0 +1,2 @@
+string name
+Program[] programs
