@@ -8,6 +8,7 @@ import rospy
 import dataset
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
+from tf import transformations
 
 
 class ArCodeDetector:
@@ -39,6 +40,18 @@ class ArCodeDetector:
                 obj_in.object_id = str(obj['name'])
                 obj_in.pose = arcode.pose.pose
                 obj_in.pose.position.z = 0
+
+                angles = transformations.euler_from_quaternion([obj_in.pose.orientation.x,
+                                                                obj_in.pose.orientation.y,
+                                                                obj_in.pose.orientation.z,
+                                                                obj_in.pose.orientation.w])
+
+                q = transformations.quaternion_from_euler(0, 0, angles[2])
+                obj_in.pose.orientation.x = q[0]
+                obj_in.pose.orientation.y = q[1]
+                obj_in.pose.orientation.z = q[2]
+                obj_in.pose.orientation.w = q[3]
+
                 obj_in.bbox.dimensions = [obj['bbox_x'], obj['bbox_y'], obj['bbox_z']]
                 obj_in.bbox.type = SolidPrimitive.BOX
                 self.show_rviz_bb(obj_in, arcode.id)
@@ -92,28 +105,28 @@ class ArCodeDetector:
             Point(- bbox_x,- bbox_y, 0),
 
             Point(- bbox_x,- bbox_y, 0),
-            Point(- bbox_x,- bbox_y,  - bbox_z),
+            Point(- bbox_x,- bbox_y,  + bbox_z),
             Point(+ bbox_x,- bbox_y, 0),
-            Point(+ bbox_x,- bbox_y,  - bbox_z),
+            Point(+ bbox_x,- bbox_y,  + bbox_z),
             Point(+ bbox_x,+ bbox_y, 0),
-            Point(+ bbox_x,+ bbox_y,  - bbox_z),
+            Point(+ bbox_x,+ bbox_y,  + bbox_z),
             Point(- bbox_x,+ bbox_y, 0),
-            Point(- bbox_x,+ bbox_y,  - bbox_z),
+            Point(- bbox_x,+ bbox_y,  + bbox_z),
 
-            Point(- bbox_x,- bbox_y,  - bbox_z),
-            Point(+ bbox_x,- bbox_y,  - bbox_z),
-            Point(+ bbox_x,- bbox_y,  - bbox_z),
-            Point(+ bbox_x,+ bbox_y,  - bbox_z),
-            Point(+ bbox_x,+ bbox_y,  - bbox_z),
-            Point(- bbox_x,+ bbox_y,  - bbox_z),
-            Point(- bbox_x,+ bbox_y,  - bbox_z),
-            Point(- bbox_x,- bbox_y,  - bbox_z),
+            Point(- bbox_x,- bbox_y,  + bbox_z),
+            Point(+ bbox_x,- bbox_y,  + bbox_z),
+            Point(+ bbox_x,- bbox_y,  + bbox_z),
+            Point(+ bbox_x,+ bbox_y,  + bbox_z),
+            Point(+ bbox_x,+ bbox_y,  + bbox_z),
+            Point(- bbox_x,+ bbox_y,  + bbox_z),
+            Point(- bbox_x,+ bbox_y,  + bbox_z),
+            Point(- bbox_x,- bbox_y,  + bbox_z),
         ]
 
         marker.header.frame_id = "/marker"
 
         self.visualize_pub.publish(marker)
-        marker.pose.position.z += 0.02
+        marker.pose.position.z += 0.02 + bbox_z
         marker.id = int(id+100)
         marker.type = marker.TEXT_VIEW_FACING
         marker.text = obj.object_id
