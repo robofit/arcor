@@ -96,7 +96,7 @@ class simple_gui(QtGui.QWidget):
        
        self.user_status = None
        
-       self.ignored_objects = [self.label,  self.marker]
+       self.ignored_items = [self.label,  self.marker]
        
        self.inited = True
     
