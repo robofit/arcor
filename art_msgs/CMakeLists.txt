@@ -19,6 +19,7 @@ add_message_files(
   ObjInstance.msg
   InstancesArray.msg
   UserStatus.msg
+  SystemState.msg
 )
 
 generate_messages(
