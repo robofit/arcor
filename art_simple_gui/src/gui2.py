@@ -119,14 +119,12 @@ class simple_gui(QtGui.QWidget):
     def calibrate_evt(self):
 
         self.checkerboard.show()
-        #self.emit(QtCore.SIGNAL('calibrate2'))
-
-        self.ctimer = QtCore.QTimer.singleShot(2000, self.calibrate_evt2)
+        self.ctimer = QtCore.QTimer.singleShot(10000, self.calibrate_evt2)
 
     def calibrate_evt2(self):
 
       try:
-        img = rospy.wait_for_message('/kinect2/hd/image_color', Image, 20)
+        img = rospy.wait_for_message('/kinect2/sd/image_color_rect', Image, 2)
       except rospy.ROSException:
 
           rospy.logerr("Could not get image")
@@ -141,22 +139,67 @@ class simple_gui(QtGui.QWidget):
         return
 
       cv_img = cv2.cvtColor(cv_img,cv2.COLOR_BGR2GRAY)
-      ret, corners = cv2.findChessboardCorners(gray, (9,6),None)
+      ret, corners = cv2.findChessboardCorners(cv_img, (9,6),None)
+
+      print cv_img.shape
 
       if ret == False:
 
           rospy.logerr("Could not find chessboard corners")
           self.checkerboard.hide()
+	  return
 
-      criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+      #cv2.drawChessboardCorners(cv_img, (9,6), corners, True)
+      #cv2.imshow('image',cv_img)
 
-      corners2 = cv2.cornerSubPix(cv_img,corners,(11,11),(-1,-1),criteria)
+      #criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+      #corners2 = cv2.cornerSubPix(cv_img,corners,(11,11),(-1,-1),criteria)
+      #print corners2
 
-      print corners2
+      print "self.checkerboard.pixmap().width: " + str(self.checkerboard.pixmap().width())
+      print "self.width(): " + str(self.width())
 
-      box_size = self.checkerboard.pixmap().width()/9
+      box_size = self.checkerboard.pixmap().width()/12
+
+      print "box_size: " + str(box_size)
+
+      pcorners = []
+
+      for x in range(2*box_size, self.checkerboard.pixmap().width()-2*box_size, box_size):
+          for y in range(2*box_size, self.checkerboard.pixmap().height()-2*box_size, box_size):
+            pcorners.append([x,y])
+
+      corners = corners.reshape(1,-1,2)[0]
+      pcorners = np.array(pcorners, dtype=corners.dtype)
+
+      #print corners
+      #print corners.shape
+      #print("")
+      #print pcorners
+      #print pcorners.shape
+
+      # warpPerspective(im_src, im_out, h.inv(), im_dst.size()); => transform source to destination
+      # warpPerspective(im_dst, im_out, h, im_dst.size()); => transform destination to source
+
+      h, status = cv2.findHomography(corners, pcorners, cv2.RANSAC, 5.0)
+
+      print h
+      #print status
+
+      img_src = cv2.imread(self.img_path + "/pattern.png", 0)
+      img_src = cv2.resize(img_src, None, fx=0.5, fy=0.5, interpolation = cv2.INTER_CUBIC)
+
+      img_dst = cv2.warpPerspective(img_src, h, (img_src.shape[1], img_src.shape[0]))
+
+      print img_src.shape
+      print img_dst.shape
+      #cv2.imshow('image', img_dst)
+      #cv2.waitKey(0)
+      #cv2.destroyAllWindows()
 
       self.checkerboard.hide()
+
+
     
     def user_status_cb(self,  msg):
         
