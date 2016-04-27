@@ -9,13 +9,15 @@ import cv2
 from std_msgs.msg import String
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from art_msgs.msg import InstancesArray,  UserStatus
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PointStamped
 from std_srvs.srv import Empty, EmptyResponse
+import tf
 
 from helper_objects import scene_place,  scene_object,  pointing_point
 import numpy as np
 from cv_bridge import CvBridge, CvBridgeError
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo
+from image_geometry import PinholeCameraModel
 
 # TODO modes of operation (states) - currently only pick (object selection) and place (place selection)
 # TODO step back btn / some menu?
@@ -33,6 +35,8 @@ class simple_gui(QtGui.QWidget):
     def __init__(self):
        
        super(simple_gui, self).__init__()
+
+       self.tfl = tf.TransformListener()
        
        self.inited = False
        
@@ -119,86 +123,157 @@ class simple_gui(QtGui.QWidget):
     def calibrate_evt(self):
 
         self.checkerboard.show()
-        self.ctimer = QtCore.QTimer.singleShot(10000, self.calibrate_evt2)
+        self.ctimer = QtCore.QTimer.singleShot(1000, self.calibrate_evt2)
+
+    def calibrate_int(self):
+
+        # najdu rohy sachovnice v obr z kinectu
+        # rohy (s pomoci image_geometry + depth mapy) prepocitam na 3D body
+        # ty transformuju do /marker (kinect uz je zkalibrovany vuci stolu)
+        # vezmu x, y -> 2D body na stole
+        # vygeneruju si "spravne" 2D body na stole (musim zadat velikost pole sachovnice)
+        # spocitam transformaci (estimateRigidTransform): 2D body na stole <-> 2D souradnice rohu v promitanem obr.
+
+        # TODO use message_filters to get synchronized messages!
+        try:
+          cam_info = rospy.wait_for_message('/kinect2/sd/camera_info', CameraInfo, 1.0)
+        except rospy.ROSException:
+
+            rospy.logerr("Could not get camera_info")
+            return False
+
+        try:
+          img = rospy.wait_for_message('/kinect2/sd/image_color_rect', Image, 1.0)
+        except rospy.ROSException:
+
+            rospy.logerr("Could not get image")
+            return False
+
+        try:
+          depth = rospy.wait_for_message('/kinect2/sd/image_depth_rect', Image, 1.0)
+        except rospy.ROSException:
+
+            rospy.logerr("Could not get depth image")
+            return False
+
+        rospy.loginfo("Got data...")
+
+        try:
+              cv_img = self.bridge.imgmsg_to_cv2(img, "bgr8")
+        except CvBridgeError as e:
+          print(e)
+          return False
+
+        try:
+              cv_depth = self.bridge.imgmsg_to_cv2(depth)
+        except CvBridgeError as e:
+          print(e)
+          return False
+
+        print cv_depth.shape
+        print cv_depth.dtype
+
+        cv_depth = cv2.medianBlur(cv_depth, 5)
+
+        cv2.imwrite('/home/zdenal/tmp/gui-calib/depth.png', cv_depth)
+
+        model = PinholeCameraModel()
+        model.fromCameraInfo(cam_info)
+
+        cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+        cv2.imwrite('/home/zdenal/tmp/gui-calib/in.png', cv_img)
+
+        #ret, corners = cv2.findChessboardCorners(cv_img, (9,6), None, flags=cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_FILTER_QUADS | cv2.CALIB_CB_FAST_CHECK | cv2.CALIB_CB_NORMALIZE_IMAGE)
+        ret, corners = cv2.findChessboardCorners(cv_img, (9,6), None)
+
+        print cv_img.shape
+
+        if ret == False:
+
+            rospy.logerr("Could not find chessboard corners")
+            return False
+
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+        cv2.cornerSubPix(cv_img,corners,(11,11),(-1,-1),criteria)
+        corners = corners.reshape(1,-1,2)[0]
+
+        points = []
+
+        for c in corners:
+
+          pt = list(model.projectPixelTo3dRay((c[0], c[1])))
+
+          da = []
+          for x in range(int(c[0]) - 2, int(c[0]) + 3):
+              for y in range(int(c[1]) - 2, int(c[1]) + 3):
+                  da.append(cv_depth[x, y]/1000.0)
+
+          #d = np.median(da)
+          d = 1.39 # TODO fix it!
+          pt[:] = [x*d for x in pt]
+          #print pt
+
+          ps = PointStamped()
+          ps.header.stamp = rospy.Time(0)
+          ps.header.frame_id = img.header.frame_id
+          ps.point.x = pt[0]
+          ps.point.y = pt[1]
+          ps.point.z = pt[2]
+
+          try:
+              ps = self.tfl.transformPoint("marker", ps)
+          except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+              rospy.logerr("can't get transform")
+              continue
+
+          #print ps
+          # TODO fix (skip?) points with strange z!
+          points.append([ps.point.x, ps.point.y])
+
+        ppoints = []
+        box_size = 0.075
+        origin = (1.3, 0.1)
+
+        for x in range(0,9):
+            for y in range(0,6):
+              px = (origin[0]-x*box_size)
+              py = (origin[1]+y*box_size)
+              ppoints.append([px, py])
+
+        #print str(len(points))
+        #print str(len(ppoints))
+
+        #tr = cv2.estimateRigidTransform(points, ppoints, True)
+        #print tr
+
+        #ret = cv2.estimateAffine3D(np.array(ppoints), np.array(points))
+        #print ret[1]
+
+        h, status = cv2.findHomography(np.array(ppoints), np.array(points), cv2.RANSAC, 5.0)
+        print h
+
+        img_src = cv2.imread(self.img_path + "/pattern.png", 0)
+        img_src = cv2.resize(img_src, None, fx=0.5, fy=0.5, interpolation = cv2.INTER_CUBIC)
+
+        #img_dst = cv2.warpAffine(img_src, ret[1], (img_src.shape[1], img_src.shape[0]))
+
+        img_dst = cv2.warpPerspective(img_src, h, (img_src.shape[1], img_src.shape[0]))
+
+        # warpPerspective(im_src, im_out, h.inv(), im_dst.size()); => transform source to destination
+        # warpPerspective(im_dst, im_out, h, im_dst.size()); => transform destination to source
+
+        cv2.imwrite('/home/zdenal/tmp/gui-calib/out.png', img_dst)
+        cv2.drawChessboardCorners(cv_img, (9,6), corners, True)
+        cv2.imwrite('/home/zdenal/tmp/gui-calib/in.png', cv_img)
+
+        return True
 
     def calibrate_evt2(self):
 
-      try:
-        img = rospy.wait_for_message('/kinect2/sd/image_color_rect', Image, 2)
-      except rospy.ROSException:
-
-          rospy.logerr("Could not get image")
-          self.checkerboard.hide()
-          return
-
-      try:
-            cv_img = self.bridge.imgmsg_to_cv2(img, "bgr8")
-      except CvBridgeError as e:
-        print(e)
+        cnt = 0
+        while self.calibrate_int() == False and cnt < 5:
+            cnt += 1
         self.checkerboard.hide()
-        return
-
-      cv_img = cv2.cvtColor(cv_img,cv2.COLOR_BGR2GRAY)
-      ret, corners = cv2.findChessboardCorners(cv_img, (9,6),None)
-
-      print cv_img.shape
-
-      if ret == False:
-
-          rospy.logerr("Could not find chessboard corners")
-          self.checkerboard.hide()
-	  return
-
-      #cv2.drawChessboardCorners(cv_img, (9,6), corners, True)
-      #cv2.imshow('image',cv_img)
-
-      #criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-      #corners2 = cv2.cornerSubPix(cv_img,corners,(11,11),(-1,-1),criteria)
-      #print corners2
-
-      print "self.checkerboard.pixmap().width: " + str(self.checkerboard.pixmap().width())
-      print "self.width(): " + str(self.width())
-
-      box_size = self.checkerboard.pixmap().width()/12
-
-      print "box_size: " + str(box_size)
-
-      pcorners = []
-
-      for x in range(2*box_size, self.checkerboard.pixmap().width()-2*box_size, box_size):
-          for y in range(2*box_size, self.checkerboard.pixmap().height()-2*box_size, box_size):
-            pcorners.append([x,y])
-
-      corners = corners.reshape(1,-1,2)[0]
-      pcorners = np.array(pcorners, dtype=corners.dtype)
-
-      #print corners
-      #print corners.shape
-      #print("")
-      #print pcorners
-      #print pcorners.shape
-
-      # warpPerspective(im_src, im_out, h.inv(), im_dst.size()); => transform source to destination
-      # warpPerspective(im_dst, im_out, h, im_dst.size()); => transform destination to source
-
-      h, status = cv2.findHomography(corners, pcorners, cv2.RANSAC, 5.0)
-
-      print h
-      #print status
-
-      img_src = cv2.imread(self.img_path + "/pattern.png", 0)
-      img_src = cv2.resize(img_src, None, fx=0.5, fy=0.5, interpolation = cv2.INTER_CUBIC)
-
-      img_dst = cv2.warpPerspective(img_src, h, (img_src.shape[1], img_src.shape[0]))
-
-      print img_src.shape
-      print img_dst.shape
-      #cv2.imshow('image', img_dst)
-      #cv2.waitKey(0)
-      #cv2.destroyAllWindows()
-
-      self.checkerboard.hide()
-
 
     
     def user_status_cb(self,  msg):
