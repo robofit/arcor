@@ -14,6 +14,8 @@ from std_srvs.srv import Empty, EmptyResponse
 
 from helper_objects import scene_place,  scene_object,  pointing_point
 import numpy as np
+from cv_bridge import CvBridge, CvBridgeError
+from sensor_msgs.msg import Image
 
 # TODO modes of operation (states) - currently only pick (object selection) and place (place selection)
 # TODO step back btn / some menu?
@@ -45,6 +47,7 @@ class simple_gui(QtGui.QWidget):
        self.selected_object_pub = rospy.Publisher("/art_simple_gui/selected_object", String, queue_size=10)
        self.selected_place_pub = rospy.Publisher("/art_simple_gui/selected_place", PoseStamped, queue_size=10)
        
+       self.srv_calibrate = rospy.Service('/art_simple_gui/calibrate', Empty, self.calibrate)
        self.srv_show_marker = rospy.Service('/art_simple_gui/show_marker', Empty, self.show_marker)
        self.srv_hide_marker = rospy.Service('/art_simple_gui/hide_marker', Empty, self.hide_marker)
        self.srv_clear_all = rospy.Service('/art_simple_gui/clear_all', Empty, self.clear_all) # clear all selections etc.
@@ -70,6 +73,12 @@ class simple_gui(QtGui.QWidget):
        self.marker = self.scene.addPixmap(self.pm.scaled(self.size(), QtCore.Qt.KeepAspectRatio))
        self.marker.setZValue(-100)
        self.marker.hide()
+
+       self.checkerboard_img = QtGui.QPixmap(self.img_path + "/pattern.png")
+       self.checkerboard = self.scene.addPixmap(self.checkerboard_img.scaled(self.size(), QtCore.Qt.KeepAspectRatio))
+       self.checkerboard.setZValue(100)
+       self.checkerboard.hide()
+       self.bridge = CvBridge()
        
        self.resizeEvent = self.on_resize
        
@@ -83,6 +92,8 @@ class simple_gui(QtGui.QWidget):
        QtCore.QObject.connect(self, QtCore.SIGNAL('show_marker()'), self.show_marker_evt)
        QtCore.QObject.connect(self, QtCore.SIGNAL('hide_marker()'), self.hide_marker_evt)
        QtCore.QObject.connect(self, QtCore.SIGNAL('user_status'), self.user_status_evt)
+       QtCore.QObject.connect(self, QtCore.SIGNAL('calibrate'), self.calibrate_evt)
+       QtCore.QObject.connect(self, QtCore.SIGNAL('calibrate2'), self.calibrate_evt2)
        
        self.timer = QtCore.QTimer()
        self.timer.start(500)
@@ -96,9 +107,56 @@ class simple_gui(QtGui.QWidget):
        
        self.user_status = None
        
-       self.ignored_items = [self.label,  self.marker]
+       self.ignored_items = [self.label,  self.marker, self.checkerboard]
        
        self.inited = True
+
+    def calibrate(self, req):
+
+        self.emit(QtCore.SIGNAL('calibrate'))
+        return EmptyResponse()
+
+    def calibrate_evt(self):
+
+        self.checkerboard.show()
+        #self.emit(QtCore.SIGNAL('calibrate2'))
+
+        self.ctimer = QtCore.QTimer.singleShot(2000, self.calibrate_evt2)
+
+    def calibrate_evt2(self):
+
+      try:
+        img = rospy.wait_for_message('/kinect2/hd/image_color', Image, 20)
+      except rospy.ROSException:
+
+          rospy.logerr("Could not get image")
+          self.checkerboard.hide()
+          return
+
+      try:
+            cv_img = self.bridge.imgmsg_to_cv2(img, "bgr8")
+      except CvBridgeError as e:
+        print(e)
+        self.checkerboard.hide()
+        return
+
+      cv_img = cv2.cvtColor(cv_img,cv2.COLOR_BGR2GRAY)
+      ret, corners = cv2.findChessboardCorners(gray, (9,6),None)
+
+      if ret == False:
+
+          rospy.logerr("Could not find chessboard corners")
+          self.checkerboard.hide()
+
+      criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+
+      corners2 = cv2.cornerSubPix(cv_img,corners,(11,11),(-1,-1),criteria)
+
+      print corners2
+
+      box_size = self.checkerboard.pixmap().width()/9
+
+      self.checkerboard.hide()
     
     def user_status_cb(self,  msg):
         
@@ -110,7 +168,7 @@ class simple_gui(QtGui.QWidget):
         
         if self.user_status.header.stamp == rospy.Time(0):
             self.user_status.header.stamp = rospy.Time.now()
-       
+
     def show_marker(self, req):
         
         self.emit(QtCore.SIGNAL('show_marker()'))
@@ -177,6 +235,7 @@ class simple_gui(QtGui.QWidget):
         self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff);
         self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff);
         self.marker.setPixmap(self.pm.scaled(self.size(), QtCore.Qt.KeepAspectRatio))
+        self.checkerboard.setPixmap(self.checkerboard_img.scaled(self.size(), QtCore.Qt.KeepAspectRatio))
         self.label.setPos(self.width() - 70,  70)
       
     def object_cb(self, msg):
