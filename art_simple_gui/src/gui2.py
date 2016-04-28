@@ -36,7 +36,7 @@ class simple_gui(QtGui.QWidget):
        
        super(simple_gui, self).__init__()
 
-       self.tfl = tf.TransformListener()
+       self.tfl = None
        
        self.inited = False
        
@@ -122,6 +122,7 @@ class simple_gui(QtGui.QWidget):
 
     def calibrate(self, req):
 
+        self.tfl = tf.TransformListener()
         self.emit(QtCore.SIGNAL('calibrate'))
         return EmptyResponse()
 
@@ -132,7 +133,7 @@ class simple_gui(QtGui.QWidget):
 
     def calibrate_int(self):
 
-        # TODO use message_filters to get synchronized messages!
+        # TODO use message_filters to get synchronized messages
         try:
           cam_info = rospy.wait_for_message('/kinect2/sd/camera_info', CameraInfo, 1.0)
         except rospy.ROSException:
@@ -225,12 +226,13 @@ class simple_gui(QtGui.QWidget):
 
 
         box_size = self.checkerboard.pixmap().width()/(9+2.0) # in pixels
-        origin = (2*box_size, 2*box_size)
+        origin = (2*box_size, 2*box_size) # origin of the first corner
 
         # generate 2D (screen) points of chessboard corners (in pixels)
         for y in range(0,6):
           for x in range(0,9):
-              px = (origin[0]-x*box_size)
+              px = self.width()-(origin[0]-x*box_size) # TODO test/fix it
+              #px = (origin[0]-x*box_size)
               py = (origin[1]+y*box_size)
               ppoints.append([px, py])
 
@@ -266,7 +268,7 @@ class simple_gui(QtGui.QWidget):
             ret = self.calibrate_int()
             cnt += 1
         self.checkerboard.hide()
-
+        self.tfl = None
         self.calibrated_pub.publish(Bool(ret))
     
     def user_status_cb(self,  msg):
@@ -486,10 +488,10 @@ class simple_gui(QtGui.QWidget):
         #px[0]  *= -1.0
         # TODO fix it - there is some shift in x axis
         #px[0] = (px[0]-2*self.box_size)
-        #px[0] = self.width() - px[0]
+        px[0] = self.width() - px[0]
         #px[0] = (self.width() - px[0]) - (self.pm_width - 2*self.box_size)
         
-        print "x: " + str(pose.position.x) + " y:" + str(pose.position.y) + " -> x: " + str(px[0]) + " y:" + str(px[1]) 
+        #print "x: " + str(pose.position.x) + " y:" + str(pose.position.y) + " -> x: " + str(px[0]) + " y:" + str(px[1]) 
 
         return (px[0], px[1])
      
