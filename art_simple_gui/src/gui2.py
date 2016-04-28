@@ -6,7 +6,7 @@ import sys
 import signal
 
 import cv2
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from art_msgs.msg import InstancesArray,  UserStatus
 from geometry_msgs.msg import PoseStamped, PointStamped
@@ -50,6 +50,7 @@ class simple_gui(QtGui.QWidget):
        
        self.selected_object_pub = rospy.Publisher("/art_simple_gui/selected_object", String, queue_size=10)
        self.selected_place_pub = rospy.Publisher("/art_simple_gui/selected_place", PoseStamped, queue_size=10)
+       self.calibrated_pub = rospy.Publisher("/art_simple_gui/calibrated", Bool, queue_size=10, latch=True)
        
        self.srv_calibrate = rospy.Service('/art_simple_gui/calibrate', Empty, self.calibrate)
        self.srv_show_marker = rospy.Service('/art_simple_gui/show_marker', Empty, self.show_marker)
@@ -83,6 +84,8 @@ class simple_gui(QtGui.QWidget):
        self.checkerboard.setZValue(100)
        self.checkerboard.hide()
        self.bridge = CvBridge()
+
+       self.h_matrix = None
        
        self.resizeEvent = self.on_resize
        
@@ -113,6 +116,8 @@ class simple_gui(QtGui.QWidget):
        
        self.ignored_items = [self.label,  self.marker, self.checkerboard]
        
+       self.calibrated_pub.publish(Bool(False))
+
        self.inited = True
 
     def calibrate(self, req):
@@ -126,13 +131,6 @@ class simple_gui(QtGui.QWidget):
         self.ctimer = QtCore.QTimer.singleShot(1000, self.calibrate_evt2)
 
     def calibrate_int(self):
-
-        # najdu rohy sachovnice v obr z kinectu
-        # rohy (s pomoci image_geometry + depth mapy) prepocitam na 3D body
-        # ty transformuju do /marker (kinect uz je zkalibrovany vuci stolu)
-        # vezmu x, y -> 2D body na stole
-        # vygeneruju si "spravne" 2D body na stole (musim zadat velikost pole sachovnice)
-        # spocitam transformaci (estimateRigidTransform): 2D body na stole <-> 2D souradnice rohu v promitanem obr.
 
         # TODO use message_filters to get synchronized messages!
         try:
@@ -170,23 +168,15 @@ class simple_gui(QtGui.QWidget):
           print(e)
           return False
 
-        print cv_depth.shape
-        print cv_depth.dtype
-
         cv_depth = cv2.medianBlur(cv_depth, 5)
-
-        cv2.imwrite('/home/zdenal/tmp/gui-calib/depth.png', cv_depth)
 
         model = PinholeCameraModel()
         model.fromCameraInfo(cam_info)
 
         cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
-        cv2.imwrite('/home/zdenal/tmp/gui-calib/in.png', cv_img)
+        #cv2.imwrite('/home/zdenal/tmp/gui-calib/in.png', cv_img)
 
-        #ret, corners = cv2.findChessboardCorners(cv_img, (9,6), None, flags=cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_FILTER_QUADS | cv2.CALIB_CB_FAST_CHECK | cv2.CALIB_CB_NORMALIZE_IMAGE)
-        ret, corners = cv2.findChessboardCorners(cv_img, (9,6), None)
-
-        print cv_img.shape
+        ret, corners = cv2.findChessboardCorners(cv_img, (9,6), None, flags=cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_FILTER_QUADS | cv2.CALIB_CB_NORMALIZE_IMAGE)
 
         if ret == False:
 
@@ -199,19 +189,19 @@ class simple_gui(QtGui.QWidget):
 
         points = []
 
+        # take chessboard corners and make 3D points using projection and depth data
         for c in corners:
 
           pt = list(model.projectPixelTo3dRay((c[0], c[1])))
 
+          # depth image is noise - let's make mean of few pixels
           da = []
           for x in range(int(c[0]) - 2, int(c[0]) + 3):
               for y in range(int(c[1]) - 2, int(c[1]) + 3):
-                  da.append(cv_depth[x, y]/1000.0)
+                  da.append(cv_depth[y, x]/1000.0)
 
-          #d = np.median(da)
-          d = 1.39 # TODO fix it!
+          d = np.mean(da)
           pt[:] = [x*d for x in pt]
-          #print pt
 
           ps = PointStamped()
           ps.header.stamp = rospy.Time(0)
@@ -220,61 +210,62 @@ class simple_gui(QtGui.QWidget):
           ps.point.y = pt[1]
           ps.point.z = pt[2]
 
+          # transform 3D point from camera into the world coordinates
           try:
               ps = self.tfl.transformPoint("marker", ps)
           except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
               rospy.logerr("can't get transform")
-              continue
+              return False
 
-          #print ps
-          # TODO fix (skip?) points with strange z!
+          # store x,y -> here we assume that points are 2D (on tabletop)
+          # TODO skip point where z differs too much from zero?
           points.append([ps.point.x, ps.point.y])
 
         ppoints = []
-        box_size = 0.075
-        origin = (1.3, 0.1)
 
-        for x in range(0,9):
-            for y in range(0,6):
+
+        box_size = self.checkerboard.pixmap().width()/(9+2.0) # in pixels
+        origin = (2*box_size, 2*box_size)
+
+        # generate 2D (screen) points of chessboard corners (in pixels)
+        for y in range(0,6):
+          for x in range(0,9):
               px = (origin[0]-x*box_size)
               py = (origin[1]+y*box_size)
               ppoints.append([px, py])
 
-        #print str(len(points))
-        #print str(len(ppoints))
+        #print "points"
+        #print points
+        #print ""
+        #print "ppoints"
+        #print ppoints
 
-        #tr = cv2.estimateRigidTransform(points, ppoints, True)
-        #print tr
+        # find homography between points on table (in meters) and screen points (pixels)
+        h, status = cv2.findHomography(np.array(points), np.array(ppoints), cv2.RANSAC, 5.0)
 
-        #ret = cv2.estimateAffine3D(np.array(ppoints), np.array(points))
-        #print ret[1]
+        self.h_matrix = np.matrix(h)
 
-        h, status = cv2.findHomography(np.array(ppoints), np.array(points), cv2.RANSAC, 5.0)
-        print h
+        rospy.loginfo("Calibrated!")
 
-        img_src = cv2.imread(self.img_path + "/pattern.png", 0)
-        img_src = cv2.resize(img_src, None, fx=0.5, fy=0.5, interpolation = cv2.INTER_CUBIC)
+        #print self.h_matrix
 
-        #img_dst = cv2.warpAffine(img_src, ret[1], (img_src.shape[1], img_src.shape[0]))
-
-        img_dst = cv2.warpPerspective(img_src, h, (img_src.shape[1], img_src.shape[0]))
-
-        # warpPerspective(im_src, im_out, h.inv(), im_dst.size()); => transform source to destination
-        # warpPerspective(im_dst, im_out, h, im_dst.size()); => transform destination to source
-
-        cv2.imwrite('/home/zdenal/tmp/gui-calib/out.png', img_dst)
-        cv2.drawChessboardCorners(cv_img, (9,6), corners, True)
-        cv2.imwrite('/home/zdenal/tmp/gui-calib/in.png', cv_img)
+        #cv2.drawChessboardCorners(cv_img, (9,6), corners, True)
+        #cv2.imwrite('/home/zdenal/tmp/gui-calib/in.png', cv_img)
+        #cv2.drawChessboardCorners(cv_depth, (9,6), corners, True)
+        #cv2.imwrite('/home/zdenal/tmp/gui-calib/depth.png', cv_depth)
 
         return True
 
     def calibrate_evt2(self):
 
         cnt = 0
-        while self.calibrate_int() == False and cnt < 5:
+        ret = False
+        while ret == False and cnt < 5:
+            ret = self.calibrate_int()
             cnt += 1
         self.checkerboard.hide()
 
+        self.calibrated_pub.publish(Bool(ret))
     
     def user_status_cb(self,  msg):
         
@@ -325,6 +316,11 @@ class simple_gui(QtGui.QWidget):
         return EmptyResponse()
        
     def timer_evt(self):
+
+        if self.h_matrix is None:
+
+            self.label.setPlainText('Waiting for calibration...')
+            return
         
         if self.user_status is not None and rospy.Time.now() - self.user_status.header.stamp > rospy.Duration(2):
             
@@ -357,6 +353,10 @@ class simple_gui(QtGui.QWidget):
         self.label.setPos(self.width() - 70,  70)
       
     def object_cb(self, msg):
+
+        if self.h_matrix is None:
+
+            return
 
         self.emit(QtCore.SIGNAL('objects'),  msg)
     
@@ -431,7 +431,7 @@ class simple_gui(QtGui.QWidget):
             if skip: return
 
             rospy.loginfo(pt.id + ": new place selected at x=" + str(pointed_place[0]) + ", y=" + str(pointed_place[1]))
-            self.viz_places.append(scene_place(self.scene,  pointed_place,  self.marker_box_size,  self.selected_place_pub, self.size()))
+            self.viz_places.append(scene_place(self.scene,  pointed_place,  self.selected_place_pub, self.size(), self.h_matrix))
             self.place_selected = True
         
     def objects_evt(self,  msg):
@@ -470,14 +470,27 @@ class simple_gui(QtGui.QWidget):
        self.update()
     
     def get_px(self, pose):
+
+        if self.h_matrix is None:
+
+            rospy.logerr("Not calibrated!")
+            return None
     
-       px = int(self.width() - int((pose.position.x / self.marker_box_size) * self.height()/10.0))
-       py = int((pose.position.y / self.marker_box_size) * self.height()/10.0)
-       
-       return (px, py)
+        #px = int(self.width() - int((pose.position.x / self.marker_box_size) * self.height()/10.0))
+        #py = int((pose.position.y / self.marker_box_size) * self.height()/10.0)
+        #return (px, py)
+
+        pt = p=np.array([[pose.position.x], [pose.position.y], [1]])
+
+        px = self.h_matrix*pt
+
+        px[0] = self.width() - px[0]
+
+        return (px[0], px[1])
      
     def pointing_point_left_cb(self, msg):
         
+        if self.h_matrix is None: return
         if not self.inited: return
        
         pos = self.get_px(msg.pose)
@@ -485,6 +498,7 @@ class simple_gui(QtGui.QWidget):
            
     def pointing_point_right_cb(self, msg):
         
+        if self.h_matrix is None: return
         if not self.inited: return
        
         pos = self.get_px(msg.pose)
