@@ -244,6 +244,8 @@ class simple_gui(QtGui.QWidget):
         h, status = cv2.findHomography(np.array(points), np.array(ppoints), cv2.RANSAC, 5.0)
 
         self.h_matrix = np.matrix(h)
+        self.box_size = box_size
+        self.pm_width =  self.checkerboard.pixmap().width()
 
         rospy.loginfo("Calibrated!")
 
@@ -354,6 +356,7 @@ class simple_gui(QtGui.QWidget):
       
     def object_cb(self, msg):
 
+        if not self.inited: return
         if self.h_matrix is None:
 
             return
@@ -475,31 +478,33 @@ class simple_gui(QtGui.QWidget):
 
             rospy.logerr("Not calibrated!")
             return None
-    
-        #px = int(self.width() - int((pose.position.x / self.marker_box_size) * self.height()/10.0))
-        #py = int((pose.position.y / self.marker_box_size) * self.height()/10.0)
-        #return (px, py)
 
         pt = p=np.array([[pose.position.x], [pose.position.y], [1]])
 
         px = self.h_matrix*pt
 
-        px[0] = self.width() - px[0]
+        #px[0]  *= -1.0
+        # TODO fix it - there is some shift in x axis
+        #px[0] = (px[0]-2*self.box_size)
+        #px[0] = self.width() - px[0]
+        #px[0] = (self.width() - px[0]) - (self.pm_width - 2*self.box_size)
+        
+        print "x: " + str(pose.position.x) + " y:" + str(pose.position.y) + " -> x: " + str(px[0]) + " y:" + str(px[1]) 
 
         return (px[0], px[1])
      
     def pointing_point_left_cb(self, msg):
         
-        if self.h_matrix is None: return
         if not self.inited: return
+        if self.h_matrix is None: return
        
         pos = self.get_px(msg.pose)
         self.emit(QtCore.SIGNAL('pointing_point_left'),  pos)
            
     def pointing_point_right_cb(self, msg):
         
-        if self.h_matrix is None: return
         if not self.inited: return
+        if self.h_matrix is None: return
        
         pos = self.get_px(msg.pose)
         self.emit(QtCore.SIGNAL('pointing_point_right'),  pos)
