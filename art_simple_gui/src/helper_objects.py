@@ -5,15 +5,15 @@ import numpy as np
 
 class scene_place():
     
-    def __init__(self,  scene, pos,  box_size,  pub, wsize):
+    def __init__(self,  scene, pos,  pub, wsize, h_matrix):
         
-        self.box_size = box_size
         self.scene = scene
         self.pos = pos
         self.pub = pub
         self.viz = self.scene.addEllipse(0, 0, 100, 100, QtCore.Qt.cyan, QtCore.Qt.cyan)
         self.viz.setPos(self.pos[0] - 100/2, self.pos[1] - 100/2)
         self.wsize = wsize
+        self.h_matrix = h_matrix
         
         ps = self.get_pose(self.pos[0],  self.pos[1])
         self.pub.publish(ps)
@@ -29,9 +29,16 @@ class scene_place():
         ps = PoseStamped()
         ps.header.frame_id = "marker"
         ps.header.stamp = rospy.Time.now()
-        ps.pose.position.x = (self.wsize.width() - px)*self.box_size/(self.wsize.height()/10.0)
-        ps.pose.position.y = py*self.box_size/(self.wsize.height()/10.0)
+        #ps.pose.position.x = (self.wsize.width() - px)*self.box_size/(self.wsize.height()/10.0)
+        #ps.pose.position.y = py*self.box_size/(self.wsize.height()/10.0)
+
+        p = p=np.array([[px], [py], [1]])
+        res = np.linalg.inv(self.h_matrix)*p
+
+        ps.pose.position.x = res[0]
+        ps.pose.position.y = res[1]
         ps.pose.position.z = 0.0
+
         ps.pose.orientation.x = 0.0
         ps.pose.orientation.y = 0.0
         ps.pose.orientation.z = 0.0

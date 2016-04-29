@@ -4,16 +4,21 @@ import rospy
 import rospkg
 import sys
 import signal
+import ast
 
 import cv2
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from art_msgs.msg import InstancesArray,  UserStatus
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PointStamped
 from std_srvs.srv import Empty, EmptyResponse
+import tf
 
 from helper_objects import scene_place,  scene_object,  pointing_point
 import numpy as np
+from cv_bridge import CvBridge, CvBridgeError
+from sensor_msgs.msg import Image, CameraInfo
+from image_geometry import PinholeCameraModel
 
 # TODO modes of operation (states) - currently only pick (object selection) and place (place selection)
 # TODO step back btn / some menu?
@@ -30,75 +35,257 @@ class simple_gui(QtGui.QWidget):
 
     def __init__(self):
        
-       super(simple_gui, self).__init__()
-       
-       self.inited = False
-       
-       rospack = rospkg.RosPack()
-       self.img_path = rospack.get_path('art_simple_gui') + '/imgs'
-       
-       self.obj_sub = rospy.Subscriber('/art_object_detector/object_filtered', InstancesArray, self.object_cb)
-       self.point_left_sub = rospy.Subscriber('/pointing_left', PoseStamped, self.pointing_point_left_cb)
-       self.point_right_sub = rospy.Subscriber('/pointing_right', PoseStamped, self.pointing_point_right_cb)
-       self.user_status_sub = rospy.Subscriber('/art_table_pointing/user_status',  UserStatus,  self.user_status_cb)
-       
-       self.selected_object_pub = rospy.Publisher("/art_simple_gui/selected_object", String, queue_size=10)
-       self.selected_place_pub = rospy.Publisher("/art_simple_gui/selected_place", PoseStamped, queue_size=10)
-       
-       self.srv_show_marker = rospy.Service('/art_simple_gui/show_marker', Empty, self.show_marker)
-       self.srv_hide_marker = rospy.Service('/art_simple_gui/hide_marker', Empty, self.hide_marker)
-       self.srv_clear_all = rospy.Service('/art_simple_gui/clear_all', Empty, self.clear_all) # clear all selections etc.
-       
-       self.marker_box_size = rospy.get_param("/art_params/marker_box_size", 0.0685)
-       
-       self.objects = None
-       self.viz_objects = {}
-       self.viz_places = []
-       
-       self.object_selected = False
-       self.object_selected_at = None
-       self.place_selected = False
-       
-       self.scene=QtGui.QGraphicsScene(self)
-       self.scene.setBackgroundBrush(QtCore.Qt.black)
-       self.view = QtGui.QGraphicsView(self.scene, self)
-       self.view.setRenderHint(QtGui.QPainter.Antialiasing)
-       self.view.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
-       #self.view.setViewport(QtOpenGL.QGLWidget()) # rendering using OpenGL -> somehow broken :(
-       
-       self.pm = QtGui.QPixmap(self.img_path + "/koberec.png")
-       self.marker = self.scene.addPixmap(self.pm.scaled(self.size(), QtCore.Qt.KeepAspectRatio))
-       self.marker.setZValue(-100)
-       self.marker.hide()
-       
-       self.resizeEvent = self.on_resize
-       
-       self.pointing_left = pointing_point("left", self.scene)
-       self.pointing_right = pointing_point("right", self.scene)
-       
-       QtCore.QObject.connect(self, QtCore.SIGNAL('objects()'), self.objects_evt)
-       QtCore.QObject.connect(self, QtCore.SIGNAL('pointing_point_left'), self.pointing_point_left_evt)
-       QtCore.QObject.connect(self, QtCore.SIGNAL('pointing_point_right'), self.pointing_point_right_evt)
-       QtCore.QObject.connect(self, QtCore.SIGNAL('clear_all()'), self.clear_all_evt)
-       QtCore.QObject.connect(self, QtCore.SIGNAL('show_marker()'), self.show_marker_evt)
-       QtCore.QObject.connect(self, QtCore.SIGNAL('hide_marker()'), self.hide_marker_evt)
-       QtCore.QObject.connect(self, QtCore.SIGNAL('user_status'), self.user_status_evt)
-       
-       self.timer = QtCore.QTimer()
-       self.timer.start(500)
-       self.timer.timeout.connect(self.timer_evt)
-       
-       # TODO "smart" label - able to show messages for defined time, more messages at the time, images (?) etc.
-       self.label = self.scene.addText("Waiting for user",  QtGui.QFont('Arial', 26))
-       self.label.rotate(180)
-       self.label.setDefaultTextColor(QtCore.Qt.white)
-       self.label.setZValue(200)
-       
-       self.user_status = None
-       
-       self.ignored_objects = [self.label,  self.marker]
-       
-       self.inited = True
+        super(simple_gui, self).__init__()
+
+        self.tfl = None
+
+        self.inited = False
+
+        rospack = rospkg.RosPack()
+        self.img_path = rospack.get_path('art_simple_gui') + '/imgs'
+
+        self.obj_sub = rospy.Subscriber('/art_object_detector/object_filtered', InstancesArray, self.object_cb)
+        self.point_left_sub = rospy.Subscriber('/pointing_left', PoseStamped, self.pointing_point_left_cb)
+        self.point_right_sub = rospy.Subscriber('/pointing_right', PoseStamped, self.pointing_point_right_cb)
+        self.user_status_sub = rospy.Subscriber('/art_table_pointing/user_status',  UserStatus,  self.user_status_cb)
+
+        self.selected_object_pub = rospy.Publisher("/art_simple_gui/selected_object", String, queue_size=10)
+        self.selected_place_pub = rospy.Publisher("/art_simple_gui/selected_place", PoseStamped, queue_size=10)
+        self.calibrated_pub = rospy.Publisher("/art_simple_gui/calibrated", Bool, queue_size=10, latch=True)
+
+        self.srv_calibrate = rospy.Service('/art_simple_gui/calibrate', Empty, self.calibrate)
+        self.srv_show_marker = rospy.Service('/art_simple_gui/show_marker', Empty, self.show_marker)
+        self.srv_hide_marker = rospy.Service('/art_simple_gui/hide_marker', Empty, self.hide_marker)
+        self.srv_clear_all = rospy.Service('/art_simple_gui/clear_all', Empty, self.clear_all) # clear all selections etc.
+
+        self.marker_box_size = rospy.get_param("/art_params/marker_box_size", 0.0685)
+
+        self.objects = None
+        self.viz_objects = {}
+        self.viz_places = []
+
+        self.object_selected = False
+        self.object_selected_at = None
+        self.place_selected = False
+
+        self.scene=QtGui.QGraphicsScene(self)
+        self.scene.setBackgroundBrush(QtCore.Qt.black)
+        self.view = QtGui.QGraphicsView(self.scene, self)
+        self.view.setRenderHint(QtGui.QPainter.Antialiasing)
+        self.view.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
+        #self.view.setViewport(QtOpenGL.QGLWidget()) # rendering using OpenGL -> somehow broken :(
+
+        self.pm = QtGui.QPixmap(self.img_path + "/koberec.png")
+        self.marker = self.scene.addPixmap(self.pm.scaled(self.size(), QtCore.Qt.KeepAspectRatio))
+        self.marker.setZValue(-100)
+        self.marker.hide()
+
+        self.checkerboard_img = QtGui.QPixmap(self.img_path + "/pattern.png")
+        self.checkerboard = self.scene.addPixmap(self.checkerboard_img.scaled(self.size(), QtCore.Qt.KeepAspectRatio))
+        self.checkerboard.setZValue(100)
+        self.checkerboard.hide()
+        self.bridge = CvBridge()
+
+        self.resizeEvent = self.on_resize
+
+        self.pointing_left = pointing_point("left", self.scene)
+        self.pointing_right = pointing_point("right", self.scene)
+
+        QtCore.QObject.connect(self, QtCore.SIGNAL('objects'), self.objects_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('pointing_point_left'), self.pointing_point_left_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('pointing_point_right'), self.pointing_point_right_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('clear_all()'), self.clear_all_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('show_marker()'), self.show_marker_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('hide_marker()'), self.hide_marker_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('user_status'), self.user_status_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('calibrate'), self.calibrate_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('calibrate2'), self.calibrate_evt2)
+
+        self.timer = QtCore.QTimer()
+        self.timer.start(500)
+        self.timer.timeout.connect(self.timer_evt)
+
+        # TODO "smart" label - able to show messages for defined time, more messages at the time, images (?) etc.
+        self.label = self.scene.addText("Waiting for user",  QtGui.QFont('Arial', 26))
+        self.label.rotate(180)
+        self.label.setDefaultTextColor(QtCore.Qt.white)
+        self.label.setZValue(200)
+
+        self.user_status = None
+
+        self.ignored_items = [self.label,  self.marker, self.checkerboard]
+
+        self.calibrated_pub.publish(Bool(False))
+        self.model = None
+        
+        self.h_matrix = None
+        try:
+            s = rospy.get_param("/art_simple_gui/calibration_matrix")
+            self.h_matrix = np.matrix(ast.literal_eval(s))
+            rospy.loginfo("Loaded calibration from param server")
+        except KeyError:
+            pass
+
+        self.inited = True
+
+    def get_caminfo(self):
+        
+        cam_info = None
+        try:
+          cam_info = rospy.wait_for_message('/kinect2/hd/camera_info', CameraInfo, 1.0)
+        except rospy.ROSException:
+
+          rospy.logerr("Could not get camera_info")          
+        
+        if cam_info is not None:
+            self.model = PinholeCameraModel()
+            self.model.fromCameraInfo(cam_info)
+
+    def calibrate(self, req):
+
+        self.tfl = tf.TransformListener()
+        self.emit(QtCore.SIGNAL('calibrate'))
+        return EmptyResponse()
+
+    def calibrate_evt(self):
+
+        self.checkerboard.show()
+        self.ctimer = QtCore.QTimer.singleShot(1000, self.calibrate_evt2)
+
+    def calibrate_int(self):
+
+        # TODO use message_filters to get synchronized messages
+        
+        points = []
+        ppoints = []
+        
+        cnt = 0
+        
+        box_size = self.checkerboard.pixmap().width()/(9+2.0) # in pixels
+        origin = (2*box_size, 2*box_size) # origin of the first corner
+        
+        while(cnt < 10):
+            
+            cnt += 1
+        
+            try:
+              img = rospy.wait_for_message('/kinect2/hd/image_color_rect', Image, 1.0)
+            except rospy.ROSException:
+
+                rospy.logerr("Could not get image")
+                return False
+
+            try:
+              depth = rospy.wait_for_message('/kinect2/hd/image_depth_rect', Image, 1.0)
+            except rospy.ROSException:
+
+                rospy.logerr("Could not get depth image")
+                return False
+
+            rospy.loginfo("Got data...")
+
+            try:
+                  cv_img = self.bridge.imgmsg_to_cv2(img, "bgr8")
+            except CvBridgeError as e:
+              print(e)
+              return False
+
+            try:
+                  cv_depth = self.bridge.imgmsg_to_cv2(depth)
+            except CvBridgeError as e:
+              print(e)
+              return False
+
+            cv_depth = cv2.medianBlur(cv_depth, 5)
+            cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
+
+            ret, corners = cv2.findChessboardCorners(cv_img, (9,6), None, flags=cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_FILTER_QUADS | cv2.CALIB_CB_NORMALIZE_IMAGE)
+
+            if ret == False:
+
+                rospy.logerr("Could not find chessboard corners")
+                return False
+
+            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.001)
+            cv2.cornerSubPix(cv_img,corners,(11,11),(-1,-1),criteria)
+            corners = corners.reshape(1,-1,2)[0]
+
+            # take chessboard corners and make 3D points using projection and depth data
+            for c in corners:
+
+              pt = list(self.model.projectPixelTo3dRay((c[0], c[1])))
+
+              # depth image is noisy - let's make mean of few pixels
+              da = []
+              for x in range(int(c[0]) - 2, int(c[0]) + 3):
+                  for y in range(int(c[1]) - 2, int(c[1]) + 3):
+                      da.append(cv_depth[y, x]/1000.0)
+
+              d = np.mean(da)
+              pt[:] = [x*d for x in pt]
+
+              ps = PointStamped()
+              ps.header.stamp = rospy.Time(0)
+              ps.header.frame_id = img.header.frame_id
+              ps.point.x = pt[0]
+              ps.point.y = pt[1]
+              ps.point.z = pt[2]
+
+              # transform 3D point from camera into the world coordinates
+              try:
+                  ps = self.tfl.transformPoint("marker", ps)
+              except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                  rospy.logerr("can't get transform")
+                  return False
+
+              # store x,y -> here we assume that points are 2D (on tabletop)
+              points.append([ps.point.x, ps.point.y])
+
+            # generate 2D (screen) points of chessboard corners (in pixels)
+            for y in range(0,6):
+              for x in range(0,9):
+                    px = (origin[0]+x*box_size)
+                    py = (origin[1]+y*box_size)
+                    ppoints.append([px, py])
+
+        #print "points"
+        #print points
+        #print ""
+        #print "ppoints"
+        #print ppoints
+
+        # find homography between points on table (in meters) and screen points (pixels)
+        h, status = cv2.findHomography(np.array(points), np.array(ppoints), cv2.RANSAC, 5.0)
+
+        self.h_matrix = np.matrix(h)
+        self.box_size = box_size
+        self.pm_width =  self.checkerboard.pixmap().width()
+
+        rospy.loginfo("Calibrated!")
+
+        s = str(self.h_matrix.tolist())
+        rospy.set_param("/art_simple_gui/calibration_matrix",  s)
+        print s
+        
+        return True
+
+    def calibrate_evt2(self):
+
+        cnt = 0
+
+        if self.model is None:
+            self.get_caminfo()
+            if self.model is None:
+                rospy.logerr("No camera_info -> cannot calibrate")
+                cnt = 10
+        
+        ret = False
+        while ret == False and cnt < 5:
+            ret = self.calibrate_int()
+            cnt += 1
+        self.checkerboard.hide()
+        self.tfl = None
+        self.calibrated_pub.publish(Bool(ret))
     
     def user_status_cb(self,  msg):
         
@@ -110,7 +297,7 @@ class simple_gui(QtGui.QWidget):
         
         if self.user_status.header.stamp == rospy.Time(0):
             self.user_status.header.stamp = rospy.Time.now()
-       
+
     def show_marker(self, req):
         
         self.emit(QtCore.SIGNAL('show_marker()'))
@@ -149,6 +336,11 @@ class simple_gui(QtGui.QWidget):
         return EmptyResponse()
        
     def timer_evt(self):
+
+        if self.h_matrix is None:
+
+            self.label.setPlainText('Waiting for calibration...')
+            return
         
         if self.user_status is not None and rospy.Time.now() - self.user_status.header.stamp > rospy.Duration(2):
             
@@ -177,9 +369,15 @@ class simple_gui(QtGui.QWidget):
         self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff);
         self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff);
         self.marker.setPixmap(self.pm.scaled(self.size(), QtCore.Qt.KeepAspectRatio))
+        self.checkerboard.setPixmap(self.checkerboard_img.scaled(self.size(), QtCore.Qt.KeepAspectRatio))
         self.label.setPos(self.width() - 70,  70)
       
     def object_cb(self, msg):
+
+        if not self.inited: return
+        if self.h_matrix is None:
+
+            return
 
         self.emit(QtCore.SIGNAL('objects'),  msg)
     
@@ -254,11 +452,11 @@ class simple_gui(QtGui.QWidget):
             if skip: return
 
             rospy.loginfo(pt.id + ": new place selected at x=" + str(pointed_place[0]) + ", y=" + str(pointed_place[1]))
-            self.viz_places.append(scene_place(self.scene,  pointed_place,  self.marker_box_size,  self.selected_place_pub, self.size()))
+            self.viz_places.append(scene_place(self.scene,  pointed_place,  self.selected_place_pub, self.size(), self.h_matrix))
             self.place_selected = True
         
     def objects_evt(self,  msg):
-        
+    
        self.objects = msg.instances
     
        current_objects = {}
@@ -293,15 +491,30 @@ class simple_gui(QtGui.QWidget):
        self.update()
     
     def get_px(self, pose):
-    
-       px = int(self.width() - int((pose.position.x / self.marker_box_size) * self.height()/10.0))
-       py = int((pose.position.y / self.marker_box_size) * self.height()/10.0)
-       
-       return (px, py)
+
+        if self.h_matrix is None:
+
+            rospy.logerr("Not calibrated!")
+            return None
+
+        pt = p=np.array([[pose.position.x], [pose.position.y], [1]])
+
+        px = self.h_matrix*pt
+
+        #px[0]  *= -1.0
+        # TODO fix it - there is some shift in x axis
+        #px[0] = (px[0]-2*self.box_size)
+        #px[0] = self.width() - px[0]
+        #px[0] = (self.width() - px[0]) - (self.pm_width - 2*self.box_size)
+        
+        #print "x: " + str(pose.position.x) + " y:" + str(pose.position.y) + " -> x: " + str(px[0]) + " y:" + str(px[1]) 
+
+        return (px[0], px[1])
      
     def pointing_point_left_cb(self, msg):
         
         if not self.inited: return
+        if self.h_matrix is None: return
        
         pos = self.get_px(msg.pose)
         self.emit(QtCore.SIGNAL('pointing_point_left'),  pos)
@@ -309,6 +522,7 @@ class simple_gui(QtGui.QWidget):
     def pointing_point_right_cb(self, msg):
         
         if not self.inited: return
+        if self.h_matrix is None: return
        
         pos = self.get_px(msg.pose)
         self.emit(QtCore.SIGNAL('pointing_point_right'),  pos)
