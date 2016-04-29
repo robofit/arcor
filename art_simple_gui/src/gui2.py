@@ -115,7 +115,6 @@ class simple_gui(QtGui.QWidget):
 
         self.ignored_items = [self.label,  self.marker, self.checkerboard]
 
-        self.calibrated_pub.publish(Bool(False))
         self.model = None
         
         self.h_matrix = None
@@ -125,6 +124,8 @@ class simple_gui(QtGui.QWidget):
             rospy.loginfo("Loaded calibration from param server")
         except KeyError:
             pass
+            
+        self.calibrated_pub.publish(Bool(self.h_matrix is not None))
 
         self.inited = True
 
