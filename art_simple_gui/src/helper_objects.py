@@ -29,20 +29,23 @@ class scene_place():
         ps = PoseStamped()
         ps.header.frame_id = "marker"
         ps.header.stamp = rospy.Time.now()
-        #ps.pose.position.x = (self.wsize.width() - px)*self.box_size/(self.wsize.height()/10.0)
-        #ps.pose.position.y = py*self.box_size/(self.wsize.height()/10.0)
-
-        p = p=np.array([[px], [py], [1]])
+        
+        p = np.array([[px], [py], [1]])
         res = np.linalg.inv(self.h_matrix)*p
+        
+        print p
+        print res
 
-        ps.pose.position.x = res[0]
-        ps.pose.position.y = res[1]
+        ps.pose.position.x = float(res[0])
+        ps.pose.position.y = float(res[1])
         ps.pose.position.z = 0.0
 
         ps.pose.orientation.x = 0.0
         ps.pose.orientation.y = 0.0
         ps.pose.orientation.z = 0.0
         ps.pose.orientation.w = 1.0
+        
+        print ps
         
         return ps
         

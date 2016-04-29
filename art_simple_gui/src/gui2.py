@@ -58,8 +58,6 @@ class simple_gui(QtGui.QWidget):
         self.srv_hide_marker = rospy.Service('/art_simple_gui/hide_marker', Empty, self.hide_marker)
         self.srv_clear_all = rospy.Service('/art_simple_gui/clear_all', Empty, self.clear_all) # clear all selections etc.
 
-        self.marker_box_size = rospy.get_param("/art_params/marker_box_size", 0.0685)
-
         self.objects = None
         self.viz_objects = {}
         self.viz_places = []
@@ -75,7 +73,7 @@ class simple_gui(QtGui.QWidget):
         self.view.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
         #self.view.setViewport(QtOpenGL.QGLWidget()) # rendering using OpenGL -> somehow broken :(
 
-        self.pm = QtGui.QPixmap(self.img_path + "/koberec.png")
+        self.pm = QtGui.QPixmap(self.img_path + "/koberec.png") # TODO use homography matrix to correct it
         self.marker = self.scene.addPixmap(self.pm.scaled(self.size(), QtCore.Qt.KeepAspectRatio))
         self.marker.setZValue(-100)
         self.marker.hide()
@@ -116,8 +114,8 @@ class simple_gui(QtGui.QWidget):
         self.ignored_items = [self.label,  self.marker, self.checkerboard]
 
         self.model = None
-        
         self.h_matrix = None
+        
         try:
             s = rospy.get_param("/art_simple_gui/calibration_matrix")
             self.h_matrix = np.matrix(ast.literal_eval(s))
@@ -134,6 +132,7 @@ class simple_gui(QtGui.QWidget):
         cam_info = None
         try:
           cam_info = rospy.wait_for_message('/kinect2/hd/camera_info', CameraInfo, 1.0)
+          #cam_info = rospy.wait_for_message('/kinect_head/rgb/camera_info', CameraInfo, 1.0)
         except rospy.ROSException:
 
           rospy.logerr("Could not get camera_info")          
@@ -145,6 +144,7 @@ class simple_gui(QtGui.QWidget):
     def calibrate(self, req):
 
         self.tfl = tf.TransformListener()
+        # TODO subscribe to image/depth (message_filters?) and call calibrate_evt2 from there
         self.emit(QtCore.SIGNAL('calibrate'))
         return EmptyResponse()
 
@@ -155,8 +155,6 @@ class simple_gui(QtGui.QWidget):
 
     def calibrate_int(self):
 
-        # TODO use message_filters to get synchronized messages
-        
         points = []
         ppoints = []
         
@@ -165,12 +163,13 @@ class simple_gui(QtGui.QWidget):
         box_size = self.checkerboard.pixmap().width()/(9+2.0) # in pixels
         origin = (2*box_size, 2*box_size) # origin of the first corner
         
-        while(cnt < 10):
+        while(cnt < 1):
             
             cnt += 1
         
             try:
               img = rospy.wait_for_message('/kinect2/hd/image_color_rect', Image, 1.0)
+              #img = rospy.wait_for_message('/kinect_head/rgb/image_rect_color', Image, 1.0)
             except rospy.ROSException:
 
                 rospy.logerr("Could not get image")
@@ -178,6 +177,7 @@ class simple_gui(QtGui.QWidget):
 
             try:
               depth = rospy.wait_for_message('/kinect2/hd/image_depth_rect', Image, 1.0)
+              #depth = rospy.wait_for_message('/kinect_head/depth_registered/image', Image, 1.0)
             except rospy.ROSException:
 
                 rospy.logerr("Could not get depth image")
@@ -223,6 +223,8 @@ class simple_gui(QtGui.QWidget):
                       da.append(cv_depth[y, x]/1000.0)
 
               d = np.mean(da)
+              #d = 1.386
+              
               pt[:] = [x*d for x in pt]
 
               ps = PointStamped()
@@ -238,6 +240,8 @@ class simple_gui(QtGui.QWidget):
               except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                   rospy.logerr("can't get transform")
                   return False
+                  
+              #print ps.point.z
 
               # store x,y -> here we assume that points are 2D (on tabletop)
               points.append([ps.point.x, ps.point.y])
@@ -249,21 +253,16 @@ class simple_gui(QtGui.QWidget):
                     py = (origin[1]+y*box_size)
                     ppoints.append([px, py])
 
-        #print "points"
-        #print points
-        #print ""
-        #print "ppoints"
-        #print ppoints
-
         # find homography between points on table (in meters) and screen points (pixels)
-        h, status = cv2.findHomography(np.array(points), np.array(ppoints), cv2.RANSAC, 5.0)
-
+        h, status = cv2.findHomography(np.array(points), np.array(ppoints), cv2.RANSAC, 2.0)
+        
         self.h_matrix = np.matrix(h)
         self.box_size = box_size
         self.pm_width =  self.checkerboard.pixmap().width()
 
         rospy.loginfo("Calibrated!")
 
+        # store homography matrix to parameter server
         s = str(self.h_matrix.tolist())
         rospy.set_param("/art_simple_gui/calibration_matrix",  s)
         print s
@@ -385,7 +384,6 @@ class simple_gui(QtGui.QWidget):
     def pointing_point_left_evt(self,  pos):
 
         if (pos[0] in range(0, self.width()) and pos[1] in range(0, self.height())):
-                
            self.pointing_left.set_pos(pos)
            self.pointing_point(self.pointing_left)
            
@@ -502,15 +500,7 @@ class simple_gui(QtGui.QWidget):
 
         px = self.h_matrix*pt
 
-        #px[0]  *= -1.0
-        # TODO fix it - there is some shift in x axis
-        #px[0] = (px[0]-2*self.box_size)
-        #px[0] = self.width() - px[0]
-        #px[0] = (self.width() - px[0]) - (self.pm_width - 2*self.box_size)
-        
-        #print "x: " + str(pose.position.x) + " y:" + str(pose.position.y) + " -> x: " + str(px[0]) + " y:" + str(px[1]) 
-
-        return (px[0], px[1])
+        return (int(round(px[0].tolist()[0][0])), int(round(px[1].tolist()[0][0])))
      
     def pointing_point_left_cb(self, msg):
         
