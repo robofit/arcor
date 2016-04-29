@@ -32,7 +32,7 @@ class scene_place():
         #ps.pose.position.x = (self.wsize.width() - px)*self.box_size/(self.wsize.height()/10.0)
         #ps.pose.position.y = py*self.box_size/(self.wsize.height()/10.0)
 
-        p = p=np.array([[self.wsize.width() - px], [py], [1]])
+        p = p=np.array([[px], [py], [1]])
         res = np.linalg.inv(self.h_matrix)*p
 
         ps.pose.position.x = res[0]
