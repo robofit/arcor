@@ -25,6 +25,12 @@ add_message_files(
   ProgramArray.msg
 )
 
+add_service_files(
+    FILES
+    getProgram.srv
+    storeProgram.srv
+)
+
 generate_messages(
   DEPENDENCIES actionlib_msgs shape_msgs
 )
