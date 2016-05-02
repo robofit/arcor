@@ -10,7 +10,7 @@ import cv2
 from std_msgs.msg import String, Bool
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from art_msgs.msg import InstancesArray,  UserStatus
-from geometry_msgs.msg import PoseStamped, PointStamped
+from geometry_msgs.msg import Pose,  PoseStamped, PointStamped
 from std_srvs.srv import Empty, EmptyResponse
 import tf
 
@@ -135,7 +135,7 @@ class simple_gui(QtGui.QWidget):
           #cam_info = rospy.wait_for_message('/kinect_head/rgb/camera_info', CameraInfo, 1.0)
         except rospy.ROSException:
 
-          rospy.logerr("Could not get camera_info")          
+          rospy.logerr("Could not get camera_info")
         
         if cam_info is not None:
             self.model = PinholeCameraModel()
@@ -163,7 +163,7 @@ class simple_gui(QtGui.QWidget):
         box_size = self.checkerboard.pixmap().width()/(9+2.0) # in pixels
         origin = (2*box_size, 2*box_size) # origin of the first corner
         
-        while(cnt < 1):
+        while(cnt < 10):
             
             cnt += 1
         
@@ -496,11 +496,15 @@ class simple_gui(QtGui.QWidget):
             rospy.logerr("Not calibrated!")
             return None
 
-        pt = p=np.array([[pose.position.x], [pose.position.y], [1]])
+        pt = np.array([[pose.position.x], [pose.position.y], [1.0]])
 
         px = self.h_matrix*pt
 
-        return (int(round(px[0].tolist()[0][0])), int(round(px[1].tolist()[0][0])))
+        w = px[2].tolist()[0][0]
+        x = px[0].tolist()[0][0]
+        y = px[1].tolist()[0][0]
+
+        return (int(round(x/w)), int(round(y/w)))
      
     def pointing_point_left_cb(self, msg):
         
