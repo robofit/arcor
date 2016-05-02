@@ -5,7 +5,7 @@ import numpy as np
 
 class scene_place():
     
-    def __init__(self,  scene, pos,  box_size,  pub):
+    def __init__(self,  scene, pos,  box_size,  pub, wsize):
         
         self.box_size = box_size
         self.scene = scene
@@ -13,6 +13,7 @@ class scene_place():
         self.pub = pub
         self.viz = self.scene.addEllipse(0, 0, 100, 100, QtCore.Qt.cyan, QtCore.Qt.cyan)
         self.viz.setPos(self.pos[0] - 100/2, self.pos[1] - 100/2)
+        self.wsize = wsize
         
         ps = self.get_pose(self.pos[0],  self.pos[1])
         self.pub.publish(ps)
@@ -28,8 +29,8 @@ class scene_place():
         ps = PoseStamped()
         ps.header.frame_id = "marker"
         ps.header.stamp = rospy.Time.now()
-        ps.pose.position.x = (self.scene.width() - px)*self.box_size/(self.scene.height()/10.0)
-        ps.pose.position.y = py*self.box_size/(self.scene.height()/10.0)
+        ps.pose.position.x = (self.wsize.width() - px)*self.box_size/(self.wsize.height()/10.0)
+        ps.pose.position.y = py*self.box_size/(self.wsize.height()/10.0)
         ps.pose.position.z = 0.0
         ps.pose.orientation.x = 0.0
         ps.pose.orientation.y = 0.0
@@ -226,7 +227,7 @@ class pointing_point():
             ys = np.std(y)
             
             # if "cursor" position move a bit (noise) but doesn't move too much - the user is pointing somewhere
-            if xs > 0.01 and xs < 10.0 and ys > 0.01 and ys < 10.0:
+            if xs > 0.01 and xs < 15.0 and ys > 0.01 and ys < 15.0:
             #if xs < 10.0 and ys < 10.0: # -> this is only for testing
                 
                 self.pointed_pos = (int(xm),  int(ym))
