@@ -221,6 +221,7 @@ class simple_gui(QtGui.QWidget):
             for c in corners:
 
               pt = list(self.model.projectPixelTo3dRay((c[0], c[1])))
+              pt[:] = [x/pt[2] for x in pt]
 
               # depth image is noisy - let's make mean of few pixels
               da = []
@@ -229,10 +230,7 @@ class simple_gui(QtGui.QWidget):
                       da.append(cv_depth[y, x]/1000.0)
 
               d = np.mean(da)
-              #d = 1.37
-              print pt
               pt[:] = [x*d for x in pt]
-              print pt
 
               ps = PointStamped()
               ps.header.stamp = rospy.Time(0)
@@ -241,17 +239,12 @@ class simple_gui(QtGui.QWidget):
               ps.point.y = pt[1]
               ps.point.z = pt[2]
               
-              print ps.point
-              
               # transform 3D point from camera into the world coordinates
               try:
                   ps = self.tfl.transformPoint("marker", ps)
               except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                   rospy.logerr("can't get transform")
                   return False
-            
-              print ps.point
-              print ""
               
               pp = Pose()
               pp.position.x = ps.point.x
@@ -306,7 +299,7 @@ class simple_gui(QtGui.QWidget):
         while ret == False and cnt < 5:
             ret = self.calibrate_int()
             cnt += 1
-        #self.checkerboard.hide()
+        self.checkerboard.hide()
         self.tfl = None
         self.calibrated_pub.publish(Bool(ret))
     
