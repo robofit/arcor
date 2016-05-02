@@ -10,7 +10,7 @@ import cv2
 from std_msgs.msg import String, Bool
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from art_msgs.msg import InstancesArray,  UserStatus
-from geometry_msgs.msg import Pose,  PoseStamped, PointStamped
+from geometry_msgs.msg import Pose,  PoseStamped, PointStamped,  PoseArray
 from std_srvs.srv import Empty, EmptyResponse
 import tf
 
@@ -52,6 +52,8 @@ class simple_gui(QtGui.QWidget):
         self.selected_object_pub = rospy.Publisher("/art_simple_gui/selected_object", String, queue_size=10)
         self.selected_place_pub = rospy.Publisher("/art_simple_gui/selected_place", PoseStamped, queue_size=10)
         self.calibrated_pub = rospy.Publisher("/art_simple_gui/calibrated", Bool, queue_size=10, latch=True)
+        
+        self.corners_pub = rospy.Publisher("/art_simple_gui/corners", PoseArray,  queue_size=10,  latch=True)
 
         self.srv_calibrate = rospy.Service('/art_simple_gui/calibrate', Empty, self.calibrate)
         self.srv_show_marker = rospy.Service('/art_simple_gui/show_marker', Empty, self.show_marker)
@@ -163,7 +165,11 @@ class simple_gui(QtGui.QWidget):
         box_size = self.checkerboard.pixmap().width()/(9+2.0) # in pixels
         origin = (2*box_size, 2*box_size) # origin of the first corner
         
-        while(cnt < 10):
+        ppp = PoseArray()
+        ppp.header.stamp = rospy.Time.now()
+        ppp.header.frame_id = "marker"
+        
+        while(cnt < 1):
             
             cnt += 1
         
@@ -223,9 +229,10 @@ class simple_gui(QtGui.QWidget):
                       da.append(cv_depth[y, x]/1000.0)
 
               d = np.mean(da)
-              #d = 1.386
-              
+              #d = 1.37
+              print pt
               pt[:] = [x*d for x in pt]
+              print pt
 
               ps = PointStamped()
               ps.header.stamp = rospy.Time(0)
@@ -233,15 +240,29 @@ class simple_gui(QtGui.QWidget):
               ps.point.x = pt[0]
               ps.point.y = pt[1]
               ps.point.z = pt[2]
-
+              
+              print ps.point
+              
               # transform 3D point from camera into the world coordinates
               try:
                   ps = self.tfl.transformPoint("marker", ps)
               except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                   rospy.logerr("can't get transform")
                   return False
-                  
-              #print ps.point.z
+            
+              print ps.point
+              print ""
+              
+              pp = Pose()
+              pp.position.x = ps.point.x
+              pp.position.y = ps.point.y
+              pp.position.z = ps.point.z
+              pp.orientation.x = 0
+              pp.orientation.y = 0
+              pp.orientation.z = 0
+              pp.orientation.w = 1.0
+              
+              ppp.poses.append(pp)
 
               # store x,y -> here we assume that points are 2D (on tabletop)
               points.append([ps.point.x, ps.point.y])
@@ -252,7 +273,9 @@ class simple_gui(QtGui.QWidget):
                     px = (origin[0]+x*box_size)
                     py = (origin[1]+y*box_size)
                     ppoints.append([px, py])
-
+        
+        self.corners_pub.publish(ppp)
+        
         # find homography between points on table (in meters) and screen points (pixels)
         h, status = cv2.findHomography(np.array(points), np.array(ppoints), cv2.RANSAC, 2.0)
         
@@ -283,7 +306,7 @@ class simple_gui(QtGui.QWidget):
         while ret == False and cnt < 5:
             ret = self.calibrate_int()
             cnt += 1
-        self.checkerboard.hide()
+        #self.checkerboard.hide()
         self.tfl = None
         self.calibrated_pub.publish(Bool(ret))
     
