@@ -29,6 +29,8 @@ add_service_files(
     FILES
     getProgram.srv
     storeProgram.srv
+    getObject.srv
+    storeObject.srv
 )
 
 generate_messages(
