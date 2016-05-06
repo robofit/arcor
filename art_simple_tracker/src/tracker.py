@@ -20,7 +20,7 @@ class tracker:
     self.objects = {}
     
     # should be in (0,1)
-    self.ap = 0.1 # filtering cooeficient - position
+    self.ap = 0.25 # filtering cooeficient - position
     self.ao = 0.1 # filtering cooeficient - orientation
     
     self.min_cnt = 5 # publish object after it has been seen x times at least
@@ -53,8 +53,7 @@ class tracker:
       ia.instances.append(obj)
     
     # TODO also publish TF for each object???
-    if len(ia.instances) > 0:
-      self.pub.publish(ia)
+    self.pub.publish(ia)
     
     for k in objects_to_prune:
     

@@ -39,11 +39,15 @@ class ArCodeDetector:
                 try:
                     resp = self.get_object_srv(obj_id=aid)
                 except rospy.ServiceException, e:
-                    print "Service call failed: %s"%e
+                    
+                    # error or unknown object - let's ignore it
+                    self.objects_cache[aid] = None
                     continue
                     
                 self.objects_cache[aid] = {'name': resp.name,  'model_url': resp.model_url,  'type': resp.type,  'bb': resp.bbox}
-                
+            
+            if self.objects_cache[aid] is None: continue
+            
             obj_in = ObjInstance()
             obj_in.object_id = self.objects_cache[aid]['name']
             obj_in.pose = arcode.pose.pose
