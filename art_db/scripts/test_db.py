@@ -99,8 +99,8 @@ def main(args):
     
     try:
         store_object_srv = rospy.ServiceProxy('/art_db/object/store', storeObject)
-        resp = store_object_srv(obj_id=16,  name="profile_2",  model_url="",  type="profile",  bbox=bb)
-        resp = store_object_srv(obj_id=15,  name="profile_3",  model_url="",  type="profile",  bbox=bb)
+        resp = store_object_srv(obj_id=3,  name="profile_2",  model_url="",  type="profile",  bbox=bb)
+        resp = store_object_srv(obj_id=4,  name="profile_3",  model_url="",  type="profile",  bbox=bb)
     except rospy.ServiceException, e:
         print "Service call failed: %s"%e
         return
@@ -109,9 +109,11 @@ def main(args):
     
     try:
         get_object_srv = rospy.ServiceProxy('/art_db/object/get', getObject)
-        resp = get_object_srv(obj_id=15)
+        resp = get_object_srv(obj_id=3)
         print resp
-        resp = get_object_srv(obj_id=16)
+        resp = get_object_srv(obj_id=4)
+        print resp
+        resp = get_object_srv(obj_id=50)
         print resp
     except rospy.ServiceException, e:
         print "Service call failed: %s"%e
