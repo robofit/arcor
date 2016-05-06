@@ -2,66 +2,71 @@
 
 from ar_track_alvar_msgs.msg import AlvarMarkers, AlvarMarker
 from art_msgs.msg import ObjInstance, InstancesArray
+from art_msgs.srv import getObject
 from shape_msgs.msg import SolidPrimitive
 import sys
 import rospy
-import dataset
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 from tf import transformations
 
 
 class ArCodeDetector:
-    objects_db = None
+
     objects_table = None
 
     def __init__(self):
-        self.objects_db = dataset.connect('sqlite:////home/ikapinus/objdatabase.db')
-        self.objects_table = self.objects_db['objects']
-        # self.objects_table.insert(dict(name="profile_3", model_url="blablabla", obj_id=16))
-        # self.objects_table.insert(dict(name="profile_2", model_url="blablabla", obj_id=16))
-        # self.objects_table.update(dict(name="profile_3", model_url="blablabla", obj_id=15), ['name'])
+        
+        self.get_object_srv = rospy.ServiceProxy('/art_db/object/get', getObject)
         self.ar_code_sub = rospy.Subscriber("ar_pose_marker", AlvarMarkers, self.ar_code_cb)
         self.detected_objects_pub = rospy.Publisher("/art_object_detector/object", InstancesArray, queue_size=10)
         self.visualize_pub = rospy.Publisher("art_object_detector/visualize_objects", Marker, queue_size=10)
-        for ar in self.objects_table:
-            print ar
+        
+        # TODO make a timer clearing this cache from time to time
+        self.objects_cache = {}
 
     def ar_code_cb(self, data):
         rospy.logdebug("New arcodes arrived:")
         instances = InstancesArray()
         id = 0
+        
         for arcode in data.markers:
-            obj = self.objects_table.find_one(obj_id=int(arcode.id))
-            # rospy.logdebug(object if object is not None else "Object not in database")
-            if obj is not None:
-                rospy.logdebug(obj)
-                obj_in = ObjInstance()
-                obj_in.object_id = str(obj['name'])
-                obj_in.pose = arcode.pose.pose
-                obj_in.pose.position.z = 0
+            
+            aid = int(arcode.id)
+            
+            if aid not in self.objects_cache:
+            
+                try:
+                    resp = self.get_object_srv(obj_id=aid)
+                except rospy.ServiceException, e:
+                    print "Service call failed: %s"%e
+                    continue
+                    
+                self.objects_cache[aid] = {'name': resp.name,  'model_url': resp.model_url,  'type': resp.type,  'bb': resp.bbox}
+                
+            obj_in = ObjInstance()
+            obj_in.object_id = self.objects_cache[aid]['name']
+            obj_in.pose = arcode.pose.pose
+            obj_in.pose.position.z = 0
 
-                angles = transformations.euler_from_quaternion([obj_in.pose.orientation.x,
-                                                                obj_in.pose.orientation.y,
-                                                                obj_in.pose.orientation.z,
-                                                                obj_in.pose.orientation.w])
+            angles = transformations.euler_from_quaternion([obj_in.pose.orientation.x,
+                                                            obj_in.pose.orientation.y,
+                                                            obj_in.pose.orientation.z,
+                                                            obj_in.pose.orientation.w])
 
-                q = transformations.quaternion_from_euler(0, 0, angles[2])
-                obj_in.pose.orientation.x = q[0]
-                obj_in.pose.orientation.y = q[1]
-                obj_in.pose.orientation.z = q[2]
-                obj_in.pose.orientation.w = q[3]
+            q = transformations.quaternion_from_euler(0, 0, angles[2])
+            obj_in.pose.orientation.x = q[0]
+            obj_in.pose.orientation.y = q[1]
+            obj_in.pose.orientation.z = q[2]
+            obj_in.pose.orientation.w = q[3]
 
-                obj_in.bbox.dimensions = [obj['bbox_x'], obj['bbox_y'], obj['bbox_z']]
-                obj_in.bbox.type = SolidPrimitive.BOX
-                self.show_rviz_bb(obj_in, arcode.id)
-                instances.header.stamp = arcode.header.stamp
-                instances.header.frame_id = arcode.header.frame_id
-                instances.instances.append(obj_in)
-                ++id
+            obj_in.bbox =  self.objects_cache[aid]['bb']
+            self.show_rviz_bb(obj_in, arcode.id)
+            instances.header.stamp = arcode.header.stamp
+            instances.header.frame_id = arcode.header.frame_id
+            instances.instances.append(obj_in)
+            ++id
 
-            else:
-                rospy.logdebug("Object not in database")
 
         if len(data.markers) == 0:
             rospy.logdebug("Empty")
@@ -137,6 +142,7 @@ if __name__ == '__main__':
     rospy.init_node('art_arcode_detector')
     # rospy.init_node('art_arcode_detector', log_level=rospy.DEBUG)
     try:
+        rospy.wait_for_service('/art_db/object/get')
         node = ArCodeDetector()
         rospy.spin()
     except rospy.ROSInterruptException:
