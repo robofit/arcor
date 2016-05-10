@@ -49,8 +49,6 @@ class ArtDB:
         resp.name = obj['name']
         resp.model_url = obj['model_url']
         resp.type = obj['type']
-        print obj['bb']
-        print  json.loads(obj['bb'])
         resp.bbox = message_converter.convert_dictionary_to_ros_message('shape_msgs/SolidPrimitive', json.loads(obj['bb']))
         return resp
         
@@ -59,7 +57,6 @@ class ArtDB:
         db = dataset.connect('sqlite:////' + self.db_path)
         objects = db['objects']
         bb_json = json.dumps(message_converter.convert_ros_message_to_dictionary(req.bbox))
-        print bb_json
         objects.insert(dict(name=req.name, model_url=req.model_url, obj_id=req.obj_id,  type=req.type,  bb=bb_json))
         resp =storeObjectResponse()
         resp.success = True
