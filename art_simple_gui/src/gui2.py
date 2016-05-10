@@ -10,15 +10,20 @@ import cv2
 from std_msgs.msg import String, Bool
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from art_msgs.msg import InstancesArray,  UserStatus
+from art_msgs.srv import getProgram
+from art_msgs.msg import RobotProgramAction, RobotProgramFeedback,  RobotProgramGoal
 from geometry_msgs.msg import Pose,  PoseStamped, PointStamped,  PoseArray
 from std_srvs.srv import Empty, EmptyResponse
 import tf
+import actionlib
 
 from helper_objects import scene_place,  scene_object,  pointing_point
+from program_widget import program_widget
 import numpy as np
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image, CameraInfo
 from image_geometry import PinholeCameraModel
+
 
 # TODO modes of operation (states) - currently only pick (object selection) and place (place selection)
 # TODO step back btn / some menu?
@@ -127,7 +132,45 @@ class simple_gui(QtGui.QWidget):
             
         self.calibrated_pub.publish(Bool(self.h_matrix is not None))
 
+        self.prog = program_widget(self)
+        self.prog.resize(400, 200)
+        self.prog.move(10, 10)
+        self.prog.show()
+    
+        self.brain_client = actionlib.SimpleActionClient("/art_brain/do_program", RobotProgramAction)
+        
+        # TODO only for testing - program should be selected by user
+        self.load_program(0)
+        self.start_program()
+        
         self.inited = True
+
+    def program_feedback(self,  msg):
+        
+        self.prog.set_current(msg.current_program,  msg.current_item)
+
+    def program_done(self,  status,  msg):
+        
+        # TODO do something meaningful
+         self.start_program()
+        
+    def start_program(self):
+        
+        self.brain_client.wait_for_server()
+        goal = RobotProgramGoal()
+        goal.program_array.programs.append(self.prog.prog)
+        self.brain_client.send_goal(goal,  done_cb=self.program_done,  feedback_cb=self.program_feedback)
+        
+    def load_program(self,  prog_id,  template = False):
+        
+        rospy.wait_for_service('/art_db/program/get')
+    
+        try:
+            prog_srv = rospy.ServiceProxy('/art_db/program/get', getProgram)
+            resp = prog_srv(0)
+            self.prog.set_prog(resp.program)
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
 
     def get_caminfo(self):
         
