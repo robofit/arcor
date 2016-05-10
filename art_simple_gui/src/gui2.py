@@ -177,7 +177,6 @@ class simple_gui(QtGui.QWidget):
         cam_info = None
         try:
           cam_info = rospy.wait_for_message('/kinect2/hd/camera_info', CameraInfo, 1.0)
-          #cam_info = rospy.wait_for_message('/kinect_head/rgb/camera_info', CameraInfo, 1.0)
         except rospy.ROSException:
 
           rospy.logerr("Could not get camera_info")
@@ -205,20 +204,19 @@ class simple_gui(QtGui.QWidget):
         
         cnt = 0
         
-        box_size = self.checkerboard.pixmap().width()/(9+2.0) # in pixels
+        box_size = self.checkerboard.pixmap().width()/(10+2.0) # in pixels
         origin = (2*box_size, 2*box_size) # origin of the first corner
         
         ppp = PoseArray()
         ppp.header.stamp = rospy.Time.now()
         ppp.header.frame_id = "marker"
         
-        while(cnt < 1):
+        while(cnt < 3):
             
             cnt += 1
         
             try:
               img = rospy.wait_for_message('/kinect2/hd/image_color_rect', Image, 1.0)
-              #img = rospy.wait_for_message('/kinect_head/rgb/image_rect_color', Image, 1.0)
             except rospy.ROSException:
 
                 rospy.logerr("Could not get image")
@@ -226,7 +224,6 @@ class simple_gui(QtGui.QWidget):
 
             try:
               depth = rospy.wait_for_message('/kinect2/hd/image_depth_rect', Image, 1.0)
-              #depth = rospy.wait_for_message('/kinect_head/depth_registered/image', Image, 1.0)
             except rospy.ROSException:
 
                 rospy.logerr("Could not get depth image")
@@ -306,14 +303,14 @@ class simple_gui(QtGui.QWidget):
             # generate 2D (screen) points of chessboard corners (in pixels)
             for y in range(0,6):
               for x in range(0,9):
-                    px = (origin[0]+x*box_size)
+                    px = self.width()-(origin[0]+x*box_size)
                     py = (origin[1]+y*box_size)
                     ppoints.append([px, py])
         
         self.corners_pub.publish(ppp)
         
         # find homography between points on table (in meters) and screen points (pixels)
-        h, status = cv2.findHomography(np.array(points), np.array(ppoints), cv2.RANSAC, 2.0)
+        h, status = cv2.findHomography(np.array(points), np.array(ppoints), cv2.LMEDS)
         
         self.h_matrix = np.matrix(h)
         self.box_size = box_size
@@ -556,14 +553,13 @@ class simple_gui(QtGui.QWidget):
             return None
 
         pt = np.array([[pose.position.x], [pose.position.y], [1.0]])
-
         px = self.h_matrix*pt
 
         w = px[2].tolist()[0][0]
         x = px[0].tolist()[0][0]
         y = px[1].tolist()[0][0]
-
-        return (int(round(x/w)), int(round(y/w)))
+        
+        return (self.width()-int(round(x/w)), int(round(y/w)))
      
     def pointing_point_left_cb(self, msg):
         

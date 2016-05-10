@@ -27,6 +27,7 @@ class ArtDB:
         
         db = dataset.connect('sqlite:////' + self.db_path)
         obj = db['programs'].find_one(program_id=req.id)
+        if obj is None: return None
         resp = getProgramResponse()
         resp.program = message_converter.convert_dictionary_to_ros_message('art_msgs/Program', json.loads(obj['json']))
         return resp
@@ -45,6 +46,7 @@ class ArtDB:
         
         db = dataset.connect('sqlite:////' + self.db_path)
         obj = db['objects'].find_one(obj_id=req.obj_id)
+        if obj is None: return None
         resp = getObjectResponse()
         resp.name = obj['name']
         resp.model_url = obj['model_url']
