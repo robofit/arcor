@@ -21,6 +21,7 @@ def main():
     
     obj = ObjInstance()
     obj.object_id = "my_object"
+    obj.object_type = "object"
     obj.pose.position.x = 0.5
     obj.pose.position.y = 0.5
     obj.pose.position.z = 0.0
@@ -39,6 +40,7 @@ def main():
     
     obj2 = ObjInstance()
     obj2.object_id = "another_object"
+    obj2.object_type = "object"
     obj2.pose.position.x = 0.7
     obj2.pose.position.y = 0.3
     obj2.pose.position.z = 0.0
@@ -78,6 +80,10 @@ def main():
     psr.pose.orientation.w = 1.0
     
     noise = 0.0001
+    
+    while(not rospy.is_shutdown()):
+        pub.publish(arr)
+        rospy.sleep(1.0)
     
     while(not rospy.is_shutdown()):
     

@@ -50,6 +50,7 @@ class ArCodeDetector:
             
             obj_in = ObjInstance()
             obj_in.object_id = self.objects_cache[aid]['name']
+            obj_in.object_type = self.objects_cache[aid]['type']
             obj_in.pose = arcode.pose.pose
             obj_in.pose.position.z = 0
 
