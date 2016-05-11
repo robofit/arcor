@@ -52,12 +52,9 @@ class program_widget(QtGui.QWidget):
     def learned(self,  id):
         
         self.items_to_be_learned.remove(id)
-        
-        palette = QtGui.QPalette()
-        palette.setColor(QtGui.QPalette.Foreground,QtCore.Qt.white)
-        
-        self.labels[id].setPalette(palette)
-        self.labels[id].setText(self.get_text_for_item(self.get_item_by_id(id)))
+
+        self.labels[id].setDefaultTextColor(QtCore.Qt.white)
+        self.labels[id].setPlainText(self.get_text_for_item(self.get_item_by_id(id)))
         
     def get_item_to_learn(self):
         

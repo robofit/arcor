@@ -23,6 +23,7 @@ import numpy as np
 # TODO polygon selection
 # TODO stop (program) button
 # TODO move program_widget automatically so it does not collide with objects etc.
+# TODO object type selection - highlight all of them
 
 def sigint_handler(*args):
     """Handler for the SIGINT signal."""
@@ -109,7 +110,7 @@ class simple_gui(QtGui.QWidget):
         self.ignored_items = [self.label,  self.marker, self.calib.checkerboard]
         
         self.prog = program_widget(self)
-        self.prog.resize(400, 200)
+        self.prog.resize(500, 200)
         self.prog.move(10, 10)
         self.prog.show()
     
