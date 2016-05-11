@@ -7,8 +7,6 @@ from PyQt4 import QtGui, QtCore
 from art_msgs.msg import Program,  ProgramItem
 from art_msgs.srv import getProgram
 
-# TODO rotate label
-
 class program_widget(QtGui.QWidget):
 
     def __init__(self,  parent):
@@ -24,6 +22,22 @@ class program_widget(QtGui.QWidget):
         self.template = None
         
         self.items_req_learning = [ProgramItem.MANIP_PICK,  ProgramItem.MANIP_PLACE,  ProgramItem.MANIP_PICK_PLACE]
+        
+        self.scene=QtGui.QGraphicsScene(self)
+        self.scene.setBackgroundBrush(QtCore.Qt.black)
+        self.view = QtGui.QGraphicsView(self.scene, self)
+        self.view.setRenderHint(QtGui.QPainter.Antialiasing)
+        self.view.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
+        self.view.setStyleSheet( "QGraphicsView { border-style: none; }" )
+        
+        self.resizeEvent = self.on_resize
+        
+    def on_resize(self,  event):
+        
+        self.view.setFixedSize(self.width(), self.height())
+        self.view.setSceneRect(QtCore.QRectF(0, 0, self.width(), self.height()))
+        self.view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff);
+        self.view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff);
         
     def get_item_by_id(self,  id):
         
@@ -82,29 +96,21 @@ class program_widget(QtGui.QWidget):
         self.current_prog_id = prog_id
         self.current_step_id = step_id
         self.emit(QtCore.SIGNAL('set_current'))
+    
+    def set_bold(self,  label,  bold=True):
+        
+        myFont=QtGui.QFont('Arial', 14)
+        myFont.setBold(bold)
+        label.setFont(myFont)
         
     def set_current_evt(self):
         
-        myFont=QtGui.QFont()
-        myFont.setBold(False)
-        
         for id,  lab in self.labels.iteritems():
             if id >= 0:
-                lab.setFont(myFont)
+                self.set_bold(lab,  False)
         
-        myFont.setBold(True)
-        self.labels[self.current_step_id].setFont(myFont)
+        self.set_bold(self.labels[self.current_step_id])
     
-    def label(self,  text,  id=-100):
-        
-        palette = QtGui.QPalette()
-        if id in self.items_to_be_learned: palette.setColor(QtGui.QPalette.Foreground,QtCore.Qt.red)
-        else: palette.setColor(QtGui.QPalette.Foreground,QtCore.Qt.white)
-        lab = QtGui.QLabel(text)
-        lab.setPalette(palette)
-        self.labels[id] = lab
-        return lab
-
     def get_text_for_item(self,  it):
         
         if it.id in self.items_to_be_learned:
@@ -147,14 +153,22 @@ class program_widget(QtGui.QWidget):
 
     def prog_evt(self):
         
-        self.vbox = QtGui.QVBoxLayout()
-        self.setLayout(self.vbox)
-
-        self.vbox.addWidget(self.label(self.prog.name))
+        self.header = self.scene.addText(self.prog.name, QtGui.QFont('Arial', 14))
+        self.header.setPos(self.width() - 10,  self.height() - 10)
+        self.header.rotate(180)
+        self.header.setDefaultTextColor(QtCore.Qt.white)
+        self.set_bold(self.header)
         
         for it in self.prog.items:
             
-            self.vbox.addWidget(self.label(self.get_text_for_item(it),  it.id))
+            self.labels[it.id] = self.scene.addText(self.get_text_for_item(it), QtGui.QFont('Arial', 14))
+            self.labels[it.id].setPos(self.width() - 10,  self.height() - (20+len(self.labels)*25))
+            self.labels[it.id].rotate(180)
+            
+            if it.id in self.items_to_be_learned:
+                self.labels[it.id].setDefaultTextColor(QtCore.Qt.red)
+            else:
+                self.labels[it.id].setDefaultTextColor(QtCore.Qt.white)
 
 def sigint_handler(*args):
     """Handler for the SIGINT signal."""

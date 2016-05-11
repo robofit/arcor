@@ -23,6 +23,7 @@ import numpy as np
 # TODO show feedback during program execution (highlight object to be manipulated, place where it will be placed etc)
 # TODO polygon selection
 # TODO stop (program) button
+# TODO move program_widget automatically so it does not collide with objects etc.
 
 def sigint_handler(*args):
     """Handler for the SIGINT signal."""
@@ -55,7 +56,6 @@ class simple_gui(QtGui.QWidget):
         
         self.srv_show_marker = rospy.Service('/art_simple_gui/show_marker', Empty, self.show_marker)
         self.srv_hide_marker = rospy.Service('/art_simple_gui/hide_marker', Empty, self.hide_marker)
-        self.srv_clear_all = rospy.Service('/art_simple_gui/clear_all', Empty, self.clear_all) # clear all selections etc.
 
         self.objects = None
         self.viz_objects = {}
@@ -71,6 +71,7 @@ class simple_gui(QtGui.QWidget):
         self.view = QtGui.QGraphicsView(self.scene, self)
         self.view.setRenderHint(QtGui.QPainter.Antialiasing)
         self.view.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
+        self.view.setStyleSheet( "QGraphicsView { border-style: none; }" )
         #self.view.setViewport(QtOpenGL.QGLWidget()) # rendering using OpenGL -> somehow broken :(
 
         self.pm = QtGui.QPixmap(self.img_path + "/koberec.png") # TODO use homography matrix to correct it
@@ -206,11 +207,6 @@ class simple_gui(QtGui.QWidget):
         for it in self.viz_places:
             it.remove()
         self.viz_places = []
-        
-    def clear_all(self, req):
-    
-        self.emit(QtCore.SIGNAL('clear_all()'))
-        return EmptyResponse()
        
     def timer_evt(self):
 
