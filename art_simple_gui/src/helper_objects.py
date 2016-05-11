@@ -5,15 +5,15 @@ import numpy as np
 
 class scene_place():
     
-    def __init__(self,  scene, pos,  box_size,  pub, wsize):
+    def __init__(self,  scene, pos,  pub, wsize, calib):
         
-        self.box_size = box_size
         self.scene = scene
         self.pos = pos
         self.pub = pub
         self.viz = self.scene.addEllipse(0, 0, 100, 100, QtCore.Qt.cyan, QtCore.Qt.cyan)
         self.viz.setPos(self.pos[0] - 100/2, self.pos[1] - 100/2)
         self.wsize = wsize
+        self.calib = calib
         
         ps = self.get_pose(self.pos[0],  self.pos[1])
         self.pub.publish(ps)
@@ -24,32 +24,26 @@ class scene_place():
             self.scene.removeItem(self.viz)
             self.viz = None
   
-    def get_pose(self, px, py):
+    def get_pose(self, px=None, py=None):
 
-        ps = PoseStamped()
-        ps.header.frame_id = "marker"
-        ps.header.stamp = rospy.Time.now()
-        ps.pose.position.x = (self.wsize.width() - px)*self.box_size/(self.wsize.height()/10.0)
-        ps.pose.position.y = py*self.box_size/(self.wsize.height()/10.0)
-        ps.pose.position.z = 0.0
-        ps.pose.orientation.x = 0.0
-        ps.pose.orientation.y = 0.0
-        ps.pose.orientation.z = 0.0
-        ps.pose.orientation.w = 1.0
-        
-        return ps
+        if px is None or py is None:
+            px = self.pos[0]
+            py = self.pos[1]
+
+        return self.calib.get_pose(px,  py)
         
 class scene_object():
 
-    def __init__(self,  scene,  id, pos,  pub):
+    def __init__(self,  scene,  id, obj_type,  pos,  pub):
         
         self.scene = scene
         self.id = id
+        self.obj_type = obj_type
         self.pub = pub
         
         self.viz = self.scene.addEllipse(0, 0, 150, 150, QtCore.Qt.white, QtCore.Qt.white)
         
-        self.label = self.scene.addText(id, QtGui.QFont('Arial', 16))
+        self.label = self.scene.addText(id + '\n(' + obj_type + ')', QtGui.QFont('Arial', 16))
         self.label.setParentItem(self.viz)
         self.label.rotate(180)
         self.label.setDefaultTextColor(QtCore.Qt.white)
@@ -113,7 +107,7 @@ class scene_object():
             self.scene.removeItem(self.viz_selected)
             self.viz_selected = None
         
-    def pointing(self,  pointing_obj):
+    def pointing(self,  pointing_obj,  click = False):
         
         if self.viz not in pointing_obj.collidingItems(): return False
         
@@ -135,9 +129,9 @@ class scene_object():
         
         if not self.selected:
            
-          if rospy.Time.now() - self.preselected_at > rospy.Duration(1): self.selected = True
+          if (rospy.Time.now() - self.preselected_at > rospy.Duration(1)) or click: self.selected = True
           else: return False
-        
+              
         # TODO how to unselect by user?
       
         if self.selected is True and self.viz_selected is None:
@@ -155,7 +149,7 @@ class scene_object():
 
 class pointing_point():
     
-    def __init__(self,  id,  scene):
+    def __init__(self,  id,  scene,  mouse = False):
         
         self.id = id
         self.scene = scene
@@ -164,6 +158,7 @@ class pointing_point():
         
         self.viz = None
         self.timestamp = None
+        self.mouse = mouse
         
         self.xyt = []
         self.pointed_pos = None
@@ -176,14 +171,17 @@ class pointing_point():
         
         return self.pointed_pos
     
-    def set_pos(self,  pos):
+    def set_pos(self,  pos,  click = False):
         
         self.timestamp = rospy.Time.now()
         self.pos = pos
         
         # TODO what to do if pos differs much? like from 1280 to 0 or so
         
-        self.xyt.append([self.pos, rospy.Time.now()])
+        if self.mouse:
+            if click: self.pointed_pos = pos
+        else:
+            self.xyt.append([self.pos, rospy.Time.now()])
         
         if self.viz is None:
         
@@ -204,39 +202,41 @@ class pointing_point():
         
         now = rospy.Time.now()
         
-        # throw away older data
-        while len(self.xyt) > 0 and now - self.xyt[0][1] > rospy.Duration(2):
-            
-            self.xyt.pop(0)
+        if not self.mouse:
         
-        # wait until we have some data
-        if len(self.xyt) > 10 and now - self.xyt[0][1] > rospy.Duration(1.5):
-            
-            x = []
-            y = []
-            
-            for it in self.xyt:
+            # throw away older data
+            while len(self.xyt) > 0 and now - self.xyt[0][1] > rospy.Duration(2):
                 
-                x.append(it[0][0])
-                y.append(it[0][1])
+                self.xyt.pop(0)
+            
+            # wait until we have some data
+            if len(self.xyt) > 10 and now - self.xyt[0][1] > rospy.Duration(1.5):
+                
+                x = []
+                y = []
+                
+                for it in self.xyt:
+                    
+                    x.append(it[0][0])
+                    y.append(it[0][1])
+            
+                xm = np.mean(x)
+                ym = np.mean(y)
+                
+                xs = np.std(x)
+                ys = np.std(y)
+                
+                # if "cursor" position move a bit (noise) but doesn't move too much - the user is pointing somewhere
+                if xs > 0.01 and xs < 15.0 and ys > 0.01 and ys < 15.0:
+                #if xs < 10.0 and ys < 10.0: # -> this is only for testing
+                    
+                    self.pointed_pos = (int(xm),  int(ym))
+                    
+                else:
+                    
+                    self.pointed_pos = None
         
-            xm = np.mean(x)
-            ym = np.mean(y)
-            
-            xs = np.std(x)
-            ys = np.std(y)
-            
-            # if "cursor" position move a bit (noise) but doesn't move too much - the user is pointing somewhere
-            if xs > 0.01 and xs < 15.0 and ys > 0.01 and ys < 15.0:
-            #if xs < 10.0 and ys < 10.0: # -> this is only for testing
-                
-                self.pointed_pos = (int(xm),  int(ym))
-                
-            else:
-                
-                self.pointed_pos = None
-        
-        if len(self.xyt) == 0:
+        if (not self.mouse and len(self.xyt) == 0) or (self.mouse and (now - self.timestamp > rospy.Duration(2))):
             
             rospy.loginfo("Disabling pointing-point: " + self.id)
             self.pointed_pos = None

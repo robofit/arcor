@@ -20,7 +20,7 @@ class tracker:
     self.objects = {}
     
     # should be in (0,1)
-    self.ap = 0.1 # filtering cooeficient - position
+    self.ap = 0.25 # filtering cooeficient - position
     self.ao = 0.1 # filtering cooeficient - orientation
     
     self.min_cnt = 5 # publish object after it has been seen x times at least
@@ -50,11 +50,11 @@ class tracker:
       obj.pose.orientation = self.normalize(obj.pose.orientation)
       obj.bbox = v["bbox"]
       obj.object_id = k
+      obj.object_type = v["object_type"]
       ia.instances.append(obj)
     
     # TODO also publish TF for each object???
-    if len(ia.instances) > 0:
-      self.pub.publish(ia)
+    self.pub.publish(ia)
     
     for k in objects_to_prune:
     
@@ -143,6 +143,7 @@ class tracker:
         rospy.logdebug("Updating object: " + inst.object_id)
         
         self.objects[inst.object_id]["bbox"] = inst.bbox # should be same...
+        self.objects[inst.object_id]["object_type"] = inst.object_type 
         self.objects[inst.object_id]["cnt"] += 1
         self.objects[inst.object_id]["pose"].header = ps.header
         self.objects[inst.object_id]["pose"].pose = self.filterPose(self.objects[inst.object_id]["pose"].pose, ps.pose)
