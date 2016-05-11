@@ -80,6 +80,10 @@ def main():
     noise = 0.0001
     
     while(not rospy.is_shutdown()):
+        pub.publish(arr)
+        rospy.sleep(1.0)
+    
+    while(not rospy.is_shutdown()):
     
         if psr.pose.position.x < 0.8:
         

@@ -24,12 +24,8 @@ from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image, CameraInfo
 from image_geometry import PinholeCameraModel
 
-
-# TODO modes of operation (states) - currently only pick (object selection) and place (place selection)
-# TODO step back btn / some menu?
-# TODO notifications / state information (smart label)
-# TODO draw bottom side of bounding box
-# TODO fix position of object_id
+# TODO load program (template), learning phase (learn 'parameters' for items where it's required) - should robot do it immediately?, save to DB as another program (?), run it in endless loop
+# TODO polygon selection
 
 def sigint_handler(*args):
     """Handler for the SIGINT signal."""
@@ -95,6 +91,7 @@ class simple_gui(QtGui.QWidget):
 
         self.pointing_left = pointing_point("left", self.scene)
         self.pointing_right = pointing_point("right", self.scene)
+        self.pointing_mouse = pointing_point("mouse", self.scene,  True)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('objects'), self.objects_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('pointing_point_left'), self.pointing_point_left_evt)
@@ -172,11 +169,21 @@ class simple_gui(QtGui.QWidget):
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
 
+    def eventFilter(self, source, event):
+        
+        if event.type() == QtCore.QEvent.MouseMove or event.type() == QtCore.QEvent.MouseButtonPress:
+            
+            click = event.buttons() != QtCore.Qt.NoButton
+            self.pointing_mouse.set_pos((event.pos().x(),  event.pos().y()),  click)
+            self.pointing_point(self.pointing_mouse,  click)
+                
+        return QtGui.QMainWindow.eventFilter(self, source, event)
+
     def get_caminfo(self):
         
         cam_info = None
         try:
-          cam_info = rospy.wait_for_message('/kinect2/hd/camera_info', CameraInfo, 1.0)
+          cam_info = rospy.wait_for_message('camera_info', CameraInfo, 1.0)
         except rospy.ROSException:
 
           rospy.logerr("Could not get camera_info")
@@ -216,14 +223,14 @@ class simple_gui(QtGui.QWidget):
             cnt += 1
         
             try:
-              img = rospy.wait_for_message('/kinect2/hd/image_color_rect', Image, 1.0)
+              img = rospy.wait_for_message('camera_image', Image, 1.0)
             except rospy.ROSException:
 
                 rospy.logerr("Could not get image")
                 return False
 
             try:
-              depth = rospy.wait_for_message('/kinect2/hd/image_depth_rect', Image, 1.0)
+              depth = rospy.wait_for_message('camera_depth_image', Image, 1.0)
             except rospy.ROSException:
 
                 rospy.logerr("Could not get depth image")
@@ -414,7 +421,7 @@ class simple_gui(QtGui.QWidget):
             
             self.label.setPlainText('Please make a calibration pose')
             
-        elif (self.user_status.user_state == UserStatus.USER_CALIBRATED) and not (self.pointing_left.is_active() or self.pointing_right.is_active()):
+        elif (self.user_status.user_state == UserStatus.USER_CALIBRATED) and not (self.pointing_left.is_active() or self.pointing_right.is_active() or self.pointing_mouse.is_active()):
             
             self.label.setPlainText('Point at objects or places to select them')
     
@@ -450,7 +457,7 @@ class simple_gui(QtGui.QWidget):
            self.pointing_right.set_pos(pos)
            self.pointing_point(self.pointing_right)
     
-    def pointing_point(self,  pt):
+    def pointing_point(self,  pt,  click = False):
         
         if self.place_selected:
 
@@ -475,7 +482,7 @@ class simple_gui(QtGui.QWidget):
             
             for k, v in self.viz_objects.iteritems():
                 
-                if v.pointing(pt.viz) is True:
+                if v.pointing(pt.viz,  click) is True:
                     
                     rospy.loginfo("Object selected, now select place") # TODO "attach" object shape to the pointing point(s)?
                     self.object_selected = True
@@ -591,6 +598,7 @@ def main(args):
     window.move(geometry.left(), geometry.top())
     window.resize(geometry.width(), geometry.height())
     window.showFullScreen()
+    app.installEventFilter(window)
     
     timer = QtCore.QTimer()
     timer.start(500)
