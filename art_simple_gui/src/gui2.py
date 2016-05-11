@@ -12,7 +12,6 @@ from art_msgs.srv import getProgram
 from art_msgs.msg import RobotProgramAction, RobotProgramFeedback,  RobotProgramGoal,  ProgramItem
 from geometry_msgs.msg import Pose,  PoseStamped, PointStamped
 from std_srvs.srv import Empty, EmptyResponse
-import tf
 import actionlib
 
 from helper_objects import scene_place,  scene_object,  pointing_point
@@ -105,8 +104,6 @@ class simple_gui(QtGui.QWidget):
 
         self.user_status = None
 
-        self.model = None
-        
         self.calib = gui_calibration(self.scene,  self.img_path,  self.width())
         
         self.ignored_items = [self.label,  self.marker, self.calib.checkerboard]

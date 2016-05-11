@@ -1,6 +1,6 @@
 import rospy
 from PyQt4 import QtGui, QtCore
-from geometry_msgs.msg import PoseStamped,  PoseArray
+from geometry_msgs.msg import PoseStamped,  PoseArray,  PointStamped,  Pose
 import numpy as np
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image, CameraInfo
@@ -9,6 +9,7 @@ import cv2
 import ast
 from std_srvs.srv import Empty, EmptyResponse
 from std_msgs.msg import Bool
+import tf
 
 class gui_calibration(QtCore.QObject):
     
@@ -32,6 +33,7 @@ class gui_calibration(QtCore.QObject):
         
         self.size = size
         
+        self.model = None
         self.h_matrix = None
         
         try:
@@ -222,7 +224,7 @@ class gui_calibration(QtCore.QObject):
             # generate 2D (screen) points of chessboard corners (in pixels)
             for y in range(0,6):
               for x in range(0,9):
-                    px = self.width()-(origin[0]+x*box_size)
+                    px = self.size.width()-(origin[0]+x*box_size)
                     py = (origin[1]+y*box_size)
                     ppoints.append([px, py])
         
