@@ -5,7 +5,7 @@ import numpy as np
 
 class scene_place():
     
-    def __init__(self,  scene, pos,  pub, wsize, h_matrix):
+    def __init__(self,  scene, pos,  pub, wsize, calib):
         
         self.scene = scene
         self.pos = pos
@@ -13,7 +13,7 @@ class scene_place():
         self.viz = self.scene.addEllipse(0, 0, 100, 100, QtCore.Qt.cyan, QtCore.Qt.cyan)
         self.viz.setPos(self.pos[0] - 100/2, self.pos[1] - 100/2)
         self.wsize = wsize
-        self.h_matrix = h_matrix
+        self.calib = calib
         
         ps = self.get_pose(self.pos[0],  self.pos[1])
         self.pub.publish(ps)
@@ -24,37 +24,26 @@ class scene_place():
             self.scene.removeItem(self.viz)
             self.viz = None
   
-    def get_pose(self, px, py):
+    def get_pose(self, px=None, py=None):
 
-        ps = PoseStamped()
-        ps.header.frame_id = "marker"
-        ps.header.stamp = rospy.Time.now()
-        
-        p = np.array([[px], [py], [1.0]])
-        res = np.linalg.inv(self.h_matrix)*p
+        if px is None or py is None:
+            px = self.pos[0]
+            py = self.pos[1]
 
-        ps.pose.position.x = float(res[0]/res[2])
-        ps.pose.position.y = float(res[1]/res[2])
-        ps.pose.position.z = 0.0
-
-        ps.pose.orientation.x = 0.0
-        ps.pose.orientation.y = 0.0
-        ps.pose.orientation.z = 0.0
-        ps.pose.orientation.w = 1.0
-
-        return ps
+        return self.calib.get_pose(px,  py)
         
 class scene_object():
 
-    def __init__(self,  scene,  id, pos,  pub):
+    def __init__(self,  scene,  id, obj_type,  pos,  pub):
         
         self.scene = scene
         self.id = id
+        self.obj_type = obj_type
         self.pub = pub
         
         self.viz = self.scene.addEllipse(0, 0, 150, 150, QtCore.Qt.white, QtCore.Qt.white)
         
-        self.label = self.scene.addText(id, QtGui.QFont('Arial', 16))
+        self.label = self.scene.addText(id + '\n(' + obj_type + ')', QtGui.QFont('Arial', 16))
         self.label.setParentItem(self.viz)
         self.label.rotate(180)
         self.label.setDefaultTextColor(QtCore.Qt.white)

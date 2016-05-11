@@ -8,7 +8,6 @@ from art_msgs.msg import Program,  ProgramItem
 from art_msgs.srv import getProgram
 
 # TODO rotate label
-# TODO highlight current step
 
 class program_widget(QtGui.QWidget):
 
@@ -20,11 +19,62 @@ class program_widget(QtGui.QWidget):
         QtCore.QObject.connect(self, QtCore.SIGNAL('set_current'), self.set_current_evt)
         
         self.labels = {}
+        self.items_to_be_learned = []
+        self.prog = None
+        self.template = None
         
-    def set_prog(self,  prog):
+        self.items_req_learning = [ProgramItem.MANIP_PICK,  ProgramItem.MANIP_PLACE,  ProgramItem.MANIP_PICK_PLACE]
+        
+    def get_item_by_id(self,  id):
+        
+        for it in self.prog.items:
+            
+            if it.id == id:
+                
+                return it
+                
+        return None
+        
+    def learned(self,  id):
+        
+        self.items_to_be_learned.remove(id)
+        
+        palette = QtGui.QPalette()
+        palette.setColor(QtGui.QPalette.Foreground,QtCore.Qt.white)
+        
+        self.labels[id].setPalette(palette)
+        self.labels[id].setText(self.get_text_for_item(self.get_item_by_id(id)))
+        
+    def get_item_to_learn(self):
+        
+        if len(self.items_to_be_learned) == 0: return None
+        
+        for it in self.prog.items:
+            
+            if it.id == self.items_to_be_learned[0]:
+                
+                self.set_current(self.prog.id,  it.id)
+                return it
+                
+        return None # TODO rather throw exception?
+        
+    def set_prog(self,  prog,  template = False):
         
         self.prog = prog
-        rospy.loginfo("Loading program: " + self.prog.name + ", " + str(len(self.prog.items)) + " steps")
+        self.template = False
+        
+        if template:
+            
+            for it in self.prog.items:
+                if it.type in self.items_req_learning: self.items_to_be_learned.append(it.id)
+            
+            rospy.loginfo("Loading program template: " + self.prog.name + ", " + str(len(self.prog.items)) + " steps, with " + str(len(self.items_to_be_learned)) + ' steps to be learned')
+            
+        else:
+            
+            rospy.loginfo("Loading program: " + self.prog.name + ", " + str(len(self.prog.items)) + " steps")
+            self.items_to_be_learned = []
+        
         self.emit(QtCore.SIGNAL('set_prog'))
         
     def set_current(self,  prog_id,  step_id):
@@ -48,11 +98,52 @@ class program_widget(QtGui.QWidget):
     def label(self,  text,  id=-100):
         
         palette = QtGui.QPalette()
-        palette.setColor(QtGui.QPalette.Foreground,QtCore.Qt.white)
+        if id in self.items_to_be_learned: palette.setColor(QtGui.QPalette.Foreground,QtCore.Qt.red)
+        else: palette.setColor(QtGui.QPalette.Foreground,QtCore.Qt.white)
         lab = QtGui.QLabel(text)
         lab.setPalette(palette)
         self.labels[id] = lab
         return lab
+
+    def get_text_for_item(self,  it):
+        
+        if it.id in self.items_to_be_learned:
+                
+                pose_str = "x=??, y=??"
+                obj = "??"
+                
+        else:
+            
+            pose_str = "x=" + str(round(it.place_pose.pose.position.x,  2)) + ", y=" + str(round(it.place_pose.pose.position.y,  2))
+            obj = it.object
+        
+        if it.type == ProgramItem.GET_READY:
+            return "[" + str(it.id) + "] get ready"
+        elif it.type == ProgramItem.MANIP_PICK:
+            
+            if it.spec == ProgramItem.MANIP_ID:
+                return "[" + str(it.id) + "] pick object ID="
+            elif it.spec == ProgramItem.MANIP_TYPE:
+                return "[" + str(it.id) + "] pick object type="
+                
+        elif it.type == ProgramItem.MANIP_PLACE:
+            
+            # TODO pose / polygon
+            return "[" + str(it.id) + "] place object at "  + pose_str
+            
+        elif it.type == ProgramItem.MANIP_PICK_PLACE:
+            
+            if it.spec == ProgramItem.MANIP_ID:
+                return "[" + str(it.id) + "] pick object ID=" + obj + ", place to " + pose_str
+            elif it.spec == ProgramItem.MANIP_TYPE:
+                return "[" + str(it.id) + "] pick object type=" + obj + ", place to " + pose_str
+                
+        elif it.type == ProgramItem.WAIT:
+            
+            if it.spec == ProgramItem.WAIT_FOR_USER:
+                return "[" + str(it.id) + "] wait for user"
+            elif it.spec == ProgramItem.WAIT_UNTIL_USER_FINISHES:
+                return "[" + str(it.id) + "] wait until user finishes"
 
     def prog_evt(self):
         
@@ -63,37 +154,7 @@ class program_widget(QtGui.QWidget):
         
         for it in self.prog.items:
             
-            pose_str = "x=" + str(round(it.place_pose.pose.position.x,  2)) + ", y=" + str(round(it.place_pose.pose.position.x,  2))
-            
-            if it.type == ProgramItem.GET_READY:
-                self.vbox.addWidget(self.label("[" + str(it.id) + "] get ready",  it.id))
-            elif it.type == ProgramItem.MANIP_PICK:
-                
-                if it.spec == ProgramItem.MANIP_ID:
-                    self.vbox.addWidget(self.label("[" + str(it.id) + "] pick object ID=" + it.object, it.id))
-                elif it.spec == ProgramItem.MANIP_TYPE:
-                    self.vbox.addWidget(self.label("[" + str(it.id) + "] pick object type=" + it.object,  it.id))
-                    
-            elif it.type == ProgramItem.MANIP_PLACE:
-                
-                # TODO pose / polygon
-                self.vbox.addWidget(self.label("[" + str(it.id) + "] place object at "  + pose_str,  it.id))
-                
-            elif it.type == ProgramItem.MANIP_PICK_PLACE:
-                
-                if it.spec == ProgramItem.MANIP_ID:
-                    self.vbox.addWidget(self.label("[" + str(it.id) + "] pick object ID=" + it.object) + ", place to " + pose_str,  it.id)
-                elif it.spec == ProgramItem.MANIP_TYPE:
-                    self.vbox.addWidget(self.label("[" + str(it.id) + "] pick object type=" + it.object + ", place to " + pose_str,  it.id))
-                    
-            elif it.type == ProgramItem.WAIT:
-                
-                if it.spec == ProgramItem.WAIT_FOR_USER:
-                    self.vbox.addWidget(self.label("[" + str(it.id) + "] wait for user",  it.id))
-                elif it.spec == ProgramItem.WAIT_UNTIL_USER_FINISHES:
-                    self.vbox.addWidget(self.label("[" + str(it.id) + "] wait until user finishes",  it.id))
-                    
-        
+            self.vbox.addWidget(self.label(self.get_text_for_item(it),  it.id))
 
 def sigint_handler(*args):
     """Handler for the SIGINT signal."""
