@@ -1,0 +1,8 @@
+uint8 obj_id
+string name
+string model_url
+string type
+shape_msgs/SolidPrimitive bbox
+---
+bool success
+string error
