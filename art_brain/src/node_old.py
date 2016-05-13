@@ -4,28 +4,29 @@ import rospy
 import time
 
 import actionlib
-from art_msgs.msg import RobotProgramAction, RobotProgramFeedback,  RobotProgramResult, RobotProgramActionGoal
 from art_msgs.msg import LocalizeAgainstUMFAction, LocalizeAgainstUMFGoal, LocalizeAgainstUMFResult
 from std_srvs.srv import Empty, EmptyRequest, EmptyResponse
 from art_msgs.msg import UserStatus
 from geometry_msgs.msg import PoseStamped, Pose
 from std_msgs.msg import String
-from art_msgs.msg import pickplaceAction, pickplaceGoal, SystemState, ObjInstance, InstancesArray, ProgramItem
+from art_msgs.msg import pickplaceAction, pickplaceGoal, SystemState
 
 
 class ArtBrain:
-    UNKNOWN = -2  # should not happen!
-    NOP = 0 # no operation
-    GET_READY = 0 # retract arms etc.
-    MANIP_PICK = 1
-    MANIP_PLACE = 2
-    MANIP_PICK_PLACE = 3
-    WAIT = 4
+    UNKNOWN = -1  # should not happen!
+    START = 0
+    CALIBRATING = 1
+    NO_USER = 2
+    WAITING_FOR_OBJECT = 3
+    TRY_PICK = 4
+    PICKING = 5
+    WAITING_FOR_PLACE = 6
+    TRY_PLACE = 7
+    PLACING = 8
+    DONE = 9
+    BACK_TO_INIT_PLACE = 10
+    BACK_TO_INIT_PICK = 11
 
-
-    INST_OK = 100
-    INST_BAD_DATA = 101
-    INST_FAILED = 102
     def __init__(self):
         self.show_marker_service = rospy.get_param('show_marker_service', '/art_simple_gui/show_marker')
         self.hide_marker_service = rospy.get_param('hide_marker_service', '/art_simple_gui/hide_marker')
@@ -38,7 +39,6 @@ class ArtBrain:
         self.user_status_sub = rospy.Subscriber("/art_table_pointing/user_status", UserStatus, self.user_status_cb)
         self.object_to_pick_sub = rospy.Subscriber("/art_simple_gui/selected_object", UserStatus, self.user_status_cb)
         self.pose_to_place_sub = rospy.Subscriber("/art_simple_gui/selected_place", UserStatus, self.user_status_cb)
-        self.objects_sub = rospy.Subscriber("/art_simple_gui/selected_place", UserStatus, self.user_status_cb)
 
         self.state_publisher = rospy.Publisher("/art_brain/system_state", SystemState, queue_size=1)
 
@@ -49,99 +49,6 @@ class ArtBrain:
         self.selected_object = None  # type: str
         self.selected_object_last_update = None  # type: rospy.Time
         self.selected_place = None  # type: PoseStamped
-        self.objects = None  # type: InstancesArray
-        self.executing_program = False
-
-        self.prog_as = actionlib.SimpleActionServer("/art_brain/do_program", RobotProgramAction,
-                                                    execute_cb=self.execute_cb, auto_start=False)
-        self.prog_as.start()
-        self.instruction =
-
-    def execute_cb(self, goal):
-        '''
-
-        :type goal:
-        :return:
-        '''
-        if self.executing_program:
-            res = RobotProgramResult()
-            res.result = res.BUSY
-            self.prog_as.set_aborted(res)
-            return
-
-        self.executing_program = True
-        for prog in goal.program_array.programs:
-
-            for it in prog.items:
-
-                feedback = RobotProgramFeedback()
-                feedback.current_program = prog.id
-                feedback.current_item = it.id
-                self.prog_as.publish_feedback(feedback)
-
-                rospy.loginfo('Program id: ' + str(prog.id) + ', item id: ' + str(it.id))
-
-                self.instruction = it.type
-                instruction_function = self.instruction_switcher()
-                instruction_function(it)
-
-        res = RobotProgramResult()
-        res.result = RobotProgramResult.SUCCESS
-        self.prog_as.set_succeeded(res)
-        self.executing_program = False
-
-    def instruction_switcher(self):
-        instructions = {
-            self.NOP: self.nop,
-            self.GET_READY: self.get_ready,
-            self.MANIP_PICK: self.manip_pick,
-            self.MANIP_PLACE: self.manip_place,
-            self.MANIP_PICK_PLACE: self.manip_pick_place,
-            self.WAIT: self.wait,
-
-        }
-        return instructions.get(self.instruction, default=self.unknown_instruction)
-
-    def get_ready(self, instruction):
-        # TODO: call some service to set PR2 to ready position
-
-        pass
-
-    def manip_pick(self, instruction):
-        '''
-
-        :type instruction: ProgramItem
-        :return:
-        '''
-        obj_id = None
-        if instruction.spec == instruction.MANIP_ID:
-            obj_id = instruction.object
-        elif instruction.spec == instruction.MANIP_TYPE:
-            for obj in self.objects.instances:
-                if obj.object_type == instruction.object:
-                    obj_id = obj.object_id
-
-        if obj_id is None:
-            return self.INST_BAD_DATA
-        if self.pick_object(obj_id):
-            return self.INST_OK
-        else:
-            return self.INST_FAILED
-
-
-    def manip_place(self, instruction):
-        pass
-
-    def manip_pick_place(self, instruction):
-        pass
-
-    def wait(self, instruction):
-        pass
-
-    def unknown_instruction(self, instruction):
-        pass
-
-    def nop(self, instruction = None):
 
     def user_status_cb(self, data):
         '''
@@ -168,14 +75,6 @@ class ArtBrain:
         :return:
         '''
         self.selected_place = data
-
-    def objects_cb(self, objects_data):
-        '''
-
-        :type objects_data: InstancesArray
-        :return:
-        '''
-        self.objects = objects_data
 
     def check_user_active(self):
         return self.user_id != 0
