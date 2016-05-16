@@ -15,17 +15,25 @@ from art_msgs.msg import pickplaceAction, pickplaceGoal, SystemState, ObjInstanc
 
 class ArtBrain:
     UNKNOWN = -2  # should not happen!
-    NOP = 0 # no operation
-    GET_READY = 0 # retract arms etc.
+    NOP = -1  # no operation
+    GET_READY = 0  # retract arms etc.
     MANIP_PICK = 1
     MANIP_PLACE = 2
     MANIP_PICK_PLACE = 3
     WAIT = 4
 
-
     INST_OK = 100
     INST_BAD_DATA = 101
     INST_FAILED = 102
+
+    SYSTEM_UNKNOWN = 0
+    SYSTEM_START = 1
+    SYSTEM_CALIBRATING = 2
+    SYSTEM_STARTING_PROGRAM_SERVER = 3
+    SYSTEM_READY_FOR_PROGRAM_REQUESTS = 4
+    SYSTEM_STOPPING_PROGRAM_SERVER = 5
+
+
     def __init__(self):
         self.show_marker_service = rospy.get_param('show_marker_service', '/art_simple_gui/show_marker')
         self.hide_marker_service = rospy.get_param('hide_marker_service', '/art_simple_gui/hide_marker')
@@ -36,15 +44,15 @@ class ArtBrain:
         self.calibrate_table = rospy.get_param('calibrate_table', True)
 
         self.user_status_sub = rospy.Subscriber("/art_table_pointing/user_status", UserStatus, self.user_status_cb)
-        self.object_to_pick_sub = rospy.Subscriber("/art_simple_gui/selected_object", UserStatus, self.user_status_cb)
-        self.pose_to_place_sub = rospy.Subscriber("/art_simple_gui/selected_place", UserStatus, self.user_status_cb)
-        self.objects_sub = rospy.Subscriber("/art_simple_gui/selected_place", UserStatus, self.user_status_cb)
+        self.object_to_pick_sub = rospy.Subscriber("/art_simple_gui/selected_object", String, self.selected_object_cb)
+        self.pose_to_place_sub = rospy.Subscriber("/art_simple_gui/selected_place", PoseStamped, self.selected_place_cb)
+        self.objects_sub = rospy.Subscriber("/art_object_detector/object_filtered", InstancesArray, self.objects_cb)
 
         self.state_publisher = rospy.Publisher("/art_brain/system_state", SystemState, queue_size=1)
 
         self.pp_client = actionlib.SimpleActionClient('/pr2_pick_place_left/pp', pickplaceAction)
 
-        self.state = self.START
+        self.state = self.SYSTEM_START
         self.user_id = 0
         self.selected_object = None  # type: str
         self.selected_object_last_update = None  # type: rospy.Time
@@ -52,17 +60,20 @@ class ArtBrain:
         self.objects = None  # type: InstancesArray
         self.executing_program = False
 
-        self.prog_as = actionlib.SimpleActionServer("/art_brain/do_program", RobotProgramAction,
-                                                    execute_cb=self.execute_cb, auto_start=False)
-        self.prog_as.start()
-        self.instruction =
+        self.instruction = None
+        self.holding_object = None
+        self.stop_server = False
+        self.recalibrate = False
+
+        self.prog_as = None
+        self.quit = False
 
     def execute_cb(self, goal):
-        '''
+        """
 
         :type goal:
         :return:
-        '''
+        """
         if self.executing_program:
             res = RobotProgramResult()
             res.result = res.BUSY
@@ -107,74 +118,133 @@ class ArtBrain:
 
         pass
 
-    def manip_pick(self, instruction):
-        '''
-
-        :type instruction: ProgramItem
-        :return:
-        '''
-        obj_id = None
+    def get_pick_obj_id(self, instruction):
         if instruction.spec == instruction.MANIP_ID:
             obj_id = instruction.object
         elif instruction.spec == instruction.MANIP_TYPE:
             for obj in self.objects.instances:
                 if obj.object_type == instruction.object:
                     obj_id = obj.object_id
+                    break
+            else:
+                return self.INST_BAD_DATA
+        else:
+            return self.INST_BAD_DATA
+        return obj_id
+
+    def get_place_pose(self, instruction):
+        if self.holding_object is None:
+            return self.INST_BAD_DATA
+        if instruction.spec == instruction.MANIP_ID:
+            pose = instruction.place_pose
+        elif instruction.spec == instruction.MANIP_TYPE:
+            pose = None
+            # TODO: how to get free position inside polygon? some perception node?
+        else:
+            return self.INST_BAD_DATA
+        return pose
+
+    def manip_pick(self, instruction):
+        """
+
+        :type instruction: ProgramItem
+        :return:
+        """
+        obj_id = self.get_pick_obj_id(instruction)
 
         if obj_id is None:
             return self.INST_BAD_DATA
         if self.pick_object(obj_id):
+            self.holding_object = obj_id
             return self.INST_OK
         else:
             return self.INST_FAILED
 
-
     def manip_place(self, instruction):
-        pass
+        """
+
+        :type instruction: ProgramItem
+        :return:
+        """
+
+        pose = self.get_place_pose(instruction)
+
+        if pose is None:
+            return self.INST_BAD_DATA
+        else:
+            if self.place_object(self.holding_object, pose):
+                self.holding_object = None
+                return self.INST_OK
+            else:
+                return self.INST_FAILED
 
     def manip_pick_place(self, instruction):
-        pass
+        obj_id = self.get_pick_obj_id(instruction)
+        pose = self.get_place_pose(instruction)
+        if obj_id is None or pose is None:
+            return self.INST_BAD_DATA
+        if self.pick_object(obj_id):
+            self.holding_object = obj_id
+            if self.place_object(obj_id, pose):
+                self.holding_object = None
+                return self.INST_OK
+        return self.INST_FAILED
 
     def wait(self, instruction):
-        pass
+        """
+
+        :type instruction: ProgramItem
+        :return:
+        """
+        rate = rospy.Rate(10)
+
+        if instruction.spec == instruction.WAIT_FOR_USER:
+            while self.user_id == 0:
+                rate.sleep()
+        else:
+            while self.user_id > 0:
+                rate.sleep()
 
     def unknown_instruction(self, instruction):
+        print "F*ck it all, i don't know this instruction!"
         pass
 
-    def nop(self, instruction = None):
+    def nop(self, instruction=None):
+        pass
 
     def user_status_cb(self, data):
-        '''
+        """
 
         :type data: UserStatus
         :return:
-        '''
+        """
         self.user_id = data.user_id
+
         pass
 
     def selected_object_cb(self, data):
-        '''
+        """
 
         :type data: String
         :return:
-        '''
+        """
         self.selected_object = data.data
         self.selected_object_last_update = rospy.get_rostime()
 
     def selected_place_cb(self, data):
-        '''
+        """
 
         :type data: PoseStamped
         :return:
-        '''
+        """
         self.selected_place = data
 
     def objects_cb(self, objects_data):
-        '''
+        """
 
         :type objects_data: InstancesArray
         :return:
-        '''
+        """
         self.objects = objects_data
 
     def check_user_active(self):
@@ -237,78 +307,40 @@ class ArtBrain:
         pass
 
     def state_start(self):
-        if self.calibrate_pr2 or self.calibrate_table:
-                self.state = self.CALIBRATING
+        self.state = self.SYSTEM_CALIBRATING
 
     def state_calibrating(self):
         self.calibrate_all(self.calibrate_table, self.calibrate_pr2)
-        self.state = self.NO_USER
-
-    def state_no_user(self):
-        if self.check_user_active():
-            self.state = self.WAITING_FOR_OBJECT
-
-    def state_waiting_for_object(self):
-        if self.selected_object is not None:
-            self.state = self.TRY_PICK
-
-    def state_try_pick(self):
-        # TODO: check if everything is OK
-
-        self.state = self.PICKING
-
-    def state_picking(self):
-        if self.pick_object(self.selected_object):
-            self.state = self.WAITING_FOR_PLACE
-            rospy.logdebug("Picking successfully done")
-            self.selected_object = None
-            self.selected_object_last_update = None
-        else:
-            self.state = self.BACK_TO_INIT_PICK
-
-    def state_waiting_for_place(self):
-        if self.selected_place is not None:
-            self.state = self.TRY_PLACE
-
-    def state_try_place(self):
-        # TODO: check if everything is OK
-        self.state = self.PLACING
-
-    def state_placing(self):
-        if self.place_object(self.selected_place.pose):
-            self.state = self.DONE
-            self.selected_place = None
-            rospy.logdebug("Place successfully done.")
-        else:
-            self.state = self.BACK_TO_INIT_PLACE
-
-    def state_pick_and_place_done(self):
-        self.state = self.WAITING_FOR_OBJECT
-
-    def state_back_to_init_place(self):
-        self.selected_place = None
-        self.state = self.WAITING_FOR_PLACE
-
-    def state_back_to_init_pick(self):
-        self.selected_object = None
-        self.state = self.WAITING_FOR_OBJECT
+        self.state = self.SYSTEM_STARTING_PROGRAM_SERVER
 
     def state_switcher(self):
         states = {
-            self.START: self.state_start,
-            self.CALIBRATING: self.state_calibrating,
-            self.NO_USER: self.state_no_user,
-            self.WAITING_FOR_OBJECT: self.state_waiting_for_object,
-            self.TRY_PICK: self.state_try_pick,
-            self.PICKING: self.state_picking,
-            self.WAITING_FOR_PLACE: self.state_waiting_for_place,
-            self.TRY_PLACE: self.state_try_place,
-            self.PLACING: self.state_placing,
-            self.DONE: self.state_pick_and_place_done,
-            self.BACK_TO_INIT_PLACE: self.state_back_to_init_place,
-            self.BACK_TO_INIT_PICK: self.state_back_to_init_pick
+            self.SYSTEM_START: self.state_start,
+            self.SYSTEM_CALIBRATING: self.state_calibrating,
+            self.SYSTEM_STARTING_PROGRAM_SERVER: self.state_starting_program_server,
+            self.SYSTEM_READY_FOR_PROGRAM_REQUESTS: self.state_ready_for_program_requests,
+            self.SYSTEM_STOPPING_PROGRAM_SERVER: self.state_stopping_program_server
         }
         return states.get(self.state, default=self.state_unknown)
+
+    def state_starting_program_server(self):
+        self.prog_as = actionlib.SimpleActionServer("/art_brain/do_program", RobotProgramAction,
+                                                    execute_cb=self.execute_cb, auto_start=False)
+        self.prog_as.start()
+        self.state = self.SYSTEM_READY_FOR_PROGRAM_REQUESTS
+
+    def state_ready_for_program_requests(self):
+        if self.stop_server:
+            self.state = self.SYSTEM_STOPPING_PROGRAM_SERVER
+            self.stop_server = False
+
+    def state_stopping_program_server(self):
+        self.prog_as = None
+        if self.recalibrate:
+            self.state = self.SYSTEM_CALIBRATING
+            self.recalibrate = False
+        else:
+            self.quit = True
 
     def show_umf_marker(self):
         pass
@@ -317,11 +349,11 @@ class ArtBrain:
         pass
 
     def pick_object(self, object_id):
-        '''
+        """
 
         :type object_id: str
         :return:
-        '''
+        """
         goal = pickplaceGoal()
         goal.id = object_id
         goal.operation = goal.PICK
@@ -340,14 +372,13 @@ class ArtBrain:
         else:
             return False
 
-
     def place_object(self, obj, place):
-        '''
+        """
 
         :type obj: str
         :type place: Pose
         :return:
-        '''
+        """
         goal = pickplaceGoal()
         goal.operation = goal.PLACE
         goal.id = obj
@@ -380,7 +411,7 @@ if __name__ == '__main__':
     try:
         node = ArtBrain()
         rate = rospy.Rate(30)
-        while not rospy.is_shutdown():
+        while not rospy.is_shutdown() or node.quit:
             node.process()
             rate.sleep()
     except rospy.ROSInterruptException:
