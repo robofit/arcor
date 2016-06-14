@@ -14,7 +14,7 @@ import copy
 import numpy as np
 import scipy
 import cv2
-
+import sys
 
 class TableLeap:
     def __init__(self):
@@ -22,8 +22,9 @@ class TableLeap:
         self.markers_pub = rospy.Publisher("/table_pointing_leap/visualize", Marker, queue_size=1)
         self.table_frame = "/table"
         self.leap_data = None # leapros
-        self.h_matrix = None
+        self.p_matrix = None
         self.calibrate()
+
         pass
 
     def leap_data_cb(self, data):
@@ -35,22 +36,18 @@ class TableLeap:
 
         self.leap_data = data
 
-        if self.h_matrix is None:
+        if self.p_matrix is None:
             return
-        plane = np.array([0, 0, 0])
-        plane_normal = np.array([0, 0, 1])
+        plane = np.array([0, 0, 0], dtype="float32")
+        plane_normal = np.array([0, 0, 1], dtype="float32")
         intersection = self.compute_intersection(self.transform_leap_data(data.index_distal),
                                                  self.transform_leap_data(data.index_tip),
                                                  plane,
                                                  plane_normal)
 
-        # print self.h_matrix.dot(intersection[0:2])
-        #intersection = intersection[0:2]
-        print intersection
-        res = self.h_matrix.dot(intersection)
-        print res
-        print ""
-        return
+        intersection = intersection[0:2]
+        point = np.array([[intersection]], dtype="float32")
+        pp = cv2.perspectiveTransform(point, self.p_matrix)
 
         position, orientation = self.transform_leap_data(data.palmpos,
                                                          data.ypr)
@@ -64,8 +61,8 @@ class TableLeap:
         self.show_box(self.transform_leap_data(data.middle_tip), 3)
         self.show_box(self.transform_leap_data(data.ring_tip), 4)
         self.show_box(self.transform_leap_data(data.pinky_tip), 5)
-        plane = np.array([0, 0, 0])
-        plane_normal = np.array([0, 0, 1])
+        plane = np.array([0, 0, 0], dtype="float32")
+        plane_normal = np.array([0, 0, 1], dtype="float32")
         intersection = self.compute_intersection(self.transform_leap_data(data.index_distal),
                                                  self.transform_leap_data(data.index_tip),
                                                  plane,
@@ -84,8 +81,8 @@ class TableLeap:
 
     def calibrate(self):
         points = []
-        plane = np.array([0, 0, 0])
-        plane_normal = np.array([0, 0, 1])
+        plane = np.array([0, 0, 0], dtype="float32")
+        plane_normal = np.array([0, 0, 1], dtype="float32")
 
         print("Reading first point")
         rospy.sleep(2)
@@ -117,18 +114,22 @@ class TableLeap:
         points.append(intersection)
         print("Done")
 
-        points = np.array(points)[:, 0:2]
+        points = np.array(points, np.float32)[:, 0:2]
         m_points = np.array([[0.0, 0.0],
                              [0.0, 1.0],
                              [1.0, 1.0],
-                             [1.0, 0.0]])
-        print m_points.dtype
-        print points.dtype
+                             [1.0, 0.0]], dtype="float32")
+        new_points = np.array([[0, 0], [0, 0], [0, 0], [0, 0]], np.float32)
+        for i, p in enumerate(points):
+            new_points[i] = np.array([p])
 
-        h, status = cv2.findHomography(np.array(points)[:, 0:2], m_points, cv2.LMEDS)
-        self.h_matrix = np.matrix(h)
-        print h
-        pass
+        #h, status = cv2.findHomography(np.array(points)[:, 0:2], m_points, cv2.LMEDS)
+        print points
+        print m_points
+        matr = cv2.getPerspectiveTransform(new_points, m_points)
+        #self.h_matrix = np.matrix(h)
+        self.p_matrix = np.matrix(matr, dtype="float32")
+
 
     def transform_leap_data(self, position, orientation=None):
         '''
@@ -157,8 +158,8 @@ class TableLeap:
         :type plane_normal: np.array()
         :return: TransformStamped
         '''
-        pp1 = np.array([point1.x, point1.y, point1.z])
-        pp2 = np.array([point2.x, point2.y, point2.z])
+        pp1 = np.array([point1.x, point1.y, point1.z], dtype="float32")
+        pp2 = np.array([point2.x, point2.y, point2.z], dtype="float32")
 
         l = pp2 - pp1
         d = (plane - pp1).dot(plane_normal)
