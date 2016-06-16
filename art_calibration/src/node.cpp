@@ -14,8 +14,10 @@
 #include <geometry_msgs/Pose.h>
 #include <tf/tf.h>
 #include <exception>
+#include <tf/transform_broadcaster.h>
 
 class NoMainMarker: public std::exception {
+public:
     virtual const char* what() const throw() {
         return "No main marker!";
     }
@@ -25,9 +27,9 @@ class NoMainMarker: public std::exception {
 class ArtCalibration {
 public:
     ArtCalibration() {
-        table_marker_sub = nh_.subscribe ("/table_marker", 1, &ArtCalibration::table_marker_cb, this);
-
-
+        table_marker_sub = nh_.subscribe ("/table/ar_pose_marker", 1, &ArtCalibration::table_marker_cb, this);
+        pr2_marker_sub = nh_.subscribe ("/pr2/ar_pose_marker", 1, &ArtCalibration::pr2_marker_cb, this);
+        ros_init();
     }
 
     ~ArtCalibration() {
@@ -42,7 +44,7 @@ public:
 
 private:
 
-    tf::Transform tr_table_, tr_pr2_;
+    tf::StampedTransform tr_table_, tr_pr2_;
     tf::TransformBroadcaster br_;
     ros::Timer tr_timer_;
 
@@ -86,7 +88,7 @@ private:
         tr_timer_ = nh_.createTimer(ros::Duration(0.1), &ArtCalibration::trCallback, this);
     }
 
-    tf::Transform create_transform_from_pose(geometry_msgs::Pose pose, std::string output_frame) {
+    tf::StampedTransform create_transform_from_pose(geometry_msgs::Pose pose, std::string output_frame) {
         tf::Transform tr;
         tf::Quaternion q;
         tr.setOrigin(tf::Vector3(pose.position.x, pose.position.y, pose.position.z));

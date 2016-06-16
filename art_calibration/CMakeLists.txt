@@ -13,6 +13,13 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
+catkin_package(
+#  INCLUDE_DIRS include
+#  LIBRARIES art_cluster_detector
+#  CATKIN_DEPENDS art_msgs geometry_msgs roscpp rospy sensor_msgs std_msgs
+#  DEPENDS system_lib
+)
+
 # catkin_python_setup()
 
 include_directories(include)
