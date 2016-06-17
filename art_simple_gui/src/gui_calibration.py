@@ -48,6 +48,9 @@ class gui_calibration(QtCore.QObject):
         QtCore.QObject.connect(self, QtCore.SIGNAL('calibrate'), self.calibrate_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('calibrate2'), self.calibrate_evt2)
         
+        self.on_request = None
+        self.on_finished = None
+        
     def resize(self,  size):
         
         self.size = size
@@ -111,6 +114,7 @@ class gui_calibration(QtCore.QObject):
         self.tfl = tf.TransformListener()
         # TODO subscribe to image/depth (message_filters?) and call calibrate_evt2 from there
         self.emit(QtCore.SIGNAL('calibrate'))
+        if self.on_request is not None: self.on_request()
         return EmptyResponse()
 
     def calibrate_evt(self):
@@ -262,4 +266,5 @@ class gui_calibration(QtCore.QObject):
             cnt += 1
         self.checkerboard.hide()
         self.tfl = None
+        if self.on_finished is not None: self.on_finished()
         self.calibrated_pub.publish(Bool(ret))
