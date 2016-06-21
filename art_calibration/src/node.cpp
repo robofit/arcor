@@ -53,9 +53,11 @@ private:
 
     std::string world_frame_, robot_frame_, table_frame_;
 
-    bool table_calibration_done_ = false, pr2_calibration_done_ = false;
+    std::vector<geometry_msgs::Pose> table_poses, pr2_poses;
 
-    static const int MAIN_MARKER_SIZE = 10;
+    bool table_calibration_done_ = false, pr2_calibration_done_ = false, table_calibration_enough_poses_ = false;
+
+    static const int MAIN_MARKER_SIZE = 10, POSES_COUNT = 20;
 
 
     void table_marker_cb(ar_track_alvar_msgs::AlvarMarkersConstPtr markers) {
@@ -67,10 +69,89 @@ private:
             std::cout << e.what() << std::endl;
             return;
         }
-        tr_table_ = create_transform_from_pose(pose, table_frame_);
-        table_marker_sub.shutdown();
-        table_calibration_done_ = true;
-        tr_timer_ = nh_.createTimer(ros::Duration(0.1), &ArtCalibration::trCallback, this);
+        table_poses.push_back(pose);
+        if (table_poses.size() > POSES_COUNT) {
+            table_calibration_enough_poses_ = true;
+            table_marker_sub.shutdown();
+        }
+
+        //tr_table_ = create_transform_from_pose(pose, table_frame_);
+        //table_marker_sub.shutdown();
+        //table_calibration_done_ = true;
+        //tr_timer_ = nh_.createTimer(ros::Duration(0.1), &ArtCalibration::trCallback, this);
+    }
+
+    tf::StampedTransform create_transform_from_poses_vector(std::vector<geometry_msgs::Pose> poses, std::string output_frame) {
+        geometry_msgs::Pose avg_pose, std_mean_pose;
+        avg_pose.position.x = 0;
+        avg_pose.position.y = 0;
+        avg_pose.position.z = 0;
+        avg_pose.orientation.x = 0;
+        avg_pose.orientation.y = 0;
+        avg_pose.orientation.z = 0;
+        avg_pose.orientation.w = 0;
+
+        for (int i = 0; i < poses.size(); i++) {
+            avg_pose.position.x += poses[i].position.x;
+            avg_pose.position.y += poses[i].position.y;
+            avg_pose.position.z += poses[i].position.z;
+            avg_pose.orientation.x += poses[i].orientation.x;
+            avg_pose.orientation.y += poses[i].orientation.y;
+            avg_pose.orientation.z += poses[i].orientation.z;
+            avg_pose.orientation.w += poses[i].orientation.w;
+        }
+
+        avg_pose.position.x /= poses.size();
+        avg_pose.position.y /= poses.size();
+        avg_pose.position.z /= poses.size();
+        avg_pose.orientation.x /= poses.size();
+        avg_pose.orientation.y /= poses.size();
+        avg_pose.orientation.z /= poses.size();
+        avg_pose.orientation.w /= poses.size();
+
+        for (int i = 0; i < poses.size(); i++) {
+            std_mean_pose.position.x += poses[i].position.x*poses[i].position.x - avg_pose.position.x*avg_pose.position.x;
+            std_mean_pose.position.y += poses[i].position.y*poses[i].position.y - avg_pose.position.y*avg_pose.position.y;
+            std_mean_pose.position.z += poses[i].position.z*poses[i].position.z - avg_pose.position.z*avg_pose.position.z;
+            std_mean_pose.orientation.x += poses[i].orientation.x*poses[i].orientation.x - avg_pose.orientation.x*avg_pose.orientation.x;
+            std_mean_pose.orientation.y += poses[i].orientation.y*poses[i].orientation.y - avg_pose.orientation.y*avg_pose.orientation.y;
+            std_mean_pose.orientation.z += poses[i].orientation.z*poses[i].orientation.z - avg_pose.orientation.z*avg_pose.orientation.z;
+            std_mean_pose.orientation.w += poses[i].orientation.w*poses[i].orientation.w - avg_pose.orientation.w*avg_pose.orientation.w;
+        }
+
+        std_mean_pose.position.x /= (poses.size() - 1);
+        std_mean_pose.position.y /= (poses.size() - 1);
+        std_mean_pose.position.z /= (poses.size() - 1);
+        std_mean_pose.orientation.x /= (poses.size() - 1);
+        std_mean_pose.orientation.y /= (poses.size() - 1);
+        std_mean_pose.orientation.z /= (poses.size() - 1);
+        std_mean_pose.orientation.w /= (poses.size() - 1);
+
+        std_mean_pose.position.x = sqrt(std_mean_pose.position.x);
+        std_mean_pose.position.y = sqrt(std_mean_pose.position.y);
+        std_mean_pose.position.z = sqrt(std_mean_pose.position.z);
+        std_mean_pose.orientation.x = sqrt(std_mean_pose.orientation.x);
+        std_mean_pose.orientation.y = sqrt(std_mean_pose.orientation.y);
+        std_mean_pose.orientation.z = sqrt(std_mean_pose.orientation.z);
+        std_mean_pose.orientation.w = sqrt(std_mean_pose.orientation.w);
+
+        std::vector<geometry_msgs::Pose> new_poses;
+        for (int i = 0; i < poses.size(); i++) {
+            float std_mean_len = sqrt(std_mean_pose.position.x*std_mean_pose.position.x +
+                                      std_mean_pose.position.y*std_mean_pose.position.y +
+                                      std_mean_pose.position.z*std_mean_pose.position.z);
+
+            float pose_len = sqrt(poses[i].position.x*poses[i].position.x +
+                                  poses[i].position.y*poses[i].position.y +
+                                  poses[i].position.z*poses[i].position.z);
+
+            if (pose_len <= std_mean_len) {
+                new_poses.push_back(poses[i]);
+            }
+
+        }
+
+        return create_transform_from_pose(avg_pose, output_frame);
     }
 
     void pr2_marker_cb(ar_track_alvar_msgs::AlvarMarkersConstPtr markers) {
