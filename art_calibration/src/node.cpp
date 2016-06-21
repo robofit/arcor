@@ -39,7 +39,7 @@ public:
     void ros_init() {
         nh_.param<std::string>("robot_frame", robot_frame_, "odom_combined");
         nh_.param<std::string>("table_frame", table_frame_, "kinect2_link");
-        nh_.param<std::string>("world_frame", world_frame_, "table");
+        nh_.param<std::string>("world_frame", world_frame_, "marker");
     }
 
 private:
