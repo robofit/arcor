@@ -106,6 +106,8 @@ class simple_gui(QtGui.QWidget):
         self.user_status = None
 
         self.calib = gui_calibration(self.scene,  self.img_path,  self.width())
+        self.calib.on_request = self.on_calib_req
+        self.calib.on_finished = self.on_calib_finished
         
         self.ignored_items = [self.label,  self.marker, self.calib.checkerboard]
         
@@ -123,6 +125,14 @@ class simple_gui(QtGui.QWidget):
         self.item_to_learn = None
         
         self.inited = True
+        
+    def on_calib_req(self):
+        
+        self.prog.hide()
+        
+    def on_calib_finished(self):
+        
+        self.prog.show()
 
     def program_feedback(self,  msg):
         
@@ -417,7 +427,7 @@ class simple_gui(QtGui.QWidget):
     def pointing_point_left_cb(self, msg):
         
         if not self.inited: return
-        if self.h_matrix is None: return
+        if self.calib.is_calibrated(): return
        
         pos = self.calib.get_px(msg.pose)
         self.emit(QtCore.SIGNAL('pointing_point_left'),  pos)
@@ -425,7 +435,7 @@ class simple_gui(QtGui.QWidget):
     def pointing_point_right_cb(self, msg):
         
         if not self.inited: return
-        if self.h_matrix is None: return
+        if self.calib.is_calibrated(): return
        
         pos = self.calib.get_px(msg.pose)
         self.emit(QtCore.SIGNAL('pointing_point_right'),  pos)
