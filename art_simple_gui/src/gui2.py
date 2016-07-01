@@ -427,7 +427,7 @@ class simple_gui(QtGui.QWidget):
     def pointing_point_left_cb(self, msg):
         
         if not self.inited: return
-        if self.calib.is_calibrated(): return
+        if not self.calib.is_calibrated(): return
        
         pos = self.calib.get_px(msg.pose)
         self.emit(QtCore.SIGNAL('pointing_point_left'),  pos)
@@ -435,7 +435,7 @@ class simple_gui(QtGui.QWidget):
     def pointing_point_right_cb(self, msg):
         
         if not self.inited: return
-        if self.calib.is_calibrated(): return
+        if not self.calib.is_calibrated(): return
        
         pos = self.calib.get_px(msg.pose)
         self.emit(QtCore.SIGNAL('pointing_point_right'),  pos)
