@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+
+    <node pkg="ed_gui_server" name="ed_gui_server_node" type="ed_rviz_publisher" output="screen"/>
+    <node pkg="ed" name="ed" type="ed" output="screen" args="$(find art_ed)/world/fitlab.yaml"/>
+    
+    <!-- workaround -->
+    <node pkg="tf" name="ed_static_transf" type="static_transform_publisher" args="0 0 0 0 0 0 map marker 10"/>
+    
+</launch>
