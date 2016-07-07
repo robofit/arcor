@@ -1,10 +1,29 @@
 <?xml version="1.0"?>
 <launch>
 
-    <node pkg="ed_gui_server" name="ed_gui_server_node" type="ed_rviz_publisher" output="screen"/>
-    <node pkg="ed" name="ed" type="ed" output="screen" args="$(find art_ed)/world/fitlab.yaml"/>
+    <env name="ED_MODEL_PATH" value="$(find art_ed)/models"/>
+
+    <!-- PR2 -->
+    <!-- TODO run it on the robot! -->
+    <node name="rgbd_encoder_pr2" pkg="rgbd" type="rgbd_server" output="screen">
+        <remap from="cam_info" to="/kinect_head/rgb/camera_info"/>
+        <remap from="rgb_image" to="/kinect_head/rgb/image_rect_color"/>
+        <remap from="depth_image" to="/kinect_head/depth_registered/hw_registered/image_rect_raw"/>
+        <remap from="output" to="/kinect_head/rgbd"/>
+    </node>
     
-    <!-- workaround -->
+    <!-- iTable -->
+    <node name="rgbd_encoder_table" pkg="rgbd" type="rgbd_server" output="screen">
+        <remap from="cam_info" to="/kinect2/hd/camera_info"/>
+        <remap from="rgb_image" to="/kinect2/hd/image_color_rect"/>
+        <remap from="depth_image" to="/kinect2/hd/image_depth_rect"/>
+        <remap from="output" to="/kinect2/hd/rgbd"/>
+    </node>
+
+    <node pkg="ed_gui_server" name="ed_gui_server_node" type="ed_rviz_publisher" output="screen"/>
+    <node pkg="ed" name="ed" type="ed" output="screen" args="$(find art_ed)/config/fitlab.yaml"/>
+    
+    <!-- workaround for world frame -->
     <node pkg="tf" name="ed_static_transf" type="static_transform_publisher" args="0 0 0 0 0 0 map marker 10"/>
     
 </launch>
