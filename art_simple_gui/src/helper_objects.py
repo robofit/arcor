@@ -54,8 +54,6 @@ class scene_polygon():
         
         if len(self.points) > 0:
             
-            print "polygon: got " + str(len(self.points)) + " points"
-            
             for i in range(0,  len(points)-1):
 
                 self.lines.append(self.scene.addLine(self.points[i][0],  self.points[i][1],  self.points[i+1][0],  self.points[i+1][1]))
@@ -95,17 +93,12 @@ class scene_polygon():
                 
             else:    
                 
-                p = self.pen
                 if dist(pt, self.points[0]) < 30:
-                    p = self.apen
+                    self.active_line.setPen(self.apen)
                     self.active_line.setLine(self.points[-1][0],  self.points[-1][1],  self.points[0][0],  self.points[0][1])
                 else:
                     self.active_line.setLine(self.points[-1][0],  self.points[-1][1],  pt[0],  pt[1])
-                    
-                for l in self.lines:
-                    
-                    l.setPen(p)
-                    self.active_line.setPen(p)
+                    self.active_line.setPen(self.pen)
         
     def add_point(self,  pt):
         
@@ -130,7 +123,7 @@ class scene_polygon():
             else:
                 
                 self.lines.append(self.scene.addLine(self.points[-1][0],  self.points[-1][1],  pt[0],  pt[1]))
-                self.lines[-1].setPen(self.pen)
+                self.lines[-1].setPen(self.apen)
                 self.points.append(pt)
                 
                 return False
@@ -347,7 +340,9 @@ class pointing_point():
                 if xs > 0.01 and xs < 15.0 and ys > 0.01 and ys < 15.0:
                 #if xs < 10.0 and ys < 10.0: # -> this is only for testing
                     
+                    # TODO zezelenat
                     self.pointed_pos = (int(xm),  int(ym))
+                    # self.viz.setPen(QtCore.Qt.green)
                     
                 else:
                     

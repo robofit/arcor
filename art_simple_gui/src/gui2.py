@@ -14,16 +14,15 @@ from geometry_msgs.msg import Pose,  PoseStamped, PointStamped
 from std_srvs.srv import Empty, EmptyResponse
 import actionlib
 
-from helper_objects import scene_place,  scene_object,  pointing_point,  scene_polygon
+from helper_objects import scene_place,  scene_object,  pointing_point,  scene_polygon,  dist
 from gui_calibration import gui_calibration
 from program_widget import program_widget
 import numpy as np
 
-# TODO show feedback during program execution (highlight object to be manipulated, place where it will be placed etc)
-# TODO polygon selection
+# TODO "smart" label - able to show messages for defined time, more messages at the time, images (?) etc.
 # TODO stop (program) button
 # TODO move program_widget automatically so it does not collide with objects etc.
-# TODO object type selection - highlight all of them
+# TODO make 180deg rotation configurable
 
 def sigint_handler(*args):
     """Handler for the SIGINT signal."""
@@ -59,14 +58,15 @@ class simple_gui(QtGui.QWidget):
 
         self.objects = None
         self.viz_objects = {} # objects can be accessed by their ID
-        self.viz_places = []
-        self.viz_polygons = []
+        self.viz_places = [] # array of scene_place objects
+        self.viz_polygons = [] # array of scene_polygon objects
 
+        # these are used to know progress of task item programming
         self.object_selected = False
         self.place_selected = False
         self.polygon_selected = False
         
-        self.selected_at = None
+        self.selected_at = None  # timestamp of last learned program item
 
         self.scene=QtGui.QGraphicsScene(self)
         self.scene.setBackgroundBrush(QtCore.Qt.black)
@@ -100,7 +100,6 @@ class simple_gui(QtGui.QWidget):
         self.timer.start(500)
         self.timer.timeout.connect(self.timer_evt)
 
-        # TODO "smart" label - able to show messages for defined time, more messages at the time, images (?) etc.
         self.label = self.scene.addText("Waiting for user",  QtGui.QFont('Arial', 26))
         self.label.rotate(180)
         self.label.setDefaultTextColor(QtCore.Qt.white)
@@ -112,7 +111,7 @@ class simple_gui(QtGui.QWidget):
         self.calib.on_request = self.on_calib_req
         self.calib.on_finished = self.on_calib_finished
         
-        self.ignored_items = [self.label,  self.marker, self.calib.checkerboard]
+        self.ignored_items = [self.label,  self.marker, self.calib.checkerboard] # items in the scene to be ignored when checking for "collisions"
         
         self.prog = program_widget(self)
         self.prog.resize(500, 200)
@@ -139,7 +138,6 @@ class simple_gui(QtGui.QWidget):
         
     def program_feedback_evt(self,  obj):
         
-        print "feedback"
         self.clear_all_evt()
         
         it = self.prog.get_item_by_id(self.prog.current_step_id)
@@ -258,7 +256,7 @@ class simple_gui(QtGui.QWidget):
         self.viz_polygons = []
        
     def timer_evt(self):
-
+        
         if not self.calib.is_calibrated():
 
             self.label.setPlainText('Waiting for calibration...')
@@ -280,9 +278,16 @@ class simple_gui(QtGui.QWidget):
             
             self.label.setPlainText('Please make a calibration pose')
             
-        elif (self.user_status.user_state == UserStatus.USER_CALIBRATED) and not (self.pointing_left.is_active() or self.pointing_right.is_active() or self.pointing_mouse.is_active()):
+        elif (self.user_status.user_state == UserStatus.USER_CALIBRATED):
+         
+           if self.program_started:
+
+                self.label.setPlainText("Program is running...")
+                return  
+          
+           if not (self.pointing_left.is_active() or self.pointing_right.is_active() or self.pointing_mouse.is_active()) and self.selected_at is None:
             
-            self.label.setPlainText('Point at objects or places to select them')
+                self.label.setPlainText('Point at objects or places to select them')
     
     def on_resize(self, event):
     
@@ -367,12 +372,9 @@ class simple_gui(QtGui.QWidget):
             
             if len(self.viz_polygons[-1].points) > 0:
             
-                a = np.array(self.viz_polygons[-1].points[-1])
-                b = np.array(pointed_place)
-                
-                dist = np.linalg.norm(a-b)
-                
-                if dist < 100: return
+                d = dist(self.viz_polygons[-1].points[-1],  pointed_place)
+
+                if d < 100: return
             
             if self.viz_polygons[-1].add_point(pointed_place):
                 
@@ -400,7 +402,7 @@ class simple_gui(QtGui.QWidget):
             skip = False
             for pl in self.viz_places:
                 
-                if np.linalg.norm(np.array(pl.pos) - np.array(pointed_place)) < 150:
+                if dist(pl.pos,  pointed_place) < 150:
                     
                     rospy.logwarn(pt.id + ": place near to x=" + str(pointed_place[0]) + ", y=" + str(pointed_place[1]) + " already exists")
                     skip = True
@@ -426,8 +428,6 @@ class simple_gui(QtGui.QWidget):
             self.selected_at = None
         
         if self.program_started:
-
-            self.label.setPlainText("Program is running...")
             return
         
         if self.user_status is None or self.user_status.user_state != UserStatus.USER_CALIBRATED:
