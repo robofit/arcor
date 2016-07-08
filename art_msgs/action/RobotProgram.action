@@ -8,3 +8,4 @@ uint8 BAD_REQUEST=4
 ---
 uint8 current_program
 uint8 current_item
+string object # ID of the object selected by the brain (from group of objects with given type)
