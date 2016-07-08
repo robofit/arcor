@@ -527,15 +527,16 @@ public:
       grasps[i].allowed_touch_objects = allowed_touch_objects;
     }
 
+    grasped_object_.reset(new graspedObject());
+    grasped_object_->id = id;
+
     if (move_group_->pick(id, grasps))
     {
-
-      grasped_object_.reset(new graspedObject());
-      grasped_object_->id = id;
       return true;
     }
 
     ROS_WARN("Failed to pick");
+    grasped_object_.reset();
     return false;
 
   }
