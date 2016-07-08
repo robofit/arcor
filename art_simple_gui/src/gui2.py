@@ -14,7 +14,7 @@ from geometry_msgs.msg import Pose,  PoseStamped, PointStamped
 from std_srvs.srv import Empty, EmptyResponse
 import actionlib
 
-from helper_objects import scene_place,  scene_object,  pointing_point
+from helper_objects import scene_place,  scene_object,  pointing_point,  scene_polygon
 from gui_calibration import gui_calibration
 from program_widget import program_widget
 import numpy as np
@@ -60,11 +60,13 @@ class simple_gui(QtGui.QWidget):
         self.objects = None
         self.viz_objects = {}
         self.viz_places = []
+        self.viz_polygons = []
 
         self.object_selected = False
-        self.object_selected_at = None
         self.place_selected = False
-        self.place_selected_at = None
+        self.polygon_selected = False
+        
+        self.selected_at = None
 
         self.scene=QtGui.QGraphicsScene(self)
         self.scene.setBackgroundBrush(QtCore.Qt.black)
@@ -145,6 +147,7 @@ class simple_gui(QtGui.QWidget):
         
     def start_program(self):
         
+        rospy.loginfo('Waiting for art_brain server')
         self.brain_client.wait_for_server()
         goal = RobotProgramGoal()
         goal.program_array.programs.append(self.prog.prog)
@@ -152,7 +155,10 @@ class simple_gui(QtGui.QWidget):
         
     def load_program(self,  prog_id,  template = False):
         
+        rospy.loginfo('Waiting for art_db server')
         rospy.wait_for_service('/art_db/program/get')
+    
+        rospy.loginfo('Loading program: ' + str(prog_id))
     
         try:
             prog_srv = rospy.ServiceProxy('/art_db/program/get', getProgram)
@@ -215,6 +221,10 @@ class simple_gui(QtGui.QWidget):
         for it in self.viz_places:
             it.remove()
         self.viz_places = []
+        
+        for it in self.viz_polygons:
+            it.remove()
+        self.viz_polygons = []
        
     def timer_evt(self):
 
@@ -294,13 +304,13 @@ class simple_gui(QtGui.QWidget):
                     
                      # TODO "attach" object shape to the pointing point(s)?
                     self.object_selected = True
-                    self.object_selected_at = rospy.Time.now()
+                    self.selected_at = rospy.Time.now()
                     
                     if self.item_to_learn.spec == ProgramItem.MANIP_ID:
                         rospy.loginfo("Object ID (" + v.id +") selected, now select place")
                         self.item_to_learn.object = v.id
                     elif self.item_to_learn.spec == ProgramItem.MANIP_TYPE:
-                        rospy.loginfo("Object type (" + v.obj_type +") selected, now select place")
+                        rospy.loginfo("Object type (" + v.obj_type +") selected, now select polygon")
                         self.item_to_learn.object = v.obj_type
                         
                         # mark all objects of this type as selected
@@ -308,6 +318,35 @@ class simple_gui(QtGui.QWidget):
                             v1.set_selected()
                             
                     break
+    
+    def select_polygon(self,  pt,  click):
+        
+        if self.polygon_selected: return
+        
+        lp = len(self.viz_polygons)
+        if lp==1: self.label.setPlainText("Select a pick polygon")
+        elif lp==2: self.label.setPlainText("Select a place polygon")
+        
+        self.viz_polygons[-1].set_pos(pt.pos)
+        
+        pointed_place = pt.get_pointed_place()
+        
+        if pointed_place is not None:
+            
+            if len(self.viz_polygons[-1].points) > 0:
+            
+                a = np.array(self.viz_polygons[-1].points[-1])
+                b = np.array(pointed_place)
+                
+                dist = np.linalg.norm(a-b)
+                
+                if dist < 100: return
+            
+            if self.viz_polygons[-1].add_point(pointed_place):
+                
+                self.label.setPlainText("Polygon selected")
+                self.polygon_selected = True
+                self.selected_at = rospy.Time.now()
     
     def select_place(self,  pt,  click):
         
@@ -337,14 +376,22 @@ class simple_gui(QtGui.QWidget):
 
             if skip: return
 
-            rospy.loginfo(pt.id + ": new place selected at x=" + str(pointed_place[0]) + ", y=" + str(pointed_place[1]))
+            self.label.setPlainText("Place selected at x=" + str(round(pointed_place[0],  2)) + ", y=" + str(round(pointed_place[1],  2)))
             sp = scene_place(self.scene,  pointed_place,  self.selected_place_pub, self.size(), self.calib)
             self.viz_places.append(sp)
             self.place_selected = True
-            self.place_selected_at = rospy.Time.now()
+            self.selected_at = rospy.Time.now()
             return sp
     
     def pointing_point(self,  pt,  click = False):
+        
+        if self.selected_at is not None:
+            
+            if rospy.Time.now() - self.selected_at < rospy.Duration(2): 
+                
+                pt.disable()
+                return
+            self.selected_at = None
         
         if self.program_started:
 
@@ -358,6 +405,7 @@ class simple_gui(QtGui.QWidget):
             self.item_to_learn = self.prog.get_item_to_learn()
             self.object_selected = False
             self.place_selected = False
+            self.polygon_selected = False
         
         # everything is already learned - let's start program execution
         if self.item_to_learn is None:
@@ -369,25 +417,32 @@ class simple_gui(QtGui.QWidget):
             
             if self.place_selected:
                 
-                if rospy.Time.now() - self.place_selected_at > rospy.Duration(2):
-                
-                    self.item_to_learn = None
-                    self.emit(QtCore.SIGNAL('clear_all()'))
-                    
+                self.item_to_learn = None
+                self.emit(QtCore.SIGNAL('clear_all()'))
                 return
             
-            self.select_object(pt,  click)
+            if not self.object_selected:
             
-            if self.object_selected is False: return
-            if rospy.Time.now() - self.object_selected_at < rospy.Duration(2): return
+                self.select_object(pt,  click)
+                return
+            
+            if self.item_to_learn.spec == ProgramItem.MANIP_TYPE:
+                
+                if self.polygon_selected is False:
+                
+                    if len(self.viz_polygons) == 0: self.viz_polygons.append(scene_polygon(self.scene,  self.calib))
+                    self.select_polygon(pt,  click)
+                    return
             
             sp = self.select_place(pt,  click)
             
             if self.place_selected:
             
                 self.item_to_learn.place_pose = sp.get_pose()
+                self.item_to_learn.pick_polygon = self.viz_polygons[0].get_point_array()
                 self.label.setPlainText("Step learned")
                 self.prog.learned(self.item_to_learn.id)
+                print self.item_to_learn
                 self.learned_program_item_pub.publish(self.item_to_learn)
                 
         else:

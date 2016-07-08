@@ -19,6 +19,7 @@ def execute_cb(goal):
             feedback = RobotProgramFeedback()
             feedback.current_program = prog.id
             feedback.current_item = it.id
+            feedback.object = "my_object"
             prog_as.publish_feedback(feedback)
             
             rospy.loginfo('Program id: ' + str(prog.id) + ', item id: ' + str(it.id))

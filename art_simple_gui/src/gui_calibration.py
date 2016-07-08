@@ -96,6 +96,21 @@ class gui_calibration(QtCore.QObject):
         
         return ps
         
+    def get_point(self,  px,  py):
+        
+        ps = PointStamped()
+        ps.header.frame_id = "marker"
+        ps.header.stamp = rospy.Time.now()
+        
+        p = np.array([[self.size.width()-px], [py], [1.0]])
+        res = np.linalg.inv(self.h_matrix)*p
+
+        ps.point.x = float(res[0]/res[2])
+        ps.point.y = float(res[1]/res[2])
+        ps.point.z = 0.0
+
+        return ps
+        
     def get_caminfo(self):
         
         cam_info = None
