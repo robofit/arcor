@@ -279,7 +279,10 @@ class simple_gui(QtGui.QWidget):
         
         if self.object_selected: return
         
-        self.label.setPlainText("Select an object")
+        if self.item_to_learn.spec == ProgramItem.MANIP_ID:
+            self.label.setPlainText("Select an object")
+        elif self.item_to_learn.spec == ProgramItem.MANIP_TYPE:
+            self.label.setPlainText("Select an object type")
             
         if not pt.is_active() or pt.viz is None: return
         
@@ -300,6 +303,10 @@ class simple_gui(QtGui.QWidget):
                         rospy.loginfo("Object type (" + v.obj_type +") selected, now select place")
                         self.item_to_learn.object = v.obj_type
                         
+                        # mark all objects of this type as selected
+                        for k1, v1 in self.viz_objects.iteritems():
+                            v1.set_selected()
+                            
                     break
     
     def select_place(self,  pt,  click):
@@ -427,7 +434,7 @@ class simple_gui(QtGui.QWidget):
     def pointing_point_left_cb(self, msg):
         
         if not self.inited: return
-        if self.calib.is_calibrated(): return
+        if not self.calib.is_calibrated(): return
        
         pos = self.calib.get_px(msg.pose)
         self.emit(QtCore.SIGNAL('pointing_point_left'),  pos)
@@ -435,7 +442,7 @@ class simple_gui(QtGui.QWidget):
     def pointing_point_right_cb(self, msg):
         
         if not self.inited: return
-        if self.calib.is_calibrated(): return
+        if not self.calib.is_calibrated(): return
        
         pos = self.calib.get_px(msg.pose)
         self.emit(QtCore.SIGNAL('pointing_point_right'),  pos)

@@ -32,6 +32,22 @@ class scene_place():
 
         return self.calib.get_pose(px,  py)
         
+class polygon():
+    
+    def __init__(self,  scene):
+        
+        self.scene = scene
+        self.closed = False
+        self.points = []
+        
+    def add_point(self,  pt):
+        
+        if len(self.points == 0):
+            self.points.append(pt)
+            return True
+        else:
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
 class scene_object():
 
     def __init__(self,  scene,  id, obj_type,  pos,  pub):
@@ -106,7 +122,24 @@ class scene_object():
             self.selected = False
             self.scene.removeItem(self.viz_selected)
             self.viz_selected = None
+    
+    def set_selected(self):
         
+        if self.selected is False:
+            
+            rospy.loginfo("object " + self.id + ": selected")
+            self.pub.publish(self.id)
+            
+            self.selected = True
+            self.viz_selected = self.scene.addEllipse(0, 0, 180, 180, QtCore.Qt.green, QtCore.Qt.green)
+            self.viz_selected.setParentItem(self.viz)
+            self.viz_selected.setPos(150/2 - 180/2, 150/2 - 180/2)
+            self.viz_selected.setFlag(QtGui.QGraphicsItem.ItemStacksBehindParent)
+            
+            if self.viz_preselect is not None:
+                self.scene.removeItem(self.viz_preselect)
+                self.viz_preselect = None
+
     def pointing(self,  pointing_obj,  click = False):
         
         if self.viz not in pointing_obj.collidingItems(): return False
@@ -129,23 +162,11 @@ class scene_object():
         
         if not self.selected:
            
-          if (rospy.Time.now() - self.preselected_at > rospy.Duration(1)) or click: self.selected = True
-          else: return False
-              
-        # TODO how to unselect by user?
-      
-        if self.selected is True and self.viz_selected is None:
-            
-            rospy.loginfo("object " + self.id + ": selected")
-            self.pub.publish(self.id)
-            
-            self.viz_selected = self.scene.addEllipse(0, 0, 180, 180, QtCore.Qt.green, QtCore.Qt.green)
-            self.viz_selected.setParentItem(self.viz)
-            self.viz_selected.setPos(150/2 - 180/2, 150/2 - 180/2)
-            self.viz_selected.setFlag(QtGui.QGraphicsItem.ItemStacksBehindParent)
-            self.scene.removeItem(self.viz_preselect)
-            self.viz_preselect = None
-            return True
+          if (rospy.Time.now() - self.preselected_at > rospy.Duration(1)) or click:
+              self.set_selected()
+              return True
+          
+          return False
 
 class pointing_point():
     
