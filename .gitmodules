@@ -1,3 +1,0 @@
-[submodule "art_umf_localizer/umflib"]
-	path = art_umf_localizer/umflib
-	url = git@bitbucket.org:szist/umf-private.git
