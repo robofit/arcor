@@ -87,7 +87,7 @@ class program_widget(QtGui.QWidget):
             self.items_to_be_learned = []
         
         self.emit(QtCore.SIGNAL('set_prog'))
-        
+    
     def set_current(self,  prog_id,  step_id):
         
         self.current_prog_id = prog_id

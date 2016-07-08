@@ -60,14 +60,22 @@ class gui_calibration(QtCore.QObject):
         
         return self.h_matrix is not None
     
-    def get_px(self, pose):
+    def get_px(self, pos):
 
         if self.h_matrix is None:
 
             rospy.logerr("Not calibrated!")
             return None
 
-        pt = np.array([[pose.position.x], [pose.position.y], [1.0]])
+        if isinstance(pos,  Pose):
+            psx = pos.position.x
+            psy = pos.position.y
+        elif isinstance(pos,  PointStamped):
+            psx = pos.point.x
+            psy = pos.point.y
+            
+
+        pt = np.array([[psx], [psy], [1.0]])
         px = self.h_matrix*pt
 
         w = px[2].tolist()[0][0]
@@ -94,6 +102,21 @@ class gui_calibration(QtCore.QObject):
         ps.pose.orientation.z = 0.0
         ps.pose.orientation.w = 1.0
         
+        return ps
+        
+    def get_point(self,  px,  py):
+        
+        ps = PointStamped()
+        ps.header.frame_id = "marker"
+        ps.header.stamp = rospy.Time.now()
+        
+        p = np.array([[self.size.width()-px], [py], [1.0]])
+        res = np.linalg.inv(self.h_matrix)*p
+
+        ps.point.x = float(res[0]/res[2])
+        ps.point.y = float(res[1]/res[2])
+        ps.point.z = 0.0
+
         return ps
         
     def get_caminfo(self):

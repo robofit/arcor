@@ -3,9 +3,15 @@ from PyQt4 import QtGui, QtCore
 from geometry_msgs.msg import PoseStamped
 import numpy as np
 
+def dist(pt1,  pt2):
+    
+    a = np.array(pt1)
+    b= np.array(pt2)
+    return np.linalg.norm(a-b)
+
 class scene_place():
     
-    def __init__(self,  scene, pos,  pub, wsize, calib):
+    def __init__(self,  scene, pos,  pub=None, wsize=None, calib=None):
         
         self.scene = scene
         self.pos = pos
@@ -15,8 +21,9 @@ class scene_place():
         self.wsize = wsize
         self.calib = calib
         
-        ps = self.get_pose(self.pos[0],  self.pos[1])
-        self.pub.publish(ps)
+        if self.pub is not None:
+            ps = self.get_pose(self.pos[0],  self.pos[1])
+            self.pub.publish(ps)
      
     def remove(self):
         
@@ -32,21 +39,94 @@ class scene_place():
 
         return self.calib.get_pose(px,  py)
         
-class polygon():
+class scene_polygon():
     
-    def __init__(self,  scene):
+    def __init__(self,  scene,  calib=None,  points = []):
         
         self.scene = scene
+        self.calib = calib
         self.closed = False
-        self.points = []
+        self.points = points
+        self.lines = []
+        self.active_line = None
+        self.pen = QtGui.QPen(QtCore.Qt.white, 5, QtCore.Qt.DotLine)
+        self.apen = QtGui.QPen(QtCore.Qt.white, 5, QtCore.Qt.SolidLine)
+        
+        if len(self.points) > 0:
+            
+            for i in range(0,  len(points)-1):
+
+                self.lines.append(self.scene.addLine(self.points[i][0],  self.points[i][1],  self.points[i+1][0],  self.points[i+1][1]))
+                self.lines[-1].setPen(self.apen)
+                
+            self.lines.append(self.scene.addLine(self.points[-1][0],  self.points[-1][1],  self.points[0][0],  self.points[0][1]))
+            self.lines[-1].setPen(self.apen)
+            
+            self.closed = True
+        
+    def remove(self):
+        
+        for l in self.lines:
+            self.scene.removeItem(l)
+        self.lines = []
+        
+    def get_point_array(self):
+        
+        if not self.closed: return None
+        
+        arr = []
+        
+        for pt in self.points:
+            
+            arr.append(self.calib.get_point(pt[0],  pt[1]))
+            
+        return arr
+        
+    def set_pos(self,  pt):
+        
+        if len(self.points) > 0 and not self.closed:
+            
+            if self.active_line is None:
+                
+                self.active_line = self.scene.addLine(self.points[-1][0],  self.points[-1][1],  pt[0],  pt[1])
+                self.active_line.setPen(self.pen)
+                
+            else:    
+                
+                if dist(pt, self.points[0]) < 30:
+                    self.active_line.setPen(self.apen)
+                    self.active_line.setLine(self.points[-1][0],  self.points[-1][1],  self.points[0][0],  self.points[0][1])
+                else:
+                    self.active_line.setLine(self.points[-1][0],  self.points[-1][1],  pt[0],  pt[1])
+                    self.active_line.setPen(self.pen)
         
     def add_point(self,  pt):
         
-        if len(self.points == 0):
+        if len(self.points) == 0:
             self.points.append(pt)
-            return True
+            return False
+            
         else:
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            
+            d = dist(pt, self.points[0])
+            
+            if d < 30:
+                
+                self.lines.append(self.scene.addLine(self.points[-1][0],  self.points[-1][1],  self.points[0][0],  self.points[0][1]))
+                self.lines[-1].setPen(self.apen)
+                
+                self.closed = True
+                self.scene.removeItem(self.active_line)
+                self.active_line = None
+                return True
+                
+            else:
+                
+                self.lines.append(self.scene.addLine(self.points[-1][0],  self.points[-1][1],  pt[0],  pt[1]))
+                self.lines[-1].setPen(self.apen)
+                self.points.append(pt)
+                
+                return False
         
 class scene_object():
 
@@ -192,6 +272,15 @@ class pointing_point():
         
         return self.pointed_pos
     
+    def disable(self):
+        
+        if self.is_active():
+            #rospy.loginfo("Disabling pointing-point: " + self.id)
+            self.pointed_pos = None
+            self.scene.removeItem(self.viz)
+            self.viz = None
+            self.timestamp = None
+    
     def set_pos(self,  pos,  click = False):
         
         self.timestamp = rospy.Time.now()
@@ -206,7 +295,7 @@ class pointing_point():
         
         if self.viz is None:
         
-            rospy.loginfo("Enabling pointing-point: " + self.id)
+            #rospy.loginfo("Enabling pointing-point: " + self.id)
             self.viz = self.scene.addEllipse(0, 0, 50, 50, QtCore.Qt.blue, QtCore.Qt.blue)
             self.viz.setZValue(100)
             
@@ -251,7 +340,9 @@ class pointing_point():
                 if xs > 0.01 and xs < 15.0 and ys > 0.01 and ys < 15.0:
                 #if xs < 10.0 and ys < 10.0: # -> this is only for testing
                     
+                    # TODO zezelenat
                     self.pointed_pos = (int(xm),  int(ym))
+                    # self.viz.setPen(QtCore.Qt.green)
                     
                 else:
                     
@@ -259,8 +350,4 @@ class pointing_point():
         
         if (not self.mouse and len(self.xyt) == 0) or (self.mouse and (now - self.timestamp > rospy.Duration(2))):
             
-            rospy.loginfo("Disabling pointing-point: " + self.id)
-            self.pointed_pos = None
-            self.scene.removeItem(self.viz)
-            self.viz = None
-            self.timestamp = None
+            self.disable()
