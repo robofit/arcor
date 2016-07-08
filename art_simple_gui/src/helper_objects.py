@@ -11,7 +11,7 @@ def dist(pt1,  pt2):
 
 class scene_place():
     
-    def __init__(self,  scene, pos,  pub, wsize, calib):
+    def __init__(self,  scene, pos,  pub=None, wsize=None, calib=None):
         
         self.scene = scene
         self.pos = pos
@@ -21,8 +21,9 @@ class scene_place():
         self.wsize = wsize
         self.calib = calib
         
-        ps = self.get_pose(self.pos[0],  self.pos[1])
-        self.pub.publish(ps)
+        if self.pub is not None:
+            ps = self.get_pose(self.pos[0],  self.pos[1])
+            self.pub.publish(ps)
      
     def remove(self):
         
@@ -40,16 +41,30 @@ class scene_place():
         
 class scene_polygon():
     
-    def __init__(self,  scene,  calib):
+    def __init__(self,  scene,  calib=None,  points = []):
         
         self.scene = scene
         self.calib = calib
         self.closed = False
-        self.points = []
+        self.points = points
         self.lines = []
         self.active_line = None
-        self.pen = QtGui.QPen(QtCore.Qt.gray, 5, QtCore.Qt.DotLine)
-        self.apen = QtGui.QPen(QtCore.Qt.gray, 5, QtCore.Qt.SolidLine)
+        self.pen = QtGui.QPen(QtCore.Qt.white, 5, QtCore.Qt.DotLine)
+        self.apen = QtGui.QPen(QtCore.Qt.white, 5, QtCore.Qt.SolidLine)
+        
+        if len(self.points) > 0:
+            
+            print "polygon: got " + str(len(self.points)) + " points"
+            
+            for i in range(0,  len(points)-1):
+
+                self.lines.append(self.scene.addLine(self.points[i][0],  self.points[i][1],  self.points[i+1][0],  self.points[i+1][1]))
+                self.lines[-1].setPen(self.apen)
+                
+            self.lines.append(self.scene.addLine(self.points[-1][0],  self.points[-1][1],  self.points[0][0],  self.points[0][1]))
+            self.lines[-1].setPen(self.apen)
+            
+            self.closed = True
         
     def remove(self):
         
@@ -80,8 +95,6 @@ class scene_polygon():
                 
             else:    
                 
-                
-                
                 p = self.pen
                 if dist(pt, self.points[0]) < 30:
                     p = self.apen
@@ -97,15 +110,12 @@ class scene_polygon():
     def add_point(self,  pt):
         
         if len(self.points) == 0:
-            print "first point"
             self.points.append(pt)
             return False
             
         else:
             
             d = dist(pt, self.points[0])
-            
-            print d
             
             if d < 30:
                 
@@ -272,7 +282,7 @@ class pointing_point():
     def disable(self):
         
         if self.is_active():
-            rospy.loginfo("Disabling pointing-point: " + self.id)
+            #rospy.loginfo("Disabling pointing-point: " + self.id)
             self.pointed_pos = None
             self.scene.removeItem(self.viz)
             self.viz = None
@@ -292,7 +302,7 @@ class pointing_point():
         
         if self.viz is None:
         
-            rospy.loginfo("Enabling pointing-point: " + self.id)
+            #rospy.loginfo("Enabling pointing-point: " + self.id)
             self.viz = self.scene.addEllipse(0, 0, 50, 50, QtCore.Qt.blue, QtCore.Qt.blue)
             self.viz.setZValue(100)
             

@@ -60,14 +60,22 @@ class gui_calibration(QtCore.QObject):
         
         return self.h_matrix is not None
     
-    def get_px(self, pose):
+    def get_px(self, pos):
 
         if self.h_matrix is None:
 
             rospy.logerr("Not calibrated!")
             return None
 
-        pt = np.array([[pose.position.x], [pose.position.y], [1.0]])
+        if isinstance(pos,  Pose):
+            psx = pos.position.x
+            psy = pos.position.y
+        elif isinstance(pos,  PointStamped):
+            psx = pos.point.x
+            psy = pos.point.y
+            
+
+        pt = np.array([[psx], [psy], [1.0]])
         px = self.h_matrix*pt
 
         w = px[2].tolist()[0][0]

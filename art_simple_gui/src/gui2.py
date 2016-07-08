@@ -58,7 +58,7 @@ class simple_gui(QtGui.QWidget):
         self.srv_hide_marker = rospy.Service('/art_simple_gui/hide_marker', Empty, self.hide_marker)
 
         self.objects = None
-        self.viz_objects = {}
+        self.viz_objects = {} # objects can be accessed by their ID
         self.viz_places = []
         self.viz_polygons = []
 
@@ -94,6 +94,7 @@ class simple_gui(QtGui.QWidget):
         QtCore.QObject.connect(self, QtCore.SIGNAL('show_marker()'), self.show_marker_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('hide_marker()'), self.hide_marker_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('user_status'), self.user_status_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('program_feedback'), self.program_feedback_evt)
         
         self.timer = QtCore.QTimer()
         self.timer.start(500)
@@ -135,10 +136,40 @@ class simple_gui(QtGui.QWidget):
     def on_calib_finished(self):
         
         self.prog.show()
+        
+    def program_feedback_evt(self,  obj):
+        
+        print "feedback"
+        self.clear_all_evt()
+        
+        it = self.prog.get_item_by_id(self.prog.current_step_id)
+        
+        if it.type == ProgramItem.MANIP_PICK_PLACE:
+            
+            if it.spec == ProgramItem.MANIP_ID:
+                
+                self.viz_objects[it.object].set_selected()
+                
+            elif it.spec == ProgramItem.MANIP_TYPE:
+            
+                self.viz_objects[obj].set_selected()
+                
+                psx = []
+                for ps in it.pick_polygon:
+                    psx.append(self.calib.get_px(ps))
+                self.viz_polygons.append(scene_polygon(self.scene,  None,  psx))
+            
+            self.viz_places.append(scene_place(self.scene, self.calib.get_px(it.place_pose.pose)))
+            
+        else:
+
+            # TODO other types of operations
+            pass
 
     def program_feedback(self,  msg):
         
         self.prog.set_current(msg.current_program,  msg.current_item)
+        self.emit(QtCore.SIGNAL('program_feedback'),  msg.object)
 
     def program_done(self,  status,  msg):
         
@@ -212,7 +243,7 @@ class simple_gui(QtGui.QWidget):
         
         self.object_selected = False
         self.place_selected = False
-        self.label.setPlainText("Waiting for user")
+        #self.label.setPlainText("Waiting for user")
     
         for k,  v in self.viz_objects.iteritems():
             
@@ -315,7 +346,8 @@ class simple_gui(QtGui.QWidget):
                         
                         # mark all objects of this type as selected
                         for k1, v1 in self.viz_objects.iteritems():
-                            v1.set_selected()
+                            if v1.obj_type == v.obj_type:
+                                v1.set_selected()
                             
                     break
     
@@ -387,7 +419,7 @@ class simple_gui(QtGui.QWidget):
         
         if self.selected_at is not None:
             
-            if rospy.Time.now() - self.selected_at < rospy.Duration(2): 
+            if rospy.Time.now() - self.selected_at < rospy.Duration(3): 
                 
                 pt.disable()
                 return
@@ -430,7 +462,7 @@ class simple_gui(QtGui.QWidget):
                 
                 if self.polygon_selected is False:
                 
-                    if len(self.viz_polygons) == 0: self.viz_polygons.append(scene_polygon(self.scene,  self.calib))
+                    if len(self.viz_polygons) == 0: self.viz_polygons.append(scene_polygon(self.scene,  self.calib,  []))
                     self.select_polygon(pt,  click)
                     return
             
@@ -442,7 +474,6 @@ class simple_gui(QtGui.QWidget):
                 self.item_to_learn.pick_polygon = self.viz_polygons[0].get_point_array()
                 self.label.setPlainText("Step learned")
                 self.prog.learned(self.item_to_learn.id)
-                print self.item_to_learn
                 self.learned_program_item_pub.publish(self.item_to_learn)
                 
         else:
