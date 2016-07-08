@@ -1,0 +1,6 @@
+<launch>
+	<include file="$(find art_pr2_grasping)/launch/node.launch"></include>
+	<include file="$(find pr2_description)/launch/upload_pr2.launch"></include>
+	<include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch"></include>
+</launch>
+
