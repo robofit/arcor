@@ -150,7 +150,10 @@ class simple_gui(QtGui.QWidget):
                 
             elif it.spec == ProgramItem.MANIP_TYPE:
             
-                self.viz_objects[obj].set_selected()
+                try:
+                    self.viz_objects[obj].set_selected()
+                except KeyError:
+                    pass
                 
                 psx = []
                 for ps in it.pick_polygon:
