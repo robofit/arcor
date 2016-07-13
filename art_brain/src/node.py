@@ -7,7 +7,7 @@ import actionlib
 from art_msgs.msg import RobotProgramAction, RobotProgramFeedback,  RobotProgramResult, RobotProgramActionGoal
 from art_msgs.msg import LocalizeAgainstUMFAction, LocalizeAgainstUMFGoal, LocalizeAgainstUMFResult
 from std_srvs.srv import Empty, EmptyRequest, EmptyResponse
-from art_msgs.msg import UserStatus
+from art_msgs.msg import UserStatus,  UserActivity
 from geometry_msgs.msg import PoseStamped, Pose
 from std_msgs.msg import String
 from art_msgs.msg import pickplaceAction, pickplaceGoal, SystemState, ObjInstance, InstancesArray, ProgramItem
@@ -46,6 +46,10 @@ class ArtBrain:
         self.calibrate_table = rospy.get_param('calibrate_table', False)
 
         self.user_status_sub = rospy.Subscriber("/art/user/status", UserStatus, self.user_status_cb)
+        self.user_activity_sub = rospy.Subscriber("/art/user/activity", UserActivity, self.user_activity_cb)
+        
+        self.user_activity = None
+        
         self.object_to_pick_sub = rospy.Subscriber("/art/projected_gui/selected_object", String, self.selected_object_cb)
         self.pose_to_place_sub = rospy.Subscriber("/art/projected_gui/selected_place", PoseStamped, self.selected_place_cb)
         self.objects_sub = rospy.Subscriber("/art/object_detector/object_filtered", InstancesArray, self.objects_cb)
@@ -264,11 +268,13 @@ class ArtBrain:
         rate = rospy.Rate(10)
 
         if instruction.spec == instruction.WAIT_FOR_USER:
-            while self.user_id == 0:
+            while self.user_activity != UserActivity.READY:
+                rate.sleep()
+        elif instruction.spec == instruction.WAIT_UNTIL_USER_FINISHES:
+            while self.user_activity != UserActivity.WORKING:
                 rate.sleep()
         else:
-            while self.user_id > 0:
-                rate.sleep()
+            return self.INST_BAD_DATA
                 
         return self.INST_OK
 
@@ -278,6 +284,10 @@ class ArtBrain:
 
     def nop(self, instruction=None):
         return self.INST_OK
+
+    def user_activity_cb(self,  data):
+        
+        self.user_activity = data.activity
 
     def user_status_cb(self, data):
         """

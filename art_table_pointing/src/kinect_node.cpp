@@ -8,6 +8,7 @@ ArtTablePointingKinect::ArtTablePointingKinect()  {
     markers_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 10);
     point_right_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/art/user/pointing_right", 1);
     point_left_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/art/user/pointing_left", 1);
+    user_activity_pub_ = nh_.advertise<art_msgs::UserActivity>("/art/user/activity", 1, true);
 
     user_status_sub_ = nh_.subscribe("/art/user/status", 1, &ArtTablePointingKinect::user_status, this);
 
@@ -26,12 +27,23 @@ ArtTablePointingKinect::ArtTablePointingKinect()  {
     ROS_INFO_STREAM("table_width: " << table_width_ << " table_height: " << table_height_);
     ROS_INFO_STREAM("table_frame: " << table_frame_.c_str());
 
+    setActivity(art_msgs::UserActivity::UNKNOWN);
+
     user_id = 0;
     ROS_INFO_STREAM("Kinect pointing node initialized.");
 
 }
 
 ArtTablePointingKinect::~ArtTablePointingKinect() {
+
+}
+
+void ArtTablePointingKinect::setActivity(int act) {
+
+    if (act == act_.activity) return;
+
+    act_.activity = act;
+    user_activity_pub_.publish(act_);
 
 }
 
@@ -171,6 +183,15 @@ void ArtTablePointingKinect::process(std::string user_id) {
     pose.header.stamp = ros::Time::now();
     pose.header.frame_id = table_frame_;
 
+    // we want to set activity based on distance between closer hand and middle of the table
+    // TODO what about using distance to object (the closest one) instead of middle of the table?
+    tf::Vector3 middle_of_the_table(-table_width_/2.0, -table_height_/2.0, 0.0); // TODO +/- ??
+    float min_dist = std::min(transform_hand_left.getOrigin().distance(middle_of_the_table), transform_hand_right.getOrigin().distance(middle_of_the_table));
+
+    // TODO make thresholds configurable
+    if (min_dist < 0.3) setActivity(art_msgs::UserActivity::WORKING);
+    else if (min_dist > 0.5 && min_dist < 1.0) setActivity(art_msgs::UserActivity::READY);
+    else if (min_dist > 1.2) setActivity(art_msgs::UserActivity::AWAY);
 
     if (pointingAtTable(point_right, transform_elbow_right, transform_hand_right)) {
         pose.pose.position.x = point_right.x();
