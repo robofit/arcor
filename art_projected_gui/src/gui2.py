@@ -40,21 +40,21 @@ class simple_gui(QtGui.QWidget):
         self.inited = False
 
         rospack = rospkg.RosPack()
-        self.img_path = rospack.get_path('art_simple_gui') + '/imgs'
+        self.img_path = rospack.get_path('art_projected_gui') + '/imgs'
 
-        self.obj_sub = rospy.Subscriber('/art_object_detector/object_filtered', InstancesArray, self.object_cb)
-        self.point_left_sub = rospy.Subscriber('/pointing_left', PoseStamped, self.pointing_point_left_cb)
-        self.point_right_sub = rospy.Subscriber('/pointing_right', PoseStamped, self.pointing_point_right_cb)
-        self.user_status_sub = rospy.Subscriber('/art_table_pointing/user_status',  UserStatus,  self.user_status_cb)
+        self.obj_sub = rospy.Subscriber('/art/object_detector/object_filtered', InstancesArray, self.object_cb)
+        self.point_left_sub = rospy.Subscriber('/art/user/pointing_left', PoseStamped, self.pointing_point_left_cb)
+        self.point_right_sub = rospy.Subscriber('/art/user/pointing_right', PoseStamped, self.pointing_point_right_cb)
+        self.user_status_sub = rospy.Subscriber('/art/user/status',  UserStatus,  self.user_status_cb)
 
-        self.selected_object_pub = rospy.Publisher("/art_simple_gui/selected_object", String, queue_size=10)
-        self.selected_place_pub = rospy.Publisher("/art_simple_gui/selected_place", PoseStamped, queue_size=10)
+        self.selected_object_pub = rospy.Publisher("/art/projected_gui/selected_object", String, queue_size=10)
+        self.selected_place_pub = rospy.Publisher("/art/projected_gui/selected_place", PoseStamped, queue_size=10)
         
-        self.current_program_pub = rospy.Publisher('/art_simple_gui/current_program',  UInt8,  queue_size=10,  latch=True)
-        self.learned_program_item_pub = rospy.Publisher("/art_simple_gui/learned_item", ProgramItem, queue_size=10)
+        self.current_program_pub = rospy.Publisher('/art/projected_gui/current_program',  UInt8,  queue_size=10,  latch=True)
+        self.learned_program_item_pub = rospy.Publisher("/art/projected_gui/learned_item", ProgramItem, queue_size=10)
         
-        self.srv_show_marker = rospy.Service('/art_simple_gui/show_marker', Empty, self.show_marker)
-        self.srv_hide_marker = rospy.Service('/art_simple_gui/hide_marker', Empty, self.hide_marker)
+        self.srv_show_marker = rospy.Service('/art/projected_gui/show_marker', Empty, self.show_marker)
+        self.srv_hide_marker = rospy.Service('/art/projected_gui/hide_marker', Empty, self.hide_marker)
 
         self.objects = None
         self.viz_objects = {} # objects can be accessed by their ID
@@ -118,7 +118,7 @@ class simple_gui(QtGui.QWidget):
         self.prog.move(10, 10)
         self.prog.show()
     
-        self.brain_client = actionlib.SimpleActionClient("/art_brain/do_program", RobotProgramAction)
+        self.brain_client = actionlib.SimpleActionClient("/art/brain/do_program", RobotProgramAction)
         
         # TODO only for testing - program should be selected by user
         self.load_program(0)
@@ -185,12 +185,12 @@ class simple_gui(QtGui.QWidget):
     def load_program(self,  prog_id,  template = False):
         
         rospy.loginfo('Waiting for art_db server')
-        rospy.wait_for_service('/art_db/program/get')
+        rospy.wait_for_service('/art/db/program/get')
     
         rospy.loginfo('Loading program: ' + str(prog_id))
     
         try:
-            prog_srv = rospy.ServiceProxy('/art_db/program/get', getProgram)
+            prog_srv = rospy.ServiceProxy('/art/db/program/get', getProgram)
             resp = prog_srv(prog_id)
             self.prog.set_prog(resp.program,  True)
         except rospy.ServiceException, e:

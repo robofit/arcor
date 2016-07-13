@@ -17,11 +17,11 @@ class ArtDB:
         rospack = rospkg.RosPack()
         self.db_path = rospack.get_path('art_db') + '/art.db' # TODO where to store?
         
-        self.srv_get_program = rospy.Service('/art_db/program/get', getProgram, self.srv_get_program_cb)
-        self.srv_store_program = rospy.Service('/art_db/program/store', storeProgram, self.srv_store_program_cb)
+        self.srv_get_program = rospy.Service('/art/db/program/get', getProgram, self.srv_get_program_cb)
+        self.srv_store_program = rospy.Service('/art/db/program/store', storeProgram, self.srv_store_program_cb)
         
-        self.srv_get_object = rospy.Service('/art_db/object/get', getObject, self.srv_get_object_cb)
-        self.srv_store_object = rospy.Service('/art_db/object/store', storeObject, self.srv_store_object_cb)
+        self.srv_get_object = rospy.Service('/art/db/object/get', getObject, self.srv_get_object_cb)
+        self.srv_store_object = rospy.Service('/art/db/object/store', storeObject, self.srv_store_object_cb)
         
     def srv_get_program_cb(self,  req):
         

@@ -189,10 +189,10 @@ def main(args):
     timer.start(500)
     timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
     
-    rospy.wait_for_service('/art_db/program/get')
+    rospy.wait_for_service('/art/db/program/get')
     
     try:
-        prog_srv = rospy.ServiceProxy('/art_db/program/get', getProgram)
+        prog_srv = rospy.ServiceProxy('/art/db/program/get', getProgram)
         resp = prog_srv(0)
         window.set_prog(resp.program)
     except rospy.ServiceException, e:

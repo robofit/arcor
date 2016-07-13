@@ -1,4 +1,0 @@
-<launch>
-
-	<node name="art_pick_and_place" pkg="art_pick_and_place" type="pick_and_place.py" output="screen" />
-</launch>
