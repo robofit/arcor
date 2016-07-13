@@ -167,7 +167,7 @@ class ArtBrain:
             for point in instruction.pick_polygon: # TODO check frame_id and transform to table frame?
                 pick_polygon.append([point.point.x,  point.point.y])
             if len(pick_polygon) > 0:
-                pol = mplPath.Path(np.array(pick_polygon))
+                pol = mplPath.Path(np.array(pick_polygon),  closed = True)
 
             # shuffle the array to not get the same object each time
             random.shuffle(self.objects.instances)
@@ -264,6 +264,7 @@ class ArtBrain:
         :type instruction: ProgramItem
         :return:
         """
+        #return self.INST_OK
         
         rate = rospy.Rate(10)
 
@@ -386,6 +387,7 @@ class ArtBrain:
     def state_start(self):
         rospy.loginfo('Starting')
         self.state = self.SYSTEM_CALIBRATING
+        #self.state = self.SYSTEM_STARTING_PROGRAM_SERVER
 
     def state_calibrating(self):
         self.calibrate_all(self.calibrate_table, self.calibrate_pr2)
