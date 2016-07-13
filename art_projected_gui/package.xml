@@ -1,13 +1,12 @@
 <?xml version="1.0"?>
 <package>
-  <name>art_simple_gui</name>
+  <name>art_projected_gui</name>
   <version>0.0.0</version>
-  <description>The art_simple_gui package</description>
+  <description>The art_projected_gui package</description>
 
-  <maintainer email="ikapinus@todo.todo">ikapinus</maintainer>
+  <maintainer email="imaterna@fit.vutbr.cz">Zdenek Materna</maintainer>
 
   <license>TODO</license>
-
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>cv_bridge</build_depend>
@@ -21,10 +20,4 @@
   <run_depend>rospy</run_depend>
   <run_depend>std_msgs</run_depend>
 
-
-  <!-- The export tag contains other, unspecified, tags -->
-  <export>
-    <!-- Other tools can request additional information be placed here -->
-
-  </export>
 </package>

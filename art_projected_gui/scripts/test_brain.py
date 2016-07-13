@@ -36,7 +36,7 @@ def main(args):
 
     rospy.init_node('test_brain')
     
-    prog_as = actionlib.SimpleActionServer("/art_brain/do_program", RobotProgramAction, execute_cb= execute_cb, auto_start = False)
+    prog_as = actionlib.SimpleActionServer("/art/brain/do_program", RobotProgramAction, execute_cb= execute_cb, auto_start = False)
     prog_as.start()
     
     rospy.spin()

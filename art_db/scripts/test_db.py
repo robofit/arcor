@@ -66,26 +66,26 @@ def main(args):
     p4.place_pose.pose.position.y = 0.5
     p.items.append(p4)
     
-    rospy.wait_for_service('/art_db/program/store')
+    rospy.wait_for_service('/art/db/program/store')
     
     try:
-        store_program_srv = rospy.ServiceProxy('/art_db/program/store', storeProgram)
+        store_program_srv = rospy.ServiceProxy('/art/db/program/store', storeProgram)
         resp = store_program_srv(program=p)
     except rospy.ServiceException, e:
         print "Service call failed: %s"%e
         return
     
-    rospy.wait_for_service('/art_db/program/get')
+    rospy.wait_for_service('/art/db/program/get')
     
     try:
-        get_program_srv = rospy.ServiceProxy('/art_db/program/get', getProgram)
+        get_program_srv = rospy.ServiceProxy('/art/db/program/get', getProgram)
         resp = get_program_srv(id=0)
         print resp
     except rospy.ServiceException, e:
         print "Service call failed: %s"%e
         return
         
-    rospy.wait_for_service('/art_db/object/store')
+    rospy.wait_for_service('/art/db/object/store')
     
     # self.objects_table.insert(dict(name="profile_3", model_url="blablabla", obj_id=16))
     # self.objects_table.insert(dict(name="profile_2", model_url="blablabla", obj_id=16))
@@ -98,17 +98,17 @@ def main(args):
     bb.dimensions.append(0.1)
     
     try:
-        store_object_srv = rospy.ServiceProxy('/art_db/object/store', storeObject)
+        store_object_srv = rospy.ServiceProxy('/art/db/object/store', storeObject)
         resp = store_object_srv(obj_id=3,  name="profile_2",  model_url="",  type="profile",  bbox=bb)
         resp = store_object_srv(obj_id=4,  name="profile_3",  model_url="",  type="profile",  bbox=bb)
     except rospy.ServiceException, e:
         print "Service call failed: %s"%e
         return
         
-    rospy.wait_for_service('/art_db/object/get')
+    rospy.wait_for_service('/art/db/object/get')
     
     try:
-        get_object_srv = rospy.ServiceProxy('/art_db/object/get', getObject)
+        get_object_srv = rospy.ServiceProxy('/art/db/object/get', getObject)
         resp = get_object_srv(obj_id=3)
         print resp
         resp = get_object_srv(obj_id=4)

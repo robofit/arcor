@@ -35,20 +35,20 @@ class ArtBrain:
 
 
     def __init__(self):
-        self.show_marker_service = rospy.get_param('show_marker_service', '/art_simple_gui/show_marker')
-        self.hide_marker_service = rospy.get_param('hide_marker_service', '/art_simple_gui/hide_marker')
+        self.show_marker_service = rospy.get_param('show_marker_service', '/art/projected_gui/show_marker')
+        self.hide_marker_service = rospy.get_param('hide_marker_service', '/art/projected_gui/hide_marker')
         self.table_localize_action = rospy.get_param('table_localize_action', '/umf_localizer_node_table/localize')
         self.pr2_localize_action = rospy.get_param('pr2_localize_action', '/umf_localizer_node/localize')
 
         self.calibrate_pr2 = rospy.get_param('calibrate_pr2', True)
         self.calibrate_table = rospy.get_param('calibrate_table', True)
 
-        self.user_status_sub = rospy.Subscriber("/art_table_pointing/user_status", UserStatus, self.user_status_cb)
-        self.object_to_pick_sub = rospy.Subscriber("/art_simple_gui/selected_object", String, self.selected_object_cb)
-        self.pose_to_place_sub = rospy.Subscriber("/art_simple_gui/selected_place", PoseStamped, self.selected_place_cb)
-        self.objects_sub = rospy.Subscriber("/art_object_detector/object_filtered", InstancesArray, self.objects_cb)
+        self.user_status_sub = rospy.Subscriber("/art/user/status", UserStatus, self.user_status_cb)
+        self.object_to_pick_sub = rospy.Subscriber("/art/projected_gui/selected_object", String, self.selected_object_cb)
+        self.pose_to_place_sub = rospy.Subscriber("/art/projected_gui/selected_place", PoseStamped, self.selected_place_cb)
+        self.objects_sub = rospy.Subscriber("/art/object_detector/object_filtered", InstancesArray, self.objects_cb)
 
-        self.state_publisher = rospy.Publisher("/art_brain/system_state", SystemState, queue_size=1)
+        self.state_publisher = rospy.Publisher("/art/brain/system_state", SystemState, queue_size=1)
 
         self.pp_client = actionlib.SimpleActionClient('/pr2_pick_place_left/pp', pickplaceAction)
 
@@ -82,8 +82,11 @@ class ArtBrain:
 
         self.executing_program = True
         for prog in goal.program_array.programs:
+            program_end = False
 
-            for it in prog.items:
+            # for it in prog.items:
+            it = prog.items[0]
+            while not program_end:
 
                 feedback = RobotProgramFeedback()
                 feedback.current_program = prog.id
@@ -94,7 +97,20 @@ class ArtBrain:
 
                 self.instruction = it.type
                 instruction_function = self.instruction_switcher()
-                instruction_function(it)
+                result = instruction_function(it)
+                if result == self.INST_OK:
+                    it = self.get_item_by_id(prog, it.on_success)
+                elif result == self.INST_BAD_DATA or result == self.INST_FAILED:
+                    it = self.get_item_by_id(prog, it.on_faulure)
+                else:
+                    it = None
+
+                if it is None:
+                    res = RobotProgramResult()
+                    res.result = RobotProgramResult.FAILURE()
+                    self.prog_as.set_aborted(res)
+                    self.executing_program = False
+                    return
 
         res = RobotProgramResult()
         res.result = RobotProgramResult.SUCCESS
@@ -113,10 +129,16 @@ class ArtBrain:
         }
         return instructions.get(self.instruction, default=self.unknown_instruction)
 
+    @staticmethod
+    def get_item_by_id(program, item_id):
+        for it in program.items:
+            if it.id == item_id:
+                return it
+        return None
+
     def get_ready(self, instruction):
         # TODO: call some service to set PR2 to ready position
-
-        pass
+        return self.INST_OK
 
     def get_pick_obj_id(self, instruction):
         if instruction.spec == instruction.MANIP_ID:
@@ -134,14 +156,14 @@ class ArtBrain:
 
     def get_place_pose(self, instruction):
         if self.holding_object is None:
-            return self.INST_BAD_DATA
+            return None
         if instruction.spec == instruction.MANIP_ID:
             pose = instruction.place_pose
         elif instruction.spec == instruction.MANIP_TYPE:
             pose = None
             # TODO: how to get free position inside polygon? some perception node?
         else:
-            return self.INST_BAD_DATA
+            return None
         return pose
 
     def manip_pick(self, instruction):
@@ -207,10 +229,10 @@ class ArtBrain:
 
     def unknown_instruction(self, instruction):
         print "F*ck it all, i don't know this instruction!"
-        pass
+        return self.INST_FAILED
 
     def nop(self, instruction=None):
-        pass
+        return self.INST_OK
 
     def user_status_cb(self, data):
         """
@@ -324,7 +346,7 @@ class ArtBrain:
         return states.get(self.state, default=self.state_unknown)
 
     def state_starting_program_server(self):
-        self.prog_as = actionlib.SimpleActionServer("/art_brain/do_program", RobotProgramAction,
+        self.prog_as = actionlib.SimpleActionServer("/art/brain/do_program", RobotProgramAction,
                                                     execute_cb=self.execute_cb, auto_start=False)
         self.prog_as.start()
         self.state = self.SYSTEM_READY_FOR_PROGRAM_REQUESTS

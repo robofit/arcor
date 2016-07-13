@@ -18,10 +18,10 @@ class ArCodeDetector:
 
     def __init__(self):
         
-        self.get_object_srv = rospy.ServiceProxy('/art_db/object/get', getObject)
+        self.get_object_srv = rospy.ServiceProxy('/art/db/object/get', getObject)
         self.ar_code_sub = rospy.Subscriber("ar_pose_marker", AlvarMarkers, self.ar_code_cb)
-        self.detected_objects_pub = rospy.Publisher("/art_object_detector/object", InstancesArray, queue_size=10)
-        self.visualize_pub = rospy.Publisher("art_object_detector/visualize_objects", Marker, queue_size=10)
+        self.detected_objects_pub = rospy.Publisher("/art/object_detector/object", InstancesArray, queue_size=10)
+        self.visualize_pub = rospy.Publisher("art/object_detector/visualize_objects", Marker, queue_size=10)
         
         # TODO make a timer clearing this cache from time to time
         self.objects_cache = {}
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     rospy.init_node('art_arcode_detector')
     # rospy.init_node('art_arcode_detector', log_level=rospy.DEBUG)
     try:
-        rospy.wait_for_service('/art_db/object/get')
+        rospy.wait_for_service('/art/db/object/get')
         node = ArCodeDetector()
         rospy.spin()
     except rospy.ROSInterruptException:

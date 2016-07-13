@@ -6,10 +6,10 @@ ArtTablePointingKinect::ArtTablePointingKinect()  {
 
 
     markers_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 10);
-    point_right_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/pointing_right", 1);
-    point_left_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/pointing_left", 1);
+    point_right_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/art/user/pointing_right", 1);
+    point_left_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("/art/user/pointing_left", 1);
 
-    user_status_sub_ = nh_.subscribe("/art_table_pointing/user_status", 1, &ArtTablePointingKinect::user_status, this);
+    user_status_sub_ = nh_.subscribe("/art/user/status", 1, &ArtTablePointingKinect::user_status, this);
 
 
     ros::NodeHandle nh("~");

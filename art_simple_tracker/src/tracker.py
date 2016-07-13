@@ -14,8 +14,8 @@ class tracker:
   
     self.target_frame = target_frame
     self.listener = tf.TransformListener()
-    self.sub = rospy.Subscriber("/art_object_detector/object", InstancesArray, self.cb)
-    self.pub = rospy.Publisher("/art_object_detector/object_filtered", InstancesArray)
+    self.sub = rospy.Subscriber("/art/object_detector/object", InstancesArray, self.cb)
+    self.pub = rospy.Publisher("/art/object_detector/object_filtered", InstancesArray)
     self.timer = rospy.Timer(rospy.Duration(1.0), self.timer_cb)
     self.objects = {}
     

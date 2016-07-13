@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-import roslib; roslib.load_manifest('art_simple_gui')
+import roslib; roslib.load_manifest('art_projected_gui')
 import rospy
 from geometry_msgs.msg import PoseStamped
 from shape_msgs.msg import SolidPrimitive
@@ -11,9 +11,9 @@ def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
 
 def main():
 
-    pub = rospy.Publisher("/art_object_detector/object_filtered", InstancesArray, queue_size=10)
-    pub_point_left = rospy.Publisher("/pointing_left", PoseStamped, queue_size=10)
-    pub_point_right = rospy.Publisher("/pointing_right", PoseStamped, queue_size=10)
+    pub = rospy.Publisher("/art/object_detector/object_filtered", InstancesArray, queue_size=10)
+    pub_point_left = rospy.Publisher("/art/user/pointing_left", PoseStamped, queue_size=10)
+    pub_point_right = rospy.Publisher("/art/user/pointing_right", PoseStamped, queue_size=10)
     
     arr = InstancesArray()
     arr.header.frame_id = "marker"
