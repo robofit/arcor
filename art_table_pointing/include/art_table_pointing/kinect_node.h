@@ -48,6 +48,8 @@ public:
 
     int user_id;
 
+    void setActivity(int act);
+
 private:
 
     ros::Publisher point_right_pub_, point_left_pub_, user_activity_pub_;
@@ -74,8 +76,6 @@ private:
 
     bool detecting_;
     bool show_arrows_, show_intersections_;
-	
-    void setActivity(int act);
 
     art_msgs::UserActivity act_;
 

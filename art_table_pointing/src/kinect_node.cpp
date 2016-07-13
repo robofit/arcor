@@ -224,7 +224,7 @@ int main(int argc, char **argv) {
     while (nh.ok()) {
         if (node.user_id > 0) {
             node.process(std::to_string(node.user_id));
-        }
+        } else node.setActivity(art_msgs::UserActivity::UNKNOWN);
 
         ros::spinOnce();
         r.sleep();
