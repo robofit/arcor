@@ -25,6 +25,7 @@
 #include <visualization_msgs/Marker.h>
 #include <tf/transform_broadcaster.h>
 #include <art_msgs/UserStatus.h>
+#include <art_msgs/UserActivity.h>
 
 
 namespace art_table_pointing_kinect {
@@ -49,7 +50,7 @@ public:
 
 private:
 
-    ros::Publisher point_right_pub_, point_left_pub_;
+    ros::Publisher point_right_pub_, point_left_pub_, user_activity_pub_;
     ros::Subscriber user_status_sub_;
 
     void user_status(art_msgs::UserStatusConstPtr data);
@@ -74,6 +75,9 @@ private:
     bool detecting_;
     bool show_arrows_, show_intersections_;
 	
+    void setActivity(int act);
+
+    art_msgs::UserActivity act_;
 
 };
 }
