@@ -20,6 +20,7 @@ add_message_files(
   InstancesArray.msg
   ObjectsCentroids.msg
   UserStatus.msg
+  UserActivity.msg
   SystemState.msg
   ProgramItem.msg
   Program.msg
