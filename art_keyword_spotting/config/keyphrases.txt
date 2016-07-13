@@ -1,0 +1,7 @@
+from polygon /1e-50/
+into polygon /1e-50/
+onto place /1e-20/
+operation /1e-50/
+pick and place /1e-50/
+object /1e-50/
+category /1e-50/
