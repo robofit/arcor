@@ -62,33 +62,36 @@ Topics:
     Type: geometry_msgs/PoseStamped
 ````
 
-#### Projected GUI
+#### Interfaces in general
+
+All interfaces live in `/art/interface` namespace. Each interface:
+   * has `enable` and `disable` (empty) services
+    * when one interface gets enabled others should disable themselves
+    * disabled interface should still show everything, just ignore user inputs
+   * publishes events (e.g. which object was selected) to the `/art/interface/state` topic (`art_msgs/InterfaceState`) - there is a helper class for this in `art_interface_utils`
+   * listens to events of other interfaces and updates according to them
+
+##### Projected GUI (`art_projected_gui`)
+
+2D user interface - projected on the table.
 
 Topics:
 ````
-  /art/projected_gui/calibrated
+  /art/interface/projected_gui/calibrated
     Type: std_msgs/Bool
-  /art/projected_gui/selected_object
-    Type: std_msgs/String
-  /art/projected_gui/selected_place
-    Type: geometry_msgs/PoseStamped
-  /art/projected_gui/current_program (latched)
-    Type: std_msgs/UInt8
-  /art/projected_gui/learned_item
-    Type: art_msgs/ProgramItem
 ````    
 Services:
 ````
-  /art/projected_gui/show_marker
+  /art/interface/projected_gui/show_marker
     Type: std_srvs/Empty
-  /art/projected_gui/hide_marker
+  /art/interface/projected_gui/hide_marker
     Type: std_srvs/Empty
-  /art/projected_gui/calibrate
+  /art/interface/projected_gui/calibrate
     Type: std_srvs/Empty
 ````
 Parameters:
 ````
-  /art/projected_gui/calibration_matrix
+  /art/interface/projected_gui/calibration_matrix
 ````
 
 #### Objects

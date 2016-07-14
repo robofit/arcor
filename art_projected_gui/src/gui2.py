@@ -7,7 +7,7 @@ import signal
 
 from std_msgs.msg import String, Bool,  UInt8
 from PyQt4 import QtGui, QtCore, QtOpenGL
-from art_msgs.msg import InstancesArray,  UserStatus
+from art_msgs.msg import InstancesArray,  UserStatus,  InterfaceState
 from art_msgs.srv import getProgram
 from art_msgs.msg import RobotProgramAction, RobotProgramFeedback,  RobotProgramGoal,  ProgramItem
 from geometry_msgs.msg import Pose,  PoseStamped, PointStamped
@@ -17,6 +17,7 @@ import actionlib
 from helper_objects import scene_place,  scene_object,  pointing_point,  scene_polygon,  dist
 from gui_calibration import gui_calibration
 from program_widget import program_widget
+from art_interface_utils.interface_state_manager import interface_state_manager
 import numpy as np
 
 # TODO "smart" label - able to show messages for defined time, more messages at the time, images (?) etc.
@@ -47,14 +48,16 @@ class simple_gui(QtGui.QWidget):
         self.point_right_sub = rospy.Subscriber('/art/user/pointing_right', PoseStamped, self.pointing_point_right_cb)
         self.user_status_sub = rospy.Subscriber('/art/user/status',  UserStatus,  self.user_status_cb)
 
-        self.selected_object_pub = rospy.Publisher("/art/projected_gui/selected_object", String, queue_size=10)
-        self.selected_place_pub = rospy.Publisher("/art/projected_gui/selected_place", PoseStamped, queue_size=10)
+        self.state_manager = interface_state_manager(InterfaceState.INT_PROJECTED)
+        self.state_manager.publish(InterfaceState.EVT_INT_NOT_READY)
         
-        self.current_program_pub = rospy.Publisher('/art/projected_gui/current_program',  UInt8,  queue_size=10,  latch=True)
-        self.learned_program_item_pub = rospy.Publisher("/art/projected_gui/learned_item", ProgramItem, queue_size=10)
+        self.enabled_int = True
         
-        self.srv_show_marker = rospy.Service('/art/projected_gui/show_marker', Empty, self.show_marker)
-        self.srv_hide_marker = rospy.Service('/art/projected_gui/hide_marker', Empty, self.hide_marker)
+        self.srv_enable_int = rospy.Service('~enable', Empty, self.enable_int)
+        self.srv_disable_int = rospy.Service('~disable', Empty, self.disable_int)
+        
+        self.srv_show_marker = rospy.Service('~show_marker', Empty, self.show_marker)
+        self.srv_hide_marker = rospy.Service('~hide_marker', Empty, self.hide_marker)
 
         self.objects = None
         self.viz_objects = {} # objects can be accessed by their ID
@@ -126,19 +129,38 @@ class simple_gui(QtGui.QWidget):
         self.program_started = False
         self.item_to_learn = None
         
+        self.state_manager.publish(InterfaceState.EVT_INT_READY)
         self.inited = True
+    
+    def enable_int(self, req):
         
+        rospy.loginfo('Projected GUI: enabling')
+        self.enabled_int = True
+        self.state_manager.publish(InterfaceState.EVT_INT_ENABLED)
+        return EmptyResponse()
+        
+    def disable_int(self,  req):
+        
+        rospy.loginfo('Projected GUI: disabling')
+        self.enabled_int = False
+        self.state_manager.publish(InterfaceState.EVT_INT_DISABLED)
+        return EmptyResponse()
+    
     def on_calib_req(self):
         
+        self.state_manager.publish(InterfaceState.EVT_INT_NOT_READY)
         self.prog.hide()
         
     def on_calib_finished(self):
         
+        self.state_manager.publish(InterfaceState.EVT_INT_READY)
         self.prog.show()
         
     def program_feedback_evt(self,  obj):
         
         self.clear_all_evt()
+        
+        self.state_manager.publish(InterfaceState.EVT_CLEAR_ALL)
         
         it = self.prog.get_item_by_id(self.prog.current_step_id)
         
@@ -147,20 +169,24 @@ class simple_gui(QtGui.QWidget):
             if it.spec == ProgramItem.MANIP_ID:
                 
                 self.viz_objects[it.object].set_selected()
+                self.state_manager.publish(InterfaceState.EVT_OBJECT_ID_SELECTED,  it.object)
                 
             elif it.spec == ProgramItem.MANIP_TYPE:
             
                 try:
                     self.viz_objects[obj].set_selected()
+                    self.state_manager.publish(InterfaceState.EVT_OBJECT_TYPE_SELECTED,  obj)
                 except KeyError:
                     pass
                 
                 psx = []
                 for ps in it.pick_polygon:
                     psx.append(self.calib.get_px(ps))
+                self.state_manager.publish(InterfaceState.EVT_POLYGON,  it.pick_polygon)
                 self.viz_polygons.append(scene_polygon(self.scene,  None,  psx))
             
             self.viz_places.append(scene_place(self.scene, self.calib.get_px(it.place_pose.pose)))
+            self.state_manager.publish(InterfaceState.EVT_PLACE_SELECTED, it.place_pose)
             
         else:
 
@@ -170,6 +196,7 @@ class simple_gui(QtGui.QWidget):
     def program_feedback(self,  msg):
         
         self.prog.set_current(msg.current_program,  msg.current_item)
+        self.state_manager.publish(InterfaceState.EVT_STATE_PROGRAM_RUNNING,  [msg.current_program,  msg.current_item])
         self.emit(QtCore.SIGNAL('program_feedback'),  msg.object)
 
     def program_done(self,  status,  msg):
@@ -199,7 +226,7 @@ class simple_gui(QtGui.QWidget):
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
             
-        self.current_program_pub.publish(prog_id)
+        self.state_manager.publish(InterfaceState.EVT_PROGRAM_TEMPLATE_SELECTED,  prog_id)
 
     def eventFilter(self, source, event):
         
@@ -241,6 +268,8 @@ class simple_gui(QtGui.QWidget):
         self.marker.hide()
     
     def clear_all_evt(self):
+        
+        self.state_manager.publish(InterfaceState.EVT_CLEAR_ALL)
         
         self.object_selected = False
         self.place_selected = False
@@ -348,9 +377,11 @@ class simple_gui(QtGui.QWidget):
                     if self.item_to_learn.spec == ProgramItem.MANIP_ID:
                         rospy.loginfo("Object ID (" + v.id +") selected, now select place")
                         self.item_to_learn.object = v.id
+                        self.state_manager.publish(InterfaceState.EVT_OBJECT_ID_SELECTED,  v.id)
                     elif self.item_to_learn.spec == ProgramItem.MANIP_TYPE:
                         rospy.loginfo("Object type (" + v.obj_type +") selected, now select polygon")
                         self.item_to_learn.object = v.obj_type
+                        self.state_manager.publish(InterfaceState.EVT_OBJECT_TYPE_SELECTED,  v.obj_type)
                         
                         # mark all objects of this type as selected
                         for k1, v1 in self.viz_objects.iteritems():
@@ -381,6 +412,7 @@ class simple_gui(QtGui.QWidget):
             
             if self.viz_polygons[-1].add_point(pointed_place):
                 
+                # TODO state -> polygon
                 self.label.setPlainText("Polygon selected")
                 self.polygon_selected = True
                 self.selected_at = rospy.Time.now()
@@ -414,7 +446,8 @@ class simple_gui(QtGui.QWidget):
             if skip: return
 
             self.label.setPlainText("Place selected at x=" + str(round(pointed_place[0],  2)) + ", y=" + str(round(pointed_place[1],  2)))
-            sp = scene_place(self.scene,  pointed_place,  self.selected_place_pub, self.size(), self.calib)
+            sp = scene_place(self.scene,  pointed_place, self.size(), self.calib)
+            self.state_manager.publish(InterfaceState.EVT_PLACE_SELECTED, sp.get_pose())
             self.viz_places.append(sp)
             self.place_selected = True
             self.selected_at = rospy.Time.now()
@@ -447,6 +480,10 @@ class simple_gui(QtGui.QWidget):
             self.program_started = True
             self.start_program()
             return
+            
+        else:
+            
+            self.state_manager.publish(InterfaceState.EVT_STATE_LEARNING,  [self.prog.prog.id,  self.item_to_learn.id])
         
         if self.item_to_learn.type == ProgramItem.MANIP_PICK_PLACE:
             
@@ -477,7 +514,6 @@ class simple_gui(QtGui.QWidget):
                 self.item_to_learn.pick_polygon = self.viz_polygons[0].get_point_array()
                 self.label.setPlainText("Step learned")
                 self.prog.learned(self.item_to_learn.id)
-                self.learned_program_item_pub.publish(self.item_to_learn)
                 
         else:
             
@@ -499,7 +535,7 @@ class simple_gui(QtGui.QWidget):
   
                if obj.object_id not in self.viz_objects:
                     
-                    sobj = scene_object(self.scene,  obj.object_id, obj.object_type,   (px,  py),  self.selected_object_pub)
+                    sobj = scene_object(self.scene,  obj.object_id, obj.object_type,   (px,  py))
                     self.viz_objects[obj.object_id] = sobj
                     
                else:
@@ -524,6 +560,7 @@ class simple_gui(QtGui.QWidget):
         
         if not self.inited: return
         if not self.calib.is_calibrated(): return
+        if not self.enabled_int: return
        
         pos = self.calib.get_px(msg.pose)
         self.emit(QtCore.SIGNAL('pointing_point_left'),  pos)
@@ -532,6 +569,7 @@ class simple_gui(QtGui.QWidget):
         
         if not self.inited: return
         if not self.calib.is_calibrated(): return
+        if not self.enabled_int: return
        
         pos = self.calib.get_px(msg.pose)
         self.emit(QtCore.SIGNAL('pointing_point_right'),  pos)

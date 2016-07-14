@@ -11,19 +11,14 @@ def dist(pt1,  pt2):
 
 class scene_place():
     
-    def __init__(self,  scene, pos,  pub=None, wsize=None, calib=None):
+    def __init__(self,  scene, pos, wsize=None, calib=None):
         
         self.scene = scene
         self.pos = pos
-        self.pub = pub
         self.viz = self.scene.addEllipse(0, 0, 100, 100, QtCore.Qt.cyan, QtCore.Qt.cyan)
         self.viz.setPos(self.pos[0] - 100/2, self.pos[1] - 100/2)
         self.wsize = wsize
         self.calib = calib
-        
-        if self.pub is not None:
-            ps = self.get_pose(self.pos[0],  self.pos[1])
-            self.pub.publish(ps)
      
     def remove(self):
         
@@ -130,12 +125,11 @@ class scene_polygon():
         
 class scene_object():
 
-    def __init__(self,  scene,  id, obj_type,  pos,  pub):
+    def __init__(self,  scene,  id, obj_type,  pos,):
         
         self.scene = scene
         self.id = id
         self.obj_type = obj_type
-        self.pub = pub
         
         self.viz = self.scene.addEllipse(0, 0, 150, 150, QtCore.Qt.white, QtCore.Qt.white)
         
@@ -208,7 +202,6 @@ class scene_object():
         if self.selected is False:
             
             rospy.loginfo("object " + self.id + ": selected")
-            self.pub.publish(self.id)
             
             self.selected = True
             self.viz_selected = self.scene.addEllipse(0, 0, 180, 180, QtCore.Qt.green, QtCore.Qt.green)

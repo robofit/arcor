@@ -37,8 +37,8 @@ class ArtBrain:
 
 
     def __init__(self):
-        self.show_marker_service = rospy.get_param('show_marker_service', '/art/projected_gui/show_marker')
-        self.hide_marker_service = rospy.get_param('hide_marker_service', '/art/projected_gui/hide_marker')
+        self.show_marker_service = rospy.get_param('show_marker_service', '/art/interface/projected_gui/show_marker')
+        self.hide_marker_service = rospy.get_param('hide_marker_service', '/art/interface/projected_gui/hide_marker')
         self.table_localize_action = rospy.get_param('table_localize_action', '/umf_localizer_node_table/localize')
         self.pr2_localize_action = rospy.get_param('pr2_localize_action', '/umf_localizer_node/localize')
 
@@ -50,8 +50,6 @@ class ArtBrain:
         
         self.user_activity = None
         
-        self.object_to_pick_sub = rospy.Subscriber("/art/projected_gui/selected_object", String, self.selected_object_cb)
-        self.pose_to_place_sub = rospy.Subscriber("/art/projected_gui/selected_place", PoseStamped, self.selected_place_cb)
         self.objects_sub = rospy.Subscriber("/art/object_detector/object_filtered", InstancesArray, self.objects_cb)
 
         self.state_publisher = rospy.Publisher("/art/brain/system_state", SystemState, queue_size=1)
@@ -60,9 +58,7 @@ class ArtBrain:
 
         self.state = self.SYSTEM_START
         self.user_id = 0
-        self.selected_object = None  # type: str
-        self.selected_object_last_update = None  # type: rospy.Time
-        self.selected_place = None  # type: PoseStamped
+      
         self.objects = InstancesArray()
         self.executing_program = False
 
@@ -299,23 +295,6 @@ class ArtBrain:
         self.user_id = data.user_id
 
         pass
-
-    def selected_object_cb(self, data):
-        """
-
-        :type data: String
-        :return:
-        """
-        self.selected_object = data.data
-        self.selected_object_last_update = rospy.get_rostime()
-
-    def selected_place_cb(self, data):
-        """
-
-        :type data: PoseStamped
-        :return:
-        """
-        self.selected_place = data
 
     def objects_cb(self, objects_data):
         """
