@@ -25,6 +25,7 @@ add_message_files(
   ProgramItem.msg
   Program.msg
   ProgramArray.msg
+  InterfaceState.msg
 )
 
 add_service_files(
