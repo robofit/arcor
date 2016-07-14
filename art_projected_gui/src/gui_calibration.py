@@ -27,9 +27,9 @@ class gui_calibration(QtCore.QObject):
         
         self.bridge = CvBridge()
         
-        self.calibrated_pub = rospy.Publisher("/art_simple_gui/calibrated", Bool, queue_size=10, latch=True)
-        self.corners_pub = rospy.Publisher("/art_simple_gui/corners", PoseArray,  queue_size=10,  latch=True)
-        self.srv_calibrate = rospy.Service('/art_simple_gui/calibrate', Empty, self.calibrate)
+        self.calibrated_pub = rospy.Publisher("~calibrated", Bool, queue_size=10, latch=True)
+        self.corners_pub = rospy.Publisher("~corners", PoseArray,  queue_size=10,  latch=True)
+        self.srv_calibrate = rospy.Service('~calibrate', Empty, self.calibrate)
         
         self.size = size
         
@@ -37,7 +37,7 @@ class gui_calibration(QtCore.QObject):
         self.h_matrix = None
         
         try:
-            s = rospy.get_param("/art_simple_gui/calibration_matrix")
+            s = rospy.get_param("~calibration_matrix")
             self.h_matrix = np.matrix(ast.literal_eval(s))
             rospy.loginfo("Loaded calibration from param server")
         except KeyError:

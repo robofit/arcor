@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="art_projected_gui" name="art_projected_gui" type="gui2.py" output="screen">
+    <node pkg="art_projected_gui" name="projected_gui" type="gui2.py" output="screen" ns="/art/interface/">
       <remap from="camera_info" to="/kinect2/sd/camera_info"/>
       <remap from="camera_image" to="/kinect2/sd/image_color_rect"/>
       <remap from="camera_depth_image" to="/kinect2/sd/image_depth_rect"/>
