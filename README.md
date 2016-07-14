@@ -47,8 +47,13 @@ Services:
 Topics:
 ````
   /art/user/status
+    Description: ID of the user + tracking information
     Node: ?? skeleton tracking ??
     Type: art_msgs/UserStatus
+  /art/user/activity
+    Description: Simple activity recognition of the currently tracked user
+    Node: art_table_pointing/node.launch
+    Type: art_msgs/UserActivity
   /art/user/pointing_left
     Node: art_table_pointing/node.launch
     Type: geometry_msgs/PoseStamped
