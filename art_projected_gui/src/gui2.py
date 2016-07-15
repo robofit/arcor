@@ -20,6 +20,7 @@ from program_widget import program_widget
 from art_interface_utils.interface_state_manager import interface_state_manager
 import numpy as np
 
+# TODO keep place shown (otherwise it's hard to select polygon)
 # TODO set self.program_started based on InterfaceState
 # TODO stop program (button?)
 # TODO "smart" label - able to show messages for defined time, more messages at the time, images (?) etc.
@@ -44,10 +45,10 @@ class simple_gui(QtGui.QWidget):
         rospack = rospkg.RosPack()
         self.img_path = rospack.get_path('art_projected_gui') + '/imgs'
 
-        self.obj_sub = rospy.Subscriber('/art/object_detector/object_filtered', InstancesArray, self.object_cb)
-        self.point_left_sub = rospy.Subscriber('/art/user/pointing_left', PoseStamped, self.pointing_point_left_cb)
-        self.point_right_sub = rospy.Subscriber('/art/user/pointing_right', PoseStamped, self.pointing_point_right_cb)
-        self.user_status_sub = rospy.Subscriber('/art/user/status',  UserStatus,  self.user_status_cb)
+        self.obj_sub = rospy.Subscriber('/art/object_detector/object_filtered', InstancesArray, self.object_cb, queue_size=1)
+        self.point_left_sub = rospy.Subscriber('/art/user/pointing_left', PoseStamped, self.pointing_point_left_cb,  queue_size=1)
+        self.point_right_sub = rospy.Subscriber('/art/user/pointing_right', PoseStamped, self.pointing_point_right_cb,  queue_size=1)
+        self.user_status_sub = rospy.Subscriber('/art/user/status',  UserStatus,  self.user_status_cb,  queue_size=1)
 
         self.state_manager = interface_state_manager(InterfaceState.INT_PROJECTED,  cb=self.interface_state_cb)
         self.state_manager.publish(InterfaceState.EVT_INT_NOT_READY)
@@ -180,7 +181,7 @@ class simple_gui(QtGui.QWidget):
                 
             elif msg.event_type == InterfaceState.EVT_POLYGON:
                 
-                self.viz_polygons.append(scene_polygon(self.scene,  None,  msg.points))
+                self.viz_polygons.append(scene_polygon(self.scene,  self.calib,  msg.points))
                 
             elif msg.event_type == InterfaceState.EVT_STATE_PROGRAM_STOPPED:
                 
@@ -194,9 +195,9 @@ class simple_gui(QtGui.QWidget):
     def start_program(self):
         
         try:
-            resp = self.srv_brain_start_program(program_id=1) # TODO don't have it hardcoded ;)
+            resp = self.srv_brain_start_program(1) # TODO don't have it hardcoded ;)
         except rospy.ServiceException, e:
-            rospy.logerr('Service call failed')
+            print "Service call failed: %s"%e
             # TODO what to do?
         
     def load_program(self,  prog_id,  template = False):
@@ -214,8 +215,9 @@ class simple_gui(QtGui.QWidget):
 
     def store_program(self):
         
+        prog_srv = rospy.ServiceProxy('/art/db/program/store', storeProgram)
+        
         try:
-            prog_srv = rospy.ServiceProxy('/art/db/program/store', storeProgram)
             resp = prog_srv(self.prog.prog)
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
@@ -401,7 +403,7 @@ class simple_gui(QtGui.QWidget):
             
                 d = dist(self.viz_polygons[-1].points[-1],  pointed_place)
 
-                if d < 100: return
+                if d < 60: return
             
             if self.viz_polygons[-1].add_point(pointed_place):
                 

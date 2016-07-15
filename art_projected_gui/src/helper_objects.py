@@ -1,6 +1,6 @@
 import rospy
 from PyQt4 import QtGui, QtCore
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped,  PointStamped
 import numpy as np
 
 def dist(pt1,  pt2):
@@ -41,7 +41,17 @@ class scene_polygon():
         self.scene = scene
         self.calib = calib
         self.closed = False
-        self.points = points
+        
+        self.points = []
+        
+        if len(points) > 0 and isinstance(points[0],  PointStamped):
+            
+            for pt in points:
+                self.points.append(self.calib.get_px(pt))
+            
+        else:
+            self.points = points
+            
         self.lines = []
         self.active_line = None
         self.pen = QtGui.QPen(QtCore.Qt.white, 5, QtCore.Qt.DotLine)
@@ -50,7 +60,7 @@ class scene_polygon():
         if len(self.points) > 0:
             
             for i in range(0,  len(points)-1):
-
+                
                 self.lines.append(self.scene.addLine(self.points[i][0],  self.points[i][1],  self.points[i+1][0],  self.points[i+1][1]))
                 self.lines[-1].setPen(self.apen)
                 
@@ -88,7 +98,7 @@ class scene_polygon():
                 
             else:    
                 
-                if dist(pt, self.points[0]) < 30:
+                if dist(pt, self.points[0]) < 60:
                     self.active_line.setPen(self.apen)
                     self.active_line.setLine(self.points[-1][0],  self.points[-1][1],  self.points[0][0],  self.points[0][1])
                 else:
@@ -105,7 +115,7 @@ class scene_polygon():
             
             d = dist(pt, self.points[0])
             
-            if d < 30:
+            if d < 60:
                 
                 self.lines.append(self.scene.addLine(self.points[-1][0],  self.points[-1][1],  self.points[0][0],  self.points[0][1]))
                 self.lines[-1].setPen(self.apen)
@@ -335,11 +345,14 @@ class pointing_point():
                     
                     # TODO zezelenat
                     self.pointed_pos = (int(xm),  int(ym))
-                    # self.viz.setPen(QtCore.Qt.green)
+                    self.viz.setPen(QtGui.QPen(QtCore.Qt.green))
+                    self.viz.setBrush(QtGui.QBrush(QtCore.Qt.green))
                     
                 else:
                     
                     self.pointed_pos = None
+                    self.viz.setPen(QtGui.QPen(QtCore.Qt.blue))
+                    self.viz.setBrush(QtGui.QBrush(QtCore.Qt.blue))
         
         if (not self.mouse and len(self.xyt) == 0) or (self.mouse and (now - self.timestamp > rospy.Duration(2))):
             

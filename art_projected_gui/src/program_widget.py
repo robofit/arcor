@@ -72,7 +72,7 @@ class program_widget(QtGui.QWidget):
     def set_prog(self,  prog,  template = False):
         
         self.prog = prog
-        self.template = False
+        self.template = template
         
         if template:
             
