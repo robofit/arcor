@@ -268,7 +268,7 @@ class gui_calibration(QtCore.QObject):
 
         # store homography matrix to parameter server
         s = str(self.h_matrix.tolist())
-        rospy.set_param("/art_simple_gui/calibration_matrix",  s)
+        rospy.set_param("~calibration_matrix",  s)
         print s
         
         return True
