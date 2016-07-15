@@ -7,4 +7,3 @@
 	<include file="$(find art_basic_control)/launch/node.launch"></include>
 	<include file="$(find pr2_moveit_config)/launch/move_group.launch"></include>
 </launch>
-
