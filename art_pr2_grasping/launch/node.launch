@@ -6,11 +6,19 @@
   <arg     if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
 
   <!-- Launch pick and place -->
-  <node name="pr2_pick_place" launch-prefix="$(arg launch_prefix)" pkg="art_pr2_grasping" 
-	type="pr2grasp" output="screen">
-    <!--rosparam command="load" file="$(find pr2_ft_moveit_config)/config/kinematics.yaml"/-->
+  <node name="pr2_pick_place_left" launch-prefix="$(arg launch_prefix)" pkg="art_pr2_grasping" 
+	type="pr2grasp" output="screen" respawn="false">
+    <param name="group_name" value="left_arm"/>
     <rosparam command="load" file="$(find pr2_moveit_config)/config/kinematics.yaml"/>
     <rosparam command="load" file="$(find art_pr2_grasping)/config/pr2_grasp_data.gazebo.yaml"/>
   </node>
+  
+  <!-- Launch pick and place -->
+  <!--node name="pr2_pick_place_right" launch-prefix="$(arg launch_prefix)" pkg="art_pr2_grasping" 
+	type="pr2grasp" output="screen" respawn="true">
+    <param name="group_name" value="right_arm"/>
+    <rosparam command="load" file="$(find pr2_moveit_config)/config/kinematics.yaml"/>
+    <rosparam command="load" file="$(find art_pr2_grasping)/config/pr2_grasp_data.gazebo.yaml"/>
+  </node-->
 
 </launch>
