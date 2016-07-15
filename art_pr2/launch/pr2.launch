@@ -1,9 +1,9 @@
 <launch>
-        <include file="$(find art_pr2_grasping)/launch/node.launch"></include>
-        <include file="$(find pr2_description)/robots/upload_pr2.launch"></include>
-        <include file="$(find pr2_bringup)/pr2.launch"></include>
-        <!--<include file="$(find art_pr2)/launch/openni_head.launch"></include>
-        <include file="$(find art_pr2)/launch/skeleton_tracking.launch"></include>-->
-        <include file="$(find art_basic_control)/launch/node.launch"></include>
-        <include file="$(find pr2_moveit_config)/launch/move_group.launch"></include>
+	<include file="$(find art_pr2_grasping)/launch/node.launch"></include>
+	<include file="$(find pr2_description)/robots/upload_pr2.launch"></include>
+	<include file="$(find pr2_bringup)/pr2.launch"></include>
+	<!--<include file="$(find art_pr2)/launch/openni_head.launch"></include>
+	<include file="$(find art_pr2)/launch/skeleton_tracking.launch"></include>-->
+	<include file="$(find art_basic_control)/launch/node.launch"></include>
+	<include file="$(find pr2_moveit_config)/launch/move_group.launch"></include>
 </launch>
