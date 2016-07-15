@@ -9,6 +9,7 @@ set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS} -g")
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   tf
+  art_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -19,7 +20,7 @@ set(CMAKE_BUILD_TYPE Debug)
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES but_pr2_pge
-#  CATKIN_DEPENDS roscpp tf
+  CATKIN_DEPENDS roscpp tf art_msgs
 #  DEPENDS system_lib
 )
 
@@ -34,10 +35,9 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-
 ## Declare a cpp executable
 add_executable(art_table_pointing_kinect src/kinect_node.cpp)
-
+add_dependencies(art_table_pointing_kinect art_msgs_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(art_table_pointing_kinect

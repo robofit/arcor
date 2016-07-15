@@ -15,9 +15,13 @@ class interface_state_manager():
     
     def publish(self,  event,  data=None):
         
+        if self.int_type == InterfaceState.INT_LISTENER: return
+        
         ints = InterfaceState()
         ints.interface_type=self.int_type
         ints.event_type = event
+        
+        # TODO option: remember events and then send them periodically ??
         
         if data is not None and not isinstance(data,  list): data = [data]
         
@@ -52,13 +56,11 @@ class interface_state_manager():
 
     def state(self,  msg):
         
-        # don't want to hear our own messages
-        if (msg.interface_type == self.int_type): return
+        # we don't want to hear our own messages or messages from listeners (those should be ignored)
+        if (msg.interface_type == self.int_type or msg.interface_type == InterfaceState.INT_LISTENER): return
         
         # filter events
         if len(self.event_filter) > 0 and msg.event_type not in self.event_filter: return
         if len(self.interface_filter) > 0 and msg.interface_type not in self.interface_filter: return
-
-        # TODO aggregate events to get whole state ??
 
         if self.cb is not None: self.cb(msg)

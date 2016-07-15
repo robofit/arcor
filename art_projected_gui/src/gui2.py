@@ -8,8 +8,8 @@ import signal
 from std_msgs.msg import String, Bool,  UInt8
 from PyQt4 import QtGui, QtCore, QtOpenGL
 from art_msgs.msg import InstancesArray,  UserStatus,  InterfaceState
-from art_msgs.srv import getProgram
-from art_msgs.msg import RobotProgramAction, RobotProgramFeedback,  RobotProgramGoal,  ProgramItem
+from art_msgs.srv import getProgram,  storeProgram,  startProgram
+from art_msgs.msg import ProgramItem
 from geometry_msgs.msg import Pose,  PoseStamped, PointStamped
 from std_srvs.srv import Empty, EmptyResponse
 import actionlib
@@ -20,8 +20,9 @@ from program_widget import program_widget
 from art_interface_utils.interface_state_manager import interface_state_manager
 import numpy as np
 
+# TODO set self.program_started based on InterfaceState
+# TODO stop program (button?)
 # TODO "smart" label - able to show messages for defined time, more messages at the time, images (?) etc.
-# TODO stop (program) button
 # TODO move program_widget automatically so it does not collide with objects etc.
 # TODO make 180deg rotation configurable
 
@@ -48,7 +49,7 @@ class simple_gui(QtGui.QWidget):
         self.point_right_sub = rospy.Subscriber('/art/user/pointing_right', PoseStamped, self.pointing_point_right_cb)
         self.user_status_sub = rospy.Subscriber('/art/user/status',  UserStatus,  self.user_status_cb)
 
-        self.state_manager = interface_state_manager(InterfaceState.INT_PROJECTED)
+        self.state_manager = interface_state_manager(InterfaceState.INT_PROJECTED,  cb=self.interface_state_cb)
         self.state_manager.publish(InterfaceState.EVT_INT_NOT_READY)
         
         self.enabled_int = True
@@ -97,7 +98,6 @@ class simple_gui(QtGui.QWidget):
         QtCore.QObject.connect(self, QtCore.SIGNAL('show_marker()'), self.show_marker_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('hide_marker()'), self.hide_marker_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('user_status'), self.user_status_evt)
-        QtCore.QObject.connect(self, QtCore.SIGNAL('program_feedback'), self.program_feedback_evt)
         
         self.timer = QtCore.QTimer()
         self.timer.start(500)
@@ -121,7 +121,7 @@ class simple_gui(QtGui.QWidget):
         self.prog.move(10, 10)
         self.prog.show()
     
-        self.brain_client = actionlib.SimpleActionClient("/art/brain/do_program", RobotProgramAction)
+        self.srv_brain_start_program = rospy.ServiceProxy('/art/brain/program/start', startProgram)
         
         # TODO only for testing - program should be selected by user
         self.load_program(0)
@@ -155,67 +155,51 @@ class simple_gui(QtGui.QWidget):
         
         self.state_manager.publish(InterfaceState.EVT_INT_READY)
         self.prog.show()
+    
+    def interface_state_cb(self,  msg):
         
-    def program_feedback_evt(self,  obj):
-        
-        self.clear_all_evt()
-        
-        self.state_manager.publish(InterfaceState.EVT_CLEAR_ALL)
-        
-        it = self.prog.get_item_by_id(self.prog.current_step_id)
-        
-        if it.type == ProgramItem.MANIP_PICK_PLACE:
-            
-            if it.spec == ProgramItem.MANIP_ID:
+            if msg.event_type == InterfaceState.EVT_CLEAR_ALL:
                 
-                self.viz_objects[it.object].set_selected()
-                self.state_manager.publish(InterfaceState.EVT_OBJECT_ID_SELECTED,  it.object)
+                self.clear_all_evt()
                 
-            elif it.spec == ProgramItem.MANIP_TYPE:
-            
+            elif msg.event_type == InterfaceState.EVT_STATE_PROGRAM_RUNNING:
+                
+                self.prog.set_current(msg.idata[0],  msg.idata[1])
+                
+            elif msg.event_type == InterfaceState.EVT_OBJECT_ID_SELECTED:
+                
                 try:
-                    self.viz_objects[obj].set_selected()
-                    self.state_manager.publish(InterfaceState.EVT_OBJECT_TYPE_SELECTED,  obj)
+                    self.viz_objects[msg.data[0]].set_selected()
                 except KeyError:
-                    pass
+                    rospy.logerr('Unknown object ID: ' + msg.data[0])
+                    
+            elif msg.event_type == InterfaceState.EVT_OBJECT_TYPE_SELECTED:
                 
-                psx = []
-                for ps in it.pick_polygon:
-                    psx.append(self.calib.get_px(ps))
-                self.state_manager.publish(InterfaceState.EVT_POLYGON,  it.pick_polygon)
-                self.viz_polygons.append(scene_polygon(self.scene,  None,  psx))
-            
-            self.viz_places.append(scene_place(self.scene, self.calib.get_px(it.place_pose.pose)))
-            self.state_manager.publish(InterfaceState.EVT_PLACE_SELECTED, it.place_pose)
-            
-        else:
-
-            # TODO other types of operations
-            pass
-
-    def program_feedback(self,  msg):
-        
-        self.prog.set_current(msg.current_program,  msg.current_item)
-        self.state_manager.publish(InterfaceState.EVT_STATE_PROGRAM_RUNNING,  [msg.current_program,  msg.current_item])
-        self.emit(QtCore.SIGNAL('program_feedback'),  msg.object)
-
-    def program_done(self,  status,  msg):
-        
-        # TODO do something meaningful
-         self.start_program()
+                # TODO
+                pass
+                
+            elif msg.event_type == InterfaceState.EVT_POLYGON:
+                
+                self.viz_polygons.append(scene_polygon(self.scene,  None,  msg.points))
+                
+            elif msg.event_type == InterfaceState.EVT_STATE_PROGRAM_STOPPED:
+                
+                pass
+                
+            elif msg.event_type == InterfaceState.EVT_STATE_PROGRAM_FINISHED:
+                
+                pass
+    
         
     def start_program(self):
         
-        rospy.loginfo('Waiting for art_brain server')
-        self.brain_client.wait_for_server()
-        goal = RobotProgramGoal()
-        goal.program_array.programs.append(self.prog.prog)
-        self.brain_client.send_goal(goal,  done_cb=self.program_done,  feedback_cb=self.program_feedback)
+        try:
+            resp = self.srv_brain_start_program(program_id=1) # TODO don't have it hardcoded ;)
+        except rospy.ServiceException, e:
+            rospy.logerr('Service call failed')
+            # TODO what to do?
         
     def load_program(self,  prog_id,  template = False):
-        
-        rospy.loginfo('Waiting for art_db server')
-        rospy.wait_for_service('/art/db/program/get')
     
         rospy.loginfo('Loading program: ' + str(prog_id))
     
@@ -227,6 +211,15 @@ class simple_gui(QtGui.QWidget):
             print "Service call failed: %s"%e
             
         self.state_manager.publish(InterfaceState.EVT_PROGRAM_TEMPLATE_SELECTED,  prog_id)
+
+    def store_program(self):
+        
+        try:
+            prog_srv = rospy.ServiceProxy('/art/db/program/store', storeProgram)
+            resp = prog_srv(self.prog.prog)
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+        
 
     def eventFilter(self, source, event):
         
@@ -478,6 +471,8 @@ class simple_gui(QtGui.QWidget):
         # everything is already learned - let's start program execution
         if self.item_to_learn is None:
             self.program_started = True
+            self.prog.prog.id = 1 # TODO don't have it hardcoded
+            self.store_program()
             self.start_program()
             return
             
@@ -577,6 +572,14 @@ class simple_gui(QtGui.QWidget):
 def main(args):
     
     rospy.init_node('simple_gui', anonymous=True)
+    
+    rospy.loginfo('Waiting for art_brain services...')
+    rospy.wait_for_service('/art/brain/program/start')
+    rospy.wait_for_service('/art/brain/program/stop')
+    rospy.loginfo('Waiting for art_db services...')
+    rospy.wait_for_service('/art/db/program/get')
+    rospy.wait_for_service('/art/db/program/store')
+    rospy.loginfo('Ready!')
     
     signal.signal(signal.SIGINT, sigint_handler)
 
