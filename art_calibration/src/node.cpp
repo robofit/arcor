@@ -48,7 +48,7 @@ public:
 private:
 
     tf::StampedTransform tr_table_, tr_pr2_;
-    tf::TransformBroadcaster br_;
+    tf::TransformBroadcaster br_; // TODO try to use tf2_ros::StaticTransformBroadcaster ??
     ros::Timer tr_timer_;
 
     ros::Subscriber table_marker_sub, pr2_marker_sub;
@@ -80,7 +80,7 @@ private:
 
             tr_table_ = create_transform_from_poses_vector(table_poses, table_frame_);
             table_calibration_done_ = true;
-            tr_timer_ = nh_.createTimer(ros::Duration(0.1), &ArtCalibration::trCallback, this);
+            tr_timer_ = nh_.createTimer(ros::Duration(0.01), &ArtCalibration::trCallback, this);
         }
 
 
@@ -226,7 +226,7 @@ private:
             tr_pr2_ = create_transform_from_poses_vector(pr2_poses, robot_frame_);
             pr2_marker_sub.shutdown();
             pr2_calibration_done_ = true;
-            tr_timer_ = nh_.createTimer(ros::Duration(0.1), &ArtCalibration::trCallback, this);
+            tr_timer_ = nh_.createTimer(ros::Duration(0.01), &ArtCalibration::trCallback, this);
 
         }
 
