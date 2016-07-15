@@ -1,11 +1,12 @@
 uint8 interface_type # type of the interface which sent this message
 
-uint8 INT_NON_INTERFACE=0 # could be brain listening on what is going etc.
+uint8 INT_BRAIN=0 # brain can listen to interfaces (what is going on) or can send to interfaces - what should be selected etc.
 uint8 INT_PROJECTED=1
 uint8 INT_TOUCH_PC=2
 uint8 INT_HANDHELD=3
 uint8 INT_VR=4
 uint8 INT_AR=5
+uint8 INT_LISTENER=6 # special type which should be only allowed to listen (published messages should be ignored)
 
 uint8 event_type
 
@@ -25,6 +26,8 @@ uint8 EVT_INT_ENABLED=13 # when some interface claims itself enabled others shou
 uint8 EVT_INT_DISABLED=14
 uint8 EVT_INT_READY=15 # when interface is fully initialized
 uint8 EVT_INT_NOT_READY=16
+uint8 EVT_STATE_PROGRAM_STOPPED=17
+uint8 EVT_STATE_PROGRAM_FINISHED=18
 
 # TODO programitem: operation type selection
 
