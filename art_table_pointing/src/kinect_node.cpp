@@ -27,7 +27,9 @@ ArtTablePointingKinect::ArtTablePointingKinect()  {
     ROS_INFO_STREAM("table_width: " << table_width_ << " table_height: " << table_height_);
     ROS_INFO_STREAM("table_frame: " << table_frame_.c_str());
 
-    setActivity(art_msgs::UserActivity::UNKNOWN);
+    //setActivity(art_msgs::UserActivity::UNKNOWN);
+    act_.activity = art_msgs::UserActivity::UNKNOWN;
+    user_activity_pub_.publish(act_);
 
     user_id = 0;
     ROS_INFO_STREAM("Kinect pointing node initialized.");
@@ -44,7 +46,6 @@ void ArtTablePointingKinect::setActivity(int act) {
 
     act_.activity = act;
     user_activity_pub_.publish(act_);
-
 }
 
 void ArtTablePointingKinect::user_status(art_msgs::UserStatusConstPtr data) {
@@ -185,13 +186,15 @@ void ArtTablePointingKinect::process(std::string user_id) {
 
     // we want to set activity based on distance between closer hand and middle of the table
     // TODO what about using distance to object (the closest one) instead of middle of the table?
-    tf::Vector3 middle_of_the_table(-table_width_/2.0, -table_height_/2.0, 0.0); // TODO +/- ??
+    tf::Vector3 middle_of_the_table(-0.75, -0.4, 0.0); // TODO +/- ??
     float min_dist = std::min(transform_hand_left.getOrigin().distance(middle_of_the_table), transform_hand_right.getOrigin().distance(middle_of_the_table));
 
+    //std::cout << "min_dist: " << min_dist << std::endl;
+
     // TODO make thresholds configurable
-    if (min_dist < 0.3) setActivity(art_msgs::UserActivity::WORKING);
-    else if (min_dist > 0.5 && min_dist < 1.0) setActivity(art_msgs::UserActivity::READY);
-    else if (min_dist > 1.2) setActivity(art_msgs::UserActivity::AWAY);
+    if (min_dist < 0.5) setActivity(art_msgs::UserActivity::WORKING);
+    else if (min_dist > 0.7 && min_dist < 1.2) setActivity(art_msgs::UserActivity::READY);
+    else if (min_dist > 1.4) setActivity(art_msgs::UserActivity::AWAY);
 
     if (pointingAtTable(point_right, transform_elbow_right, transform_hand_right)) {
         pose.pose.position.x = point_right.x();
