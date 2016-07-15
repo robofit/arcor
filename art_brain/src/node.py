@@ -8,7 +8,7 @@ from art_msgs.msg import RobotProgramAction, RobotProgramFeedback,  RobotProgram
 from art_msgs.msg import LocalizeAgainstUMFAction, LocalizeAgainstUMFGoal, LocalizeAgainstUMFResult
 from std_srvs.srv import Empty, EmptyRequest, EmptyResponse
 from art_msgs.msg import UserStatus,  UserActivity, InterfaceState
-from art_msgs.srv import startProgram,  startProgramResponse
+from art_msgs.srv import startProgram,  startProgramResponse,  getProgram
 from geometry_msgs.msg import PoseStamped, Pose
 from std_msgs.msg import String
 from art_msgs.msg import pickplaceAction, pickplaceGoal, SystemState, ObjInstance, InstancesArray, ProgramItem
@@ -105,10 +105,12 @@ class ArtBrain:
             return resp
             
         self.prog_id = req.program_id
-        self.prog = presp.program
+        self.program = presp.program
         
         rospy.loginfo('Starting program')
         self.executing_program = True
+        resp.success = True
+        return resp
 
     def program_stop_cb(self,  req):
         
@@ -130,6 +132,7 @@ class ArtBrain:
 
     @staticmethod
     def get_item_by_id(program, item_id):
+        print "get_item_by_id: " + str(item_id)
         for it in program.items:
             if it.id == item_id:
                 return it
@@ -146,17 +149,22 @@ class ArtBrain:
 
             pick_polygon = []
             pol = None
+
             for point in instruction.pick_polygon: # TODO check frame_id and transform to table frame?
                 pick_polygon.append([point.point.x,  point.point.y])
             if len(pick_polygon) > 0:
                 pol = mplPath.Path(np.array(pick_polygon),  closed = True)
 
             # shuffle the array to not get the same object each time
-            random.shuffle(self.objects.instances)
-
+            #random.shuffle(self.objects.instances)
+            
+            print self.objects.instances
+            
             for obj in self.objects.instances:
                 
                 if pol is None:
+                    
+                    print "no polygon"
                     
                     # if no pick polygon is specified - let's take the first object of that type
                     if obj.object_type == instruction.object:
@@ -164,6 +172,8 @@ class ArtBrain:
                         break
                         
                 else:
+                    
+                    print "polygon"
                     
                     # test if some object is in polygon and take the first one
                     if pol.contains_point([obj.pose.position.x,  obj.pose.position.y]):
@@ -177,16 +187,18 @@ class ArtBrain:
                     print pol
                 return self.INST_BAD_DATA
         else:
+            print "strange instruction.spec: " + str(instruction.spec)
             return self.INST_BAD_DATA
         return obj_id
 
     def get_place_pose(self, instruction):
-        if self.holding_object is None:
-            return None
+        #if self.holding_object is None:
+        #    return None
         if instruction.spec == instruction.MANIP_ID:
             pose = instruction.place_pose
         elif instruction.spec == instruction.MANIP_TYPE:
-            pose = None
+            #pose = None
+            pose = instruction.place_pose
             # TODO: how to get free position inside polygon? some perception node?
         else:
             return None
@@ -228,6 +240,8 @@ class ArtBrain:
 
     def manip_pick_place(self, instruction):
         
+        print "manip_pick_place"
+        
         obj_id = self.get_pick_obj_id(instruction)
         pose = self.get_place_pose(instruction)
         
@@ -235,6 +249,7 @@ class ArtBrain:
         # TODO also publish selected place pose when not given (polygon)
         
         if obj_id is None or pose is None:
+            print 'could not get obj_id or pose'
             return self.INST_BAD_DATA
         if self.pick_object(obj_id): # TODO call pick&place and not pick and then place
             self.holding_object = obj_id
@@ -249,6 +264,8 @@ class ArtBrain:
         :type instruction: ProgramItem
         :return:
         """
+        print "waiting"
+        
         #return self.INST_OK
         
         rate = rospy.Rate(10)
@@ -387,7 +404,7 @@ class ArtBrain:
             
             # for it in prog.items:
             it = self.program.items[0]
-            while self.executing_program and not program_end:
+            while self.executing_program:
                 
                 self.prog_id = self.program.id
                 self.it_id = it.id
@@ -414,17 +431,19 @@ class ArtBrain:
                     # TODO other types of operations
                     pass
                 
-                rospy.loginfo('Program id: ' + str(prog.id) + ', item id: ' + str(it.id) + ', item type: ' + str(it.type))
+                rospy.loginfo('Program id: ' + str(self.program.id) + ', item id: ' + str(it.id) + ', item type: ' + str(it.type))
 
                 self.instruction = it.type
                 instruction_function = self.instruction_switcher()
                 result = instruction_function(it)
                 if result == self.INST_OK:
-                    it = self.get_item_by_id(prog, it.on_success)
+                    it = self.get_item_by_id(self.program, it.on_success)
                 elif result == self.INST_BAD_DATA or result == self.INST_FAILED:
-                    it = self.get_item_by_id(prog, it.on_failure)
+                    it = self.get_item_by_id(self.program, it.on_failure)
+                    print "bad_data/failed"
                 else:
                     it = None
+                    print "strange return value"
 
                 if it is None:
                     rospy.logerr('Error during instruction evaluation')
