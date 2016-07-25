@@ -29,6 +29,7 @@ include_directories(
 
 ## Declare a C++ executable
  add_executable(art_calibration_node src/node.cpp)
+ add_dependencies(art_calibration_node art_msgs_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(art_calibration_node
