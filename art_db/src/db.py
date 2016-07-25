@@ -27,7 +27,9 @@ class ArtDB:
         
         db = dataset.connect('sqlite:////' + self.db_path)
         obj = db['programs'].find_one(program_id=req.id)
-        if obj is None: return None
+        if obj is None:
+            rospy.logerr('Program ' + str(req.id) + ' does not exist in the database.')
+            return None
         resp = getProgramResponse()
         resp.program = message_converter.convert_dictionary_to_ros_message('art_msgs/Program', json.loads(obj['json']))
         return resp
