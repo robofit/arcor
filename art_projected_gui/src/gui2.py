@@ -61,7 +61,6 @@ class simple_gui(QtGui.QWidget):
         self.srv_show_marker = rospy.Service('~show_marker', Empty, self.show_marker)
         self.srv_hide_marker = rospy.Service('~hide_marker', Empty, self.hide_marker)
 
-        self.objects = None
         self.viz_objects = {} # objects can be accessed by their ID
         self.viz_places = [] # array of scene_place objects
         self.viz_polygons = [] # array of scene_polygon objects
@@ -520,38 +519,25 @@ class simple_gui(QtGui.QWidget):
         
     def objects_evt(self,  msg):
     
-       self.objects = msg.instances
+        for obj_id in msg.lost_objects:
+            
+            self.viz_objects[obj_id].remove()
+            del self.viz_objects[obj_id]
     
-       current_objects = {}
-    
-       for obj in self.objects:
-       
-               current_objects[obj.object_id] = None
-       
-               (px, py) = self.calib.get_px(obj.pose)
-  
-               if obj.object_id not in self.viz_objects:
-                    
-                    sobj = scene_object(self.scene,  obj.object_id, obj.object_type,   (px,  py))
-                    self.viz_objects[obj.object_id] = sobj
-                    
-               else:
-                   
-                   self.viz_objects[obj.object_id].set_pos((px,  py))
-       
-       to_delete = []            
-       for k, v in self.viz_objects.iteritems():
-       
-           if k not in current_objects:
+        for obj in msg.instances:
+            
+            (px, py) = self.calib.get_px(obj.pose)
+            
+            if obj.object_id in msg.new_objects:
+                
+                sobj = scene_object(self.scene,  obj.object_id, obj.object_type,   (px,  py))
+                self.viz_objects[obj.object_id] = sobj
+            
+            else:
+                
+                self.viz_objects[obj.object_id].set_pos((px,  py))
            
-               to_delete.append(k)
-               v.remove()
-               
-       for d in to_delete:
-       
-           del self.viz_objects[d]
-           
-       self.update()
+        self.update()
      
     def pointing_point_left_cb(self, msg):
         
