@@ -1,6 +1,6 @@
 import rospy
 from PyQt4 import QtGui, QtCore
-from geometry_msgs.msg import PoseStamped,  PointStamped
+from geometry_msgs.msg import PoseStamped,  PointStamped,  Point32,  PolygonStamped
 import numpy as np
 
 def dist(pt1,  pt2):
@@ -44,7 +44,7 @@ class scene_polygon():
         
         self.points = []
         
-        if len(points) > 0 and isinstance(points[0],  PointStamped):
+        if len(points) > 0 and isinstance(points[0],  Point32):
             
             for pt in points:
                 self.points.append(self.calib.get_px(pt))
@@ -83,9 +83,18 @@ class scene_polygon():
         
         for pt in self.points:
             
-            arr.append(self.calib.get_point(pt[0],  pt[1]))
+            arr.append(self.calib.get_point32(pt[0],  pt[1]))
             
         return arr
+        
+    def msg(self):
+        
+        ps = PolygonStamped()
+        
+        ps.polygon.points = self.get_point_array()
+        ps.header.stamp = rospy.Time.now()
+        ps.header.frame_id = "marker"
+        return ps
         
     def set_pos(self,  pt):
         
@@ -343,7 +352,6 @@ class pointing_point():
                 if xs > 0.01 and xs < 15.0 and ys > 0.01 and ys < 15.0:
                 #if xs < 10.0 and ys < 10.0: # -> this is only for testing
                     
-                    # TODO zezelenat
                     self.pointed_pos = (int(xm),  int(ym))
                     self.viz.setPen(QtGui.QPen(QtCore.Qt.green))
                     self.viz.setBrush(QtGui.QBrush(QtCore.Qt.green))

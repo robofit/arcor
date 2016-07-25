@@ -1,6 +1,6 @@
 import rospy
 from PyQt4 import QtGui, QtCore
-from geometry_msgs.msg import PoseStamped,  PoseArray,  PointStamped,  Pose
+from geometry_msgs.msg import PoseStamped,  PoseArray,  PointStamped,  Pose,  Point32
 import numpy as np
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image, CameraInfo
@@ -73,7 +73,9 @@ class gui_calibration(QtCore.QObject):
         elif isinstance(pos,  PointStamped):
             psx = pos.point.x
             psy = pos.point.y
-            
+        elif isinstance(pos,  Point32):
+            psx = pos.x
+            psy = pos.y
 
         pt = np.array([[psx], [psy], [1.0]])
         px = self.h_matrix*pt
@@ -104,18 +106,16 @@ class gui_calibration(QtCore.QObject):
         
         return ps
         
-    def get_point(self,  px,  py):
+    def get_point32(self,  px,  py):
         
-        ps = PointStamped()
-        ps.header.frame_id = "marker"
-        ps.header.stamp = rospy.Time.now()
+        ps = Point32()
         
         p = np.array([[self.size.width()-px], [py], [1.0]])
         res = np.linalg.inv(self.h_matrix)*p
 
-        ps.point.x = float(res[0]/res[2])
-        ps.point.y = float(res[1]/res[2])
-        ps.point.z = 0.0
+        ps.x = float(res[0]/res[2])
+        ps.y = float(res[1]/res[2])
+        ps.z = 0.0
 
         return ps
         

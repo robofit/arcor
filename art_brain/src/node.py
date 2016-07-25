@@ -4,7 +4,6 @@ import rospy
 import time
 
 import actionlib
-from art_msgs.msg import RobotProgramAction, RobotProgramFeedback,  RobotProgramResult, RobotProgramActionGoal
 from art_msgs.msg import LocalizeAgainstUMFAction, LocalizeAgainstUMFGoal, LocalizeAgainstUMFResult
 from std_srvs.srv import Empty, EmptyRequest, EmptyResponse
 from art_msgs.msg import UserStatus,  UserActivity, InterfaceState
@@ -150,8 +149,8 @@ class ArtBrain:
             pick_polygon = []
             pol = None
 
-            for point in instruction.pick_polygon: # TODO check frame_id and transform to table frame?
-                pick_polygon.append([point.point.x,  point.point.y])
+            for point in instruction.pick_polygon.polygon.points: # TODO check frame_id and transform to table frame?
+                pick_polygon.append([point.x,  point.y])
             if len(pick_polygon) > 0:
                 pol = mplPath.Path(np.array(pick_polygon),  closed = True)
 
@@ -422,7 +421,7 @@ class ArtBrain:
                     #elif it.spec == ProgramItem.MANIP_TYPE:
                     #    self.state_manager.publish(InterfaceState.EVT_OBJECT_TYPE_SELECTED,  obj)
                         
-                    if len(it.pick_polygon) > 0: self.state_manager.publish(InterfaceState.EVT_POLYGON,  it.pick_polygon)
+                    if len(it.pick_polygon.polygon.points) > 0: self.state_manager.publish(InterfaceState.EVT_POLYGON,  it.pick_polygon)
                     
                     self.state_manager.publish(InterfaceState.EVT_PLACE_SELECTED, it.place_pose)
                     
