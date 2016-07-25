@@ -16,7 +16,7 @@ uint8 EVT_OBJECT_ID_UNSELECTED=2 # data
 uint8 EVT_OBJECT_TYPE_UNSELECTED=3 # data
 uint8 EVT_PROGRAM_TEMPLATE_SELECTED=4 # idata = prog_id
 uint8 EVT_POLYGON_POINT_ADDED=6 # points
-uint8 EVT_POLYGON=7 # points
+uint8 EVT_POLYGON=7 # polygons
 uint8 EVT_STATE_LEARNING=8 # idata=[prog_id, inst_id]
 uint8 EVT_STATE_PROGRAM_RUNNING=9 # idata=[prog_id, inst_id]
 uint8 EVT_PLACE_SELECTED=10 # places
@@ -34,5 +34,6 @@ uint8 EVT_STATE_PROGRAM_FINISHED=18
 string[] data
 int16[] idata
 
-geometry_msgs/PointStamped[] points
+geometry_msgs/PolygonStamped[] polygons
 geometry_msgs/PoseStamped[] places
+geometry_msgs/PointStamped[] points
