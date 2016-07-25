@@ -7,10 +7,10 @@ uint8 spec
 
 string object # ID or type - based on operation type
 geometry_msgs/PoseStamped pick_pose # for picking object with unknown ID -> exact pose
-geometry_msgs/PointStamped[] pick_polygon # -> approximate location
+geometry_msgs/PolygonStamped pick_polygon # -> approximate location
 
 geometry_msgs/PoseStamped place_pose # exact location
-geometry_msgs/PointStamped[] place_polygon # approximate location
+geometry_msgs/PolygonStamped place_polygon # approximate location
 
 # operation types
 uint8 GET_READY=0 # retract arms etc.
