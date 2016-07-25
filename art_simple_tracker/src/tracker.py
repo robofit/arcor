@@ -15,13 +15,13 @@ class tracker:
     self.target_frame = target_frame
     self.listener = tf.TransformListener()
     self.sub = rospy.Subscriber("/art/object_detector/object", InstancesArray, self.cb,  queue_size=10)
-    self.pub = rospy.Publisher("/art/object_detector/object_filtered", InstancesArray,  queue_size=10)
+    self.pub = rospy.Publisher("/art/object_detector/object_filtered", InstancesArray,  queue_size=10,  latch = True)
     self.timer = rospy.Timer(rospy.Duration(1.0), self.timer_cb)
     self.objects = {}
     
     # should be in (0,1)
-    self.ap = 0.25 # filtering cooeficient - position
-    self.ao = 0.1 # filtering cooeficient - orientation
+    self.ap = 0.25 # filtering coeficient - position
+    self.ao = 0.1 # filtering coeficient - orientation
     
     self.min_cnt = 5 # publish object after it has been seen x times at least
     self.max_age = rospy.Duration(5)
@@ -41,6 +41,8 @@ class tracker:
       if (now - v["pose"].header.stamp) > self.max_age:
       
         objects_to_prune.append(k)
+        ia.lost_objects.append(k)
+        continue
     
       if v["cnt"] < self.min_cnt:
         continue
@@ -52,6 +54,8 @@ class tracker:
       obj.object_id = k
       obj.object_type = v["object_type"]
       ia.instances.append(obj)
+      
+      if v["cnt"] == self.min_cnt: ia.new_objects.append(k)
     
     # TODO also publish TF for each object???
     self.pub.publish(ia)

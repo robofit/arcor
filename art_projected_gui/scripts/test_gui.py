@@ -57,6 +57,9 @@ def main():
     
     arr.instances.append(obj2)
     
+    arr.new_objects.append(obj.object_id)
+    arr.new_objects.append(obj2.object_id)
+    
     ps = PoseStamped()
     ps.header.stamp = rospy.Time.now()
     ps.header.frame_id = "marker"
@@ -80,6 +83,12 @@ def main():
     psr.pose.orientation.w = 1.0
     
     noise = 0.0001
+    
+    
+    rospy.sleep(2.0)
+    pub.publish(arr)
+    rospy.sleep(1.0)
+    arr.new_objects = []
     
     while(not rospy.is_shutdown()):
         pub.publish(arr)

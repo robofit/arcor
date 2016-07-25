@@ -10,7 +10,7 @@ from PyQt4 import QtGui, QtCore, QtOpenGL
 from art_msgs.msg import InstancesArray,  UserStatus,  InterfaceState
 from art_msgs.srv import getProgram,  storeProgram,  startProgram
 from art_msgs.msg import ProgramItem
-from geometry_msgs.msg import Pose,  PoseStamped, PointStamped
+from geometry_msgs.msg import Pose,  PoseStamped, PointStamped,  PolygonStamped
 from std_srvs.srv import Empty, EmptyResponse
 import actionlib
 
@@ -61,7 +61,6 @@ class simple_gui(QtGui.QWidget):
         self.srv_show_marker = rospy.Service('~show_marker', Empty, self.show_marker)
         self.srv_hide_marker = rospy.Service('~hide_marker', Empty, self.hide_marker)
 
-        self.objects = None
         self.viz_objects = {} # objects can be accessed by their ID
         self.viz_places = [] # array of scene_place objects
         self.viz_polygons = [] # array of scene_polygon objects
@@ -127,6 +126,9 @@ class simple_gui(QtGui.QWidget):
         # TODO only for testing - program should be selected by user
         self.load_program(0)
         
+        # we will save learned program under different ID
+        self.prog.prog.id = 1 # TODO don't have it hardcoded
+        
         self.program_started = False
         self.item_to_learn = None
         
@@ -165,30 +167,54 @@ class simple_gui(QtGui.QWidget):
                 
             elif msg.event_type == InterfaceState.EVT_STATE_PROGRAM_RUNNING:
                 
+                self.program_started = True
                 self.prog.set_current(msg.idata[0],  msg.idata[1])
+                
+            elif msg.event_type == InterfaceState.EVT_STATE_LEARNING:
+
+                # TODO podpora pro nastaveni GUI do spravneho stavu
+                
+                #self.program_started = False
+                
+                #if self.prog.prog.id != msg.idata[0]:
+                    
+                 #   self.load_program(msg.idata[0])
+                    
+                #else:
+                    
+                 #   if self.item_to_learn.id != msg.idata[1]
+                 
+                 pass
                 
             elif msg.event_type == InterfaceState.EVT_OBJECT_ID_SELECTED:
                 
-                try:
-                    self.viz_objects[msg.data[0]].set_selected()
-                except KeyError:
-                    rospy.logerr('Unknown object ID: ' + msg.data[0])
+                for obj_id in msg.data:
+                
+                    try:
+                        self.viz_objects[obj_id].set_selected()
+                    except KeyError:
+                        rospy.logerr('Unknown object ID: ' + obj_id)
                     
             elif msg.event_type == InterfaceState.EVT_OBJECT_TYPE_SELECTED:
+                
+                for k,  v in self.viz_objects.iteritems():
+                    
+                    if v.obj_type in msg.data: v.set_selected()
+                
+            elif msg.event_type == InterfaceState.EVT_POLYGON:
+                
+                # TODO check if polygon already exists (how?)
+                for poly in msg.polygons:
+                    self.viz_polygons.append(scene_polygon(self.scene,  self.calib,  poly.polygon.points))
+                
+            elif msg.event_type == InterfaceState.EVT_STATE_PROGRAM_STOPPED:
                 
                 # TODO
                 pass
                 
-            elif msg.event_type == InterfaceState.EVT_POLYGON:
-                
-                self.viz_polygons.append(scene_polygon(self.scene,  self.calib,  msg.points))
-                
-            elif msg.event_type == InterfaceState.EVT_STATE_PROGRAM_STOPPED:
-                
-                pass
-                
             elif msg.event_type == InterfaceState.EVT_STATE_PROGRAM_FINISHED:
                 
+                # TODO
                 pass
     
         
@@ -407,7 +433,7 @@ class simple_gui(QtGui.QWidget):
             
             if self.viz_polygons[-1].add_point(pointed_place):
                 
-                # TODO state -> polygon
+                self.state_manager.publish(InterfaceState.EVT_POLYGON,  self.viz_polygons[-1].msg())
                 self.label.setPlainText("Polygon selected")
                 self.polygon_selected = True
                 self.selected_at = rospy.Time.now()
@@ -466,6 +492,11 @@ class simple_gui(QtGui.QWidget):
         
         if self.item_to_learn is None:
             self.item_to_learn = self.prog.get_item_to_learn()
+            
+            if self.item_to_learn is not None:
+                
+                self.state_manager.publish(InterfaceState.EVT_STATE_LEARNING,  [self.prog.prog.id,  self.item_to_learn.id])
+            
             self.object_selected = False
             self.place_selected = False
             self.polygon_selected = False
@@ -473,14 +504,8 @@ class simple_gui(QtGui.QWidget):
         # everything is already learned - let's start program execution
         if self.item_to_learn is None:
             self.program_started = True
-            self.prog.prog.id = 1 # TODO don't have it hardcoded
-            self.store_program()
             self.start_program()
             return
-            
-        else:
-            
-            self.state_manager.publish(InterfaceState.EVT_STATE_LEARNING,  [self.prog.prog.id,  self.item_to_learn.id])
         
         if self.item_to_learn.type == ProgramItem.MANIP_PICK_PLACE:
             
@@ -508,9 +533,10 @@ class simple_gui(QtGui.QWidget):
             if self.place_selected:
             
                 self.item_to_learn.place_pose = sp.get_pose()
-                self.item_to_learn.pick_polygon = self.viz_polygons[0].get_point_array()
+                self.item_to_learn.pick_polygon = self.viz_polygons[0].msg()
                 self.label.setPlainText("Step learned")
                 self.prog.learned(self.item_to_learn.id)
+                self.store_program()
                 
         else:
             
@@ -520,38 +546,25 @@ class simple_gui(QtGui.QWidget):
         
     def objects_evt(self,  msg):
     
-       self.objects = msg.instances
+        for obj_id in msg.lost_objects:
+            
+            self.viz_objects[obj_id].remove()
+            del self.viz_objects[obj_id]
     
-       current_objects = {}
-    
-       for obj in self.objects:
-       
-               current_objects[obj.object_id] = None
-       
-               (px, py) = self.calib.get_px(obj.pose)
-  
-               if obj.object_id not in self.viz_objects:
-                    
-                    sobj = scene_object(self.scene,  obj.object_id, obj.object_type,   (px,  py))
-                    self.viz_objects[obj.object_id] = sobj
-                    
-               else:
-                   
-                   self.viz_objects[obj.object_id].set_pos((px,  py))
-       
-       to_delete = []            
-       for k, v in self.viz_objects.iteritems():
-       
-           if k not in current_objects:
+        for obj in msg.instances:
+            
+            (px, py) = self.calib.get_px(obj.pose)
+            
+            if obj.object_id in msg.new_objects or obj.object_id not in self.viz_objects:
+                
+                sobj = scene_object(self.scene,  obj.object_id, obj.object_type,   (px,  py))
+                self.viz_objects[obj.object_id] = sobj
+            
+            else:
+                
+                self.viz_objects[obj.object_id].set_pos((px,  py))
            
-               to_delete.append(k)
-               v.remove()
-               
-       for d in to_delete:
-       
-           del self.viz_objects[d]
-           
-       self.update()
+        self.update()
      
     def pointing_point_left_cb(self, msg):
         

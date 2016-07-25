@@ -27,7 +27,9 @@ class ArtDB:
         
         db = dataset.connect('sqlite:////' + self.db_path)
         obj = db['programs'].find_one(program_id=req.id)
-        if obj is None: return None
+        if obj is None:
+            rospy.logerr('Program ' + str(req.id) + ' does not exist in the database.')
+            return None
         resp = getProgramResponse()
         resp.program = message_converter.convert_dictionary_to_ros_message('art_msgs/Program', json.loads(obj['json']))
         return resp
@@ -39,7 +41,7 @@ class ArtDB:
         prog_json = json.dumps(message_converter.convert_ros_message_to_dictionary(req.program))
         resp = storeProgramResponse()
         resp.success = True
-        programs.insert(dict(program_id=req.program.id,  name=req.program.name,  json=prog_json))
+        programs.upsert(dict(program_id=req.program.id,  name=req.program.name,  json=prog_json),  ['program_id'])
         return resp
         
     def srv_get_object_cb(self,  req):
