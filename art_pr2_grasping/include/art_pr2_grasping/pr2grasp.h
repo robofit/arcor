@@ -68,6 +68,8 @@ private:
 
   std::string group_name_;
 
+  bool manipulation_in_progress_;
+
 public:
   artPr2Grasping()
     : nh_("~")
@@ -122,6 +124,8 @@ public:
       ROS_WARN("Point head action not available!");
     }
 
+    manipulation_in_progress_ = false;
+
     obj_sub_ = nh_.subscribe("/art/object_detector/object_filtered", 1, &artPr2Grasping::detectedObjectsCallback, this);
 
   }
@@ -159,6 +163,8 @@ public:
   void detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr &msg) {
 
       ROS_INFO_ONCE("InstancesArray received");
+
+      if (manipulation_in_progress_) return;
 
       // remove outdated objects
       std::map<std::string, tobj>::iterator it;
@@ -330,6 +336,8 @@ public:
       return false;
     }
 
+    manipulation_in_progress_ = true;
+
     lookAt(ps.position);
 
     std::vector<moveit_msgs::PlaceLocation> place_locations;
@@ -421,10 +429,12 @@ public:
     {
       grasped_object_.reset();
       move_group_->clearPathConstraints();
+      manipulation_in_progress_ = false;
       return true;
     }
 
     ROS_WARN("Failed to place");
+    manipulation_in_progress_ = false;
     return false;
   }
 
@@ -475,6 +485,8 @@ public:
       return false;
     }
 
+    manipulation_in_progress_ = true;
+
     std::vector<moveit_msgs::Grasp> grasps;
 
     lookAt(objects_[id].p.position);
@@ -493,6 +505,7 @@ public:
     {
 
       ROS_ERROR("No grasps found.");
+      manipulation_in_progress_ = false;
       return false;
     }
 
@@ -502,6 +515,7 @@ public:
     {
 
       ROS_ERROR("Grasp filtering failed.");
+      manipulation_in_progress_ = false;
       return false;
     }
 
@@ -509,6 +523,7 @@ public:
     {
 
       ROS_ERROR("No feasible grasps found.");
+      manipulation_in_progress_ = false;
       return false;
     }
 
@@ -532,11 +547,13 @@ public:
 
     if (move_group_->pick(id, grasps))
     {
+      manipulation_in_progress_ = false;
       return true;
     }
 
     ROS_WARN("Failed to pick");
     grasped_object_.reset();
+    manipulation_in_progress_ = false;
     return false;
 
   }
