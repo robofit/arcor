@@ -122,7 +122,7 @@ public:
       ROS_WARN("Point head action not available!");
     }
 
-    obj_sub_ = nh_.subscribe("/art_object_detector/object_filtered", 1, &artPr2Grasping::detectedObjectsCallback, this);
+    obj_sub_ = nh_.subscribe("/art/object_detector/object_filtered", 1, &artPr2Grasping::detectedObjectsCallback, this);
 
   }
 
