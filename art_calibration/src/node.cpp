@@ -80,7 +80,7 @@ private:
 
             tr_table_ = create_transform_from_poses_vector(table_poses, table_frame_);
             table_calibration_done_ = true;
-            tr_timer_ = nh_.createTimer(ros::Duration(0.01), &ArtCalibration::trCallback, this);
+            tr_timer_ = nh_.createTimer(ros::Duration(0.1), &ArtCalibration::trCallback, this);
         }
 
 
@@ -266,12 +266,15 @@ private:
     }
 
     void trCallback(const ros::TimerEvent& event) {
+
+        ros::Time now = ros::Time::now() + ros::Duration(0.1);
+
         if (table_calibration_done_) {
-            tr_table_.stamp_ = ros::Time::now();
+            tr_table_.stamp_ = now;
             br_.sendTransform(tr_table_);
         }
         if (pr2_calibration_done_) {
-            tr_pr2_.stamp_ = ros::Time::now();
+            tr_pr2_.stamp_ = now;
             br_.sendTransform(tr_pr2_);
         }
     }
