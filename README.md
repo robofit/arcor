@@ -68,8 +68,11 @@ All interfaces live in `/art/interface` namespace. Each interface:
    * has `enable` and `disable` (empty) services
     * when one interface gets enabled others should disable themselves
     * disabled interface should still show everything, just ignore user inputs
-   * publishes events (e.g. which object was selected) to the `/art/interface/state` topic (`art_msgs/InterfaceState`) - there is a helper class for this in `art_interface_utils`
+   * publishes events (e.g. which object was selected) to the `/art/interface/events` topic (`art_msgs/InterfaceState`)
    * listens to events of other interfaces and updates according to them
+   * listens to the latched topic `/art/interface/state` (`art_msgs/InterfaceState`) published by art_brain - this topic is especially usefull at interface startup / restart etc.
+  
+There is a rospy helper class for publishing and listening to events in `art_interface_utils` - the class has methods as `select_object_id(obj_id)` and callback for state updates.
 
 ##### Projected GUI (`art_projected_gui`)
 
