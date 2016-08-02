@@ -70,7 +70,7 @@ class interface_state_manager():
             rospy.loginfo('interface_state_manager: brain mode')
             
             self.brain = True
-            self.interface_state_pub = rospy.Publisher("/art/interface/state", InterfaceState, queue_size=10,  latch = True)
+            self.interface_state_pub = rospy.Publisher("/art/interface/state", InterfaceState, queue_size=1,  latch = True)
             
             # full state will not be published after each event, but max at given rate
             self.timer = rospy.Timer(rospy.Duration(1), self.timer_cb)
@@ -79,9 +79,9 @@ class interface_state_manager():
             
             rospy.loginfo('interface_state_manager: interface mode')
             
-            self.interface_event_pub = rospy.Publisher("/art/interface/events", InterfaceState, queue_size=10)
             self.interface_state_sub = rospy.Subscriber('/art/interface/state', InterfaceState, self.state_cb) # published by brain
-           
+        
+        self.interface_event_pub = rospy.Publisher("/art/interface/events", InterfaceState, queue_size=100)
         self.interface_event_sub = rospy.Subscriber('/art/interface/events', InterfaceState, self.event_cb) # published by other interfaces
     
     def timer_cb(self,  event):
@@ -168,8 +168,6 @@ class interface_state_manager():
         self.state.program_id = prog_id
         self.state.instruction_id = inst_id
         self.state.changed = True
-        
-        if self.brain: return
             
         msg = self.__get_msg()
         msg.items[0].type = syst_state
