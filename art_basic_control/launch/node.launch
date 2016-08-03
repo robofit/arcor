@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+   <node name="art_basic_control" pkg="art_basic_control" 
+	type="node.py" output="screen" respawn="true">
+    
+  </node>
+
+</launch>
