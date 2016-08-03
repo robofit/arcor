@@ -475,6 +475,10 @@ public:
    return grasped_object_;
   }
 
+  bool resetGraspedObject() {
+    grasped_object_.reset();
+  }
+
   bool pick(const std::string &id)
   {
 

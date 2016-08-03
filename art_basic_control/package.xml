@@ -19,6 +19,8 @@
   <build_depend>sensor_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>pr2_controllers_msgs</build_depend>
+  <build_depend>pr2_mechanism_msgs</build_depend>
+  <build_depend>pr2_mannequin_mode</build_depend>
   <run_depend>pr2_controllers_msgs</run_depend>
   <run_depend>actionlib</run_depend>
   <run_depend>geometry_msgs</run_depend>
@@ -26,6 +28,8 @@
   <run_depend>rospy</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
+  <run_depend>pr2_mechanism_msgs</run_depend>
+  <run_depend>pr2_mannequin_mode</run_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
