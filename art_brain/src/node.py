@@ -6,7 +6,7 @@ import time
 import actionlib
 from art_msgs.msg import LocalizeAgainstUMFAction, LocalizeAgainstUMFGoal, LocalizeAgainstUMFResult
 from std_srvs.srv import Empty, EmptyRequest, EmptyResponse
-from art_msgs.msg import UserStatus,  UserActivity, InterfaceState
+from art_msgs.msg import UserStatus,  UserActivity, InterfaceState,  InterfaceStateItem
 from art_msgs.srv import startProgram,  startProgramResponse,  getProgram
 from geometry_msgs.msg import PoseStamped, Pose
 from std_msgs.msg import String
@@ -54,7 +54,7 @@ class ArtBrain:
         #self.srv_program_pause = rospy.Service(/art/brain/program/pause', Empty, self.program_pause_cb)
         #self.srv_program_resume = rospy.Service(/art/brain/program/resume', Empty, self.program_resume_cb)
         
-        self.state_manager = interface_state_manager(InterfaceState.INT_BRAIN)
+        self.state_manager = interface_state_manager(InterfaceState.BRAIN_ID)
         
         self.user_activity = None
         
@@ -244,7 +244,7 @@ class ArtBrain:
         obj_id = self.get_pick_obj_id(instruction)
         pose = self.get_place_pose(instruction)
         
-        self.state_manager.publish(InterfaceState.EVT_OBJECT_ID_SELECTED,  obj_id)
+        self.state_manager.select_object_id(obj_id)
         # TODO also publish selected place pose when not given (polygon)
         
         if obj_id is None or pose is None:
@@ -408,22 +408,22 @@ class ArtBrain:
                 self.prog_id = self.program.id
                 self.it_id = it.id
                 
-                self.state_manager.publish(InterfaceState.EVT_STATE_PROGRAM_RUNNING,  [self.prog_id,  self.it_id])
-                self.state_manager.publish(InterfaceState.EVT_CLEAR_ALL)
+                self.state_manager.set_syst_state(InterfaceStateItem.STATE_PROGRAM_RUNNING,  self.prog_id,  self.it_id)
+                self.state_manager.clear_all()
                 
                 # let's tell interface what to display
                 if it.type == ProgramItem.MANIP_PICK_PLACE:
             
                     if it.spec == ProgramItem.MANIP_ID:
                         
-                        self.state_manager.publish(InterfaceState.EVT_OBJECT_ID_SELECTED,  it.object)
+                        self.state_manager.select_object_id(it.object)
                         
                     #elif it.spec == ProgramItem.MANIP_TYPE:
                     #    self.state_manager.publish(InterfaceState.EVT_OBJECT_TYPE_SELECTED,  obj)
                         
-                    if len(it.pick_polygon.polygon.points) > 0: self.state_manager.publish(InterfaceState.EVT_POLYGON,  it.pick_polygon)
+                    if len(it.pick_polygon.polygon.points) > 0: self.state_manager.select_polygon(it.pick_polygon)
                     
-                    self.state_manager.publish(InterfaceState.EVT_PLACE_SELECTED, it.place_pose)
+                    self.state_manager.select_place(it.place_pose)
                     
                 else:
 
@@ -452,7 +452,8 @@ class ArtBrain:
                     
             if not self.executing_program:
                 
-                self.state_manager.publish(InterfaceState.EVT_STATE_PROGRAM_STOPPED)
+                pass
+                #self.state_manager.publish(InterfaceState.EVT_STATE_PROGRAM_STOPPED)
 
         # TODO feedback
         self.executing_program = False
