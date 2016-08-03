@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import rospy
-import time
 
 import actionlib
 from pr2_controllers_msgs.msg import PointHeadAction, PointHeadGoal
@@ -9,7 +8,7 @@ from std_srvs.srv import Empty, EmptyResponse
 from std_msgs.msg import Float32
 from geometry_msgs.msg import PointStamped
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-
+import pr2_mechanism_msgs
 
 class ArtBasicControl:
 
@@ -18,12 +17,85 @@ class ArtBasicControl:
                                                                 PointHeadAction)
         rospy.loginfo("Waiting for point_head_action server")
         self.head_action_client.wait_for_server()
+
+        # taken from https://github.com/sniekum/pr2_lfd_utils/blob/master/src/pr2_lfd_utils/recordInteraction.py#L50
+        rospy.loginfo('Waiting for pr2_controller_manager')
+        rospy.wait_for_service('pr2_controller_manager/switch_controller')
+        self.switch_control = rospy.ServiceProxy('pr2_controller_manager/switch_controller', pr2_mechanism_msgs.srv.SwitchController, persistent=True)
+        self.standard_controllers = ['r_arm_controller', 'l_arm_controller']
+        self.mannequin_controllers = ['r_arm_controller_loose', 'l_arm_controller_loose']
+        self.left_arm_mann = False
+        self.right_arm_mann = False
+        self.switch_req = pr2_mechanism_msgs.srv.SwitchControllerRequest()
+        self.switch_req.strictness = pr2_mechanism_msgs.srv.SwitchControllerRequest.BEST_EFFORT
+
+        self.left_interaction_on = rospy.Service("/art_basic_control/interaction/left/on", Empty, self.left_interaction_on_cb)
+        self.left_interaction_off = rospy.Service("/art_basic_control/interaction/left/off", Empty, self.left_interaction_off_cb)
+        self.right_interaction_on = rospy.Service("/art_basic_control/interaction/right/on", Empty, self.right_interaction_on_cb)
+        self.right_interaction_off = rospy.Service("/art_basic_control/interaction/right/off", Empty, self.right_interaction_off_cb)
+
         rospy.loginfo("Server ready")
         self.spine_up_service = rospy.Service("/art_basic_control/spine_up", Empty, self.spine_up_cb)
         self.spine_down_service = rospy.Service("/art_basic_control/spine_down", Empty, self.spine_down_cb)
         self.spine_control_sub = rospy.Subscriber("/art_basic_control/spine_control", Float32, self.spine_control_cb)
         self.look_at_sub = rospy.Subscriber("/art_basic_control/look_at", PointStamped, self.look_at_cb)
         self.spine_control_pub = rospy.Publisher("/torso_controller/command", JointTrajectory, queue_size=1)
+
+    def left_interaction_on_cb(self,  req):
+
+        if self.left_arm_mann: rospy.logerr('Left arm already in interactive mode')
+        else:
+
+            self.left_arm_mann = True
+
+            self.switch_req.stop_controllers = [self.standard_controllers[1]]
+            self.switch_req.start_controllers = [self.mannequin_controllers[1]]
+            resp = self.switch_control(self.switch_req)
+            print resp
+
+        return EmptyResponse()
+
+    def left_interaction_off_cb(self,  req):
+
+        if not self.left_arm_mann: rospy.logerr('Left arm already in normal mode')
+        else:
+
+            self.left_arm_mann = False
+
+            self.switch_req.stop_controllers = [self.mannequin_controllers[1]]
+            self.switch_req.start_controllers = [self.standard_controllers[1]]
+            resp = self.switch_control(self.switch_req)
+            print resp
+
+        return EmptyResponse()
+
+    def right_interaction_on_cb(self,  req):
+
+        if self.right_arm_mann: rospy.logerr('Right arm already in interactive mode')
+        else:
+
+            self.right_arm_mann = True
+
+            self.switch_req.stop_controllers = [self.standard_controllers[0]]
+            self.switch_req.start_controllers = [self.mannequin_controllers[0]]
+            resp = self.switch_control(self.switch_req)
+            print resp
+
+        return EmptyResponse()
+
+    def right_interaction_off_cb(self,  req):
+
+        if not self.right_arm_mann: rospy.logerr('Right arm already in normal mode')
+        else:
+
+            self.right_arm_mann = False
+
+            self.switch_req.stop_controllers = [self.mannequin_controllers[0]]
+            self.switch_req.start_controllers = [self.standard_controllers[0]]
+            resp = self.switch_control(self.switch_req)
+            print resp
+
+        return EmptyResponse()
 
     def spine_up_cb(self, empty):
         self.spine_move_to(1)
