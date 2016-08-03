@@ -62,7 +62,7 @@ class ArtBrain:
 
         self.state_publisher = rospy.Publisher("/art/brain/system_state", SystemState, queue_size=1)
 
-        self.pp_client = actionlib.SimpleActionClient('/pr2_pick_place_left/pp', pickplaceAction)
+        self.pp_client = actionlib.SimpleActionClient('/art/pr2/left_arm/pp', pickplaceAction)
 
         self.state = self.SYSTEM_START
         self.user_id = 0
@@ -485,11 +485,11 @@ class ArtBrain:
         self.pp_client.send_goal(goal)
         self.pp_client.wait_for_result()
         # TODO: make some error msg etc
-        '''rospy.loginfo('got result')
+        rospy.loginfo('got result')
         print self.pp_client.get_result()
         print "status: " + self.pp_client.get_goal_status_text()
         print "state: " + str(self.pp_client.get_state())
-        '''
+        
         if self.pp_client.get_result().result == 0:
             return True
         else:
