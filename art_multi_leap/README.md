@@ -3,3 +3,9 @@ The node (```leap_client.py```) reads data from one or more LeapMotion sensors u
 As one can only attach one LeapMotion device to one PC, other devices have to be attached to another PCs or to virtual machines. As ```leapd``` only accepts connections from the same IP, ports should be forwarded like this:
 
 ```ssh -L 9000:localhost:6437 user@another_machine_with_leap_connected```
+
+Dependencies:
+
+```
+sudo pip install ws4py numpy
+```
