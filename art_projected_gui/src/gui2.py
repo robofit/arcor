@@ -531,8 +531,11 @@ class simple_gui(QtGui.QWidget):
     
         for obj_id in msg.lost_objects:
             
-            self.viz_objects[obj_id].remove()
-            del self.viz_objects[obj_id]
+            try:
+                self.viz_objects[obj_id].remove()
+                del self.viz_objects[obj_id]
+            except KeyError:
+                pass
     
         for obj in msg.instances:
             
