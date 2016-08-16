@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+
+  <node pkg="art_multi_leap" name="multi_leap_client" type="leap_client.py" output="screen" ns="/art/user/">
+    <rosparam command="load" file="$(find art_multi_leap)/config/leaps.yml" param="leaps"/>
+  </node>
+
+</launch>

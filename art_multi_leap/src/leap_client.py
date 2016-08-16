@@ -1,9 +1,14 @@
+#!/usr/bin/env python
+
 import rospy
 import json
 from ws4py.client.threadedclient import WebSocketClient
 from geometry_msgs.msg import PoseStamped
 import collections
 import numpy as np
+import socket
+import tf
+from math import sqrt
 
 class HandInfo():
 
@@ -11,52 +16,61 @@ class HandInfo():
 
         self.timestamp = None
         self.pos = None
+        self.orientation = None
         self.velocity = None
         self.visible = None
         self.confidence = None
 
 class MultiLeapClient():
 
-    def __init__(self):
+    def __init__(self, frame_id):
 
         self.leaps = []
+
+        self.frame_id = frame_id
 
         self.left_filt = [0,  0 , 0] # left hand - filtered data
         self.right_filt = [0,  0 , 0] # right hand - filtered data
 
+        self.left_orientation = [0,  0,  0,  1] # TODO also do some filtering?
+        self.right_orientation = [0,  0,  0,  1]
+
         self.left_ts = None
         self.right_ts = None
 
-        self.left_pub = rospy.Publisher("leap/left", PoseStamped, queue_size=1)
-        self.right_pub = rospy.Publisher("leap/right", PoseStamped, queue_size=1)
+        self.left_pub = rospy.Publisher("leap/palm/left", PoseStamped, queue_size=1)
+        self.right_pub = rospy.Publisher("leap/palm/right", PoseStamped, queue_size=1)
 
         self.tmr = rospy.Timer(rospy.Duration(1.0/30), self.tmr_callback)
 
-    def publish(self,  pos,  pub):
+    def publish(self,  pos,  orientation,  pub):
 
         ps = PoseStamped()
         ps.header.stamp = rospy.Time.now()
-        ps.header.frame_id = "marker"
+        ps.header.frame_id = self.frame_id
         ps.pose.position.x = pos[0]
         ps.pose.position.y = pos[1]
         ps.pose.position.z = pos[2]
 
-        ps.pose.orientation.x = 0.0
-        ps.pose.orientation.y = 0.0
-        ps.pose.orientation.z = 0.0
-        ps.pose.orientation.w = 1.0
+        ps.pose.orientation.x = orientation[0]
+        ps.pose.orientation.y = orientation[1]
+        ps.pose.orientation.z = orientation[2]
+        ps.pose.orientation.w = orientation[3]
 
         pub.publish(ps)
 
     def tmr_callback(self,  evt):
 
-        if self.left_ts is not None and rospy.Time.now() - self.left_ts < rospy.Duration(1): self.publish(self.left_filt,  self.left_pub)
-        if self.right_ts is not None and rospy.Time.now() - self.right_ts < rospy.Duration(1): self.publish(self.right_filt,  self.right_pub)
+        if self.left_ts is not None and rospy.Time.now() - self.left_ts < rospy.Duration(1): self.publish(self.left_filt, self.left_orientation,   self.left_pub)
+        if self.right_ts is not None and rospy.Time.now() - self.right_ts < rospy.Duration(1): self.publish(self.right_filt,  self.right_orientation,  self.right_pub)
 
-    def add(self,  conn,  frame,  x,  y,  z,  roll,  pitch,  yaw):
+    def add(self,  leap):
 
-        self.leaps.append(LeapClient(conn,  frame,  x,  y,  z,  roll,  pitch,  yaw))
-        self.leaps[-1].connect()
+        self.leaps.append(LeapClient(leap))
+        try:
+            self.leaps[-1].connect()
+        except socket.error:
+            rospy.logerr('Could not connect to: ' + leap['conn'] + ' (' + leap['id'] + ')')
 
     def process(self):
 
@@ -66,12 +80,12 @@ class MultiLeapClient():
         for leap in self.leaps:
 
             try:
-                left.append(leap.buff["left"].pop())
+                left.append(leap.buff["left"].popleft())
             except IndexError:
                 pass
 
             try:
-                right.append(leap.buff["right"].pop())
+                right.append(leap.buff["right"].popleft())
             except IndexError:
                 pass
 
@@ -82,6 +96,11 @@ class MultiLeapClient():
         right_avg = self.get_avg(right)
 
         fa = 0.2
+
+        # TODO average orientation
+        # for now - just take the first one
+        if len(left) > 0: self.left_orientation = left[0].orientation
+        if len(right) > 0: self.right_orientation = right[0].orientation
 
         if left_avg is not None:
 
@@ -115,17 +134,20 @@ class MultiLeapClient():
 
         for leap in self.leaps:
 
-            leap.close()
+            try:
+                leap.close()
+            except socket.error:
+                pass
 
 class LeapClient(WebSocketClient):
 
-    def __init__(self,  conn,  frame,  x,  y,  z,  roll,  pitch,  yaw):
+    def __init__(self,  leap):
 
-        super(LeapClient, self).__init__(conn,  protocols=['http-only', 'chat'])
+        super(LeapClient, self).__init__(leap['conn'],  protocols=['http-only', 'chat'])
 
-        self.frame = frame
-        self.pos = [x,  y,  z]
-        # TODO orientation
+        self.id = leap['id']
+        self.pos = [leap['position']['x'],  leap['position']['y'],  leap['position']['z']]
+        self.orientation = tf.transformations.quaternion_from_euler(leap['orientation']['roll'],  leap['orientation']['pitch'],  leap['orientation']['yaw'])
 
         self.buff = {}
         self.buff["left"] = collections.deque(maxlen=10)
@@ -194,11 +216,34 @@ class LeapClient(WebSocketClient):
                 h.pos = PoseStamped()
 
                 h.pos = []
-                h.pos.append(self.pos[0] + 0.001*frame['stabilizedPalmPosition'][0]) # TODO metoda na prehazeni os
-                h.pos.append(self.pos[1] - 0.001*frame['stabilizedPalmPosition'][2])
-                h.pos.append(self.pos[2] + 0.001*frame['stabilizedPalmPosition'][1])
+                h.pos.append(0.001*frame['stabilizedPalmPosition'][0]) # TODO metoda na prehazeni os
+                h.pos.append(- 0.001*frame['stabilizedPalmPosition'][2])
+                h.pos.append(0.001*frame['stabilizedPalmPosition'][1])
 
-                # TODO convert normal vector (palmNormal) to orientation
+                # apply sensor orientation in 'world' frame
+                h.pos = self.qv_mult(self.orientation,  h.pos)
+
+                # apply sensor position in 'world' frame
+                h.pos[0] += self.pos[0]
+                h.pos[1] += self.pos[1]
+                h.pos[2] += self.pos[2]
+
+                # TODO convert normal vector (palmNormal) to orientation -> fix it
+                #o = []
+                #o.append(frame['palmNormal'][0])
+                #o.append(-frame['palmNormal'][2])
+                #o.append(frame['palmNormal'][1])
+
+                #axis = np.array([0,  0,  1.0])
+
+                #o = np.array(o)
+
+                #m = sqrt(2.0 + 2.0 * np.dot(o, axis))
+                #w = (1.0 / m) * np.cross(o, axis)
+                #q = [w[0], w[1], w[2],  0.5 * m]
+
+                #h.orientation = q
+                h.orientation = [0,  0,  0,  1]
 
                 h.velocity = [0.001*frame['palmVelocity'][0],  -0.001*frame['palmVelocity'][2],  0.001*frame['palmVelocity'][1]]
 
@@ -210,28 +255,47 @@ class LeapClient(WebSocketClient):
                 except KeyError:
                     print "unknown hand type: " + frame['type']
 
-if __name__ == '__main__':
+    # rotate vector v1 by quaternion q1
+    def qv_mult(self, q1, v1):
+        #v1 = tf.transformations.unit_vector(v1)
+        q2 = list(v1)
+        q2.append(0.0)
+        return tf.transformations.quaternion_multiply(
+            tf.transformations.quaternion_multiply(q1, q2),
+            tf.transformations.quaternion_conjugate(q1)
+        )[:3]
+
+def main():
 
     rospy.init_node('leap')
 
     try:
+        leaps = rospy.get_param('~leaps')
+    except KeyError:
+        rospy.logerr('Private parameter "leaps" not set!')
+        return
 
-        c = MultiLeapClient()
+    c = MultiLeapClient(rospy.get_param('~frame_id',  'marker'))
 
-        # TODO read from param
-        c.add('ws://localhost:6437/v6.json',  'marker',  0,  0,  0,  0,  0,  0) # TODO apply RPY
-        c.add('ws://localhost:9000/v6.json',  'marker',  0.5,  0,  0,  0,  0,  0)
+    for leap in leaps:
+        c.add(leap)
 
-        rospy.loginfo('ready')
+    rospy.loginfo('ready')
 
-        r = rospy.Rate(100)
+    r = rospy.Rate(100)
 
-        while not rospy.is_shutdown():
+    while not rospy.is_shutdown():
 
-            c.process()
-            r.sleep()
+        c.process()
+        r.sleep()
 
-        c.stop()
+    c.stop()
 
+if __name__ == '__main__':
+
+    try:
+        main()
     except KeyboardInterrupt:
         pass
+
+
