@@ -1,4 +1,11 @@
-The node (```leap_client.py```) reads data from one or more LeapMotion sensors using websocket interface and (so far) publishes left and right palm positions as ```geometry_msgs/PoseStamped``` messages at 30 Hz. One can specify position and orientation (orientation is ignored for now) of each device (so far only by editing the code) code and then, when there is overlap, data from two or more sensors are averaged using confidence values as weights. Moreover, there is simple adjustable temporal filtering of the palm position. The node assumes that there is always only one user.
+The node (```leap_client.py```) reads data from one or more LeapMotion sensors using websocket interface. It is supposed that sensors are placed on a table in front of the user. The node publishes following messages (at 30 Hz):
+
+- ```/art/user/palm/3d/left (geometry_msgs/PoseStamped)```
+- ```/art/user/palm/3d/right (geometry_msgs/PoseStamped)```
+- ```/art/user/palm/2d/left (geometry_msgs/PointStamped)```
+- ```/art/user/palm/2d/right (geometry_msgs/PointStamped)```
+
+...where "3d" topics are user's palm poses (for left and right hand) and "2d" topics are x,y points on the table where user points. Table size can be specified by parameters (see launch file for example). Sensors can be specified in yaml file (see config/leaps.yml). One can specify position and orientation (orientation is ignored for now) of each device  and then, when there is overlap, data from two or more sensors are averaged using confidence values as weights. Moreover, there is simple adjustable temporal filtering.
 
 As one can only attach one LeapMotion device to one PC, other devices have to be attached to another PCs or to virtual machines. As ```leapd``` only accepts connections from the same IP, ports should be forwarded like this:
 
@@ -7,5 +14,5 @@ As one can only attach one LeapMotion device to one PC, other devices have to be
 Dependencies:
 
 ```
-sudo pip install ws4py numpy
+sudo pip install pyrr ws4py numpy
 ```
