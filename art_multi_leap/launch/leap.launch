@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+
+  <node pkg="art_multi_leap" name="multi_leap_client" type="leap_client.py" output="screen" ns="/art/user/">
+    <rosparam command="load" file="$(find art_multi_leap)/config/leaps.yml" param="leaps"/>
+    <param name="table_min_x" value="-0.75"/>
+    <param name="table_max_x" value="0.75"/>
+    <param name="table_min_y" value="0.0"/>
+    <param name="table_max_y" value="0.8"/>
+  </node>
+
+</launch>
