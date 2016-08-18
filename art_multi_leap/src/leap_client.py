@@ -3,12 +3,13 @@
 import rospy
 import json
 from ws4py.client.threadedclient import WebSocketClient
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped,  PointStamped
 import collections
 import numpy as np
 import socket
 import tf
-from math import sqrt
+from math import atan2,  pi
+import pyrr
 
 class HandInfo():
 
@@ -27,23 +28,35 @@ class MultiLeapClient():
 
         self.leaps = []
 
+        self.table_min_x = rospy.get_param('~table_min_x')
+        self.table_max_x = rospy.get_param('~table_max_x')
+        self.table_min_y = rospy.get_param('~table_min_y')
+        self.table_max_y = rospy.get_param('~table_max_y')
+
         self.frame_id = frame_id
 
-        self.left_filt = [0,  0 , 0] # left hand - filtered data
-        self.right_filt = [0,  0 , 0] # right hand - filtered data
+        self.left_filt =None # left hand - filtered data
+        self.right_filt = None # right hand - filtered data
 
-        self.left_orientation = [0,  0,  0,  1] # TODO also do some filtering?
-        self.right_orientation = [0,  0,  0,  1]
+        self.left_orientation =None
+        self.right_orientation = None
 
         self.left_ts = None
         self.right_ts = None
 
-        self.left_pub = rospy.Publisher("leap/palm/left", PoseStamped, queue_size=1)
-        self.right_pub = rospy.Publisher("leap/palm/right", PoseStamped, queue_size=1)
+        self.left_pub = rospy.Publisher("palm/3d/left", PoseStamped, queue_size=1)
+        self.right_pub = rospy.Publisher("palm/3d/right", PoseStamped, queue_size=1)
+
+        self.left_2d_pub = rospy.Publisher("palm/2d/left", PointStamped, queue_size=1)
+        self.right_2d_pub = rospy.Publisher("palm/2d/right", PointStamped, queue_size=1)
 
         self.tmr = rospy.Timer(rospy.Duration(1.0/30), self.tmr_callback)
 
-    def publish(self,  pos,  orientation,  pub):
+    def publish(self,  pos,  orientation,  pub_3d,  pub_2d):
+
+        if orientation is None or pos is None: return
+
+        orientation = self.normalize(orientation)
 
         ps = PoseStamped()
         ps.header.stamp = rospy.Time.now()
@@ -57,12 +70,61 @@ class MultiLeapClient():
         ps.pose.orientation.z = orientation[2]
         ps.pose.orientation.w = orientation[3]
 
-        pub.publish(ps)
+        pub_3d.publish(ps)
+
+        dir = pyrr.quaternion.apply_to_vector(pyrr.quaternion.conjugate(orientation), pos)
+        dir[0] += 10.0
+        dir = pyrr.quaternion.apply_to_vector(orientation,  dir)
+
+        r = pyrr.ray.create(pos, dir)
+        p = pyrr.plane.create( [0,  0,  1])
+
+        intersection = pyrr.geometric_tests.ray_intersect_plane(r,  p,  front_only=True)
+
+        if intersection is not None:
+
+            (x,  y) = self.limit_to_table(intersection[0],  intersection[1])
+
+            pt = PointStamped()
+            pt.header = ps.header
+            pt.point.x = x
+            pt.point.y = y
+            pt.point.z = 0.0
+
+            pub_2d.publish(pt)
+
+    def clamp(self,  n, minn, maxn):
+        return max(min(maxn, n), minn)
+
+    def limit_to_table(self,  x,  y):
+
+        x = self.clamp(x,  self.table_min_x,  self.table_max_x)
+        y = self.clamp(y,  self.table_min_y,  self.table_max_y)
+        return (x,  y)
 
     def tmr_callback(self,  evt):
 
-        if self.left_ts is not None and rospy.Time.now() - self.left_ts < rospy.Duration(1): self.publish(self.left_filt, self.left_orientation,   self.left_pub)
-        if self.right_ts is not None and rospy.Time.now() - self.right_ts < rospy.Duration(1): self.publish(self.right_filt,  self.right_orientation,  self.right_pub)
+        if self.left_ts is not None:
+
+            if rospy.Time.now() - self.left_ts < rospy.Duration(0.5):
+
+                self.publish(self.left_filt, self.left_orientation,   self.left_pub,  self.left_2d_pub)
+
+            else:
+
+                self.left_filt = None
+                self.left_orientation = None
+
+        if self.right_ts is not None:
+
+            if rospy.Time.now() - self.right_ts < rospy.Duration(0.5):
+
+                self.publish(self.right_filt,  self.right_orientation,  self.right_pub,  self.right_2d_pub)
+
+            else:
+
+                self.right_filt = None
+                self.right_orientation = None
 
     def add(self,  leap):
 
@@ -97,22 +159,56 @@ class MultiLeapClient():
 
         fa = 0.2
 
-        # TODO average orientation
-        # for now - just take the first one
-        if len(left) > 0: self.left_orientation = left[0].orientation
-        if len(right) > 0: self.right_orientation = right[0].orientation
+        lo = self.get_avg_orientation(left)
+        ro = self.get_avg_orientation(right)
 
-        if left_avg is not None:
+        self.left_orientation = self.temp_filter(self.left_orientation,  lo,  4,  fa)
+        self.right_orientation = self.temp_filter(self.right_orientation,  ro,  4,  fa)
+        self.left_filt = self.temp_filter(self.left_filt,  left_avg,  3,  fa)
+        self.right_filt = self.temp_filter(self.right_filt,  right_avg,  3,  fa)
 
-            for i in range(0, 3):
+    def temp_filter(self,  filt,  data,  l,  coef):
 
-                self.left_filt[i] = fa*self.left_filt[i] + (1-fa)*left_avg[i]
+        if data is None: return filt
 
-        if right_avg is not None:
+        if filt is None:
 
-            for i in range(0, 3):
+            return data
 
-                self.right_filt[i] = fa*self.right_filt[i] + (1-fa)*right_avg[i]
+        else:
+
+            for i in range(0, l):
+
+                filt[i] = coef*filt[i] + (1-coef)*data[i]
+
+            return filt
+
+    def normalize(self, q, tolerance=0.00001):
+
+        n = np.linalg.norm(q)
+
+        if n > tolerance:
+
+            q = q / n
+        return q
+
+    def get_avg_orientation(self,  data):
+
+        if len(data) == 0: return None
+
+        res = np.array(data[0].orientation)
+
+        for i in range(1,  len(data)):
+
+            if np.dot(data[i].orientation,  data[0].orientation) < 0.0:
+
+              data[i].orientation = -1.0*np.array(data[i].orientation)
+
+            for j in range(0,  4):
+
+                res[j] += data[i].orientation[j]
+
+        return self.normalize(res / len(data))
 
     def get_avg(self,  arr):
 
@@ -220,30 +316,24 @@ class LeapClient(WebSocketClient):
                 h.pos.append(- 0.001*frame['stabilizedPalmPosition'][2])
                 h.pos.append(0.001*frame['stabilizedPalmPosition'][1])
 
+                # TODO fix this
                 # apply sensor orientation in 'world' frame
-                h.pos = self.qv_mult(self.orientation,  h.pos)
+                #h.pos = self.qv_mult(self.orientation,  h.pos)
 
                 # apply sensor position in 'world' frame
                 h.pos[0] += self.pos[0]
                 h.pos[1] += self.pos[1]
                 h.pos[2] += self.pos[2]
 
-                # TODO convert normal vector (palmNormal) to orientation -> fix it
-                #o = []
-                #o.append(frame['palmNormal'][0])
-                #o.append(-frame['palmNormal'][2])
-                #o.append(frame['palmNormal'][1])
+                # get orientation in leap coordinates
+                r = atan2(frame['palmNormal'][0],  -frame['palmNormal'][1])# roll - rotation around the (leap) z-axis
+                p = atan2(frame['direction'][1],  -frame['direction'][2]) # pitch represents rotation around the (leap) x-axis
+                y = atan2(frame['direction'][0],  -frame['direction'][2]) # yaw - rotation around the (leap) y-axis (ROS z-axis)
 
-                #axis = np.array([0,  0,  1.0])
+                h.orientation = tf.transformations.quaternion_from_euler(-r,  -p,  -y+pi/2)
 
-                #o = np.array(o)
-
-                #m = sqrt(2.0 + 2.0 * np.dot(o, axis))
-                #w = (1.0 / m) * np.cross(o, axis)
-                #q = [w[0], w[1], w[2],  0.5 * m]
-
-                #h.orientation = q
-                h.orientation = [0,  0,  0,  1]
+                # TODO fix following application of sensor orientation
+                #h.orientation = tf.transformations.quaternion_multiply(tf.transformations.quaternion_multiply(self.orientation,  h.orientation), tf.transformations.quaternion_conjugate(self.orientation))
 
                 h.velocity = [0.001*frame['palmVelocity'][0],  -0.001*frame['palmVelocity'][2],  0.001*frame['palmVelocity'][1]]
 
@@ -260,6 +350,7 @@ class LeapClient(WebSocketClient):
         #v1 = tf.transformations.unit_vector(v1)
         q2 = list(v1)
         q2.append(0.0)
+
         return tf.transformations.quaternion_multiply(
             tf.transformations.quaternion_multiply(q1, q2),
             tf.transformations.quaternion_conjugate(q1)
@@ -282,7 +373,7 @@ def main():
 
     rospy.loginfo('ready')
 
-    r = rospy.Rate(100)
+    r = rospy.Rate(200) # max. frame rate (?)
 
     while not rospy.is_shutdown():
 
