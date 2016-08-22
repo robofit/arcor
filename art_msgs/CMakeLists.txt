@@ -36,6 +36,8 @@ add_service_files(
     getObject.srv
     storeObject.srv
     startProgram.srv
+    getProgramsList.srv
+    getObjectsTypes.srv
 )
 
 generate_messages(
