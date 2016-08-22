@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from art_msgs.msg import ObjInstance, InstancesArray
-from art_msgs.srv import getProgram,  getProgramResponse,  storeProgram,  storeProgramResponse,  getObject,  getObjectResponse,  storeObject,  storeObjectResponse
+from art_msgs.srv import getProgram,  getProgramResponse,  storeProgram,  storeProgramResponse,  getObject,  getObjectResponse,  storeObject,  storeObjectResponse, getProgramsList, getProgramsListResponse, getObjectsTypes, getObjectsTypesResponse
 import sys
 import rospy
 import dataset
@@ -18,9 +18,13 @@ class ArtDB:
         self.db_path = rospack.get_path('art_db') + '/art.db' # TODO where to store?
         
         self.srv_get_program = rospy.Service('/art/db/program/get', getProgram, self.srv_get_program_cb)
+        self.srv_get_programs_list = rospy.Service('/art/db/program/get_all', getProgramsList,
+                                                   self.srv_get_programs_list_cb)
         self.srv_store_program = rospy.Service('/art/db/program/store', storeProgram, self.srv_store_program_cb)
         
         self.srv_get_object = rospy.Service('/art/db/object/get', getObject, self.srv_get_object_cb)
+        self.srv_get_objects_types = rospy.Service('/art/db/object/get_types', getObjectsTypes,
+                                                   self.srv_get_objects_types_cb)
         self.srv_store_object = rospy.Service('/art/db/object/store', storeObject, self.srv_store_object_cb)
         
     def srv_get_program_cb(self,  req):
@@ -64,6 +68,27 @@ class ArtDB:
         objects.insert(dict(name=req.name, model_url=req.model_url, obj_id=req.obj_id,  type=req.type,  bb=bb_json))
         resp =storeObjectResponse()
         resp.success = True
+        return resp
+
+    def srv_get_programs_list_cb(self, req):
+        db = dataset.connect('sqlite:////' + self.db_path)
+        programs = db['programs'].all()
+        resp = getProgramsListResponse()
+        for pr in programs:
+            resp.programs.append(
+                message_converter.convert_dictionary_to_ros_message('art_msgs/Program', json.loads(pr['json'])))
+        return resp
+
+    def srv_get_objects_types_cb(self, req):
+        db = dataset.connect('sqlite:////' + self.db_path)
+        obj = db['objects'].all()
+        types = []
+        for o in obj:
+            if o['type'] not in types:
+                types.append(o['type'])
+        resp = getObjectsTypesResponse()
+        resp.types = types
+
         return resp
         
 def main(args):
