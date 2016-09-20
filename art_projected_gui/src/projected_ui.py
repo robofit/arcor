@@ -12,9 +12,11 @@ from place_item import PlaceItem
 # z tohodle vyleze 2D obraz
 # scene_res -> rozliseni v jakem se ma scena udrzovat
 # world_coords -> souradnice rohu obrazu
-class ProjectedUI(object):
+class ProjectedUI(QtCore.QObject):
     
     def __init__(self,  x,  y,  width,  height):
+        
+        super(ProjectedUI, self).__init__()
         
         self.x = x
         self.y = y
@@ -68,6 +70,16 @@ class ProjectedUI(object):
     def add_object(self,  object_id,  object_type,  x,  y):
         
         self.objects[object_id] = ObjectItem(self.scene,  self.rpm, object_id,  object_type,  x,  y)
+        
+    def remove_object(self,  object_id):
+        
+        try:
+            self.scene.remove(self.objects[object_id])
+            del self.objects[object_id]
+        except KeyError:
+            return False
+            
+        return True
         
     def add_place(self,  caption,  x,  y):
         

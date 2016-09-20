@@ -43,7 +43,7 @@ include_directories(
 )
 
 add_executable(art_cluster_detector_node src/node.cpp)
-
+add_dependencies(art_cluster_detector_node art_msgs_generate_messages_cpp)
 
 target_link_libraries(art_cluster_detector_node
    ${catkin_LIBRARIES}

@@ -27,7 +27,7 @@ def main(args):
     ui.debug_view()
     
     #ui.add_projector(Projector(0, None))
-    ui.add_object("profile_1",  "profile",  0.5,  0.5)
+    ui.add_object("profile_1",  "profile",  0.6,  0.1)
     ui.add_place("PLACE POSE",  0.3,  0.2)
     
     ui. scene_changed(None)
