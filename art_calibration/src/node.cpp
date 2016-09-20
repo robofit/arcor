@@ -42,7 +42,7 @@ public:
         nh_.param<std::string>("world_frame", world_frame_, "marker");
         table_marker_sub = nh_.subscribe ("/table/ar_pose_marker", 1, &ArtCalibration::table_marker_cb, this);
         pr2_marker_sub = nh_.subscribe ("/pr2/ar_pose_marker", 1, &ArtCalibration::pr2_marker_cb, this);
-        head_look_at_pub = nh_.advertise<geometry_msgs::PointStamped>("/art_basic_control/look_at", 1);
+        head_look_at_pub = nh_.advertise<geometry_msgs::PointStamped>("/art/pr2/look_at", 1);
     }
 
 private:
