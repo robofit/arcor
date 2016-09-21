@@ -3,6 +3,7 @@
 from PyQt4 import QtGui, QtCore
 from item import Item
 from art_msgs.msg import ProgramItem as ProgIt
+from geometry_msgs.msg import Point32
 
 class ProgramItem(Item):
 
@@ -25,6 +26,9 @@ class ProgramItem(Item):
         self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
         self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
 
+    def has_prog(self):
+
+        return self.prog is None
 
     def set_prog(self,  prog,  template):
 
@@ -55,6 +59,14 @@ class ProgramItem(Item):
         self.active_item.place_pose.pose.position.x = x
         self.active_item.place_pose.pose.position.y = y
 
+    def set_polygon(self,  pts):
+
+        del self.active_item.pick_polygon.polygon.points[:]
+
+        for pt in pts:
+
+            self.active_item.pick_polygon.polygon.points.append(Point32(pt[0],  pt[1],  0))
+
     def mouseDoubleClickEvent(self,  evt):
 
         # TODO prepnout na poklikanou polozku, zatim jen na nasledujici/prvni
@@ -79,6 +91,17 @@ class ProgramItem(Item):
         #h = self.m2pix(self.h)
 
         return QtCore.QRectF(0,  0, self.w, self.h)
+
+    def item_learned(self,  it):
+
+        #if it.type not in self.items_req_learning: return True
+
+        # TODO dalsi typy / spec
+        if it.type== ProgIt.MANIP_PICK_PLACE:
+
+            if it.object != "" and len(it.pick_polygon.polygon.points) > 0 and it.place_pose.pose.position.x != 0 and it.place_pose.pose.position.y != 0: return True
+
+        return False
 
     def get_text_for_item(self,  it):
 
@@ -141,9 +164,10 @@ class ProgramItem(Item):
         painter.setPen(QtCore.Qt.white)
         metrics = QtGui.QFontMetrics(font)
 
+        # TODO zvyraznovat i naucenou polozku
         for pitem in self.prog.items:
 
-            if pitem.id in self.items_to_be_learned:
+            if pitem.id in self.items_to_be_learned  and not self.item_learned(pitem):
 
                 if pitem.id == self.active_item.id:
 

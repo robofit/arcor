@@ -5,9 +5,8 @@ import signal
 import rospy
 from PyQt4 import QtGui, QtCore
 
-from projector import Projector
-from projected_ui_ros import ProjectedUIRos
-from object_item import ObjectItem
+#from projector import Projector
+from ui_core_ros import UICoreRos
 
 def sigint_handler(*args):
     """Handler for the SIGINT signal."""
@@ -15,29 +14,35 @@ def sigint_handler(*args):
     QtGui.QApplication.quit()
 
 def main(args):
-    
+
     rospy.init_node('projected_gui', anonymous=True)
-    
+
+    #rospy.loginfo('Waiting for art_brain services...')
+    #rospy.wait_for_service('/art/brain/program/start')
+    #rospy.wait_for_service('/art/brain/program/stop')
+    rospy.loginfo('Waiting for art_db services...')
+    rospy.wait_for_service('/art/db/program/get')
+    rospy.wait_for_service('/art/db/program/store')
+    rospy.loginfo('Ready!')
+
     signal.signal(signal.SIGINT, sigint_handler)
-    
+
     app = QtGui.QApplication(sys.argv)
 
-    ui = ProjectedUIRos(0, 0, 1.2,  0.75)
-    
+    ui = UICoreRos()
+
     ui.debug_view()
-    
+
     #ui.add_projector(Projector(0, None))
-    ui.add_object("profile_1",  "profile",  0.6,  0.1)
-    ui.add_place("PLACE POSE",  0.3,  0.2)
-    
+
     ui. scene_changed(None)
 
     timer = QtCore.QTimer()
     timer.start(500)
     timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
-    
+
     sys.exit(app.exec_())
-    
+
 if __name__ == '__main__':
     try:
         main(sys.argv)
