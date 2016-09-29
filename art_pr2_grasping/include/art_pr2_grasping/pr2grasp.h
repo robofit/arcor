@@ -163,7 +163,7 @@ public:
 
       boost::recursive_mutex::scoped_try_lock lock(objects_mutex_);
       
-      if (!lock) return;
+      if (!lock) return; // we don't want to block message queue during pick/place execution
 
       ROS_INFO_ONCE("InstancesArray received");
 
@@ -257,7 +257,7 @@ public:
 
   bool isKnownObject(std::string id) {
 
-      boost::recursive_mutex::scoped_try_lock lock(objects_mutex_);
+      boost::recursive_mutex::scoped_lock lock(objects_mutex_);
       std::map<std::string, tobj>::iterator it = objects_.find(id);
       return it != objects_.end();
   }
@@ -452,7 +452,7 @@ public:
   void publishCollisionBB(geometry_msgs::Pose block_pose, std::string block_name, const shape_msgs::SolidPrimitive & shape)
   {
   
-    boost::recursive_mutex::scoped_try_lock lock(objects_mutex_);
+    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
 
     moveit_msgs::CollisionObject collision_obj;
 
@@ -479,12 +479,12 @@ public:
 
   bool hasGraspedObject()
   {
-   boost::recursive_mutex::scoped_try_lock lock(objects_mutex_);
+   boost::recursive_mutex::scoped_lock lock(objects_mutex_);
    return grasped_object_;
   }
 
   bool resetGraspedObject() {
-   boost::recursive_mutex::scoped_try_lock lock(objects_mutex_);
+   boost::recursive_mutex::scoped_lock lock(objects_mutex_);
    grasped_object_.reset();
   }
 
