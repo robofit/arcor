@@ -10,6 +10,8 @@
 #include <moveit_visual_tools/visual_tools.h>
 #include <moveit_simple_grasps/grasp_data.h>
 #include <moveit_simple_grasps/grasp_filter.h>
+#include <boost/thread/recursive_mutex.hpp>
+
 
 // adapted from https://github.com/davetcoleman/baxter_cpp/blob/hydro-devel/baxter_pick_place/src/block_pick_place.cpp
 
@@ -60,6 +62,7 @@ private:
 
   ros::Subscriber obj_sub_;
 
+  boost::recursive_mutex objects_mutex_;
   std::map<std::string, tobj> objects_;
 
   boost::shared_ptr<tf::TransformListener> tfl_;
@@ -67,8 +70,6 @@ private:
   boost::shared_ptr<graspedObject> grasped_object_;
 
   std::string group_name_;
-
-  bool manipulation_in_progress_;
 
 public:
   artPr2Grasping()
@@ -124,8 +125,6 @@ public:
       ROS_WARN("Point head action not available!");
     }
 
-    manipulation_in_progress_ = false;
-
     obj_sub_ = nh_.subscribe("/art/object_detector/object_filtered", 1, &artPr2Grasping::detectedObjectsCallback, this);
 
   }
@@ -162,9 +161,11 @@ public:
 
   void detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr &msg) {
 
-      ROS_INFO_ONCE("InstancesArray received");
+      boost::recursive_mutex::scoped_try_lock lock(objects_mutex_);
+      
+      if (!lock) return;
 
-      if (manipulation_in_progress_) return;
+      ROS_INFO_ONCE("InstancesArray received");
 
       // remove outdated objects
       std::map<std::string, tobj>::iterator it;
@@ -197,12 +198,16 @@ public:
 
           std::map<std::string, tobj>::iterator it;
           it = objects_.find(ids_to_remove[i]);
-          objects_.erase(it);
-
-          for (int j = 0; j < 3; j++) // todo is it necessary?
-          {
-            visual_tools_->cleanupCO(it->first);
-            ros::Duration(0.1).sleep();
+          
+          if (it != objects_.end()) {
+          
+              for (int j = 0; j < 3; j++) // todo is it necessary?
+              {
+                visual_tools_->cleanupCO(it->first);
+                ros::Duration(0.1).sleep();
+              }
+              
+              objects_.erase(it);
           }
       }
 
@@ -252,6 +257,7 @@ public:
 
   bool isKnownObject(std::string id) {
 
+      boost::recursive_mutex::scoped_try_lock lock(objects_mutex_);
       std::map<std::string, tobj>::iterator it = objects_.find(id);
       return it != objects_.end();
   }
@@ -330,13 +336,13 @@ public:
   bool place(const geometry_msgs::Pose &ps, double z_axis_angle_increment = 0.0, bool keep_orientation = false)
   {
 
+    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
+
     if (!hasGraspedObject())
     {
       ROS_ERROR("No object to place.");
       return false;
     }
-
-    manipulation_in_progress_ = true;
 
     lookAt(ps.position);
 
@@ -429,12 +435,10 @@ public:
     {
       grasped_object_.reset();
       move_group_->clearPathConstraints();
-      manipulation_in_progress_ = false;
       return true;
     }
 
     ROS_WARN("Failed to place");
-    manipulation_in_progress_ = false;
     return false;
   }
 
@@ -447,6 +451,9 @@ public:
 
   void publishCollisionBB(geometry_msgs::Pose block_pose, std::string block_name, const shape_msgs::SolidPrimitive & shape)
   {
+  
+    boost::recursive_mutex::scoped_try_lock lock(objects_mutex_);
+
     moveit_msgs::CollisionObject collision_obj;
 
     collision_obj.header.stamp = ros::Time::now();
@@ -472,15 +479,19 @@ public:
 
   bool hasGraspedObject()
   {
+   boost::recursive_mutex::scoped_try_lock lock(objects_mutex_);
    return grasped_object_;
   }
 
   bool resetGraspedObject() {
-    grasped_object_.reset();
+   boost::recursive_mutex::scoped_try_lock lock(objects_mutex_);
+   grasped_object_.reset();
   }
 
   bool pick(const std::string &id)
   {
+
+    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
 
     if (hasGraspedObject())
     {
@@ -488,8 +499,6 @@ public:
       ROS_ERROR("Can't grasp another object.");
       return false;
     }
-
-    manipulation_in_progress_ = true;
 
     std::vector<moveit_msgs::Grasp> grasps;
 
@@ -509,7 +518,6 @@ public:
     {
 
       ROS_ERROR("No grasps found.");
-      manipulation_in_progress_ = false;
       return false;
     }
 
@@ -519,7 +527,6 @@ public:
     {
 
       ROS_ERROR("Grasp filtering failed.");
-      manipulation_in_progress_ = false;
       return false;
     }
 
@@ -527,7 +534,6 @@ public:
     {
 
       ROS_ERROR("No feasible grasps found.");
-      manipulation_in_progress_ = false;
       return false;
     }
 
@@ -551,13 +557,11 @@ public:
 
     if (move_group_->pick(id, grasps))
     {
-      manipulation_in_progress_ = false;
       return true;
     }
 
     ROS_WARN("Failed to pick");
     grasped_object_.reset();
-    manipulation_in_progress_ = false;
     return false;
 
   }

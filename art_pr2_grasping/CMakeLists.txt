@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(art_pr2_grasping)
 
+#set(CMAKE_BUILD_TYPE Debug)
+
 find_package(catkin REQUIRED COMPONENTS 
   moveit_core 
   moveit_ros_planning 

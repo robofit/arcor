@@ -81,6 +81,8 @@ private:
     art_msgs::pickplaceResult res;
     art_msgs::pickplaceFeedback f;
 
+    ROS_INFO("Got goal, operation: %d", goal->operation);
+
     // TODO check /art/pr2/xyz_arm/interaction/state topic!
 
     if (goal->operation != art_msgs::pickplaceGoal::PICK_AND_PLACE && goal->operation != art_msgs::pickplaceGoal::PICK && goal->operation != art_msgs::pickplaceGoal::PLACE)
@@ -97,8 +99,6 @@ private:
       as_->setAborted(res, "unknown object id");
       return;
     }
-
-    ROS_INFO("Got goal, operation: %d", goal->operation);
 
     geometry_msgs::PoseStamped p2 = goal->place_pose; // place goal
 
@@ -158,7 +158,7 @@ private:
       if (msg->process_value < 0.005) {
         
         gr_.resetGraspedObject();
-	gr_.getReady();
+        gr_.getReady();
         ROS_ERROR("Gripper is closed - object missed or dropped :-(");
         res.result = art_msgs::pickplaceResult::FAILURE;
         as_->setAborted(res, "gripper closed after pick");
@@ -228,6 +228,7 @@ private:
 
     res.result = art_msgs::pickplaceResult::SUCCESS;
     as_->setSucceeded(res);
+    ROS_INFO("Finished");
 
   }
 
