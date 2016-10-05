@@ -11,6 +11,7 @@ from place_item import PlaceItem
 from label_item import LabelItem
 from program_item import ProgramItem
 from polygon_item import PolygonItem
+import rospy
 
 # z tohodle vyleze 2D obraz
 # scene_res -> rozliseni v jakem se ma scena udrzovat
@@ -33,7 +34,6 @@ class UICore(QtCore.QObject):
 
         self.scene = QtGui.QGraphicsScene(0, 0,  int(w),  int(h))
         self.scene.setBackgroundBrush(QtCore.Qt.black)
-        #self.state_manager = interface_state_manager("PROJECTED UI",  cb=self.interface_state_cb)
 
         self.scene.changed.connect(self.scene_changed)
 
@@ -44,13 +44,9 @@ class UICore(QtCore.QObject):
 
         self.scene_items = []
 
-    def notif(self,  msg):
+    def notif(self,  msg,  min_duration=rospy.Duration(3),  temp = False):
 
-        self.bottom_label.add_msg(msg)
-
-    def interface_state_cb(self,  state):
-
-        pass
+        self.bottom_label.add_msg(msg,  min_duration,  temp)
 
     def add_projector(self,  proj):
 
@@ -139,7 +135,8 @@ class UICore(QtCore.QObject):
 
         for it in self.get_scene_items_by_type(ObjectItem):
 
-            if it.object_type == obj_type: it.set_selected(True)
+            if it.object_type == obj_type:
+                it.set_selected(True)
             elif unselect_others: it.set_selected(False)
 
     def get_object(self,  obj_id):
@@ -150,9 +147,9 @@ class UICore(QtCore.QObject):
 
         return None
 
-    def add_place(self,  caption,  x,  y,  place_cb=None):
+    def add_place(self,  caption,  x,  y,  place_cb=None,  fixed=False):
 
-        self.scene_items.append(PlaceItem(self.scene,  self.rpm,  caption,  x,  y,  place_cb))
+        self.scene_items.append(PlaceItem(self.scene,  self.rpm,  caption,  x,  y,  place_pose_changed=place_cb,  fixed=fixed))
 
     def add_polygon(self,  caption,  obj_coords=[],  poly_points=[],  polygon_changed=None):
 

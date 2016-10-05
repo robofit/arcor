@@ -4,6 +4,7 @@ import sys
 import signal
 import rospy
 from PyQt4 import QtGui, QtCore
+import rospkg
 
 #from projector import Projector
 from ui_core_ros import UICoreRos
@@ -28,6 +29,12 @@ def main(args):
     signal.signal(signal.SIGINT, sigint_handler)
 
     app = QtGui.QApplication(sys.argv)
+
+    rospack = rospkg.RosPack()
+
+    translator = QtCore.QTranslator()
+    translator.load(QtCore.QLocale.system().name() + '.qm',  rospack.get_path('art_projected_gui') + '/lang')
+    app.installTranslator(translator)
 
     ui = UICoreRos()
 

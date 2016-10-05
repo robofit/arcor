@@ -116,32 +116,32 @@ class ProgramItem(Item):
             obj = "??"
 
         if it.type == ProgIt.GET_READY:
-            return "[" + str(it.id) + "] get ready"
+            return "[" + str(it.id) + "] " + QtCore.QCoreApplication.translate("ProgramItem", "get ready")
         elif it.type == ProgIt.MANIP_PICK:
 
             if it.spec == ProgIt.MANIP_ID:
-                return "[" + str(it.id) + "] pick object ID="
+                return "[" + str(it.id) + "] " + QtCore.QCoreApplication.translate("ProgramItem", "pick object ID=")
             elif it.spec == ProgIt.MANIP_TYPE:
-                return "[" + str(it.id) + "] pick object type="
+                return "[" + str(it.id) + "] " +QtCore.QCoreApplication.translate("ProgramItem", "pick object type=")
 
         elif it.type == ProgIt.MANIP_PLACE:
 
             # TODO pose / polygon
-            return "[" + str(it.id) + "] place object at "  + pose_str
+            return "[" + str(it.id) + "] " + QtCore.QCoreApplication.translate("ProgramItem", "place object at ")  + pose_str
 
         elif it.type == ProgIt.MANIP_PICK_PLACE:
 
             if it.spec == ProgIt.MANIP_ID:
-                return "[" + str(it.id) + "] pick object ID=" + obj + ", place to " + pose_str
+                return "[" + str(it.id) + "] " + QtCore.QCoreApplication.translate("ProgramItem", "pick object ID=") + obj + QtCore.QCoreApplication.translate("ProgramItem", ", place to ") + pose_str
             elif it.spec == ProgIt.MANIP_TYPE:
-                return "[" + str(it.id) + "] pick object type=" + obj + ", place to " + pose_str
+                return "[" + str(it.id) + "] " +QtCore.QCoreApplication.translate("ProgramItem", "pick object type=") + obj + QtCore.QCoreApplication.translate("ProgramItem", ", place to ") + pose_str
 
         elif it.type == ProgIt.WAIT:
 
             if it.spec == ProgIt.WAIT_FOR_USER:
-                return "[" + str(it.id) + "] wait for user"
+                return "[" + str(it.id) + "] " + QtCore.QCoreApplication.translate("ProgramItem", "wait for user")
             elif it.spec == ProgIt.WAIT_UNTIL_USER_FINISHES:
-                return "[" + str(it.id) + "] wait until user finishes"
+                return "[" + str(it.id) + "] " + QtCore.QCoreApplication.translate("ProgramItem", "wait until user finishes")
 
     def get_item_by_id(self,  id):
 

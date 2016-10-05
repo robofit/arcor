@@ -3,7 +3,7 @@
 from PyQt4 import QtGui, QtCore
 
 # spolecny predek vseho ve scene
-class Item(QtGui.QGraphicsItem):
+class Item(QtGui.QGraphicsItem,  QtCore.QObject):
 
     def __init__(self,  scene,  rpm,  x,  y,  parent = None):
 

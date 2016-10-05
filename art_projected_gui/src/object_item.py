@@ -12,6 +12,8 @@ TODO:
 from PyQt4 import QtGui, QtCore
 from item import Item
 
+translate = QtCore.QCoreApplication.translate
+
 class ObjectItem(Item):
 
     def __init__(self,  scene,  rpm,  object_id,  object_type, x,  y,  sel_cb = None,  outline_diameter=0.1,  selected = False):
@@ -30,11 +32,11 @@ class ObjectItem(Item):
 
         es = self.m2pix(self.outline_diameter)
 
-        return QtCore.QRectF(-es/2, -es/2, es/2, es/2)
+        return QtCore.QRectF(-es/2, -es/2, es, es)
 
     def paint(self, painter, option, widget):
 
-        eso = self.m2pix(self.outline_diameter*1.1)
+        eso = self.m2pix(self.outline_diameter*1.3)
         es = self.m2pix(self.outline_diameter)
 
         if self.selected:
@@ -42,21 +44,21 @@ class ObjectItem(Item):
             painter.setBrush(QtCore.Qt.green)
             painter.setPen(QtCore.Qt.green)
 
-            painter.drawEllipse(-eso/2, -eso/2, eso/2, eso/2)
+            painter.drawEllipse(QtCore.QPoint(0,  0),  eso/2,  eso/2)
 
         elif self.hover:
 
             painter.setBrush(QtCore.Qt.gray)
             painter.setPen(QtCore.Qt.gray)
 
-            painter.drawEllipse(-eso/2, -eso/2, eso/2, eso/2)
+            painter.drawEllipse(QtCore.QPoint(0,  0),  eso/2,  eso/2)
 
             # TODO disp add info
 
         painter.setBrush(QtCore.Qt.white)
         painter.setPen(QtCore.Qt.white)
 
-        painter.drawEllipse(-es/2, -es/2, es/2, es/2)
+        painter.drawEllipse(QtCore.QPoint(0,  0),  es/2,  es/2)
 
         painter.setPen(QtCore.Qt.gray)
 
@@ -66,15 +68,19 @@ class ObjectItem(Item):
         if self.hover:
 
             painter.setPen(QtCore.Qt.white)
-            painter.drawText(0,  20, "TYPE: " + self.object_type);
-            painter.drawText(0,  40, self.get_pos_str())
+            painter.drawText(-eso/2,  eso/2+20+20, translate("ObjectItem", "TYPE: ") + self.object_type);
+            painter.drawText(-eso/2,  eso/2+20+40, self.get_pos_str())
 
-        painter.drawText(0,  0, self.object_id);
+        painter.drawText(-eso/2,  eso/2+20, self.object_id);
 
     def mouseDoubleClickEvent(self,  evt):
 
-        if self.sel_cb is not None and self.sel_cb(self.object_id,  self.selected):
+        if self.sel_cb is not None:
+            # callback should handle object selection
+            self.sel_cb(self.object_id,  self.selected)
 
+        else:
+            # no callback - object will handle its selection
             if not self.selected: self.set_selected()
             else: self.set_selected(False)
 

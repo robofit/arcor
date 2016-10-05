@@ -7,7 +7,7 @@ class PolygonPointItem(Item):
 
     def __init__(self,  scene,  rpm, x,  y,  parent):
 
-        self.outline_diameter = 0.05
+        self.outline_diameter = 0.025
 
         super(PolygonPointItem,  self).__init__(scene,  rpm,  x,  y,  parent)
 
@@ -20,17 +20,17 @@ class PolygonPointItem(Item):
 
         es = self.m2pix(self.outline_diameter)
 
-        return QtCore.QRectF(-es/2, -es/2, es/2, es/2)
+        return QtCore.QRectF(-es/2, -es/2, es, es)
 
     def mouseMoveEvent(self, event):
 
-        self.parentItem().point_changed(self)
+        self.parentItem().point_changed()
 
         super(Item, self).mouseMoveEvent(event)
 
     def mouseReleaseEvent(self,  evt):
 
-        self.parentItem().point_changed()
+        self.parentItem().point_changed(True)
         super(Item, self).mouseReleaseEvent(evt)
 
     def paint(self, painter, option, widget):
@@ -40,7 +40,7 @@ class PolygonPointItem(Item):
         painter.setBrush(QtCore.Qt.cyan)
         painter.setPen(QtCore.Qt.cyan)
 
-        painter.drawEllipse(-es/2, -es/2, es/2, es/2)
+        painter.drawEllipse(QtCore.QPoint(0,  0), es/2, es/2)
 
 class PolygonItem(Item):
 
@@ -59,7 +59,9 @@ class PolygonItem(Item):
             for pt in obj_coords:
 
                 if pt[0] < self.min[0]: self.min[0] = pt[0]
+                if pt[1] < self.min[1]: self.min[1] = pt[1]
                 if pt[0] > self.max[0]: self.max[0] = pt[0]
+                if pt[1] > self.max[1]: self.max[1] = pt[1]
 
             pad = 0.1
 
@@ -104,9 +106,15 @@ class PolygonItem(Item):
 
         self.update()
 
-    def point_changed(self,  pt = None):
+    def point_changed(self,  finished = False):
 
-        if pt is not None:
+        # update of bounding rect
+        self.min[0] = self.pts[0].get_pos()[0]
+        self.min[1] = self.pts[0].get_pos()[1]
+        self.max[0] = self.pts[0].get_pos()[0]
+        self.max[1] = self.pts[0].get_pos()[1]
+
+        for pt in self.pts:
 
             p = pt.get_pos()
 
@@ -116,13 +124,9 @@ class PolygonItem(Item):
             if p[0] > self.max[0]: self.max[0] = p[0]
             if p[1] > self.max[1]: self.max[1] = p[1]
 
-            # TODO tohle meni polohu i detem - to nechci
-            #self.set_pos(self.min[0],  self.min[1])
+        self.update()
 
-            self.update()
-            return
-
-        if self.polygon_changed is not None:
+        if finished and self.polygon_changed is not None:
                 self.polygon_changed(self.get_poly_points())
 
     def get_poly_points(self):
@@ -137,7 +141,7 @@ class PolygonItem(Item):
 
     def boundingRect(self):
 
-        return QtCore.QRectF(0,  0, self.max[0]-self.min[0], self.max[1]-self.min[1])
+        return QtCore.QRectF(self.min[0],  self.min[1], self.max[0], self.max[1])
 
     def paint(self, painter, option, widget):
 
@@ -145,11 +149,11 @@ class PolygonItem(Item):
         # TODO vypsat kolik obsahuje objektu
 
         pen = QtGui.QPen()
-        pen.setStyle(QtCore.Qt.DotLine);
-        pen.setWidth(5);
-        pen.setBrush(QtCore.Qt.white);
-        pen.setCapStyle(QtCore.Qt.RoundCap);
-        pen.setJoinStyle(QtCore.Qt.RoundJoin);
+        pen.setStyle(QtCore.Qt.DotLine)
+        pen.setWidth(5)
+        pen.setBrush(QtCore.Qt.white)
+        pen.setCapStyle(QtCore.Qt.RoundCap)
+        pen.setJoinStyle(QtCore.Qt.RoundJoin)
 
         painter.setPen(pen)
 
@@ -161,6 +165,7 @@ class PolygonItem(Item):
 
         painter.drawPolygon(poly)
 
+        # TODO nazev polygonu -> opravit souradnice
         #painter.setFont(QtGui.QFont('Arial', 12));
         #painter.setPen(QtCore.Qt.white)
-        #painter.drawText(self.min[0]-20,  self.min[1]-20, self.caption)
+        #painter.drawText(QtCore.QPoint(self.m2pix(self.min[0]+self.get_pos(pixels=True)[0]), self.m2pix(self.max[1]) + self.get_pos(pixels=True)[1]), self.caption)

@@ -9,8 +9,9 @@ from item import Item
 
 class PlaceItem(Item):
 
-    def __init__(self,  scene,  rpm, caption,  x,  y,  place_pose_changed=None,  outline_diameter=0.1,  selected = False):
+    def __init__(self,  scene,  rpm, caption,  x,  y,  place_pose_changed=None,  outline_diameter=0.1,  selected = False,  fixed=False):
 
+        self.fixed = fixed
         self.outline_diameter = outline_diameter
         self.caption = caption
         self.in_collision = False
@@ -18,20 +19,19 @@ class PlaceItem(Item):
 
         super(PlaceItem,  self).__init__(scene,  rpm,  x,  y)
 
-        # TODO how to enable/disable this for all items?
-        self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
-        self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+        if not self.fixed:
+            self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
+            self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
 
     def mouseReleaseEvent(self,  evt):
 
-        print "mouse_release"
         if self.place_pose_changed is not None: self.place_pose_changed(self.get_pos())
         super(Item, self).mouseReleaseEvent(evt)
 
     def boundingRect(self):
 
         es = self.m2pix(self.outline_diameter)
-        return QtCore.QRectF(-es/2, -es/2, es/2, es/2)
+        return QtCore.QRectF(-es/2, -es/2, es, es)
 
     def mouseMoveEvent(self, event):
 
@@ -45,12 +45,14 @@ class PlaceItem(Item):
 
         es = self.m2pix(self.outline_diameter)
 
-        if not self.in_collision:
+        if self.fixed:
+            painter.setBrush(QtCore.Qt.gray)
+        elif not self.in_collision:
             painter.setBrush(QtCore.Qt.cyan)
         else:
             painter.setBrush(QtCore.Qt.red)
 
-        painter.drawEllipse(-es/2, -es/2, es/2, es/2)
+        painter.drawEllipse(QtCore.QPoint(0,  0), es/2, es/2)
 
         painter.setFont(QtGui.QFont('Arial', 12));
 
@@ -59,6 +61,6 @@ class PlaceItem(Item):
         if self.hover:
 
             painter.setPen(QtCore.Qt.white)
-            painter.drawText(0,  20, self.get_pos_str())
+            painter.drawText(-es/2,  es/2+40, self.get_pos_str())
 
-        painter.drawText(0,  0, self.caption);
+        painter.drawText(-es/2,  es/2+20, self.caption);
