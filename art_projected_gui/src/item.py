@@ -23,10 +23,10 @@ class Item(QtGui.QGraphicsItem,  QtCore.QObject):
         return p/self.rpm
 
     # world coordinates to scene coords
-    def set_pos(self,  x,  y):
+    def set_pos(self,  x,  y,  parent_coords=False):
 
-        # we always want to work with scene/world coordinates
-        if self.parentItem():
+        # we usually want to work with scene/world coordinates
+        if self.parentItem() and not parent_coords:
 
             ppos = self.parentItem().scenePos()
 

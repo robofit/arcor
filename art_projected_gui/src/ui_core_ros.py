@@ -56,14 +56,14 @@ class UICoreRos(UICore):
 
     def active_item_switched(self):
 
-        rospy.logdebug("Program ID:" + str(self.program_vis.prog.id) + ", active item ID: " + str(self.program_vis.active_item.id))
+        rospy.logdebug("Program ID:" + str(self.program_vis.prog.id) + ", active item ID: " + str(self.program_vis.active_item.item.id))
 
         self.clear_all()
         self.state_manager.clear_all()
 
-        if self.program_vis.active_item.type in [ProgIt.MANIP_PICK,  ProgIt.MANIP_PLACE,  ProgIt.MANIP_PICK_PLACE]:
+        if self.program_vis.active_item.item.type in [ProgIt.MANIP_PICK,  ProgIt.MANIP_PLACE,  ProgIt.MANIP_PICK_PLACE]:
 
-            if self.program_vis.item_learned(self.program_vis.active_item):
+            if self.program_vis.active_item.item_learned():
 
                 self.notif(translate("UICoreRos", "This program item seems to be done"))
 
@@ -74,47 +74,43 @@ class UICoreRos(UICore):
 
             #self.state_manager.set_syst_state(InterfaceStateItem.STATE_LEARNING,  self.program_vis.prog.id,  self.program_vis.active_item.id)
 
-            idx = self.program_vis.prog.items.index(self.program_vis.active_item)
+            # TODO loop across program item ids - not indices!!
+            idx = self.program_vis.items.index(self.program_vis.active_item)
             if idx  > 0:
                 for i in range(idx-1, -1, -1):
 
-                    it = self.program_vis.prog.items[i]
+                    it = self.program_vis.items[i]
 
-                    if it.type in  [ProgIt.MANIP_PLACE,  ProgIt.MANIP_PICK_PLACE] and it.place_pose.pose.position.x !=0 and it.place_pose.pose.position.y !=0:
+                    if it.item.type in  [ProgIt.MANIP_PLACE,  ProgIt.MANIP_PICK_PLACE] and it.is_place_pose_set():
 
-                        self.add_place(translate("UICoreRos", "PLACED OBJECT"),  it.place_pose.pose.position.x,  it.place_pose.pose.position.y,  fixed=True)
+                        # TODO add "artif." object instead of place??
+                        self.add_place(translate("UICoreRos", "OBJECT FROM STEP") + " " + str(it.item.id),  it.item.place_pose.pose.position.x,  it.item.place_pose.pose.position.y,  fixed=True)
+                        break
 
-            if self.program_vis.active_item.spec == ProgIt.MANIP_TYPE:
+            if self.program_vis.active_item.item.spec == ProgIt.MANIP_TYPE:
 
-                if self.program_vis.active_item.object == "":
+                if not self.program_vis.active_item.is_object_set():
 
                     self.notif(translate("UICoreRos", "Select object type to be picked up"),  temp=True)
 
-                #self.select_object_type(self.program_vis.active_item.object)
+                self.select_object_type(self.program_vis.active_item.item.object)
 
                 # if program item already contains polygon - let's display it
-                if len(self.program_vis.active_item.pick_polygon.polygon.points) > 0:
+                if self.program_vis.active_item.is_pick_polygon_set():
 
-                    poly_points = []
-
-                    for pt in self.program_vis.active_item.pick_polygon.polygon.points:
-
-                        poly_points.append((pt.x,  pt.y))
-
-                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"),  poly_points=poly_points,  polygon_changed=self.polygon_changed)
+                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"),  poly_points=self.program_vis.active_item.get_pick_polygon_points(),  polygon_changed=self.polygon_changed)
 
             else:
 
                 self.notif(translate("UICoreRos", "Select object to be picked up"),  temp=True)
-                self.select_object(self.program_vis.active_item.object)
+                self.select_object(self.program_vis.active_item.item.object)
 
-            if self.program_vis.active_item.object != "":
+            if self.program_vis.active_item.is_object_set():
 
                 # TODO kdy misto place pose pouzi place polygon? umoznit zmenit pose na polygon a opacne?
-                x = self.program_vis.active_item.place_pose.pose.position.x
-                y = self.program_vis.active_item.place_pose.pose.position.y
 
-                if  x !=0 and y !=0:
+                if  self.program_vis.active_item.is_place_pose_set():
+                    (x,  y) = self.program_vis.active_item.get_place_pose()
                     self.add_place(translate("UICoreRos", "PLACE POSE"),  x,  y,  self.place_pose_changed)
                 else:
                     self.notif(translate("UICoreRos", "Set where to place picked object"))
@@ -154,18 +150,7 @@ class UICoreRos(UICore):
         # TODO display list of programs -> let user select -> then load it
         self.load_program(0)
 
-        if self.program is not None:
-
-            if self.is_template():
-
-                # just to make sure that template is "clear"
-                for it in self.program.items:
-
-                    it.object = ""
-                    del it.pick_polygon.polygon.points[:]
-                    it.place_pose.pose.position.x = 0
-                    it.place_pose.pose.position.y = 0
-                    it.place_pose.pose.position.z = 0
+        if self.program is not None: # TODO avoid self.program -> duplication
 
             self.program_vis.set_prog(self.program,  self.is_template())
             self.active_item_switched()
@@ -222,7 +207,13 @@ class UICoreRos(UICore):
 
         # TODO test typu operace
 
-        if self.program_vis.active_item.spec == ProgIt.MANIP_TYPE:
+        if self.program_vis.active_item.item.spec == ProgIt.MANIP_TYPE:
+
+            # this type of object is already set
+            if obj.object_type == self.program_vis.active_item.item.object: return
+            else:
+                # TODO remove previously inserted polygon, do not insert new place
+                pass
 
             poly_points = []
 
@@ -238,7 +229,7 @@ class UICoreRos(UICore):
             self.notif(translate("UICoreRos", "Set where to place picked object"),  temp=True)
             self.add_place(translate("UICoreRos", "PLACE POSE"),  self.width/2,  self.height/2,  self.place_pose_changed)
 
-        elif self.program_vis.active_item.spec == ProgIt.MANIP_ID:
+        elif self.program_vis.active_item.item.spec == ProgIt.MANIP_ID:
 
             # TODO
             pass

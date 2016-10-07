@@ -161,5 +161,9 @@ class UICore(QtCore.QObject):
 
     def clear_all(self):
 
+        for it in self.get_scene_items_by_type(ObjectItem):
+
+            it.set_selected(False)
+
         self.remove_scene_items_by_type(PlaceItem)
         self.remove_scene_items_by_type(PolygonItem)
