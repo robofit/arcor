@@ -3,7 +3,7 @@
 from PyQt4 import QtGui, QtCore
 
 # spolecny predek vseho ve scene
-class Item(QtGui.QGraphicsItem,  QtCore.QObject):
+class Item(QtGui.QGraphicsItem):
 
     def __init__(self,  scene,  rpm,  x,  y,  parent = None):
 
@@ -13,6 +13,8 @@ class Item(QtGui.QGraphicsItem,  QtCore.QObject):
         self.set_pos(x,  y)
         self.set_enabled()
         self.hover = False
+        self.hover_sources=[]
+        self.fixed = True
 
     def m2pix(self,  m):
 
@@ -58,15 +60,33 @@ class Item(QtGui.QGraphicsItem,  QtCore.QObject):
         self.setEnabled(True)
         self.setActive(True)
 
-    def hoverEnterEvent(self,  evt):
+    def set_hover(self,  state,  source):
 
-        self.hover = True
-        self.update()
+        if state:
+            if source not in self.hover_sources: self.hover_sources.append(source)
+        else:
+            if source in self.hover_sources: self.hover_sources.remove(source)
 
-    def hoverLeaveEvent(self,  evt):
+        if len(self.hover_sources) ==  0:
+            if self.hover:
+                self.hover = False
+                self.update() # update only on change of state
+        else:
+            if not self.hover:
+                self.hover = True
+                self.update()
 
-        self.hover = False
-        self.update()
+    def cursor_press(self):
+
+        pass
+
+    def cursor_release(self):
+
+        pass
+
+    def item_moved(self):
+
+        pass
 
     def boundingRect(self):
 

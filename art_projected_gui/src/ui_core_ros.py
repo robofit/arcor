@@ -12,6 +12,7 @@ from art_msgs.msg import ProgramItem as ProgIt
 from object_item import ObjectItem
 from art_interface_utils.interface_state_manager import interface_state_manager
 from art_msgs.msg import InterfaceState,  InterfaceStateItem
+from posestamped_cursor_item import PoseStampedCursorItem
 
 translate = QtCore.QCoreApplication.translate
 
@@ -48,6 +49,10 @@ class UICoreRos(UICore):
 
         # TODO dodelat integraci state manageru (spis prehodit do ui_code a volat napr z add_polygon apod.)
         self.state_manager = interface_state_manager("PROJECTED UI",  cb=self.interface_state_cb)
+
+        # TODO read/configure inputs from params
+        self.scene_items.append(PoseStampedCursorItem(self.scene,  self.rpm,  "left_hand"))
+        #self.scene_items.append(PoseStampedCursorItem(self.scene,  self.rpm,  "right_hand"))
 
     def interface_state_cb(self,  state):
 

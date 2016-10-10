@@ -73,7 +73,7 @@ class ObjectItem(Item):
 
         painter.drawText(-eso/2,  eso/2+20, self.object_id);
 
-    def mouseDoubleClickEvent(self,  evt):
+    def cursor_press(self): # TODO cursor_click??
 
         if self.sel_cb is not None:
             # callback should handle object selection
