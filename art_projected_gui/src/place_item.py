@@ -6,44 +6,49 @@ Visualization of place on the table
 
 from PyQt4 import QtGui, QtCore
 from item import Item
+from object_item import ObjectItem
 
 class PlaceItem(Item):
 
     def __init__(self,  scene,  rpm, caption,  x,  y,  place_pose_changed=None,  outline_diameter=0.1,  selected = False,  fixed=False):
 
-        self.fixed = fixed
         self.outline_diameter = outline_diameter
         self.caption = caption
         self.in_collision = False
-        self.place_pose_changed = place_pose_changed
 
         super(PlaceItem,  self).__init__(scene,  rpm,  x,  y)
 
-        if not self.fixed:
-            self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
-            self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+        self.fixed = fixed
 
-    def mouseReleaseEvent(self,  evt):
+        self.place_pose_changed = place_pose_changed
+
+    def cursor_release(self):
 
         if self.place_pose_changed is not None: self.place_pose_changed(self.get_pos())
-        super(Item, self).mouseReleaseEvent(evt)
 
     def boundingRect(self):
 
         es = self.m2pix(self.outline_diameter)
         return QtCore.QRectF(-es/2, -es/2, es, es)
 
-    def mouseMoveEvent(self, event):
+    def item_moved(self):
 
         # TODO testovat kolize jen s PlaceItem?
-        if len(self.collidingItems()) > 0: self.in_collision = True
-        else: self.in_collision = False
-
-        super(Item, self).mouseMoveEvent(event)
+        for it in self.collidingItems():
+            if isinstance(it,  PlaceItem) or isinstance(it,  ObjectItem):
+                self.in_collision = True
+                break
+        else:
+            self.in_collision = False
 
     def paint(self, painter, option, widget):
 
         es = self.m2pix(self.outline_diameter)
+
+        if self.hover and not self.fixed:
+            painter.setBrush(QtCore.Qt.gray)
+            painter.setPen(QtCore.Qt.gray)
+            painter.drawEllipse(QtCore.QPoint(0,  0), es/2*1.3, es/2*1.3)
 
         if self.fixed:
             painter.setBrush(QtCore.Qt.gray)

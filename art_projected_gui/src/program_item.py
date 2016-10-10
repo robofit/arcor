@@ -23,7 +23,6 @@ class ProgramItemItem(Item):
         self.active_item = False
 
         self.update_size()
-        self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True) # to enable doubleclick event
 
     def update_size(self):
 
@@ -41,7 +40,7 @@ class ProgramItemItem(Item):
 
         self.update()
 
-    def mouseDoubleClickEvent(self,  evt):
+    def cursor_press(self):
 
         if not self.item_req_learning(): return
         if self.item_selected_cb is not None: self.item_selected_cb(self)
@@ -193,8 +192,7 @@ class ProgramItem(Item):
 
         self.active_item_switched = active_item_switched
 
-        self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
-        self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+        self.fixed = False
 
         self.setZValue(100)
 
