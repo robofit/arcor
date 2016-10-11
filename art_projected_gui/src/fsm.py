@@ -23,9 +23,13 @@ class FSM(Machine):
         self.add_transition('tr_user_calibrated', 'waiting_for_user_calibration', 'program_selection',  after='cb_program_selection')
         self.add_transition('tr_program_selected', 'program_selection', 'learning',  conditions='is_template',  after="cb_learning")
         self.add_transition('tr_program_selected', 'program_selection', 'running',  unless='is_template')
-
+        self.add_transition('tr_program_learned', 'learning', 'running', after="cb_running")
 
     def is_template(self):
+
+        pass
+
+    def cb_running(self):
 
         pass
 

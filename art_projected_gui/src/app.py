@@ -6,7 +6,7 @@ import rospy
 from PyQt4 import QtGui, QtCore
 import rospkg
 
-#from projector import Projector
+from projector import Projector
 from ui_core_ros import UICoreRos
 
 def sigint_handler(*args):
@@ -18,8 +18,8 @@ def main(args):
 
     rospy.init_node('projected_gui', anonymous=True)
 
-    #rospy.loginfo('Waiting for art_brain services...')
-    #rospy.wait_for_service('/art/brain/program/start')
+    rospy.loginfo('Waiting for art_brain services...')
+    rospy.wait_for_service('/art/brain/program/start')
     #rospy.wait_for_service('/art/brain/program/stop')
     rospy.loginfo('Waiting for art_db services...')
     rospy.wait_for_service('/art/db/program/get')
@@ -40,7 +40,10 @@ def main(args):
 
     ui.debug_view()
 
-    #ui.add_projector(Projector(0, None))
+    ui.add_projector(Projector(0, "/kinect2/sd/image_color_rect",  "/kinect2/sd/camera_info",  None))
+
+    # just for debugging
+    #ui.projectors[0].calibrate()
 
     ui. scene_changed(None)
 

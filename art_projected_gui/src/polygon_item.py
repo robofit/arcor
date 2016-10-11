@@ -11,8 +11,7 @@ class PolygonPointItem(Item):
 
         super(PolygonPointItem,  self).__init__(scene,  rpm,  x,  y,  parent)
 
-        self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
-        self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+        self.fixed = False
 
         # TODO pri pohybu bodu upravit boundingRect rodice...
 
@@ -22,20 +21,24 @@ class PolygonPointItem(Item):
 
         return QtCore.QRectF(-es/2, -es/2, es, es)
 
-    def mouseMoveEvent(self, event):
+    def item_moved(self):
 
         self.parentItem().point_changed()
 
-        super(Item, self).mouseMoveEvent(event)
-
-    def mouseReleaseEvent(self,  evt):
+    def cursor_release(self):
 
         self.parentItem().point_changed(True)
-        super(Item, self).mouseReleaseEvent(evt)
 
     def paint(self, painter, option, widget):
 
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
         es = self.m2pix(self.outline_diameter)
+
+        if self.hover:
+            painter.setBrush(QtCore.Qt.gray)
+            painter.setPen(QtCore.Qt.gray)
+            painter.drawEllipse(QtCore.QPoint(0,  0), es/2*1.8, es/2*1.8)
 
         painter.setBrush(QtCore.Qt.cyan)
         painter.setPen(QtCore.Qt.cyan)

@@ -36,6 +36,8 @@ class ObjectItem(Item):
 
     def paint(self, painter, option, widget):
 
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
         eso = self.m2pix(self.outline_diameter*1.3)
         es = self.m2pix(self.outline_diameter)
 
@@ -73,7 +75,7 @@ class ObjectItem(Item):
 
         painter.drawText(-eso/2,  eso/2+20, self.object_id);
 
-    def mouseDoubleClickEvent(self,  evt):
+    def cursor_press(self): # TODO cursor_click??
 
         if self.sel_cb is not None:
             # callback should handle object selection

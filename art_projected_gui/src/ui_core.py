@@ -44,6 +44,11 @@ class UICore(QtCore.QObject):
 
         self.scene_items = []
 
+        self.view = QtGui.QGraphicsView(self.scene)
+        self.view.setRenderHint(QtGui.QPainter.Antialiasing)
+        self.view.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
+        self.view.setStyleSheet( "QGraphicsView { border-style: none; }" )
+
     def notif(self,  msg,  min_duration=rospy.Duration(3),  temp = False):
 
         self.bottom_label.add_msg(msg,  min_duration,  temp)
@@ -53,11 +58,6 @@ class UICore(QtCore.QObject):
         self.projectors.append(proj)
 
     def debug_view(self):
-
-        self.view = QtGui.QGraphicsView(self.scene)
-        self.view.setRenderHint(QtGui.QPainter.Antialiasing)
-        self.view.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
-        self.view.setStyleSheet( "QGraphicsView { border-style: none; }" )
 
         self.view.show()
 
