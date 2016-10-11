@@ -36,6 +36,8 @@ class ObjectItem(Item):
 
     def paint(self, painter, option, widget):
 
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
         eso = self.m2pix(self.outline_diameter*1.3)
         es = self.m2pix(self.outline_diameter)
 

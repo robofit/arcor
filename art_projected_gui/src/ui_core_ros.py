@@ -28,11 +28,14 @@ class UICoreRos(UICore):
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('objects'), self.object_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('user_status'), self.user_status_cb_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('interface_state'), self.interface_state_evt)
+
 
         self.user_status = None
         self.selected_program_id = None
 
         self.program_vis.active_item_switched = self.active_item_switched
+        self.program_vis.program_state_changed = self.program_state_changed
 
         self.fsm = FSM()
 
@@ -54,11 +57,46 @@ class UICoreRos(UICore):
         self.scene_items.append(PoseStampedCursorItem(self.scene,  self.rpm,  "left_hand"))
         #self.scene_items.append(PoseStampedCursorItem(self.scene,  self.rpm,  "right_hand"))
 
+    def interface_state_evt(self,  state):
+
+        # TODO !!
+
+        if state.current_syst_state == InterfaceStateItem.STATE_PROGRAM_RUNNING:
+
+            if state.is_clear():
+
+                self.clear_all()
+
     def interface_state_cb(self,  state):
 
-        # TODO
-        pass
+        self.emit(QtCore.SIGNAL('interface_state'),  state)
 
+    # callback from ProgramItem (button press)
+    def program_state_changed(self,  state):
+
+        if state == 'RUNNING':
+
+            prog = self.program_vis.get_prog()
+            prog.id = 1
+
+            prog_srv = rospy.ServiceProxy('/art/db/program/store', storeProgram)
+
+            try:
+                resp = prog_srv(prog)
+            except rospy.ServiceException, e:
+                print "Service call failed: %s"%e
+                # TODO what to do?
+                self.notif(translate("UICoreRos", "Failed to store program"),  temp=True)
+
+            self.notif(translate("UICoreRos", "Program stored. Starting..."),  temp=True)
+
+            self.start_program(prog.id)
+            self.fsm.tr_program_learned()
+
+        # TODO pause / stop -> fsm
+        #elif state == ''
+
+    # callback from ProgramItem
     def active_item_switched(self):
 
         rospy.logdebug("Program ID:" + str(self.program_vis.prog.id) + ", active item ID: " + str(self.program_vis.active_item.item.id))
@@ -135,10 +173,38 @@ class UICoreRos(UICore):
         pass
         #self.buttons.append(ButtonItem()) -> run program
 
+    def calib_done_cb(self,  proj):
+
+        if proj.is_calibrated():
+
+            self.calib_proj_cnt += 1
+
+            if self.calib_proj_cnt < len(self.projectors):
+
+                self.projectors[self.calib_proj_cnt].calibrate(self.calib_done_cb)
+            else:
+                self.fsm.tr_calibrated()
+
+        else:
+
+            proj.calibrate(self.calib_done_cb)
+
+        if self.calib_proj_cnt == len(self.projectors):
+
+            self.fsm.tr_calibrated()
+
     def cb_start_calibration(self):
 
+        if len(self.projectors) == 0:
+
+            rospy.logwarn("Nothing to calibrate")
+            self.fsm.tr_calibrated()
+            return
+
         print "calibrating"
-        self.fsm.tr_calibrated()
+        self.calib_proj_cnt = 0 # TODO some smarter solution?
+
+        self.projectors[0].calibrate(self.calib_done_cb)
 
     def cb_waiting_for_user(self):
 
@@ -174,6 +240,21 @@ class UICoreRos(UICore):
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
             self.program = None
+            return False
+
+        return True
+
+    def start_program(self,  prog_id):
+
+        srv_start = rospy.ServiceProxy('/art/brain/program/start', startProgram)
+
+        try:
+            resp = srv_start(prog_id)
+        except rospy.ServiceException, e:
+            print "Service call failed: %s"%e
+            return False
+
+        return True
 
     def object_cb(self,  msg):
 

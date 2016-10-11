@@ -72,6 +72,8 @@ class PoseStampedCursorItem(Item):
 
     def paint(self, painter, option, widget):
 
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
         if self.click: painter.setBrush(QtCore.Qt.red)
         else: painter.setBrush(QtCore.Qt.green)
         painter.setOpacity(0.5)

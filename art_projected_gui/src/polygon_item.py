@@ -31,6 +31,8 @@ class PolygonPointItem(Item):
 
     def paint(self, painter, option, widget):
 
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
         es = self.m2pix(self.outline_diameter)
 
         if self.hover:

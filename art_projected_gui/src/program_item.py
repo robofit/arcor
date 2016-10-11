@@ -4,6 +4,7 @@ from PyQt4 import QtGui, QtCore
 from item import Item
 from art_msgs.msg import ProgramItem as ProgIt
 from geometry_msgs.msg import Point32
+from button_item import ButtonItem
 
 translate = QtCore.QCoreApplication.translate
 
@@ -40,7 +41,7 @@ class ProgramItemItem(Item):
 
         self.update()
 
-    def cursor_press(self):
+    def cursor_click(self):
 
         if not self.item_req_learning(): return
         if self.item_selected_cb is not None: self.item_selected_cb(self)
@@ -124,7 +125,7 @@ class ProgramItemItem(Item):
 
     def item_learned(self):
 
-        #if it.type not in self.items_req_learning: return True
+        if not self.item_req_learning(): return True
 
         # TODO dalsi typy / spec
         if self.item.type == ProgIt.MANIP_PICK_PLACE:
@@ -179,7 +180,10 @@ class ProgramItemItem(Item):
 
 class ProgramItem(Item):
 
-    def __init__(self,  scene,  rpm,  x,  y,  active_item_switched=None):
+    def __init__(self,  scene,  rpm,  x,  y,  active_item_switched=None,  program_state_changed=None):
+
+        self.states = ['LEARNING',  'RUNNING',  'PAUSED',  'STOPPED']
+        self.state = 'LEARNING'
 
         self.w = 180 # TODO spocitat podle rpm
         self.h = 20
@@ -190,7 +194,10 @@ class ProgramItem(Item):
         self.template = None
         self.items = []
 
+        self.running = False
+
         self.active_item_switched = active_item_switched
+        self.program_state_changed = program_state_changed
 
         self.fixed = False
 
@@ -216,7 +223,7 @@ class ProgramItem(Item):
 
         for it in self.items:
 
-            if not it.is_item_learned(): return False
+            if not it.item_learned(): return False
 
         return True
 
@@ -227,6 +234,8 @@ class ProgramItem(Item):
         for it in self.items:
 
             self.prog.items.append(it.item)
+
+        return self.prog
 
     def set_prog(self,  prog,  template):
 
@@ -266,13 +275,40 @@ class ProgramItem(Item):
             #if pitem.type in self.items_req_learning:
             #    if self.active_item is None: self.active_item = pitem
 
+        self.btn = ButtonItem(self.scene(),  self.rpm,  0,  0,  translate("ProgramItem",  "Start"),  self,  self.btn_clicked)
+        self.btn.setPos(0,  20+cnt*50+10)
+
         # TODO najit max. sirku itemu a tomu prizpusobit sirku programu
-        self.h = 20+cnt*50
+        self.h = 20+cnt*50+30
         self.w = max_w+40
 
         self.update()
 
+    def btn_clicked(self):
+
+        if self.state == 'LEARNING':
+
+            self.state = 'RUNNING'
+            self.btn.set_caption(translate("ProgramItem",  "Pause"))
+
+        elif self.state == 'RUNNING':
+
+            self.state = 'PAUSED'
+            self.btn.set_caption(translate("ProgramItem",  "Resume"))
+
+        # TODO second button for STOP
+
+        if self.program_state_changed is not None: self.program_state_changed(self.state)
+
     def item_selected_cb(self,  it):
+
+        # TODO find better place
+        if self.is_prog_learned():
+            print "enabling button"
+            self.btn.enabled=True
+            self.btn.update()
+
+        if self.running: return
 
         self.set_active(it)
         if self.active_item_switched is not None: self.active_item_switched()
@@ -288,6 +324,7 @@ class ProgramItem(Item):
             if self.active_item.w+40 > max_w:
                 max_w = self.active_item.w+40
         self.w = max_w
+
         self.update()
 
     def set_object(self,  obj):

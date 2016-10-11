@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from PyQt4 import QtGui, QtCore
+import rospy
 
 # spolecny predek vseho ve scene
 class Item(QtGui.QGraphicsItem):
@@ -15,6 +16,7 @@ class Item(QtGui.QGraphicsItem):
         self.hover = False
         self.hover_sources=[]
         self.fixed = True
+        self.cursor_press_at = rospy.Time(0)
 
     def m2pix(self,  m):
 
@@ -78,9 +80,14 @@ class Item(QtGui.QGraphicsItem):
 
     def cursor_press(self):
 
-        pass
+        self.cursor_press_at = rospy.Time.now()
 
     def cursor_release(self):
+
+        if rospy.Time.now() - self.cursor_press_at < rospy.Duration(1.0):
+            self.cursor_click()
+
+    def cursor_click(self):
 
         pass
 
