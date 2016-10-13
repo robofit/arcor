@@ -12,11 +12,15 @@ class Item(QtGui.QGraphicsItem):
 
         self.rpm = rpm
         self.set_pos(x,  y)
-        self.set_enabled()
         self.hover = False
         self.hover_sources=[]
         self.fixed = True
         self.cursor_press_at = rospy.Time(0)
+
+        self.setVisible(True)
+        self.setAcceptHoverEvents(True)
+        self.setEnabled(True)
+        self.setActive(True)
 
     def m2pix(self,  m):
 
@@ -55,12 +59,10 @@ class Item(QtGui.QGraphicsItem):
         # TODO fixed width format
         return "[X: " + str(round(x, 3)).ljust(5, '0') + ", Y: " + str(round(y, 3)).ljust(5, '0') + "]"
 
-    def set_enabled(self):
+    def set_enabled(self,  state):
 
-        self.setVisible(True)
-        self.setAcceptHoverEvents(True)
-        self.setEnabled(True)
-        self.setActive(True)
+        self.setEnabled(state)
+        self.update()
 
     def set_hover(self,  state,  source):
 

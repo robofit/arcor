@@ -10,7 +10,6 @@ translate = QtCore.QCoreApplication.translate
 
 class ProgramItemItem(Item):
 
-    # 'link' to next/prev item?
     def __init__(self,  scene,  rpm,  x,  y,  item,  parent,  item_selected_cb=None):
 
         self.w = 180 # TODO spocitat podle rpm
@@ -43,6 +42,7 @@ class ProgramItemItem(Item):
 
     def cursor_click(self):
 
+        print "click"
         if not self.item_req_learning(): return
         if self.item_selected_cb is not None: self.item_selected_cb(self)
 
@@ -193,8 +193,7 @@ class ProgramItem(Item):
         self.prog = None
         self.template = None
         self.items = []
-
-        self.running = False
+        self.active_item = None
 
         self.active_item_switched = active_item_switched
         self.program_state_changed = program_state_changed
@@ -203,11 +202,21 @@ class ProgramItem(Item):
 
         self.setZValue(100)
 
+    def set_running(self):
+
+        self.state = 'RUNNING'
+
     def has_prog(self):
 
         return self.prog is None
 
-    def set_active(self,  it):
+    def set_active(self,  it=None,  inst_id=None):
+
+        if it is None and inst_id != None:
+
+            it = self.get_item_by_id(inst_id)
+
+        if it is None: return
 
         if self.active_item is not None:
             self.active_item.setPos(30,  self.active_item.y())
@@ -276,7 +285,8 @@ class ProgramItem(Item):
             #    if self.active_item is None: self.active_item = pitem
 
         self.btn = ButtonItem(self.scene(),  self.rpm,  0,  0,  translate("ProgramItem",  "Start"),  self,  self.btn_clicked)
-        self.btn.setPos(0,  20+cnt*50+10)
+        self.btn.setPos(10,  5+cnt*50)
+        self.btn.set_enabled(False)
 
         # TODO najit max. sirku itemu a tomu prizpusobit sirku programu
         self.h = 20+cnt*50+30
@@ -302,13 +312,9 @@ class ProgramItem(Item):
 
     def item_selected_cb(self,  it):
 
-        # TODO find better place
-        if self.is_prog_learned():
-            print "enabling button"
-            self.btn.enabled=True
-            self.btn.update()
-
-        if self.running: return
+        if self.state == 'RUNNING':
+            print "program running - ignoring item selection"
+            return
 
         self.set_active(it)
         if self.active_item_switched is not None: self.active_item_switched()
@@ -327,15 +333,24 @@ class ProgramItem(Item):
 
         self.update()
 
+    def program_updated(self):
+
+        # TODO consides state
+        if self.is_prog_learned():
+            print "enabling start button"
+            self.btn.set_enabled(True)
+
     def set_object(self,  obj):
 
         self.active_item.item.object = obj
+        self.program_updated()
         self.update_size()
 
     def set_place_pose(self,  x,  y):
 
         self.active_item.item.place_pose.pose.position.x = x
         self.active_item.item.place_pose.pose.position.y = y
+        self.program_updated()
         self.update_size()
 
     def set_polygon(self,  pts):
@@ -346,6 +361,7 @@ class ProgramItem(Item):
 
             self.active_item.item.pick_polygon.polygon.points.append(Point32(pt[0],  pt[1],  0))
 
+        self.program_updated()
         self.update_size()
 
     def boundingRect(self):

@@ -8,13 +8,14 @@ translate = QtCore.QCoreApplication.translate
 
 class ButtonItem(Item):
 
-    def __init__(self,  scene,  rpm,  x,  y,  caption,  parent,  clicked):
+    def __init__(self,  scene,  rpm,  x,  y,  caption,  parent,  clicked,  scale=1.0,  background_color=QtCore.Qt.green):
 
-        self.w = 180 # TODO spocitat podle rpm
-        self.h = 20
+        self.background_color = background_color
+        self.scale = scale
+        self.w = 180*scale # TODO spocitat podle rpm
+        self.h = 20*scale
         self.clicked = clicked
         self.caption = caption
-        self.enabled = False
 
         super(ButtonItem,  self).__init__(scene,  rpm,  x,  y,  parent)
 
@@ -24,7 +25,7 @@ class ButtonItem(Item):
 
     def cursor_click(self):
 
-        if self.clicked is not None and self.enabled: self.clicked()
+        if self.clicked is not None and self.isEnabled(): self.clicked()
 
     def set_caption(self,  txt):
 
@@ -38,20 +39,20 @@ class ButtonItem(Item):
         pen.setColor(QtCore.Qt.white)
         painter.setPen(pen)
 
-        rect = QtCore.QRectF(5, 0.0, self.w, 40.0)
+        rect = QtCore.QRectF(5*self.scale, 0.0, self.w, 40.0*self.scale)
 
-        font = QtGui.QFont('Arial', 12)
+        font = QtGui.QFont('Arial', 12*self.scale)
         painter.setFont(font);
 
-        if not self.enabled:
+        if not self.isEnabled():
             painter.setBrush(QtCore.Qt.gray)
         else:
-            painter.setBrush(QtCore.Qt.green)
+            painter.setBrush(self.background_color)
         metrics = QtGui.QFontMetrics(font)
         txt = self.caption
-        rect.setWidth(metrics.width(txt)+20)
+        rect.setWidth(metrics.width(txt)+20*self.scale)
 
-        painter.drawRoundedRect(rect, 10.0, 10.0);
+        painter.drawRoundedRect(rect, 10.0*self.scale, 10.0*self.scale);
 
         pen.setStyle(QtCore.Qt.SolidLine)
         painter.setPen(pen)

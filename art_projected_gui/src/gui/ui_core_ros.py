@@ -9,10 +9,9 @@ from transitions import MachineError
 from art_msgs.srv import getProgram,  storeProgram,  startProgram
 from art_msgs.msg import ProgramItem as ProgIt
 #from button_item import ButtonItem
-from object_item import ObjectItem
+from items import ObjectItem, ButtonItem,  PoseStampedCursorItem
 from art_interface_utils.interface_state_manager import interface_state_manager
 from art_msgs.msg import InterfaceState,  InterfaceStateItem
-from posestamped_cursor_item import PoseStampedCursorItem
 
 translate = QtCore.QCoreApplication.translate
 
@@ -57,6 +56,16 @@ class UICoreRos(UICore):
         self.scene_items.append(PoseStampedCursorItem(self.scene,  self.rpm,  "left_hand"))
         #self.scene_items.append(PoseStampedCursorItem(self.scene,  self.rpm,  "right_hand"))
 
+        self.scene_items.append(ButtonItem(self.scene,  self.rpm,  0,  0,  "STOP",  None,  self.stop_btn_clicked,  2.0,  QtCore.Qt.red))
+        self.scene_items[-1].setPos(self.scene.width()-self.scene_items[-1].w,  self.scene.height() - self.scene_items[-1].h - 60)
+        self.scene_items[-1].set_enabled(True)
+
+
+    def stop_btn_clicked(self):
+
+        # TODO
+        self.notif(translate("UICoreRos", "Emergency stop pressed"),  temp=True)
+
     def interface_state_evt(self,  state):
 
         # TODO !!
@@ -66,6 +75,11 @@ class UICoreRos(UICore):
             if state.is_clear():
 
                 self.clear_all()
+
+            self.program_vis.set_running()
+
+            # TODO check state.program_id and load it if its different from loaded one
+            self.program_vis.set_active(inst_id=state.instruction_id)
 
     def interface_state_cb(self,  state):
 

@@ -91,7 +91,7 @@ class LabelItem(Item):
 
         msg = None
 
-        if len(self.temp_msgs) > 0:msg = self.temp_msgs[0]
+        if len(self.temp_msgs) > 0: msg = self.temp_msgs[0]
         elif len(self.still_msgs) > 0: msg = self.still_msgs[0]
 
         if msg is None: return

@@ -26,7 +26,8 @@ class ObjectItem(Item):
 
         super(ObjectItem,  self).__init__(scene,  rpm,  x,  y)
 
-        if selected: self.set_selected()
+        if selected:
+            self.set_selected()
 
     def boundingRect(self):
 
@@ -70,7 +71,7 @@ class ObjectItem(Item):
         if self.hover:
 
             painter.setPen(QtCore.Qt.white)
-            painter.drawText(-eso/2,  eso/2+20+20, translate("ObjectItem", "TYPE: ") + self.object_type);
+            painter.drawText(-eso/2,  eso/2+20+20, translate("ObjectItem", "TYPE: ") + self.object_type)
             painter.drawText(-eso/2,  eso/2+20+40, self.get_pos_str())
 
         painter.drawText(-eso/2,  eso/2+20, self.object_id);
