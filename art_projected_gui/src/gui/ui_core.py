@@ -6,11 +6,7 @@ Module contains the main class of 2D projected UI (UICore). It produces 2D image
 """
 
 from PyQt4 import QtGui, QtCore
-from object_item import ObjectItem
-from place_item import PlaceItem
-from label_item import LabelItem
-from program_item import ProgramItem
-from polygon_item import PolygonItem
+from items import ObjectItem,  PlaceItem,  LabelItem,  ProgramItem,  PolygonItem
 import rospy
 
 # z tohodle vyleze 2D obraz

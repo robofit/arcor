@@ -6,8 +6,8 @@ import rospy
 from PyQt4 import QtGui, QtCore
 import rospkg
 
-from projector import Projector
-from ui_core_ros import UICoreRos
+from gui import Projector
+from gui import UICoreRos
 
 def sigint_handler(*args):
     """Handler for the SIGINT signal."""
@@ -40,7 +40,7 @@ def main(args):
 
     ui.debug_view()
 
-    ui.add_projector(Projector(0, "/kinect2/sd/image_color_rect",  "/kinect2/sd/camera_info",  None))
+    #ui.add_projector(Projector(0, "/kinect2/sd/image_color_rect",  "/kinect2/sd/camera_info",  None))
 
     # just for debugging
     #ui.projectors[0].calibrate()
