@@ -40,12 +40,7 @@ def main(args):
 
     ui.debug_view()
 
-    #ui.add_projector(Projector(0, "/kinect2/sd/image_color_rect",  "/kinect2/sd/camera_info",  None))
-
-    # just for debugging
-    #ui.projectors[0].calibrate()
-
-    ui. scene_changed(None)
+    #ui. scene_changed(None)
 
     timer = QtCore.QTimer()
     timer.start(500)

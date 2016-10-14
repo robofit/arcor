@@ -3,12 +3,14 @@
 from PyQt4 import QtGui, QtCore
 import rospkg
 from cv_bridge import CvBridge, CvBridgeError
-from sensor_msgs.msg import Image, CameraInfo
+from sensor_msgs.msg import Image
 import rospy
 import cv2
 
+# TODO zobrazit "waiting for data" nebo tak neco
 # warpovani obrazu pro kazdy z projektoru
 # podle vysky v pointcloudu se vymaskuji mista kde je neco vyssiho - aby se promitalo jen na plochu stolu ????
+
 class Projector(QtGui.QWidget):
 
     def __init__(self, screen,  camera_image_topic, camera_info_topic,  calibration):
@@ -37,7 +39,22 @@ class Projector(QtGui.QWidget):
         self.pix_label.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
         self.pix_label.resize(self.size())
 
+        QtCore.QObject.connect(self, QtCore.SIGNAL('scene'), self.scene_evt)
+        self.scene_sub = rospy.Subscriber("/art/interface/projected_gui/scene",  Image,  self.scene_cb,  queue_size=1)
+
         self.showFullScreen()
+
+    def scene_cb(self,  msg):
+
+        image = QtGui.QPixmap.fromImage(QtGui.QImage(msg.data, msg.width, msg.height, QtGui.QImage.Format_RGB888))
+        self.emit(QtCore.SIGNAL('scene'),  image)
+
+    def scene_evt(self,  img):
+
+        if self.calibrating: return
+
+        # TODO warp image according to calibration
+        self.pix_label.setPixmap(img)
 
     def is_calibrated(self):
 
@@ -46,13 +63,6 @@ class Projector(QtGui.QWidget):
     def on_resize(self, event):
 
         self.pix_label.resize(self.size())
-
-    def set_img(self,  img):
-
-        if self.calibrating: return
-
-        # TODO warp image according to calibration
-        self.pix_label.setPixmap(img)
 
     def calibrate(self,  cb):
 
@@ -87,5 +97,6 @@ class Projector(QtGui.QWidget):
         print corners
 
         if cb is not None: cb(self)
+
 
 

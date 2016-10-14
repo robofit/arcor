@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from ui_core import UICore
-from PyQt4 import QtCore
+from PyQt4 import QtCore,  QtGui
 import rospy
 from art_msgs.msg import InstancesArray,  UserStatus
 from fsm import FSM
@@ -12,6 +12,9 @@ from art_msgs.msg import ProgramItem as ProgIt
 from items import ObjectItem, ButtonItem,  PoseStampedCursorItem
 from art_interface_utils.interface_state_manager import interface_state_manager
 from art_msgs.msg import InterfaceState,  InterfaceStateItem
+from sensor_msgs.msg import Image # TODO CompressedImage?
+import qimage2ndarray
+from cv_bridge import CvBridge, CvBridgeError
 
 translate = QtCore.QCoreApplication.translate
 
@@ -60,6 +63,40 @@ class UICoreRos(UICore):
         self.scene_items[-1].setPos(self.scene.width()-self.scene_items[-1].w,  self.scene.height() - self.scene_items[-1].h - 60)
         self.scene_items[-1].set_enabled(True)
 
+        self.scene_pub = rospy.Publisher("/art/interface/projected_gui/scene",  Image,  queue_size=1)
+        self.bridge = CvBridge()
+        self.last_scene_update = None
+
+        self.scene.changed.connect(self.scene_changed)
+
+
+    def scene_changed(self,  rects):
+
+        if self.last_scene_update is None:
+            self.last_scene_update = rospy.Time.now()
+        else:
+            if rospy.Time.now() - self.last_scene_update < rospy.Duration(1.0/10): # TODO should be 25fps?
+                return
+
+        self.last_scene_update = rospy.Time.now()
+
+        pix = QtGui.QPixmap(self.scene.width(), self.scene.height())
+        painter = QtGui.QPainter(pix)
+        self.scene.render(painter)
+        painter.end()
+
+        img = pix.toImage()
+        img = img.convertToFormat(QtGui.QImage.Format_ARGB32)
+
+        v =qimage2ndarray.rgb_view(img)
+
+        # TODO fix - it prints out some crap... ???
+        try:
+         msg = self.bridge.cv2_to_imgmsg(v, "bgr8")
+        except CvBridgeError:
+          return
+
+        self.scene_pub.publish(msg)
 
     def stop_btn_clicked(self):
 
@@ -209,16 +246,8 @@ class UICoreRos(UICore):
 
     def cb_start_calibration(self):
 
-        if len(self.projectors) == 0:
-
-            rospy.logwarn("Nothing to calibrate")
-            self.fsm.tr_calibrated()
-            return
-
-        print "calibrating"
-        self.calib_proj_cnt = 0 # TODO some smarter solution?
-
-        self.projectors[0].calibrate(self.calib_done_cb)
+        # TODO how to send calibration-request to projector nodes?
+        self.fsm.tr_calibrated()
 
     def cb_waiting_for_user(self):
 

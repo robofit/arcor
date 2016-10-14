@@ -31,12 +31,8 @@ class UICore(QtCore.QObject):
         self.scene = QtGui.QGraphicsScene(0, 0,  int(w),  int(h))
         self.scene.setBackgroundBrush(QtCore.Qt.black)
 
-        self.scene.changed.connect(self.scene_changed)
-
         self.bottom_label = LabelItem(self.scene,  self.rpm,  0.1,  self.height - 0.05,  self.width-0.2,  0.1)
         self.program_vis = ProgramItem(self.scene,  self.rpm,  0.1,  0.1)
-
-        self.projectors = []
 
         self.scene_items = []
 
@@ -49,24 +45,9 @@ class UICore(QtCore.QObject):
 
         self.bottom_label.add_msg(msg,  min_duration,  temp)
 
-    def add_projector(self,  proj):
-
-        self.projectors.append(proj)
-
     def debug_view(self):
 
         self.view.show()
-
-    def scene_changed(self,  rects):
-
-        pix = QtGui.QPixmap(self.scene.width(), self.scene.height())
-        painter = QtGui.QPainter(pix)
-        self.scene.render(painter)
-        painter.end()
-
-        for proj in self.projectors:
-
-            proj.set_img(pix)
 
     def get_scene_items_by_type(self,  type):
 
