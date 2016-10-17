@@ -12,9 +12,12 @@ from art_msgs.msg import ProgramItem as ProgIt
 from items import ObjectItem, ButtonItem,  PoseStampedCursorItem
 from art_interface_utils.interface_state_manager import interface_state_manager
 from art_msgs.msg import InterfaceState,  InterfaceStateItem
-from sensor_msgs.msg import Image # TODO CompressedImage?
+from sensor_msgs.msg import CompressedImage
 import qimage2ndarray
-from cv_bridge import CvBridge, CvBridgeError
+import numpy as np
+import cv2
+import thread
+import Queue
 
 translate = QtCore.QCoreApplication.translate
 
@@ -31,7 +34,6 @@ class UICoreRos(UICore):
         QtCore.QObject.connect(self, QtCore.SIGNAL('objects'), self.object_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('user_status'), self.user_status_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('interface_state'), self.interface_state_evt)
-
 
         self.user_status = None
         self.selected_program_id = None
@@ -63,40 +65,60 @@ class UICoreRos(UICore):
         self.scene_items[-1].setPos(self.scene.width()-self.scene_items[-1].w,  self.scene.height() - self.scene_items[-1].h - 60)
         self.scene_items[-1].set_enabled(True)
 
-        self.scene_pub = rospy.Publisher("/art/interface/projected_gui/scene",  Image,  queue_size=1)
-        self.bridge = CvBridge()
+        self.scene_pub = rospy.Publisher("/art/interface/projected_gui/scene",  CompressedImage,  queue_size=1,  tcp_nodelay=True,  latch=True)
         self.last_scene_update = None
+
+        self.scene_img_deq = Queue.Queue(maxsize=1)
+        thread.start_new_thread(self.scene_pub_thread,  ())
 
         self.scene.changed.connect(self.scene_changed)
 
+    def scene_pub_thread(self):
+
+        while not rospy.is_shutdown():
+
+            try:
+                pix = self.scene_img_deq.get(block=True, timeout=1)
+            except Queue.Empty:
+                continue
+
+            img = pix.toImage()
+            img = img.convertToFormat(QtGui.QImage.Format_ARGB32)
+
+            v =qimage2ndarray.rgb_view(img)
+
+            msg = CompressedImage()
+            msg.header.stamp = rospy.Time.now()
+            msg.format = "png"
+            msg.data = np.array(cv2.imencode('.png', v,  (cv2.cv.CV_IMWRITE_PNG_COMPRESSION, 3))[1]).tostring()
+            #print len(msg.data)
+
+            self.scene_pub.publish(msg)
 
     def scene_changed(self,  rects):
 
+        if len(rects) == 0: return
+        if self.scene_img_deq.full(): return
+
+        # limit publishing of updates to some reasonable fps ????
+        now = rospy.Time.now()
         if self.last_scene_update is None:
-            self.last_scene_update = rospy.Time.now()
+            self.last_scene_update = now
         else:
-            if rospy.Time.now() - self.last_scene_update < rospy.Duration(1.0/10): # TODO should be 25fps?
+            if now - self.last_scene_update < rospy.Duration(1.0/20):
                 return
 
-        self.last_scene_update = rospy.Time.now()
+        self.last_scene_update = now
 
         pix = QtGui.QPixmap(self.scene.width(), self.scene.height())
         painter = QtGui.QPainter(pix)
         self.scene.render(painter)
         painter.end()
 
-        img = pix.toImage()
-        img = img.convertToFormat(QtGui.QImage.Format_ARGB32)
-
-        v =qimage2ndarray.rgb_view(img)
-
-        # TODO fix - it prints out some crap... ???
         try:
-         msg = self.bridge.cv2_to_imgmsg(v, "bgr8")
-        except CvBridgeError:
-          return
-
-        self.scene_pub.publish(msg)
+            self.scene_img_deq.put_nowait(pix)
+        except Queue.Full:
+            pass
 
     def stop_btn_clicked(self):
 

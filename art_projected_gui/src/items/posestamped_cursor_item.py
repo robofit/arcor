@@ -50,6 +50,7 @@ class PoseStampedCursorItem(Item):
 
         self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
         self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+        self.setCacheMode(QtGui.QGraphicsItem.DeviceCoordinateCache)
 
         self.mouse = False
 
@@ -68,10 +69,11 @@ class PoseStampedCursorItem(Item):
 
     def boundingRect(self):
 
-        return QtCore.QRectF(-10, -10, 20, 20)
+        return QtCore.QRectF(-20, -20, 40, 40)
 
     def paint(self, painter, option, widget):
 
+        painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
         if self.click: painter.setBrush(QtCore.Qt.red)

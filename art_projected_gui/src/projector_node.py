@@ -20,7 +20,7 @@ def main(args):
 
     app = QtGui.QApplication(sys.argv)
 
-    proj = Projector(0, "/kinect2/sd/image_color_rect",  "/kinect2/sd/camera_info",  None)
+    proj = Projector(1, "/kinect2/sd/image_color_rect",  "/kinect2/sd/camera_info",  None)
 
     timer = QtCore.QTimer()
     timer.start(500)

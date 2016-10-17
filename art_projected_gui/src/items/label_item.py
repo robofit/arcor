@@ -22,6 +22,7 @@ class LabelItem(Item):
         self.temp_msgs = []
 
         self.timer = rospy.Timer(rospy.Duration(0.1), self.timer_cb)
+        #self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
 
     def add_msg(self,  msg,  min_duration=rospy.Duration(3),  temp=False):
 
@@ -64,6 +65,8 @@ class LabelItem(Item):
 
             arr.remove(msg)
 
+        return len(msgs_to_delete) > 0
+
     def check_for_msgs(self):
 
         if len(self.msgs) > 0:
@@ -82,10 +85,7 @@ class LabelItem(Item):
 
     def timer_cb(self,  evt):
 
-        self.prune_old_msgs(self.still_msgs)
-        self.prune_old_msgs(self.temp_msgs)
-
-        self.update()
+        if self.prune_old_msgs(self.still_msgs) or self.prune_old_msgs(self.temp_msgs): self.update()
 
     def paint(self, painter, option, widget):
 
@@ -99,7 +99,7 @@ class LabelItem(Item):
         if msg["shown_at"] is None: msg["shown_at"] = rospy.Time.now()
 
         # TODO animate text as it is shown / disappears
-
+        #painter.setClipRect( option.exposedRect )
         painter.setBrush(QtCore.Qt.white)
         painter.setPen(QtCore.Qt.white)
 

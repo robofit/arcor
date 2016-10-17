@@ -18,7 +18,7 @@ class Item(QtGui.QGraphicsItem):
         self.cursor_press_at = rospy.Time(0)
 
         self.setVisible(True)
-        self.setAcceptHoverEvents(True)
+        #self.setAcceptHoverEvents(True)
         self.setEnabled(True)
         self.setActive(True)
 

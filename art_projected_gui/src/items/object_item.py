@@ -29,6 +29,8 @@ class ObjectItem(Item):
         if selected:
             self.set_selected()
 
+        #self.setCacheMode(QtGui.QGraphicsItem.DeviceCoordinateCache)
+
     def boundingRect(self):
 
         es = self.m2pix(self.outline_diameter)
@@ -37,6 +39,7 @@ class ObjectItem(Item):
 
     def paint(self, painter, option, widget):
 
+        #painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
         eso = self.m2pix(self.outline_diameter*1.3)

@@ -3,9 +3,10 @@
 from PyQt4 import QtGui, QtCore
 import rospkg
 from cv_bridge import CvBridge, CvBridgeError
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage,  Image
 import rospy
 import cv2
+import numpy as np
 
 # TODO zobrazit "waiting for data" nebo tak neco
 # warpovani obrazu pro kazdy z projektoru
@@ -40,13 +41,18 @@ class Projector(QtGui.QWidget):
         self.pix_label.resize(self.size())
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('scene'), self.scene_evt)
-        self.scene_sub = rospy.Subscriber("/art/interface/projected_gui/scene",  Image,  self.scene_cb,  queue_size=1)
+        self.scene_sub = rospy.Subscriber("/art/interface/projected_gui/scene",  CompressedImage,  self.scene_cb,  queue_size=1)
 
         self.showFullScreen()
 
     def scene_cb(self,  msg):
 
-        image = QtGui.QPixmap.fromImage(QtGui.QImage(msg.data, msg.width, msg.height, QtGui.QImage.Format_RGB888))
+        np_arr = np.fromstring(msg.data, np.uint8)
+        image_np = cv2.imdecode(np_arr, cv2.CV_LOAD_IMAGE_COLOR)
+
+        height, width, channel = image_np.shape
+        bytesPerLine = 3 * width
+        image = QtGui.QPixmap.fromImage(QtGui.QImage(image_np.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888))
         self.emit(QtCore.SIGNAL('scene'),  image)
 
     def scene_evt(self,  img):
