@@ -20,7 +20,13 @@ def main(args):
 
     app = QtGui.QApplication(sys.argv)
 
-    proj = Projector(1, "/kinect2/sd/image_color_rect",  "/kinect2/sd/camera_info",  None)
+    projector_id = rospy.get_param('~projector_id', 'test')
+    screen_number = rospy.get_param('~screen_number', 0)
+    camera_image_topic = rospy.get_param('~camera_image_topic', '/kinect2/sd/image_color_rect')
+    camera_info_topic = rospy.get_param('~camera_info_topic', '/kinect2/sd/camera_info')
+    calibration_matrix = rospy.get_param('~calibration_matrix',  None)
+
+    proj = Projector(projector_id,  screen_number, camera_image_topic,  camera_info_topic,  calibration_matrix)
 
     timer = QtCore.QTimer()
     timer.start(500)

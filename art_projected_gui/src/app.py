@@ -6,7 +6,6 @@ import rospy
 from PyQt4 import QtGui, QtCore
 import rospkg
 
-from gui import Projector
 from gui import UICoreRos
 
 def sigint_handler(*args):
@@ -38,9 +37,8 @@ def main(args):
 
     ui = UICoreRos()
 
-    ui.debug_view()
-
-    #ui. scene_changed(None)
+    dbg = rospy.get_param('~show_scene',  False)
+    if dbg: ui.debug_view()
 
     timer = QtCore.QTimer()
     timer.start(500)

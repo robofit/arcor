@@ -30,6 +30,7 @@ class UICore(QtCore.QObject):
 
         self.scene = QtGui.QGraphicsScene(0, 0,  int(w),  int(h))
         self.scene.setBackgroundBrush(QtCore.Qt.black)
+        self.scene.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex) # should be good for dynamic scenes
 
         self.bottom_label = LabelItem(self.scene,  self.rpm,  0.1,  self.height - 0.05,  self.width-0.2,  0.1)
         self.program_vis = ProgramItem(self.scene,  self.rpm,  0.1,  0.1)

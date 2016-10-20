@@ -6,10 +6,10 @@ import rospy
 from art_msgs.msg import InstancesArray,  UserStatus
 from fsm import FSM
 from transitions import MachineError
-from art_msgs.srv import getProgram,  storeProgram,  startProgram
 from art_msgs.msg import ProgramItem as ProgIt
 #from button_item import ButtonItem
 from items import ObjectItem, ButtonItem,  PoseStampedCursorItem
+from helpers import ProjectorHelper,  ArtApiHelper
 from art_interface_utils.interface_state_manager import interface_state_manager
 from art_msgs.msg import InterfaceState,  InterfaceStateItem
 from sensor_msgs.msg import CompressedImage
@@ -25,8 +25,10 @@ class UICoreRos(UICore):
 
     def __init__(self):
 
-        # TODO read x, y, width, height from param server
-        super(UICoreRos,  self).__init__(0, 0, 1.2,  0.75)
+        origin = rospy.get_param("~scene_origin",  [0,  0])
+        size = rospy.get_param("~scene_size",  [1.2,  0.75])
+
+        super(UICoreRos,  self).__init__(origin[0], origin[1],  size[0],  size[1])
 
         self.obj_sub = rospy.Subscriber('/art/object_detector/object_filtered', InstancesArray, self.object_cb, queue_size=1)
         self.user_status_sub = rospy.Subscriber('/art/user/status',  UserStatus,  self.user_status_cb,  queue_size=1)
@@ -52,26 +54,38 @@ class UICoreRos(UICore):
         self.fsm.cb_learning = self.cb_learning
         self.fsm.is_template = self.is_template
 
-        self.fsm.tr_start()
-
         # TODO dodelat integraci state manageru (spis prehodit do ui_code a volat napr z add_polygon apod.)
         self.state_manager = interface_state_manager("PROJECTED UI",  cb=self.interface_state_cb)
 
-        # TODO read/configure inputs from params
-        self.scene_items.append(PoseStampedCursorItem(self.scene,  self.rpm,  "left_hand"))
-        #self.scene_items.append(PoseStampedCursorItem(self.scene,  self.rpm,  "right_hand"))
+        cursors = rospy.get_param("~cursors",  [])
+        for cur in cursors:
+            self.scene_items.append(PoseStampedCursorItem(self.scene,  self.rpm,  cur))
 
         self.scene_items.append(ButtonItem(self.scene,  self.rpm,  0,  0,  "STOP",  None,  self.stop_btn_clicked,  2.0,  QtCore.Qt.red))
         self.scene_items[-1].setPos(self.scene.width()-self.scene_items[-1].w,  self.scene.height() - self.scene_items[-1].h - 60)
         self.scene_items[-1].set_enabled(True)
 
-        self.scene_pub = rospy.Publisher("/art/interface/projected_gui/scene",  CompressedImage,  queue_size=1,  tcp_nodelay=True,  latch=True)
+        self.scene_pub = rospy.Publisher("scene",  CompressedImage,  queue_size=1,  tcp_nodelay=True,  latch=True)
         self.last_scene_update = None
 
         self.scene_img_deq = Queue.Queue(maxsize=1)
         thread.start_new_thread(self.scene_pub_thread,  ())
 
         self.scene.changed.connect(self.scene_changed)
+
+        self.projectors = []
+
+        projs = rospy.get_param("~projectors",  [])
+        for proj in projs:
+            self.add_projector(proj)
+
+        self.art = ArtApiHelper()
+
+        self.fsm.tr_start()
+
+    def add_projector(self,  proj_id):
+
+        self.projectors.append(ProjectorHelper(proj_id))
 
     def scene_pub_thread(self):
 
@@ -100,7 +114,7 @@ class UICoreRos(UICore):
         if len(rects) == 0: return
         if self.scene_img_deq.full(): return
 
-        # limit publishing of updates to some reasonable fps ????
+        # TODO does it make sense to limit FPS?
         now = rospy.Time.now()
         if self.last_scene_update is None:
             self.last_scene_update = now
@@ -152,18 +166,15 @@ class UICoreRos(UICore):
             prog = self.program_vis.get_prog()
             prog.id = 1
 
-            prog_srv = rospy.ServiceProxy('/art/db/program/store', storeProgram)
-
-            try:
-                resp = prog_srv(prog)
-            except rospy.ServiceException, e:
-                print "Service call failed: %s"%e
+            if not self.art.store_program(prog):
                 # TODO what to do?
                 self.notif(translate("UICoreRos", "Failed to store program"),  temp=True)
 
-            self.notif(translate("UICoreRos", "Program stored. Starting..."),  temp=True)
+            else:
 
-            self.start_program(prog.id)
+                self.notif(translate("UICoreRos", "Program stored. Starting..."),  temp=True)
+
+            self.art.start_program(prog.id)
             self.fsm.tr_program_learned()
 
         # TODO pause / stop -> fsm
@@ -244,7 +255,6 @@ class UICoreRos(UICore):
 
         # TODO zobrazit instrukce k tasku
         pass
-        #self.buttons.append(ButtonItem()) -> run program
 
     def calib_done_cb(self,  proj):
 
@@ -268,8 +278,12 @@ class UICoreRos(UICore):
 
     def cb_start_calibration(self):
 
-        # TODO how to send calibration-request to projector nodes?
-        self.fsm.tr_calibrated()
+        if len(self.projectors) == 0: self.fsm.tr_calibrated()
+        else:
+
+            self.calib_proj_cnt = 0
+            # TODO what to do with return value here (failure)?
+            self.projectors[0].calibrate(self.calib_done_cb)
 
     def cb_waiting_for_user(self):
 
@@ -284,7 +298,7 @@ class UICoreRos(UICore):
         self.notif(translate("UICoreRos", "Please select a program"))
 
         # TODO display list of programs -> let user select -> then load it
-        self.load_program(0)
+        self.program = self.art.load_program(0)
 
         if self.program is not None: # TODO avoid self.program -> duplication
 
@@ -293,33 +307,6 @@ class UICoreRos(UICore):
             self.fsm.tr_program_selected()
         else:
            self.notif(translate("UICoreRos", "Loading of requested program failed"),  temp=True)
-
-    def load_program(self,  prog_id,  template = False):
-
-        rospy.loginfo('Loading program: ' + str(prog_id))
-
-        try:
-            prog_srv = rospy.ServiceProxy('/art/db/program/get', getProgram)
-            resp = prog_srv(prog_id)
-            self.program = resp.program
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            self.program = None
-            return False
-
-        return True
-
-    def start_program(self,  prog_id):
-
-        srv_start = rospy.ServiceProxy('/art/brain/program/start', startProgram)
-
-        try:
-            resp = srv_start(prog_id)
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-            return False
-
-        return True
 
     def object_cb(self,  msg):
 
