@@ -14,6 +14,12 @@ class ArtApiHelper():
         # Brain
         self.start_program_srv = rospy.ServiceProxy('/art/brain/program/start', startProgram)
 
+    def wait_for_api(self):
+
+        self.get_prog_srv.wait_for_service()
+        self.store_prog_srv.wait_for_service()
+        self.start_program_srv.wait_for_service()
+
     def load_program(self,  prog_id):
 
         rospy.loginfo('Loading program: ' + str(prog_id))

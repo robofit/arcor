@@ -221,7 +221,7 @@ class ProgramItem(Item):
         if self.active_item is not None:
             self.active_item.setPos(30,  self.active_item.y())
             self.active_item.active_item = False
-            self.active_item.update()
+
         it.active_item = True
         self.active_item = it
         self.active_item.update()

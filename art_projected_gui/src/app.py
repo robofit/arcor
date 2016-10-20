@@ -17,14 +17,6 @@ def main(args):
 
     rospy.init_node('projected_gui', anonymous=True)
 
-    rospy.loginfo('Waiting for art_brain services...')
-    rospy.wait_for_service('/art/brain/program/start')
-    #rospy.wait_for_service('/art/brain/program/stop')
-    rospy.loginfo('Waiting for art_db services...')
-    rospy.wait_for_service('/art/db/program/get')
-    rospy.wait_for_service('/art/db/program/store')
-    rospy.loginfo('Ready!')
-
     signal.signal(signal.SIGINT, sigint_handler)
 
     app = QtGui.QApplication(sys.argv)
@@ -36,6 +28,7 @@ def main(args):
     app.installTranslator(translator)
 
     ui = UICoreRos()
+    ui.start()
 
     dbg = rospy.get_param('~show_scene',  False)
     if dbg: ui.debug_view()

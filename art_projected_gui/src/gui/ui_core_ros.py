@@ -30,9 +30,6 @@ class UICoreRos(UICore):
 
         super(UICoreRos,  self).__init__(origin[0], origin[1],  size[0],  size[1])
 
-        self.obj_sub = rospy.Subscriber('/art/object_detector/object_filtered', InstancesArray, self.object_cb, queue_size=1)
-        self.user_status_sub = rospy.Subscriber('/art/user/status',  UserStatus,  self.user_status_cb,  queue_size=1)
-
         QtCore.QObject.connect(self, QtCore.SIGNAL('objects'), self.object_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('user_status'), self.user_status_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('interface_state'), self.interface_state_evt)
@@ -80,6 +77,21 @@ class UICoreRos(UICore):
             self.add_projector(proj)
 
         self.art = ArtApiHelper()
+
+    def start(self):
+
+        rospy.loginfo("Waiting for ART services...")
+        self.art.wait_for_api()
+
+        rospy.loginfo("Waiting for projector nodes...")
+        for proj in self.projectors:
+            proj.wait_until_available()
+
+        rospy.loginfo("Ready! Starting state machine.")
+
+        # TODO move this to ArtApiHelper ??
+        self.obj_sub = rospy.Subscriber('/art/object_detector/object_filtered', InstancesArray, self.object_cb, queue_size=1)
+        self.user_status_sub = rospy.Subscriber('/art/user/status',  UserStatus,  self.user_status_cb,  queue_size=1)
 
         self.fsm.tr_start()
 
@@ -270,20 +282,22 @@ class UICoreRos(UICore):
 
         else:
 
+            # TODO what to do ??
+            # calibration failed - let's try again
             proj.calibrate(self.calib_done_cb)
 
-        if self.calib_proj_cnt == len(self.projectors):
-
-            self.fsm.tr_calibrated()
-
     def cb_start_calibration(self):
+
+        rospy.loginfo('Starting calibration of ' + str(len(self.projectors)) + ' projector(s)')
 
         if len(self.projectors) == 0: self.fsm.tr_calibrated()
         else:
 
             self.calib_proj_cnt = 0
-            # TODO what to do with return value here (failure)?
-            self.projectors[0].calibrate(self.calib_done_cb)
+
+            if not self.projectors[0].calibrate(self.calib_done_cb):
+                # TODO what to do?
+                rospy.logerror("Calibration failed")
 
     def cb_waiting_for_user(self):
 
