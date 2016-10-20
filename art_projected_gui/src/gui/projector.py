@@ -3,17 +3,27 @@
 from PyQt4 import QtGui, QtCore
 import rospkg
 from cv_bridge import CvBridge, CvBridgeError
-from sensor_msgs.msg import Image, CameraInfo
+from sensor_msgs.msg import CompressedImage,  Image
 import rospy
 import cv2
+import numpy as np
+from std_msgs.msg import Bool
+from std_srvs.srv import Empty, EmptyResponse
 
+# TODO create ProjectorROS (to separate QT / ROS stuff)
+# TODO zobrazit "waiting for data" nebo tak neco
 # warpovani obrazu pro kazdy z projektoru
 # podle vysky v pointcloudu se vymaskuji mista kde je neco vyssiho - aby se promitalo jen na plochu stolu ????
+
 class Projector(QtGui.QWidget):
 
-    def __init__(self, screen,  camera_image_topic, camera_info_topic,  calibration):
+    def __init__(self, proj_id, screen,  camera_image_topic, camera_info_topic,  calibration):
 
         super(Projector, self).__init__()
+
+        rospy.loginfo("Projector '" + proj_id + "', on screen " + str(screen) )
+
+        self.proj_id = proj_id
 
         img_path = rospkg.RosPack().get_path('art_projected_gui') + '/imgs'
         self.checkerboard_img = QtGui.QPixmap(img_path + "/pattern.png")
@@ -37,7 +47,44 @@ class Projector(QtGui.QWidget):
         self.pix_label.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
         self.pix_label.resize(self.size())
 
+        QtCore.QObject.connect(self, QtCore.SIGNAL('scene'), self.scene_evt)
+        self.scene_sub = rospy.Subscriber("/art/interface/projected_gui/scene",  CompressedImage,  self.scene_cb,  queue_size=1)
+
+        self.calibrated = False
+        self.calibrated_pub = rospy.Publisher("/art/interface/projected_gui/projector/" + proj_id + "/calibrated",  Bool,  queue_size=1,  latch=True)
+        self.calibrated_pub.publish(self.calibrated)
+
+        self.srv_calibrate = rospy.Service("/art/interface/projected_gui/projector/" + proj_id + "/calibrate", Empty, self.calibrate_srv_cb)
+
         self.showFullScreen()
+
+
+    def calibrate_srv_cb(self,  req):
+
+        # TODO start calibration ;)
+        self.calibrated = True
+        self.calibrated_pub.publish(self.calibrated)
+
+        return EmptyResponse()
+
+    def scene_cb(self,  msg):
+
+        if not self.calibrated: return
+
+        np_arr = np.fromstring(msg.data, np.uint8)
+        image_np = cv2.imdecode(np_arr, cv2.CV_LOAD_IMAGE_COLOR)
+
+        height, width, channel = image_np.shape
+        bytesPerLine = 3 * width
+        image = QtGui.QPixmap.fromImage(QtGui.QImage(image_np.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888))
+        self.emit(QtCore.SIGNAL('scene'),  image)
+
+    def scene_evt(self,  img):
+
+        if self.calibrating: return
+
+        # TODO warp image according to calibration
+        self.pix_label.setPixmap(img)
 
     def is_calibrated(self):
 
@@ -46,13 +93,6 @@ class Projector(QtGui.QWidget):
     def on_resize(self, event):
 
         self.pix_label.resize(self.size())
-
-    def set_img(self,  img):
-
-        if self.calibrating: return
-
-        # TODO warp image according to calibration
-        self.pix_label.setPixmap(img)
 
     def calibrate(self,  cb):
 
@@ -87,5 +127,6 @@ class Projector(QtGui.QWidget):
         print corners
 
         if cb is not None: cb(self)
+
 
 

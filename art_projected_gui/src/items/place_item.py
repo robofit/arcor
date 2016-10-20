@@ -43,6 +43,7 @@ class PlaceItem(Item):
 
     def paint(self, painter, option, widget):
 
+        #painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
         es = self.m2pix(self.outline_diameter)

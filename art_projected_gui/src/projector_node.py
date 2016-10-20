@@ -4,9 +4,8 @@ import sys
 import signal
 import rospy
 from PyQt4 import QtGui, QtCore
-import rospkg
+from gui import Projector
 
-from gui import UICoreRos
 
 def sigint_handler(*args):
     """Handler for the SIGINT signal."""
@@ -15,23 +14,19 @@ def sigint_handler(*args):
 
 def main(args):
 
-    rospy.init_node('projected_gui', anonymous=True)
+    rospy.init_node('projected_gui_projector', anonymous=True)
 
     signal.signal(signal.SIGINT, sigint_handler)
 
     app = QtGui.QApplication(sys.argv)
 
-    rospack = rospkg.RosPack()
+    projector_id = rospy.get_param('~projector_id', 'test')
+    screen_number = rospy.get_param('~screen_number', 0)
+    camera_image_topic = rospy.get_param('~camera_image_topic', '/kinect2/sd/image_color_rect')
+    camera_info_topic = rospy.get_param('~camera_info_topic', '/kinect2/sd/camera_info')
+    calibration_matrix = rospy.get_param('~calibration_matrix',  None)
 
-    translator = QtCore.QTranslator()
-    translator.load(QtCore.QLocale.system().name() + '.qm',  rospack.get_path('art_projected_gui') + '/lang')
-    app.installTranslator(translator)
-
-    ui = UICoreRos()
-    ui.start()
-
-    dbg = rospy.get_param('~show_scene',  False)
-    if dbg: ui.debug_view()
+    proj = Projector(projector_id,  screen_number, camera_image_topic,  camera_info_topic,  calibration_matrix)
 
     timer = QtCore.QTimer()
     timer.start(500)
