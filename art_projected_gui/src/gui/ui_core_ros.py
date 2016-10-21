@@ -22,6 +22,18 @@ import Queue
 translate = QtCore.QCoreApplication.translate
 
 class UICoreRos(UICore):
+    """The class builds on top of UICore and adds ROS-related stuff and application logic.
+
+    Attributes:
+        user_status (UserStatus): current user tracking status
+        fsm (FSM): state machine maintaining current state of the interface and proper transitions between states
+        state_manager (interface_state_manager): synchronization of interfaces within the ARTable system
+        scene_pub (rospy.Publisher): publisher for scene images
+        last_scene_update (rospy.Time): time when the last scene image was published
+        scene_img_deq (Queue.Queue): thread-safe queue for scene images (which are published in separate thread)
+        projectors (list): array of ProjectorHelper instances
+        art (ArtApiHelper): easy access to ARTable services
+    """
 
     def __init__(self):
 
@@ -35,7 +47,6 @@ class UICoreRos(UICore):
         QtCore.QObject.connect(self, QtCore.SIGNAL('interface_state'), self.interface_state_evt)
 
         self.user_status = None
-        self.selected_program_id = None
 
         self.program_vis.active_item_switched = self.active_item_switched
         self.program_vis.program_state_changed = self.program_state_changed

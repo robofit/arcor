@@ -3,7 +3,7 @@
 <context>
     <name>ObjectItem</name>
     <message>
-        <location filename="src/items/object_item.py" line="74"/>
+        <location filename="src/items/object_item.py" line="77"/>
         <source>TYPE: </source>
         <translation type="unfinished"></translation>
     </message>
@@ -79,97 +79,97 @@
 <context>
     <name>UICoreRos</name>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="67"/>
+        <location filename="src/gui/ui_core_ros.py" line="163"/>
         <source>Emergency stop pressed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="103"/>
+        <location filename="src/gui/ui_core_ros.py" line="194"/>
         <source>Failed to store program</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="105"/>
+        <location filename="src/gui/ui_core_ros.py" line="198"/>
         <source>Program stored. Starting...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="125"/>
+        <location filename="src/gui/ui_core_ros.py" line="218"/>
         <source>This program item seems to be done</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="130"/>
+        <location filename="src/gui/ui_core_ros.py" line="223"/>
         <source>Program current manipulation task</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="144"/>
+        <location filename="src/gui/ui_core_ros.py" line="237"/>
         <source>OBJECT FROM STEP</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="151"/>
+        <location filename="src/gui/ui_core_ros.py" line="244"/>
         <source>Select object type to be picked up</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="326"/>
+        <location filename="src/gui/ui_core_ros.py" line="394"/>
         <source>PICK POLYGON</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="162"/>
+        <location filename="src/gui/ui_core_ros.py" line="255"/>
         <source>Select object to be picked up</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="330"/>
+        <location filename="src/gui/ui_core_ros.py" line="398"/>
         <source>PLACE POSE</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="329"/>
+        <location filename="src/gui/ui_core_ros.py" line="397"/>
         <source>Set where to place picked object</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="225"/>
+        <location filename="src/gui/ui_core_ros.py" line="320"/>
         <source>Waiting for user...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="229"/>
+        <location filename="src/gui/ui_core_ros.py" line="324"/>
         <source>Please do a calibration pose</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="233"/>
+        <location filename="src/gui/ui_core_ros.py" line="328"/>
         <source>Please select a program</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="244"/>
+        <location filename="src/gui/ui_core_ros.py" line="339"/>
         <source>Loading of requested program failed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="282"/>
+        <location filename="src/gui/ui_core_ros.py" line="350"/>
         <source>Object</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="282"/>
+        <location filename="src/gui/ui_core_ros.py" line="350"/>
         <source>disappeared</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="292"/>
+        <location filename="src/gui/ui_core_ros.py" line="360"/>
         <source>New object</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="327"/>
+        <location filename="src/gui/ui_core_ros.py" line="395"/>
         <source>Check and adjust pick polygon</source>
         <translation type="unfinished"></translation>
     </message>
