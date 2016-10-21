@@ -43,3 +43,11 @@ user_state: 2"
 publishing and latching message. Press ctrl-C to terminate
 ^C
 ```
+
+How to update language files:
+
+```
+roscd art_projected_gui
+pylupdate4 proj.pro
+linguist lang/locale_you_want_to_tweak.ts (save, release)
+```
