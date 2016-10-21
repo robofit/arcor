@@ -278,26 +278,31 @@ class UICoreRos(UICore):
 
                 self.projectors[self.calib_proj_cnt].calibrate(self.calib_done_cb)
             else:
+                rospy.loginfo('Projectors calibrated.')
                 self.fsm.tr_calibrated()
 
         else:
 
-            # TODO what to do ??
             # calibration failed - let's try again
+            rospy.logerror('Calibration failed for projector: ' + proj.proj_id)
             proj.calibrate(self.calib_done_cb)
 
     def cb_start_calibration(self):
 
-        rospy.loginfo('Starting calibration of ' + str(len(self.projectors)) + ' projector(s)')
+        if len(self.projectors) == 0:
 
-        if len(self.projectors) == 0: self.fsm.tr_calibrated()
+            rospy.loginfo('No projectors to calibrate.')
+            self.fsm.tr_calibrated()
+
         else:
+
+            rospy.loginfo('Starting calibration of ' + str(len(self.projectors)) + ' projector(s)')
 
             self.calib_proj_cnt = 0
 
             if not self.projectors[0].calibrate(self.calib_done_cb):
                 # TODO what to do?
-                rospy.logerror("Calibration failed")
+                rospy.logerror("Failed to start projector calibration")
 
     def cb_waiting_for_user(self):
 

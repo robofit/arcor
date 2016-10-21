@@ -27,12 +27,16 @@ class ProjectorHelper():
         if self.calibrating:
             return False
 
+        self.calibrated_cb = calibrated_cb
+        self.calibrating = True
+
         try:
             self.srv_calibrate()
         except rospy.ServiceException:
+            self.calibrating = False
+            self.calibrated_cb = None
             return False
-        self.calibrating = True
-        self.calibrated_cb = calibrated_cb
+
         return True
 
     def is_calibrated(self):
@@ -43,4 +47,5 @@ class ProjectorHelper():
 
         self.calibrated = msg.data
         self.calibrating = False
-        if self.calibrated_cb is not None: self.calibrated_cb(self)
+        if self.calibrated_cb is not None:
+            self.calibrated_cb(self)
