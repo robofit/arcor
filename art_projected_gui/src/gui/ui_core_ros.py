@@ -3,15 +3,14 @@
 from ui_core import UICore
 from PyQt4 import QtCore,  QtGui
 import rospy
-from art_msgs.msg import InstancesArray,  UserStatus
+from art_msgs.msg import InstancesArray,  UserStatus,  InterfaceState,  InterfaceStateItem,  ProgramItem as ProgIt
+from art_msgs.srv import getSceneCoords,  getSceneCoordsResponse
 from fsm import FSM
 from transitions import MachineError
-from art_msgs.msg import ProgramItem as ProgIt
 #from button_item import ButtonItem
 from items import ObjectItem, ButtonItem,  PoseStampedCursorItem
 from helpers import ProjectorHelper,  ArtApiHelper
 from art_interface_utils.interface_state_manager import interface_state_manager
-from art_msgs.msg import InterfaceState,  InterfaceStateItem
 from sensor_msgs.msg import CompressedImage
 import qimage2ndarray
 import numpy as np
@@ -88,6 +87,25 @@ class UICoreRos(UICore):
             self.add_projector(proj)
 
         self.art = ArtApiHelper()
+
+        self.srv_scene_coords = rospy.Service("/art/interface/projected_gui/world2scene", getSceneCoords, self.get_scene_coords_srv_cb)
+
+    def get_scene_coords_srv_cb(self,  req):
+
+        # TODO check frame_id and transform if necessary
+        resp = getSceneCoordsResponse()
+        resp.x = req.pt.point.x*self.rpm
+        resp.y = req.pt.point.y*self.rpm
+        print self.x
+        print self.y
+        print self.width
+        print self.height
+        if (req.pt.point.x < self.x or req.pt.point.x > self.width) or (req.pt.point.y < self.y or req.pt.point.y > self.height):
+            resp.out_of_scene = True
+        else:
+            resp.out_of_scene = False
+
+        return resp
 
     def start(self):
 
@@ -295,7 +313,7 @@ class UICoreRos(UICore):
         else:
 
             # calibration failed - let's try again
-            rospy.logerror('Calibration failed for projector: ' + proj.proj_id)
+            rospy.logerr('Calibration failed for projector: ' + proj.proj_id)
             proj.calibrate(self.calib_done_cb)
 
     def cb_start_calibration(self):
@@ -313,7 +331,7 @@ class UICoreRos(UICore):
 
             if not self.projectors[0].calibrate(self.calib_done_cb):
                 # TODO what to do?
-                rospy.logerror("Failed to start projector calibration")
+                rospy.logerr("Failed to start projector calibration")
 
     def cb_waiting_for_user(self):
 
