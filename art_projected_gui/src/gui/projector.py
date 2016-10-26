@@ -32,6 +32,8 @@ class Projector(QtGui.QWidget):
         self.compressed_scene = rospy.get_param('~compressed_scene', False)
         self.h_matrix = rospy.get_param('~calibration_matrix',  None)
         self.rpm = rospy.get_param('~rpm',  1280)
+        self.scene_size = rospy.get_param("~scene_size",  [1.2,  0.75])
+        self.scene_origin = rospy.get_param("~scene_origin",  [0,  0])
 
         rospy.loginfo("Projector '" + self.proj_id + "', on screen " + str(self.screen) )
 
@@ -155,12 +157,12 @@ class Projector(QtGui.QWidget):
               points.append([self.rpm*ps.point.x, self.rpm*ps.point.y])
 
         # generate requested table coordinates
-        # TODO fix it ;-)
         for y in range(0,6):
               for x in range(0,9):
 
-                    px = 1.2 - (x/8.0*1.2)
-                    py = y/5.0*0.75
+                    # TODO apply self.scene_origin
+                    px = self.scene_size[0] - (x/8.0*self.scene_size[0])
+                    py = y/5.0*self.scene_size[1]
 
                     ppoints.append([self.rpm*px, self.rpm*py])
 

@@ -22,7 +22,7 @@ class LabelItem(Item):
         self.temp_msgs = []
 
         self.timer = rospy.Timer(rospy.Duration(0.1), self.timer_cb)
-        #self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
+        self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
 
     def add_msg(self,  msg,  min_duration=rospy.Duration(3),  temp=False):
 
@@ -99,11 +99,10 @@ class LabelItem(Item):
         if msg["shown_at"] is None: msg["shown_at"] = rospy.Time.now()
 
         # TODO animate text as it is shown / disappears
-        #painter.setClipRect( option.exposedRect )
+        painter.setClipRect( option.exposedRect )
         painter.setBrush(QtCore.Qt.white)
         painter.setPen(QtCore.Qt.white)
 
         # TODO font size
         painter.setFont(QtGui.QFont('Arial', 18))
-
-        painter.drawText(0,  0, msg["msg"])
+        painter.drawText(0,  0, self.m2pix(self.w),  self.m2pix(self.h), 0,  msg["msg"])

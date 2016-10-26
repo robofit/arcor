@@ -136,6 +136,9 @@ class ProgramItemItem(Item):
 
     def paint(self, painter, option, widget):
 
+        painter.setClipRect(option.exposedRect)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
         font = QtGui.QFont('Arial', 18)
         painter.setFont(font);
         painter.setPen(QtCore.Qt.white)
@@ -384,6 +387,9 @@ class ProgramItem(Item):
     def paint(self, painter, option, widget):
 
         if self.prog is None: return
+
+        painter.setClipRect(option.exposedRect)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
         font = QtGui.QFont('Arial', 14)
         painter.setFont(font);

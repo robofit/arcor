@@ -121,9 +121,10 @@ class UICoreRos(UICore):
         rospy.loginfo("Waiting for ART services...")
         self.art.wait_for_api()
 
-        rospy.loginfo("Waiting for projector nodes...")
-        for proj in self.projectors:
-            proj.wait_until_available()
+        if len(self.projectors) > 0:
+            rospy.loginfo("Waiting for projector nodes...")
+            for proj in self.projectors:
+                proj.wait_until_available()
 
         rospy.loginfo("Ready! Starting state machine.")
 

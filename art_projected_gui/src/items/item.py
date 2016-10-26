@@ -21,6 +21,7 @@ class Item(QtGui.QGraphicsItem):
         #self.setAcceptHoverEvents(True)
         self.setEnabled(True)
         self.setActive(True)
+        self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
 
     def m2pix(self,  m):
 

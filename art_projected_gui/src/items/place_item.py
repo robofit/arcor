@@ -28,8 +28,15 @@ class PlaceItem(Item):
 
     def boundingRect(self):
 
+        es = self.m2pix(self.outline_diameter*1.3)
+        return QtCore.QRectF(-es/2, -es/2, es, es+40)
+
+    def shape(self):
+
+        path = QtGui.QPainterPath()
         es = self.m2pix(self.outline_diameter)
-        return QtCore.QRectF(-es/2, -es/2, es, es)
+        path.addEllipse(QtCore.QPoint(0,  0),  es/2,  es/2)
+        return path
 
     def item_moved(self):
 
@@ -43,7 +50,7 @@ class PlaceItem(Item):
 
     def paint(self, painter, option, widget):
 
-        #painter.setClipRect(option.exposedRect)
+        painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
         es = self.m2pix(self.outline_diameter)

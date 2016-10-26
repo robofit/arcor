@@ -29,17 +29,22 @@ class ObjectItem(Item):
         if selected:
             self.set_selected()
 
-        #self.setCacheMode(QtGui.QGraphicsItem.DeviceCoordinateCache)
-
     def boundingRect(self):
 
-        es = self.m2pix(self.outline_diameter)
+        es = self.m2pix(self.outline_diameter*1.3)
 
-        return QtCore.QRectF(-es/2, -es/2, es, es)
+        return QtCore.QRectF(-es/2, -es/2, es, es+20+40+5)
+
+    def shape(self):
+
+        path = QtGui.QPainterPath()
+        es = self.m2pix(self.outline_diameter)
+        path.addEllipse(QtCore.QPoint(0,  0),  es/2,  es/2)
+        return path
 
     def paint(self, painter, option, widget):
 
-        #painter.setClipRect(option.exposedRect)
+        painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
         eso = self.m2pix(self.outline_diameter*1.3)
