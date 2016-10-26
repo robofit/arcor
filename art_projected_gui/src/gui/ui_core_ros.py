@@ -11,12 +11,13 @@ from transitions import MachineError
 from items import ObjectItem, ButtonItem,  PoseStampedCursorItem
 from helpers import ProjectorHelper,  ArtApiHelper
 from art_interface_utils.interface_state_manager import interface_state_manager
-from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import CompressedImage, Image
 import qimage2ndarray
 import numpy as np
 import cv2
 import thread
 import Queue
+from cv_bridge import CvBridge, CvBridgeError
 
 translate = QtCore.QCoreApplication.translate
 
@@ -38,8 +39,9 @@ class UICoreRos(UICore):
 
         origin = rospy.get_param("~scene_origin",  [0,  0])
         size = rospy.get_param("~scene_size",  [1.2,  0.75])
+        rpm = rospy.get_param("~rpm",  1280)
 
-        super(UICoreRos,  self).__init__(origin[0], origin[1],  size[0],  size[1])
+        super(UICoreRos,  self).__init__(origin[0], origin[1],  size[0],  size[1],  rpm)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('objects'), self.object_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('user_status'), self.user_status_cb_evt)
@@ -72,10 +74,17 @@ class UICoreRos(UICore):
         self.scene_items[-1].setPos(self.scene.width()-self.scene_items[-1].w,  self.scene.height() - self.scene_items[-1].h - 60)
         self.scene_items[-1].set_enabled(True)
 
-        self.scene_pub = rospy.Publisher("scene",  CompressedImage,  queue_size=1,  tcp_nodelay=True,  latch=True)
+        self.compressed_scene = rospy.get_param("~compressed_scene",  False)
+
+        if self.compressed_scene:
+            self.scene_pub = rospy.Publisher("scene",  CompressedImage,  queue_size=1,  tcp_nodelay=True,  latch=True)
+        else:
+            self.scene_pub = rospy.Publisher("scene",  Image,  queue_size=1,  tcp_nodelay=True,  latch=True)
+            self.bridge = CvBridge()
+
         self.last_scene_update = None
 
-        self.scene_img_deq = Queue.Queue(maxsize=1)
+        self.scene_img_deq = Queue.Queue(maxsize=10)
         thread.start_new_thread(self.scene_pub_thread,  ())
 
         self.scene.changed.connect(self.scene_changed)
@@ -137,33 +146,46 @@ class UICoreRos(UICore):
             except Queue.Empty:
                 continue
 
+            # publish only the latest image
+            if not self.scene_img_deq.empty(): continue
+
             img = pix.toImage()
             img = img.convertToFormat(QtGui.QImage.Format_ARGB32)
 
             v =qimage2ndarray.rgb_view(img)
 
-            msg = CompressedImage()
-            msg.header.stamp = rospy.Time.now()
-            msg.format = "png"
-            msg.data = np.array(cv2.imencode('.png', v,  (cv2.cv.CV_IMWRITE_PNG_COMPRESSION, 3))[1]).tostring()
-            #print len(msg.data)
+            if self.compressed_scene:
+                msg = CompressedImage()
+                msg.header.stamp = rospy.Time.now()
+                msg.format = "png"
+                msg.data = np.array(cv2.imencode('.png', v,  (cv2.cv.CV_IMWRITE_PNG_COMPRESSION, 3))[1]).tostring()
+            else:
+                try:
+                    msg = self.bridge.cv2_to_imgmsg(v, "bgr8")
+                except CvBridgeError as e:
+                    print(e)
+                    continue
 
             self.scene_pub.publish(msg)
 
     def scene_changed(self,  rects):
 
         if len(rects) == 0: return
-        if self.scene_img_deq.full(): return
+
+        # TODO try to publish only changed rects???
 
         # TODO does it make sense to limit FPS?
         now = rospy.Time.now()
         if self.last_scene_update is None:
             self.last_scene_update = now
         else:
-            if now - self.last_scene_update < rospy.Duration(1.0/20):
+            if now - self.last_scene_update < rospy.Duration(1.0/30):
                 return
 
+        #print 1.0/(now - self.last_scene_update).to_sec()
         self.last_scene_update = now
+
+        #for rect in rects:
 
         pix = QtGui.QPixmap(self.scene.width(), self.scene.height())
         painter = QtGui.QPainter(pix)
@@ -173,7 +195,7 @@ class UICoreRos(UICore):
         try:
             self.scene_img_deq.put_nowait(pix)
         except Queue.Full:
-            pass
+            print "queue full"
 
     def stop_btn_clicked(self):
 

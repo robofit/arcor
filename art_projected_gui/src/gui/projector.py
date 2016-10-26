@@ -15,34 +15,32 @@ from geometry_msgs.msg import PointStamped,  Pose,  PoseArray
 import tf
 
 # TODO create ProjectorROS (to separate QT / ROS stuff)
-# warpovani obrazu pro kazdy z projektoru
 # podle vysky v pointcloudu / pozice projektoru se vymaskuji mista kde je neco vyssiho - aby se promitalo jen na plochu stolu ????
 
 class Projector(QtGui.QWidget):
 
-    def __init__(self, proj_id, screen,  camera_image_topic, camera_depth_topic,  camera_info_topic,  h_matrix,  world_frame="marker"):
+    def __init__(self):
 
         super(Projector, self).__init__()
 
-        rospy.loginfo("Projector '" + proj_id + "', on screen " + str(screen) )
+        self.proj_id = rospy.get_param('~projector_id', 'test')
+        self.world_frame = rospy.get_param('~world_frame', 'marker')
+        self.screen = rospy.get_param('~screen_number', 0)
+        self.camera_image_topic = rospy.get_param('~camera_image_topic', '/kinect2/sd/image_color_rect')
+        self.camera_depth_topic = rospy.get_param('~camera_depth_topic', '/kinect2/sd/image_depth_rect')
+        self.camera_info_topic = rospy.get_param('~camera_info_topic', '/kinect2/sd/camera_info')
+        self.compressed_scene = rospy.get_param('~compressed_scene', False)
+        self.h_matrix = rospy.get_param('~calibration_matrix',  None)
+        self.rpm = rospy.get_param('~rpm',  1280)
 
-        self.calibrated = False
-        self.h_matrix = h_matrix
-        if self.h_matrix is not None:
-            self.calibrated = True
-
-        self.proj_id = proj_id
-        self.world_frame = world_frame
+        rospy.loginfo("Projector '" + self.proj_id + "', on screen " + str(self.screen) )
 
         img_path = rospkg.RosPack().get_path('art_projected_gui') + '/imgs'
         self.checkerboard_img = QtGui.QPixmap(img_path + "/pattern.png")
         self.calibrating = False
-        self.camera_image_topic = camera_image_topic
-        self.camera_depth_topic = camera_depth_topic
-        self.camera_info_topic = camera_info_topic
 
         desktop = QtGui.QDesktopWidget()
-        geometry = desktop.screenGeometry(screen)
+        geometry = desktop.screenGeometry(self.screen)
         self.move(geometry.left(), geometry.top())
         self.resize(geometry.width(), geometry.height())
 
@@ -60,12 +58,14 @@ class Projector(QtGui.QWidget):
         self.pix_label.resize(self.size())
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('scene'), self.scene_evt)
-        self.scene_sub = rospy.Subscriber("/art/interface/projected_gui/scene",  CompressedImage,  self.scene_cb,  queue_size=1)
 
-        self.calibrated_pub = rospy.Publisher("/art/interface/projected_gui/projector/" + proj_id + "/calibrated",  Bool,  queue_size=1,  latch=True)
-        self.calibrated_pub.publish(self.calibrated)
+        if self.compressed_scene: self.scene_sub = rospy.Subscriber("/art/interface/projected_gui/scene",  CompressedImage,  self.scene_cb,  queue_size=1)
+        else: self.scene_sub = rospy.Subscriber("/art/interface/projected_gui/scene",  Image,  self.scene_cb,  queue_size=1)
 
-        self.srv_calibrate = rospy.Service("/art/interface/projected_gui/projector/" + proj_id + "/calibrate", Empty, self.calibrate_srv_cb)
+        self.calibrated_pub = rospy.Publisher("/art/interface/projected_gui/projector/" + self.proj_id + "/calibrated",  Bool,  queue_size=1,  latch=True)
+        self.calibrated_pub.publish(self.is_calibrated())
+
+        self.srv_calibrate = rospy.Service("/art/interface/projected_gui/projector/" + self.proj_id + "/calibrate", Empty, self.calibrate_srv_cb)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('show_chessboard'), self.show_chessboard_evt)
 
@@ -152,7 +152,7 @@ class Projector(QtGui.QWidget):
               ppp.poses.append(pp)
 
               # store x,y -> here we assume that points are 2D (on tabletop)
-              points.append([1280*ps.point.x, 1280*ps.point.y])
+              points.append([self.rpm*ps.point.x, self.rpm*ps.point.y])
 
         # generate requested table coordinates
         # TODO fix it ;-)
@@ -162,7 +162,7 @@ class Projector(QtGui.QWidget):
                     px = 1.2 - (x/8.0*1.2)
                     py = y/5.0*0.75
 
-                    ppoints.append([1280*px, 1280*py])
+                    ppoints.append([self.rpm*px, self.rpm*py])
 
 #        print
 #        print "points"
@@ -201,7 +201,6 @@ class Projector(QtGui.QWidget):
 
         if self.calibrate(image,  cam_info,  depth):
 
-            self.calibrated = True
             self.tfl = None
             rospy.loginfo('Calibrated')
 
@@ -213,10 +212,9 @@ class Projector(QtGui.QWidget):
                 return
 
             rospy.logerr('Calibration failed')
-            self.calibrated = False
 
         self.shutdown_ts()
-        self.calibrated_pub.publish(self.calibrated)
+        self.calibrated_pub.publish(self.is_calibrated())
         self.calibrating = False
 
     def show_chessboard_evt(self):
@@ -228,7 +226,7 @@ class Projector(QtGui.QWidget):
 
         rospy.logerr("Timeout - no message arrived.")
         self.shutdown_ts()
-        self.calibrated_pub.publish(self.calibrated)
+        self.calibrated_pub.publish(self.is_calibrated())
         self.calibrating = False
 
     def tfl_delay_timer_cb(self,  evt=None):
@@ -268,19 +266,19 @@ class Projector(QtGui.QWidget):
 
     def scene_cb(self,  msg):
 
-        if not self.calibrated or self.calibrating: return
+        if not self.is_calibrated() or self.calibrating: return
 
-        np_arr = np.fromstring(msg.data, np.uint8)
-        image_np = cv2.imdecode(np_arr, cv2.CV_LOAD_IMAGE_COLOR)
+        if self.compressed_scene:
+            np_arr = np.fromstring(msg.data, np.uint8)
+            image_np = cv2.imdecode(np_arr, cv2.CV_LOAD_IMAGE_COLOR)
+        else:
+            try:
+                image_np = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            except CvBridgeError as e:
+                print(e)
+                return
 
         image_np = cv2.warpPerspective(image_np, self.h_matrix, (self.width(), self.height()),  flags = cv2.INTER_LINEAR) # ,  flags=cv2.WARP_INVERSE_MAP
-
-        #print image_np.nonzero()
-        #print(image_np[image_np.nonzero()])
-        #print
-
-        #print image_np
-        #print
 
         height, width, channel = image_np.shape
         bytesPerLine = 3 * width
@@ -290,13 +288,11 @@ class Projector(QtGui.QWidget):
     def scene_evt(self,  img):
 
         if self.calibrating: return
-
-        # TODO warp image according to calibration
         self.pix_label.setPixmap(img)
 
     def is_calibrated(self):
 
-        return True
+        return self.h_matrix is not None
 
     def on_resize(self, event):
 

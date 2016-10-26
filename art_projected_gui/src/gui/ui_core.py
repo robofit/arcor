@@ -24,7 +24,7 @@ class UICore(QtCore.QObject):
         view (QGraphicsView): To show content of the scene in debug window.
     """
 
-    def __init__(self,  x,  y,  width,  height,  rpm = 1280):
+    def __init__(self,  x,  y,  width,  height,  rpm):
         """
         Args:
             x (float): x coordinate of the scene's origin (in world coordinate system, meters).
