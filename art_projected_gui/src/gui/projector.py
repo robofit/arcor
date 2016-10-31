@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-from PyQt4 import QtGui, QtCore
+from PyQt4 import QtGui, QtCore,  QtNetwork
 import rospkg
 from cv_bridge import CvBridge, CvBridgeError
-from sensor_msgs.msg import CompressedImage,  Image,  CameraInfo
+from sensor_msgs.msg import Image,  CameraInfo
 import rospy
 import cv2
 import numpy as np
@@ -29,7 +29,7 @@ class Projector(QtGui.QWidget):
         self.camera_image_topic = rospy.get_param('~camera_image_topic', '/kinect2/sd/image_color_rect')
         self.camera_depth_topic = rospy.get_param('~camera_depth_topic', '/kinect2/sd/image_depth_rect')
         self.camera_info_topic = rospy.get_param('~camera_info_topic', '/kinect2/sd/camera_info')
-        self.compressed_scene = rospy.get_param('~compressed_scene', False)
+
         self.h_matrix = rospy.get_param('~calibration_matrix',  None)
         self.rpm = rospy.get_param('~rpm',  1280)
         self.scene_size = rospy.get_param("~scene_size",  [1.2,  0.75])
@@ -61,8 +61,24 @@ class Projector(QtGui.QWidget):
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('scene'), self.scene_evt)
 
-        if self.compressed_scene: self.scene_sub = rospy.Subscriber("/art/interface/projected_gui/scene",  CompressedImage,  self.scene_cb,  queue_size=1)
-        else: self.scene_sub = rospy.Subscriber("/art/interface/projected_gui/scene",  Image,  self.scene_cb,  queue_size=1)
+        self.server = rospy.get_param("~scene_server",  "127.0.0.1")
+        self.port = rospy.get_param("~scene_server_port",  1234)
+        self.tcpSocket = QtNetwork.QTcpSocket(self)
+        self.blockSize = 0
+        self.tcpSocket.readyRead.connect(self.getScene)
+        #self.tcpSocket.error.connect(self.displayError)
+        self.tcpSocket.connectToHost(self.server, self.port)
+
+        r = rospy.Rate(1.0/5)
+
+        while not self.tcpSocket.waitForConnected(1):
+
+            if rospy.is_shutdown(): return
+            rospy.loginfo("Waiting for scene server...")
+            self.tcpSocket.connectToHost(self.server, self.port)
+            r.sleep()
+
+        rospy.loginfo('Connected to scene server.')
 
         self.calibrated_pub = rospy.Publisher("/art/interface/projected_gui/projector/" + self.proj_id + "/calibrated",  Bool,  queue_size=1,  latch=True)
         self.calibrated_pub.publish(self.is_calibrated())
@@ -72,6 +88,30 @@ class Projector(QtGui.QWidget):
         QtCore.QObject.connect(self, QtCore.SIGNAL('show_chessboard'), self.show_chessboard_evt)
 
         self.showFullScreen()
+
+    def getScene(self):
+
+        instr = QtCore.QDataStream(self.tcpSocket)
+        instr.setVersion(QtCore.QDataStream.Qt_4_0)
+
+        if self.blockSize == 0:
+            if self.tcpSocket.bytesAvailable() < 2:
+                return
+
+            self.blockSize = instr.readUInt16()
+
+        if self.tcpSocket.bytesAvailable() < self.blockSize:
+            return
+
+        self.blockSize = 0
+
+        if self.calibrating: return
+
+        pix = QtGui.QImage()
+        instr >> pix
+
+        self.pix_label.setPixmap(QtGui.QPixmap.fromImage(pix))
+        self.update()
 
     def calibrate(self,  image,  info,  depth):
 

@@ -1,23 +1,15 @@
 #!/usr/bin/env python
 
 from ui_core import UICore
-from PyQt4 import QtCore,  QtGui
+from PyQt4 import QtCore,  QtGui,  QtNetwork
 import rospy
 from art_msgs.msg import InstancesArray,  UserStatus,  InterfaceState,  InterfaceStateItem,  ProgramItem as ProgIt
-from art_msgs.srv import getSceneCoords,  getSceneCoordsResponse
 from fsm import FSM
 from transitions import MachineError
 #from button_item import ButtonItem
 from items import ObjectItem, ButtonItem,  PoseStampedCursorItem
 from helpers import ProjectorHelper,  ArtApiHelper
 from art_interface_utils.interface_state_manager import interface_state_manager
-from sensor_msgs.msg import CompressedImage, Image
-import qimage2ndarray
-import numpy as np
-import cv2
-import thread
-import Queue
-from cv_bridge import CvBridge, CvBridgeError
 
 translate = QtCore.QCoreApplication.translate
 
@@ -46,6 +38,7 @@ class UICoreRos(UICore):
         QtCore.QObject.connect(self, QtCore.SIGNAL('objects'), self.object_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('user_status'), self.user_status_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('interface_state'), self.interface_state_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('send_scene'), self.send_to_clients_evt)
 
         self.user_status = None
 
@@ -74,19 +67,17 @@ class UICoreRos(UICore):
         self.scene_items[-1].setPos(self.scene.width()-self.scene_items[-1].w,  self.scene.height() - self.scene_items[-1].h - 60)
         self.scene_items[-1].set_enabled(True)
 
-        self.compressed_scene = rospy.get_param("~compressed_scene",  False)
+        self.port = rospy.get_param("~scene_server_port",  1234)
 
-        if self.compressed_scene:
-            self.scene_pub = rospy.Publisher("scene",  CompressedImage,  queue_size=1,  tcp_nodelay=True,  latch=True)
-        else:
-            self.scene_pub = rospy.Publisher("scene",  Image,  queue_size=1,  tcp_nodelay=True,  latch=True)
-            self.bridge = CvBridge()
+        self.tcpServer = QtNetwork.QTcpServer(self)
+        if not self.tcpServer.listen(port=self.port):
+
+            rospy.logerr('Failed to start scene TCP server on port ' + str(self.port))
+
+        self.tcpServer.newConnection.connect(self.newConnection)
+        self.connections = []
 
         self.last_scene_update = None
-
-        self.scene_img_deq = Queue.Queue(maxsize=10)
-        thread.start_new_thread(self.scene_pub_thread,  ())
-
         self.scene.changed.connect(self.scene_changed)
 
         self.projectors = []
@@ -97,24 +88,46 @@ class UICoreRos(UICore):
 
         self.art = ArtApiHelper()
 
-        self.srv_scene_coords = rospy.Service("/art/interface/projected_gui/world2scene", getSceneCoords, self.get_scene_coords_srv_cb)
+    def newConnection(self):
 
-    def get_scene_coords_srv_cb(self,  req):
+        rospy.loginfo('Some projector node just connected.')
+        self.connections.append(self.tcpServer.nextPendingConnection())
+        self.emit(QtCore.SIGNAL('send_scene'),  self.connections[-1])
+        # TODO deal with disconnected clients!
+        #self.connections[-1].disconnected.connect(clientConnection.deleteLater)
 
-        # TODO check frame_id and transform if necessary
-        resp = getSceneCoordsResponse()
-        resp.x = req.pt.point.x*self.rpm
-        resp.y = req.pt.point.y*self.rpm
-        print self.x
-        print self.y
-        print self.width
-        print self.height
-        if (req.pt.point.x < self.x or req.pt.point.x > self.width) or (req.pt.point.y < self.y or req.pt.point.y > self.height):
-            resp.out_of_scene = True
+    def send_to_clients_evt(self,  client=None):
+
+        pix = QtGui.QImage(self.scene.width(), self.scene.height(),  QtGui.QImage.Format_RGB16)
+        painter = QtGui.QPainter(pix)
+        self.scene.render(painter)
+        painter.end()
+
+        block = QtCore.QByteArray()
+        out = QtCore.QDataStream(block, QtCore.QIODevice.WriteOnly)
+        out.setVersion(QtCore.QDataStream.Qt_4_0)
+        out.writeUInt16(0)
+
+        png = QtCore.QByteArray()
+        buffer = QtCore.QBuffer(png)
+        buffer.open(QtCore.QIODevice.WriteOnly)
+        pix.save(buffer, "PNG",  0)
+
+        out << png
+
+        out.device().seek(0)
+        out.writeUInt16(block.size() - 2)
+        #print block.size()
+
+        if client is None:
+
+            for con in self.connections:
+
+                con.write(block)
+
         else:
-            resp.out_of_scene = False
 
-        return resp
+            client.write(block)
 
     def start(self):
 
@@ -138,44 +151,12 @@ class UICoreRos(UICore):
 
         self.projectors.append(ProjectorHelper(proj_id))
 
-    def scene_pub_thread(self):
-
-        while not rospy.is_shutdown():
-
-            try:
-                pix = self.scene_img_deq.get(block=True, timeout=1)
-            except Queue.Empty:
-                continue
-
-            # publish only the latest image
-            if not self.scene_img_deq.empty(): continue
-
-            img = pix.toImage()
-            img = img.convertToFormat(QtGui.QImage.Format_ARGB32)
-
-            v =qimage2ndarray.rgb_view(img)
-
-            if self.compressed_scene:
-                msg = CompressedImage()
-                msg.header.stamp = rospy.Time.now()
-                msg.format = "png"
-                msg.data = np.array(cv2.imencode('.png', v,  (cv2.cv.CV_IMWRITE_PNG_COMPRESSION, 3))[1]).tostring()
-            else:
-                try:
-                    msg = self.bridge.cv2_to_imgmsg(v, "bgr8")
-                except CvBridgeError as e:
-                    print(e)
-                    continue
-
-            self.scene_pub.publish(msg)
-
     def scene_changed(self,  rects):
 
         if len(rects) == 0: return
 
-        # TODO try to publish only changed rects???
+        # TODO Publish only changes? How to accumulate them (to be able to send it only at certain fps)?
 
-        # TODO does it make sense to limit FPS?
         now = rospy.Time.now()
         if self.last_scene_update is None:
             self.last_scene_update = now
@@ -186,17 +167,7 @@ class UICoreRos(UICore):
         #print 1.0/(now - self.last_scene_update).to_sec()
         self.last_scene_update = now
 
-        #for rect in rects:
-
-        pix = QtGui.QPixmap(self.scene.width(), self.scene.height())
-        painter = QtGui.QPainter(pix)
-        self.scene.render(painter)
-        painter.end()
-
-        try:
-            self.scene_img_deq.put_nowait(pix)
-        except Queue.Full:
-            print "queue full"
+        self.emit(QtCore.SIGNAL('send_scene'))
 
     def stop_btn_clicked(self):
 
