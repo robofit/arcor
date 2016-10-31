@@ -13,8 +13,6 @@ class PolygonPointItem(Item):
 
         self.fixed = False
 
-        # TODO pri pohybu bodu upravit boundingRect rodice...
-
     def boundingRect(self):
 
         es = self.m2pix(self.outline_diameter*1.8)
@@ -44,6 +42,7 @@ class PolygonPointItem(Item):
         es = self.m2pix(self.outline_diameter)
 
         if self.hover:
+            # TODO coordinates
             painter.setBrush(QtCore.Qt.gray)
             painter.setPen(QtCore.Qt.gray)
             painter.drawEllipse(QtCore.QPoint(0,  0), es/2*1.8, es/2*1.8)
@@ -60,14 +59,16 @@ class PolygonItem(Item):
         self.caption = caption
         self.polygon_changed = polygon_changed
 
-        if len(obj_coords) > 0:
+        super(PolygonItem,  self).__init__(scene,  rpm,  0,  0)
 
-            # podle objects_coords vygenerovat body - nejak urcit x, y
+        if len(obj_coords) > 0:
 
             self.min = [obj_coords[0][0], obj_coords[0][1]]
             self.max = [obj_coords[0][0], obj_coords[0][1]]
 
             for pt in obj_coords:
+
+                pt = [pt[0],  pt[1]]
 
                 if pt[0] < self.min[0]: self.min[0] = pt[0]
                 if pt[1] < self.min[1]: self.min[1] = pt[1]
@@ -80,8 +81,6 @@ class PolygonItem(Item):
             self.min[1] -= pad
             self.max[0] += pad
             self.max[1] += pad
-
-            super(PolygonItem,  self).__init__(scene,  rpm,  self.min[0],  self.min[1])
 
             self.pts = []
 
@@ -100,10 +99,12 @@ class PolygonItem(Item):
 
             for pt in poly_points:
 
-                if pt[0] < self.min[0]: self.min[0] = pt[0]
-                if pt[0] > self.max[0]: self.max[0] = pt[0]
+                pt = [pt[0],  pt[1]]
 
-            super(PolygonItem,  self).__init__(scene,  rpm,  self.min[0],  self.min[1])
+                if pt[0] < self.min[0]: self.min[0] = pt[0]
+                if pt[1] < self.min[1]: self.min[1] = pt[1]
+                if pt[0] > self.max[0]: self.max[0] = pt[0]
+                if pt[1] > self.max[1]: self.max[1] = pt[1]
 
             self.pts = []
 
@@ -115,22 +116,21 @@ class PolygonItem(Item):
 
             pass # TODO chyba
 
-        # TODO fix boundingRect and remove this
-        self.setCacheMode(QtGui.QGraphicsItem.NoCache)
-
         self.update()
 
     def point_changed(self,  finished = False):
 
+        self.prepareGeometryChange()
+
         # update of bounding rect
-        self.min[0] = self.pts[0].get_pos()[0]
-        self.min[1] = self.pts[0].get_pos()[1]
-        self.max[0] = self.pts[0].get_pos()[0]
-        self.max[1] = self.pts[0].get_pos()[1]
+        self.min[0] = self.pix2m(self.pts[0].x())
+        self.min[1] = self.pix2m(self.pts[0].y())
+        self.max[0] = self.pix2m(self.pts[0].x())
+        self.max[1] = self.pix2m(self.pts[0].y())
 
         for pt in self.pts:
 
-            p = pt.get_pos()
+            p = (self.pix2m(pt.x()),  self.pix2m(pt.y()))
 
             if p[0] < self.min[0]: self.min[0] = p[0]
             if p[1] < self.min[1]: self.min[1] = p[1]
@@ -153,16 +153,19 @@ class PolygonItem(Item):
 
         return pts
 
+    # TODO impl.
+     # def shape(self):
+
     def boundingRect(self):
 
-        return QtCore.QRectF(self.min[0],  self.min[1], self.max[0], self.max[1])
+        return QtCore.QRectF(self.m2pix(self.min[0])-2.5,  self.m2pix(self.min[1])-2.5, self.m2pix(self.max[0]-self.min[0])+5, self.m2pix(self.max[1]-self.min[1])+5)
 
     def paint(self, painter, option, widget):
 
         # TODO detekovat ze je polygon "divny" (prekrouceny) a zcervenat
         # TODO vypsat kolik obsahuje objektu
 
-        #painter.setClipRect(option.exposedRect)
+        painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
         pen = QtGui.QPen()
@@ -182,7 +185,7 @@ class PolygonItem(Item):
 
         painter.drawPolygon(poly)
 
-        # TODO nazev polygonu -> opravit souradnice
+        # TODO nazev polygonu -> kam kreslit? Polopruhledne / sede pres cely polygon?
         #painter.setFont(QtGui.QFont('Arial', 12));
         #painter.setPen(QtCore.Qt.white)
-        #painter.drawText(QtCore.QPoint(self.m2pix(self.min[0]+self.get_pos(pixels=True)[0]), self.m2pix(self.max[1]) + self.get_pos(pixels=True)[1]), self.caption)
+        #painter.drawText(QtCore.QPoint(self.pts[0].x(), self.pts[0].y()), self.caption)

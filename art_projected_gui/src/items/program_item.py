@@ -42,7 +42,6 @@ class ProgramItemItem(Item):
 
     def cursor_click(self):
 
-        print "click"
         if not self.item_req_learning(): return
         if self.item_selected_cb is not None: self.item_selected_cb(self)
 
@@ -82,9 +81,9 @@ class ProgramItemItem(Item):
         elif self.item.type == ProgIt.MANIP_PICK_PLACE:
 
             if self.item.spec == ProgIt.MANIP_ID:
-                return  QtCore.QCoreApplication.translate("ProgramItem", "pick object '") + obj +  "'\n" +QtCore.QCoreApplication.translate("ProgramItem", "place to ") + pose_str
+                return  QtCore.QCoreApplication.translate("ProgramItem", "pick object") + "'" + obj +  "'\n" +QtCore.QCoreApplication.translate("ProgramItem", "place to ") + pose_str
             elif self.item.spec == ProgIt.MANIP_TYPE:
-                return QtCore.QCoreApplication.translate("ProgramItem", "pick object type '") + obj + "'\n" +QtCore.QCoreApplication.translate("ProgramItem", "place to ") + pose_str
+                return QtCore.QCoreApplication.translate("ProgramItem", "pick object type") + "'" + obj + "'\n" +QtCore.QCoreApplication.translate("ProgramItem", "place to ") + pose_str
 
         elif self.item.type == ProgIt.WAIT:
 
@@ -369,10 +368,7 @@ class ProgramItem(Item):
 
     def boundingRect(self):
 
-        #w = self.m2pix(self.w)
-        #h = self.m2pix(self.h)
-
-        return QtCore.QRectF(0,  0, self.w, self.h)
+        return QtCore.QRectF(0,  -30, self.w, self.h+30)
 
     def get_item_by_id(self,  id):
 
