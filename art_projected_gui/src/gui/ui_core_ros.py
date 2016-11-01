@@ -92,11 +92,23 @@ class UICoreRos(UICore):
 
         rospy.loginfo('Some projector node just connected.')
         self.connections.append(self.tcpServer.nextPendingConnection())
+        self.connections[-1].setSocketOption(QtNetwork.QAbstractSocket.LowDelayOption, 1)
         self.emit(QtCore.SIGNAL('send_scene'),  self.connections[-1])
         # TODO deal with disconnected clients!
         #self.connections[-1].disconnected.connect(clientConnection.deleteLater)
 
     def send_to_clients_evt(self,  client=None):
+
+        # if all connections are sending scene image, there is no need to render the new one
+        if client is None:
+
+            for con in self.connections:
+
+                if con.bytesToWrite() == 0:
+                    break
+
+            else:
+                return
 
         pix = QtGui.QImage(self.scene.width(), self.scene.height(),  QtGui.QImage.Format_RGB16)
         painter = QtGui.QPainter(pix)
@@ -106,23 +118,25 @@ class UICoreRos(UICore):
         block = QtCore.QByteArray()
         out = QtCore.QDataStream(block, QtCore.QIODevice.WriteOnly)
         out.setVersion(QtCore.QDataStream.Qt_4_0)
-        out.writeUInt16(0)
+        out.writeUInt32(0)
 
-        png = QtCore.QByteArray()
-        buffer = QtCore.QBuffer(png)
+        img = QtCore.QByteArray()
+        buffer = QtCore.QBuffer(img)
         buffer.open(QtCore.QIODevice.WriteOnly)
-        pix.save(buffer, "PNG",  0)
+        pix.save(buffer, "BMP")
+        out << img
 
-        out << png
+        # TODO try with PNG compression - in a thread
+        #out << pix # like this it serializes image to PNG which is much slower
 
         out.device().seek(0)
-        out.writeUInt16(block.size() - 2)
-        #print block.size()
+        out.writeUInt32(block.size() - 4)
 
         if client is None:
 
             for con in self.connections:
 
+                if con.bytesToWrite() > 0: return
                 con.write(block)
 
         else:

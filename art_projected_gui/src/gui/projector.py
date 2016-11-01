@@ -7,6 +7,7 @@ from sensor_msgs.msg import Image,  CameraInfo
 import rospy
 import cv2
 import numpy as np
+import qimage2ndarray
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty, EmptyResponse
 import message_filters
@@ -59,8 +60,6 @@ class Projector(QtGui.QWidget):
         #self.pix_label.setScaledContents(True)
         self.pix_label.resize(self.size())
 
-        QtCore.QObject.connect(self, QtCore.SIGNAL('scene'), self.scene_evt)
-
         self.server = rospy.get_param("~scene_server",  "127.0.0.1")
         self.port = rospy.get_param("~scene_server_port",  1234)
         self.tcpSocket = QtNetwork.QTcpSocket(self)
@@ -95,22 +94,35 @@ class Projector(QtGui.QWidget):
         instr.setVersion(QtCore.QDataStream.Qt_4_0)
 
         if self.blockSize == 0:
-            if self.tcpSocket.bytesAvailable() < 2:
+            if self.tcpSocket.bytesAvailable() < 4:
                 return
 
-            self.blockSize = instr.readUInt16()
+            self.blockSize = instr.readUInt32()
 
         if self.tcpSocket.bytesAvailable() < self.blockSize:
             return
 
         self.blockSize = 0
 
-        if self.calibrating: return
-
         pix = QtGui.QImage()
         instr >> pix
 
-        self.pix_label.setPixmap(QtGui.QPixmap.fromImage(pix))
+        if not self.is_calibrated() or self.calibrating: return
+
+        #m = self.h_matrix
+        #tr = QtGui.QTransform(m[0, 0],  m[0, 1],  m[0, 2], m[1, 0],  m[1, 1],  m[1, 2], m[2, 0],  m[2, 1],  m[2, 2])
+        # TODO ?? The transformation matrix is internally adjusted to compensate for unwanted translation; i.e. the image produced is the smallest image that contains all the transformed points of the original image. Use the trueMatrix() function to retrieve the actual matrix used for transforming an image.
+        #pix = pix.transformed(tr,  QtCore.Qt.SmoothTransformation)
+
+        img = pix.convertToFormat(QtGui.QImage.Format_ARGB32)
+        v =qimage2ndarray.rgb_view(img)
+        image_np = cv2.warpPerspective(v, self.h_matrix, (self.width(), self.height()),  flags = cv2.INTER_LINEAR)
+
+        height, width, channel = image_np.shape
+        bytesPerLine = 3 * width
+        image = QtGui.QPixmap.fromImage(QtGui.QImage(image_np.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888))
+
+        self.pix_label.setPixmap(image)
         self.update()
 
     def calibrate(self,  image,  info,  depth):
@@ -243,7 +255,6 @@ class Projector(QtGui.QWidget):
 
         if self.calibrate(image,  cam_info,  depth):
 
-            self.tfl = None
             rospy.loginfo('Calibrated')
 
         else:
@@ -256,6 +267,7 @@ class Projector(QtGui.QWidget):
             rospy.logerr('Calibration failed')
 
         self.shutdown_ts()
+        if self.is_calibrated(): self.tfl = None
         self.calibrated_pub.publish(self.is_calibrated())
         self.calibrating = False
 
@@ -305,32 +317,6 @@ class Projector(QtGui.QWidget):
             self.tfl_delay_timer_cb()
 
         return EmptyResponse()
-
-    def scene_cb(self,  msg):
-
-        if not self.is_calibrated() or self.calibrating: return
-
-        if self.compressed_scene:
-            np_arr = np.fromstring(msg.data, np.uint8)
-            image_np = cv2.imdecode(np_arr, cv2.CV_LOAD_IMAGE_COLOR)
-        else:
-            try:
-                image_np = self.bridge.imgmsg_to_cv2(msg, "bgr8")
-            except CvBridgeError as e:
-                print(e)
-                return
-
-        image_np = cv2.warpPerspective(image_np, self.h_matrix, (self.width(), self.height()),  flags = cv2.INTER_LINEAR) # ,  flags=cv2.WARP_INVERSE_MAP
-
-        height, width, channel = image_np.shape
-        bytesPerLine = 3 * width
-        image = QtGui.QPixmap.fromImage(QtGui.QImage(image_np.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888))
-        self.emit(QtCore.SIGNAL('scene'),  image)
-
-    def scene_evt(self,  img):
-
-        if self.calibrating: return
-        self.pix_label.setPixmap(img)
 
     def is_calibrated(self):
 
