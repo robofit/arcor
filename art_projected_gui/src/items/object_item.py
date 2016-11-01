@@ -11,6 +11,7 @@ TODO:
 
 from PyQt4 import QtGui, QtCore
 from item import Item
+from desc_item import DescItem
 
 translate = QtCore.QCoreApplication.translate
 
@@ -26,14 +27,34 @@ class ObjectItem(Item):
 
         super(ObjectItem,  self).__init__(scene,  rpm,  x,  y)
 
+        self.desc = DescItem(scene,  rpm,  -self.outline_diameter*1.3/2.0, self.outline_diameter*1.3/2+0.01,  self)
+        self.update_text()
+
         if selected:
             self.set_selected()
+
+    def update_text(self):
+
+        desc = []
+        desc.append(translate("ObjectItem", "ID: ") + self.object_id)
+
+        if self.hover:
+
+            desc.append(translate("ObjectItem", "TYPE: ") + self.object_type)
+            desc.append(self.get_pos_str())
+
+        self.desc.set_content(desc)
+
+    def hover_changed(self):
+
+        self.update_text()
+        self.update()
 
     def boundingRect(self):
 
         es = self.m2pix(self.outline_diameter*1.3)
-
-        return QtCore.QRectF(-es/2, -es/2, es, es+20+40+5)
+        p=1.0
+        return QtCore.QRectF(-es/2-p, -es/2-p, es+2*p, es+2*p)
 
     def shape(self):
 
@@ -71,18 +92,6 @@ class ObjectItem(Item):
 
         painter.drawEllipse(QtCore.QPoint(0,  0),  es/2,  es/2)
 
-        painter.setPen(QtCore.Qt.gray)
-
-        # TODO font size
-        painter.setFont(QtGui.QFont('Arial', 12));
-
-        if self.hover:
-
-            painter.setPen(QtCore.Qt.white)
-            painter.drawText(-eso/2,  eso/2+20+20, translate("ObjectItem", "TYPE: ") + self.object_type)
-            painter.drawText(-eso/2,  eso/2+20+40, self.get_pos_str())
-
-        painter.drawText(-eso/2,  eso/2+20, self.object_id);
 
     def cursor_press(self): # TODO cursor_click??
 

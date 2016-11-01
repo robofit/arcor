@@ -11,17 +11,22 @@ class Item(QtGui.QGraphicsItem):
         super(Item, self).__init__(parent=parent,  scene=scene)
 
         self.rpm = rpm
-        self.set_pos(x,  y)
+        self.set_pos(x,  y,  parent is not None)
         self.hover = False
         self.hover_sources=[]
         self.fixed = True
         self.cursor_press_at = rospy.Time(0)
+        self.default_font = 'Arial'
 
         self.setVisible(True)
         #self.setAcceptHoverEvents(True)
         self.setEnabled(True)
         self.setActive(True)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
+
+    def get_font_size(self,  f=1.0):
+
+        return 12/1280.0*self.rpm*f
 
     def m2pix(self,  m):
 
@@ -65,6 +70,10 @@ class Item(QtGui.QGraphicsItem):
         self.setEnabled(state)
         self.update()
 
+    def hover_changed(self):
+
+        self.update()
+
     def set_hover(self,  state,  source):
 
         if state:
@@ -75,11 +84,12 @@ class Item(QtGui.QGraphicsItem):
         if len(self.hover_sources) ==  0:
             if self.hover:
                 self.hover = False
-                self.update() # update only on change of state
+                self.hover_changed()
+
         else:
             if not self.hover:
                 self.hover = True
-                self.update()
+                self.hover_changed()
 
     def cursor_press(self):
 

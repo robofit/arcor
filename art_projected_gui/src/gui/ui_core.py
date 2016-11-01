@@ -4,6 +4,18 @@ from PyQt4 import QtGui, QtCore
 from items import ObjectItem,  PlaceItem,  LabelItem,  ProgramItem,  PolygonItem
 import rospy
 
+class customGraphicsView(QtGui.QGraphicsView):
+
+    def __init__(self, parent=None):
+        QtGui.QGraphicsView.__init__(self, parent)
+
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+
+    def resizeEvent(self, evt=None):
+
+        self.fitInView(self.sceneRect(),  QtCore.Qt.KeepAspectRatio)
+
 class UICore(QtCore.QObject):
     """Class holds QGraphicsScene and its content (items).
 
@@ -54,8 +66,8 @@ class UICore(QtCore.QObject):
 
         self.scene_items = []
 
-        self.view = QtGui.QGraphicsView(self.scene)
-        #self.view.setRenderHint(QtGui.QPainter.Antialiasing)
+        self.view = customGraphicsView(self.scene)
+        self.view.setRenderHint(QtGui.QPainter.Antialiasing)
         self.view.setViewportUpdateMode(QtGui.QGraphicsView.SmartViewportUpdate)
         self.view.setStyleSheet( "QGraphicsView { border-style: none; }" )
 

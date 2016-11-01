@@ -104,5 +104,5 @@ class LabelItem(Item):
         painter.setPen(QtCore.Qt.white)
 
         # TODO font size
-        painter.setFont(QtGui.QFont('Arial', 18))
+        painter.setFont(QtGui.QFont('Arial', self.get_font_size(1.5)))
         painter.drawText(0,  0, self.m2pix(self.w),  self.m2pix(self.h), 0,  msg["msg"])

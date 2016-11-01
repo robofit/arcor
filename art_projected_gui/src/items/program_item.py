@@ -27,7 +27,7 @@ class ProgramItemItem(Item):
     def update_size(self):
 
         # TODO bude se menit po kazdem nastaveni neceho...
-        font = QtGui.QFont('Arial', 12)
+        font = QtGui.QFont('Arial', self.get_font_size())
         metrics = QtGui.QFontMetrics(font)
         txt = self.get_text_for_item()
         self.h = metrics.height()*(txt.count('\n')+1)+10
@@ -138,7 +138,7 @@ class ProgramItemItem(Item):
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
-        font = QtGui.QFont('Arial', 18)
+        font = QtGui.QFont('Arial', self.get_font_size(1.5))
         painter.setFont(font);
         painter.setPen(QtCore.Qt.white)
 
@@ -146,7 +146,7 @@ class ProgramItemItem(Item):
 
         rect = QtCore.QRectF(20, 0.0, self.w, self.h)
 
-        font = QtGui.QFont('Arial', 12)
+        font = QtGui.QFont('Arial', self.get_font_size())
         painter.setFont(font);
 
         pen = QtGui.QPen()
