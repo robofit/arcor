@@ -93,37 +93,51 @@ class Projector(QtGui.QWidget):
         instr = QtCore.QDataStream(self.tcpSocket)
         instr.setVersion(QtCore.QDataStream.Qt_4_0)
 
-        if self.blockSize == 0:
-            if self.tcpSocket.bytesAvailable() < 4:
+        while True:
+
+            if self.blockSize == 0:
+                if self.tcpSocket.bytesAvailable() < 4:
+                    return
+
+                self.blockSize = instr.readUInt32()
+
+            if self.tcpSocket.bytesAvailable() < self.blockSize:
                 return
 
-            self.blockSize = instr.readUInt32()
+            self.blockSize = 0
 
-        if self.tcpSocket.bytesAvailable() < self.blockSize:
+            pix = QtGui.QImage()
+            ba = QtCore.QByteArray()
+            instr >> ba
+
+            if self.tcpSocket.bytesAvailable() > 0:
+                rospy.logdebug("Image dropped")
+                continue
+
+            ba = QtCore.qUncompress(ba)
+            if not pix.loadFromData(ba):
+
+                rospy.logerr("Failed to load image from received data")
+
+            if not self.is_calibrated() or self.calibrating: return
+
+            #m = self.h_matrix
+            #tr = QtGui.QTransform(m[0, 0],  m[0, 1],  m[0, 2], m[1, 0],  m[1, 1],  m[1, 2], m[2, 0],  m[2, 1],  m[2, 2])
+            # TODO ?? The transformation matrix is internally adjusted to compensate for unwanted translation; i.e. the image produced is the smallest image that contains all the transformed points of the original image. Use the trueMatrix() function to retrieve the actual matrix used for transforming an image.
+            #pix = pix.transformed(tr,  QtCore.Qt.SmoothTransformation)
+
+            img = pix.convertToFormat(QtGui.QImage.Format_ARGB32)
+            v =qimage2ndarray.rgb_view(img)
+            image_np = cv2.warpPerspective(v, self.h_matrix, (self.width(), self.height()),  flags = cv2.INTER_LINEAR)
+
+            height, width, channel = image_np.shape
+            bytesPerLine = 3 * width
+            image = QtGui.QPixmap.fromImage(QtGui.QImage(image_np.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888))
+
+            self.pix_label.setPixmap(image)
+            self.update()
+
             return
-
-        self.blockSize = 0
-
-        pix = QtGui.QImage()
-        instr >> pix
-
-        if not self.is_calibrated() or self.calibrating: return
-
-        #m = self.h_matrix
-        #tr = QtGui.QTransform(m[0, 0],  m[0, 1],  m[0, 2], m[1, 0],  m[1, 1],  m[1, 2], m[2, 0],  m[2, 1],  m[2, 2])
-        # TODO ?? The transformation matrix is internally adjusted to compensate for unwanted translation; i.e. the image produced is the smallest image that contains all the transformed points of the original image. Use the trueMatrix() function to retrieve the actual matrix used for transforming an image.
-        #pix = pix.transformed(tr,  QtCore.Qt.SmoothTransformation)
-
-        img = pix.convertToFormat(QtGui.QImage.Format_ARGB32)
-        v =qimage2ndarray.rgb_view(img)
-        image_np = cv2.warpPerspective(v, self.h_matrix, (self.width(), self.height()),  flags = cv2.INTER_LINEAR)
-
-        height, width, channel = image_np.shape
-        bytesPerLine = 3 * width
-        image = QtGui.QPixmap.fromImage(QtGui.QImage(image_np.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888))
-
-        self.pix_label.setPixmap(image)
-        self.update()
 
     def calibrate(self,  image,  info,  depth):
 

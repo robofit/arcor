@@ -110,7 +110,8 @@ class UICoreRos(UICore):
             else:
                 return
 
-        pix = QtGui.QImage(self.scene.width(), self.scene.height(),  QtGui.QImage.Format_RGB16)
+        # TODO try to use Format_RGB16 - BMP is anyway converted to 32bits (send raw data instead)
+        pix = QtGui.QImage(self.scene.width(), self.scene.height(),  QtGui.QImage.Format_ARGB32_Premultiplied)
         painter = QtGui.QPainter(pix)
         self.scene.render(painter)
         painter.end()
@@ -124,19 +125,19 @@ class UICoreRos(UICore):
         buffer = QtCore.QBuffer(img)
         buffer.open(QtCore.QIODevice.WriteOnly)
         pix.save(buffer, "BMP")
-        out << img
-
-        # TODO try with PNG compression - in a thread
-        #out << pix # like this it serializes image to PNG which is much slower
+        out << QtCore.qCompress(img,  1) # this seem to be much faster than using PNG compression
 
         out.device().seek(0)
         out.writeUInt32(block.size() - 4)
+
+        #print block.size()
 
         if client is None:
 
             for con in self.connections:
 
-                if con.bytesToWrite() > 0: return
+                if con.bytesToWrite() > 0:
+                    return
                 con.write(block)
 
         else:
@@ -175,7 +176,7 @@ class UICoreRos(UICore):
         if self.last_scene_update is None:
             self.last_scene_update = now
         else:
-            if now - self.last_scene_update < rospy.Duration(1.0/30):
+            if now - self.last_scene_update < rospy.Duration(1.0/20):
                 return
 
         #print 1.0/(now - self.last_scene_update).to_sec()
