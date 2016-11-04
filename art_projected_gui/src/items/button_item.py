@@ -13,11 +13,12 @@ class ButtonItem(Item):
         self.background_color = background_color
         self.scale = scale
         self.w = 180*scale # TODO spocitat podle rpm
-        self.h = 20*scale
+        self.h = 40*scale
         self.clicked = clicked
         self.caption = caption
 
         super(ButtonItem,  self).__init__(scene,  rpm,  x,  y,  parent)
+        self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
 
     def boundingRect(self):
 
@@ -34,6 +35,9 @@ class ButtonItem(Item):
 
     def paint(self, painter, option, widget):
 
+        painter.setClipRect(option.exposedRect)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
         pen = QtGui.QPen()
         if not self.hover: pen.setStyle(QtCore.Qt.NoPen)
         pen.setColor(QtCore.Qt.white)
@@ -41,7 +45,7 @@ class ButtonItem(Item):
 
         rect = QtCore.QRectF(5*self.scale, 0.0, self.w, 40.0*self.scale)
 
-        font = QtGui.QFont('Arial', 12*self.scale)
+        font = QtGui.QFont('Arial', self.get_font_size(self.scale))
         painter.setFont(font);
 
         if not self.isEnabled():

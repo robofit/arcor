@@ -1,41 +1,46 @@
 #!/usr/bin/env python
 
 from ui_core import UICore
-from PyQt4 import QtCore,  QtGui
+from PyQt4 import QtCore,  QtGui,  QtNetwork
 import rospy
-from art_msgs.msg import InstancesArray,  UserStatus
+from art_msgs.msg import InstancesArray,  UserStatus,  InterfaceState,  InterfaceStateItem,  ProgramItem as ProgIt
 from fsm import FSM
 from transitions import MachineError
-from art_msgs.msg import ProgramItem as ProgIt
 #from button_item import ButtonItem
 from items import ObjectItem, ButtonItem,  PoseStampedCursorItem
 from helpers import ProjectorHelper,  ArtApiHelper
 from art_interface_utils.interface_state_manager import interface_state_manager
-from art_msgs.msg import InterfaceState,  InterfaceStateItem
-from sensor_msgs.msg import CompressedImage
-import qimage2ndarray
-import numpy as np
-import cv2
-import thread
-import Queue
 
 translate = QtCore.QCoreApplication.translate
 
 class UICoreRos(UICore):
+    """The class builds on top of UICore and adds ROS-related stuff and application logic.
+
+    Attributes:
+        user_status (UserStatus): current user tracking status
+        fsm (FSM): state machine maintaining current state of the interface and proper transitions between states
+        state_manager (interface_state_manager): synchronization of interfaces within the ARTable system
+        scene_pub (rospy.Publisher): publisher for scene images
+        last_scene_update (rospy.Time): time when the last scene image was published
+        scene_img_deq (Queue.Queue): thread-safe queue for scene images (which are published in separate thread)
+        projectors (list): array of ProjectorHelper instances
+        art (ArtApiHelper): easy access to ARTable services
+    """
 
     def __init__(self):
 
         origin = rospy.get_param("~scene_origin",  [0,  0])
         size = rospy.get_param("~scene_size",  [1.2,  0.75])
+        rpm = rospy.get_param("~rpm",  1280)
 
-        super(UICoreRos,  self).__init__(origin[0], origin[1],  size[0],  size[1])
+        super(UICoreRos,  self).__init__(origin[0], origin[1],  size[0],  size[1],  rpm)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('objects'), self.object_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('user_status'), self.user_status_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('interface_state'), self.interface_state_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('send_scene'), self.send_to_clients_evt)
 
         self.user_status = None
-        self.selected_program_id = None
 
         self.program_vis.active_item_switched = self.active_item_switched
         self.program_vis.program_state_changed = self.program_state_changed
@@ -62,12 +67,17 @@ class UICoreRos(UICore):
         self.scene_items[-1].setPos(self.scene.width()-self.scene_items[-1].w,  self.scene.height() - self.scene_items[-1].h - 60)
         self.scene_items[-1].set_enabled(True)
 
-        self.scene_pub = rospy.Publisher("scene",  CompressedImage,  queue_size=1,  tcp_nodelay=True,  latch=True)
+        self.port = rospy.get_param("~scene_server_port",  1234)
+
+        self.tcpServer = QtNetwork.QTcpServer(self)
+        if not self.tcpServer.listen(port=self.port):
+
+            rospy.logerr('Failed to start scene TCP server on port ' + str(self.port))
+
+        self.tcpServer.newConnection.connect(self.newConnection)
+        self.connections = []
+
         self.last_scene_update = None
-
-        self.scene_img_deq = Queue.Queue(maxsize=1)
-        thread.start_new_thread(self.scene_pub_thread,  ())
-
         self.scene.changed.connect(self.scene_changed)
 
         self.projectors = []
@@ -78,14 +88,71 @@ class UICoreRos(UICore):
 
         self.art = ArtApiHelper()
 
+    def newConnection(self):
+
+        rospy.loginfo('Some projector node just connected.')
+        self.connections.append(self.tcpServer.nextPendingConnection())
+        self.connections[-1].setSocketOption(QtNetwork.QAbstractSocket.LowDelayOption, 1)
+        self.emit(QtCore.SIGNAL('send_scene'),  self.connections[-1])
+        # TODO deal with disconnected clients!
+        #self.connections[-1].disconnected.connect(clientConnection.deleteLater)
+
+    def send_to_clients_evt(self,  client=None):
+
+        # if all connections are sending scene image, there is no need to render the new one
+        if client is None:
+
+            for con in self.connections:
+
+                if con.bytesToWrite() == 0:
+                    break
+
+            else:
+                return
+
+        # TODO try to use Format_RGB16 - BMP is anyway converted to 32bits (send raw data instead)
+        pix = QtGui.QImage(self.scene.width(), self.scene.height(),  QtGui.QImage.Format_ARGB32_Premultiplied)
+        painter = QtGui.QPainter(pix)
+        self.scene.render(painter)
+        painter.end()
+
+        block = QtCore.QByteArray()
+        out = QtCore.QDataStream(block, QtCore.QIODevice.WriteOnly)
+        out.setVersion(QtCore.QDataStream.Qt_4_0)
+        out.writeUInt32(0)
+
+        img = QtCore.QByteArray()
+        buffer = QtCore.QBuffer(img)
+        buffer.open(QtCore.QIODevice.WriteOnly)
+        pix.save(buffer, "BMP")
+        out << QtCore.qCompress(img,  1) # this seem to be much faster than using PNG compression
+
+        out.device().seek(0)
+        out.writeUInt32(block.size() - 4)
+
+        #print block.size()
+
+        if client is None:
+
+            for con in self.connections:
+
+                if con.bytesToWrite() > 0:
+                    return
+                con.write(block)
+
+        else:
+
+            client.write(block)
+
     def start(self):
 
         rospy.loginfo("Waiting for ART services...")
         self.art.wait_for_api()
 
-        rospy.loginfo("Waiting for projector nodes...")
-        for proj in self.projectors:
-            proj.wait_until_available()
+        if len(self.projectors) > 0:
+            rospy.loginfo("Waiting for projector nodes...")
+            for proj in self.projectors:
+                proj.wait_until_available()
 
         rospy.loginfo("Ready! Starting state machine.")
 
@@ -99,34 +166,12 @@ class UICoreRos(UICore):
 
         self.projectors.append(ProjectorHelper(proj_id))
 
-    def scene_pub_thread(self):
-
-        while not rospy.is_shutdown():
-
-            try:
-                pix = self.scene_img_deq.get(block=True, timeout=1)
-            except Queue.Empty:
-                continue
-
-            img = pix.toImage()
-            img = img.convertToFormat(QtGui.QImage.Format_ARGB32)
-
-            v =qimage2ndarray.rgb_view(img)
-
-            msg = CompressedImage()
-            msg.header.stamp = rospy.Time.now()
-            msg.format = "png"
-            msg.data = np.array(cv2.imencode('.png', v,  (cv2.cv.CV_IMWRITE_PNG_COMPRESSION, 3))[1]).tostring()
-            #print len(msg.data)
-
-            self.scene_pub.publish(msg)
-
     def scene_changed(self,  rects):
 
         if len(rects) == 0: return
-        if self.scene_img_deq.full(): return
 
-        # TODO does it make sense to limit FPS?
+        # TODO Publish only changes? How to accumulate them (to be able to send it only at certain fps)?
+
         now = rospy.Time.now()
         if self.last_scene_update is None:
             self.last_scene_update = now
@@ -134,17 +179,10 @@ class UICoreRos(UICore):
             if now - self.last_scene_update < rospy.Duration(1.0/20):
                 return
 
+        #print 1.0/(now - self.last_scene_update).to_sec()
         self.last_scene_update = now
 
-        pix = QtGui.QPixmap(self.scene.width(), self.scene.height())
-        painter = QtGui.QPainter(pix)
-        self.scene.render(painter)
-        painter.end()
-
-        try:
-            self.scene_img_deq.put_nowait(pix)
-        except Queue.Full:
-            pass
+        self.emit(QtCore.SIGNAL('send_scene'))
 
     def stop_btn_clicked(self):
 
@@ -278,26 +316,31 @@ class UICoreRos(UICore):
 
                 self.projectors[self.calib_proj_cnt].calibrate(self.calib_done_cb)
             else:
+                rospy.loginfo('Projectors calibrated.')
                 self.fsm.tr_calibrated()
 
         else:
 
-            # TODO what to do ??
             # calibration failed - let's try again
+            rospy.logerr('Calibration failed for projector: ' + proj.proj_id)
             proj.calibrate(self.calib_done_cb)
 
     def cb_start_calibration(self):
 
-        rospy.loginfo('Starting calibration of ' + str(len(self.projectors)) + ' projector(s)')
+        if len(self.projectors) == 0:
 
-        if len(self.projectors) == 0: self.fsm.tr_calibrated()
+            rospy.loginfo('No projectors to calibrate.')
+            self.fsm.tr_calibrated()
+
         else:
+
+            rospy.loginfo('Starting calibration of ' + str(len(self.projectors)) + ' projector(s)')
 
             self.calib_proj_cnt = 0
 
             if not self.projectors[0].calibrate(self.calib_done_cb):
                 # TODO what to do?
-                rospy.logerror("Calibration failed")
+                rospy.logerr("Failed to start projector calibration")
 
     def cb_waiting_for_user(self):
 

@@ -4,7 +4,7 @@
 <context>
     <name>ObjectItem</name>
     <message>
-        <location filename="src/items/object_item.py" line="74"/>
+        <location filename="src/items/object_item.py" line="77"/>
         <source>TYPE: </source>
         <translation>TYP:</translation>
     </message>
@@ -85,32 +85,32 @@
 <context>
     <name>UICoreRos</name>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="326"/>
+        <location filename="src/gui/ui_core_ros.py" line="394"/>
         <source>PICK POLYGON</source>
         <translation>ODTUD BRÁT</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="330"/>
+        <location filename="src/gui/ui_core_ros.py" line="398"/>
         <source>PLACE POSE</source>
         <translation>POLOŽIT SEM</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="225"/>
+        <location filename="src/gui/ui_core_ros.py" line="320"/>
         <source>Waiting for user...</source>
         <translation>Čekám na uživatele...</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="229"/>
+        <location filename="src/gui/ui_core_ros.py" line="324"/>
         <source>Please do a calibration pose</source>
         <translation>Prosím zaujměte kalibrační pózu</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="233"/>
+        <location filename="src/gui/ui_core_ros.py" line="328"/>
         <source>Please select a program</source>
         <translation>Prosím vyberte program</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="244"/>
+        <location filename="src/gui/ui_core_ros.py" line="339"/>
         <source>Loading of requested program failed</source>
         <translation>Nahrávání požadovaného programu selhalo</translation>
     </message>
@@ -120,32 +120,32 @@
         <translation type="obsolete">Nahrávám program: </translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="125"/>
+        <location filename="src/gui/ui_core_ros.py" line="218"/>
         <source>This program item seems to be done</source>
         <translation>Tento bod programu vypadá hotově</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="329"/>
+        <location filename="src/gui/ui_core_ros.py" line="397"/>
         <source>Set where to place picked object</source>
         <translation>Nastavte kam položit zvednutý objekt</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="282"/>
+        <location filename="src/gui/ui_core_ros.py" line="350"/>
         <source>Object</source>
         <translation>Objekt</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="282"/>
+        <location filename="src/gui/ui_core_ros.py" line="350"/>
         <source>disappeared</source>
         <translation>zmizel</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="292"/>
+        <location filename="src/gui/ui_core_ros.py" line="360"/>
         <source>New object</source>
         <translation>Nový objekt</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="130"/>
+        <location filename="src/gui/ui_core_ros.py" line="223"/>
         <source>Program current manipulation task</source>
         <translation>Naprogramujte tuto manipulační úlohu</translation>
     </message>
@@ -155,37 +155,37 @@
         <translation type="obsolete">UMÍSTĚNÝ OBJEKT</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="151"/>
+        <location filename="src/gui/ui_core_ros.py" line="244"/>
         <source>Select object type to be picked up</source>
         <translation>Vyberte typ objektu k zdvihnutí</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="162"/>
+        <location filename="src/gui/ui_core_ros.py" line="255"/>
         <source>Select object to be picked up</source>
         <translation>Vyberte objekt k zdvihnutí</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="327"/>
+        <location filename="src/gui/ui_core_ros.py" line="395"/>
         <source>Check and adjust pick polygon</source>
         <translation>Zkontrolujte a upravte oblast</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="67"/>
+        <location filename="src/gui/ui_core_ros.py" line="163"/>
         <source>Emergency stop pressed</source>
         <translation>Nouzové zastavení</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="103"/>
+        <location filename="src/gui/ui_core_ros.py" line="194"/>
         <source>Failed to store program</source>
         <translation>Uložení programu selhalo</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="105"/>
+        <location filename="src/gui/ui_core_ros.py" line="198"/>
         <source>Program stored. Starting...</source>
         <translation>Program uložen. Začínáme...</translation>
     </message>
     <message>
-        <location filename="src/gui/ui_core_ros.py" line="144"/>
+        <location filename="src/gui/ui_core_ros.py" line="237"/>
         <source>OBJECT FROM STEP</source>
         <translation>OBJEKT Z KROKU</translation>
     </message>

@@ -7,6 +7,7 @@ Visualization of place on the table
 from PyQt4 import QtGui, QtCore
 from item import Item
 from object_item import ObjectItem
+from desc_item import DescItem
 
 class PlaceItem(Item):
 
@@ -18,9 +19,28 @@ class PlaceItem(Item):
 
         super(PlaceItem,  self).__init__(scene,  rpm,  x,  y)
 
+        self.desc = DescItem(scene,  rpm,  -self.outline_diameter*1.3/2.0, self.outline_diameter*1.3/2+0.01,  self)
+        self.update_text()
+
         self.fixed = fixed
 
         self.place_pose_changed = place_pose_changed
+
+    def hover_changed(self):
+
+        self.update_text()
+        self.update()
+
+    def update_text(self):
+
+        desc = []
+        desc.append(self.caption)
+
+        if self.hover:
+
+            desc.append(self.get_pos_str())
+
+        self.desc.set_content(desc)
 
     def cursor_release(self):
 
@@ -28,8 +48,15 @@ class PlaceItem(Item):
 
     def boundingRect(self):
 
+        es = self.m2pix(self.outline_diameter*1.3)
+        return QtCore.QRectF(-es/2, -es/2, es, es+40)
+
+    def shape(self):
+
+        path = QtGui.QPainterPath()
         es = self.m2pix(self.outline_diameter)
-        return QtCore.QRectF(-es/2, -es/2, es, es)
+        path.addEllipse(QtCore.QPoint(0,  0),  es/2,  es/2)
+        return path
 
     def item_moved(self):
 
@@ -43,7 +70,7 @@ class PlaceItem(Item):
 
     def paint(self, painter, option, widget):
 
-        #painter.setClipRect(option.exposedRect)
+        painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
         es = self.m2pix(self.outline_diameter)
@@ -61,14 +88,3 @@ class PlaceItem(Item):
             painter.setBrush(QtCore.Qt.red)
 
         painter.drawEllipse(QtCore.QPoint(0,  0), es/2, es/2)
-
-        painter.setFont(QtGui.QFont('Arial', 12));
-
-        painter.setPen(QtCore.Qt.gray)
-
-        if self.hover:
-
-            painter.setPen(QtCore.Qt.white)
-            painter.drawText(-es/2,  es/2+40, self.get_pos_str())
-
-        painter.drawText(-es/2,  es/2+20, self.caption);

@@ -4,7 +4,7 @@
 
         <!-- scene origin and size (width, height) in world coordinates -->
         <rosparam param="scene_origin">[0.0, 0.0]</rosparam>
-        <rosparam param="scene_size">[1.2, 0.75]</rosparam>
+        <rosparam param="scene_size">[1.2, 0.64]</rosparam>
 
         <rosparam param="cursors">["left_hand"]</rosparam>
         <rosparam param="projectors">["test"]</rosparam>
