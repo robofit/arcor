@@ -197,7 +197,7 @@ class UICoreRos(UICore):
 
         elif state.system_state == InterfaceState.STATE_PROGRAM_RUNNING:
 
-            if self.program_vis.prog.id != state.program_id:
+            if self.program_vis.prog is None or self.program_vis.prog.id != state.program_id:
 
                             program = self.art.load_program(state.program_id)
                             if program is not None:
