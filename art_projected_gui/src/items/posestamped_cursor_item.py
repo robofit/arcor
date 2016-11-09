@@ -114,6 +114,7 @@ class PoseStampedCursorItem(Item):
 
             # TODO take z-value into account?
 
+            # TODO fix - fixed objekty chceme poklikat, ale ne hybat
             if self.collidesWithItem(it):
 
                 # TODO ted se nastavuje hover jen pro prvni polozku - chtelo by to podle prekryvu s kurzorem ;)

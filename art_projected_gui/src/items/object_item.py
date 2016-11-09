@@ -26,6 +26,7 @@ class ObjectItem(Item):
         self.sel_cb = sel_cb
 
         super(ObjectItem,  self).__init__(scene,  rpm,  x,  y)
+        self.fixed = False
 
         self.desc = DescItem(scene,  rpm,  -self.outline_diameter*1.3/2.0, self.outline_diameter*1.3/2+0.01,  self)
         self.update_text()

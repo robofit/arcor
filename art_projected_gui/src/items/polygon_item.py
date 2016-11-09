@@ -5,13 +5,12 @@ from item import Item
 
 class PolygonPointItem(Item):
 
-    def __init__(self,  scene,  rpm, x,  y,  parent):
+    def __init__(self,  scene,  rpm, x,  y,  parent,  fixed = False):
 
         self.outline_diameter = 0.025
 
         super(PolygonPointItem,  self).__init__(scene,  rpm,  x,  y,  parent)
-
-        self.fixed = False
+        self.fixed = fixed
 
     def boundingRect(self):
 
@@ -54,12 +53,13 @@ class PolygonPointItem(Item):
 
 class PolygonItem(Item):
 
-    def __init__(self,  scene,  rpm, caption, obj_coords = [],  poly_points=[],  polygon_changed=None):
+    def __init__(self,  scene,  rpm, caption, obj_coords = [],  poly_points=[],  polygon_changed=None,  fixed=False):
 
         self.caption = caption
         self.polygon_changed = polygon_changed
 
         super(PolygonItem,  self).__init__(scene,  rpm,  0,  0)
+        self.fixed = fixed
 
         if len(obj_coords) > 0:
 
@@ -110,7 +110,7 @@ class PolygonItem(Item):
 
             for pt in poly_points:
 
-                self.pts.append(PolygonPointItem(scene,  rpm,  pt[0],  pt[1],  self))
+                self.pts.append(PolygonPointItem(scene,  rpm,  pt[0],  pt[1],  self,  fixed))
 
         else:
 

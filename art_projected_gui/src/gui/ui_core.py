@@ -180,9 +180,9 @@ class UICore(QtCore.QObject):
 
         self.scene_items.append(PlaceItem(self.scene,  self.rpm,  caption,  x,  y,  place_pose_changed=place_cb,  fixed=fixed))
 
-    def add_polygon(self,  caption,  obj_coords=[],  poly_points=[],  polygon_changed=None):
+    def add_polygon(self,  caption,  obj_coords=[],  poly_points=[],  polygon_changed=None,  fixed = False):
 
-        self.scene_items.append(PolygonItem(self.scene,  self.rpm,  caption,  obj_coords,  poly_points, polygon_changed))
+        self.scene_items.append(PolygonItem(self.scene,  self.rpm,  caption,  obj_coords,  poly_points, polygon_changed,  fixed))
 
     def clear_places(self):
 

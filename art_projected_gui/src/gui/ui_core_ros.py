@@ -3,13 +3,12 @@
 from ui_core import UICore
 from PyQt4 import QtCore,  QtGui,  QtNetwork
 import rospy
-from art_msgs.msg import InstancesArray,  UserStatus,  InterfaceState,  InterfaceStateItem,  ProgramItem as ProgIt
+from art_msgs.msg import InstancesArray,  UserStatus,  InterfaceState,  ProgramItem as ProgIt
 from fsm import FSM
 from transitions import MachineError
-#from button_item import ButtonItem
 from items import ObjectItem, ButtonItem,  PoseStampedCursorItem
 from helpers import ProjectorHelper,  ArtApiHelper
-from art_interface_utils.interface_state_manager import interface_state_manager
+from art_interface_utils.interface_state_manager import InterfaceStateManager
 
 translate = QtCore.QCoreApplication.translate
 
@@ -54,10 +53,10 @@ class UICoreRos(UICore):
         self.fsm.cb_program_selection = self.cb_program_selection
         self.fsm.cb_waiting_for_user_calibration = self.cb_waiting_for_user_calibration
         self.fsm.cb_learning = self.cb_learning
+        self.fsm.cb_running = self.cb_running
         self.fsm.is_template = self.is_template
 
-        # TODO dodelat integraci state manageru (spis prehodit do ui_code a volat napr z add_polygon apod.)
-        self.state_manager = interface_state_manager("PROJECTED UI",  cb=self.interface_state_cb)
+        self.state_manager = InterfaceStateManager("PROJECTED UI",  cb=self.interface_state_cb)
 
         cursors = rospy.get_param("~cursors",  [])
         for cur in cursors:
@@ -189,24 +188,74 @@ class UICoreRos(UICore):
         # TODO
         self.notif(translate("UICoreRos", "Emergency stop pressed"),  temp=True)
 
-    def interface_state_evt(self,  state):
+    def interface_state_evt(self, our_state,  state,  flags):
 
-        # TODO !!
+        if state.system_state == InterfaceState.STATE_LEARNING:
 
-        if state.current_syst_state == InterfaceStateItem.STATE_PROGRAM_RUNNING:
+            # TODO !!
+            pass
 
-            if state.is_clear():
+        elif state.system_state == InterfaceState.STATE_PROGRAM_RUNNING:
+
+            if self.program_vis.prog.id != state.program_id:
+
+                            program = self.art.load_program(state.program_id)
+                            if program is not None:
+                                self.program_vis.set_prog(program,  False)
+                            else:
+                                pass # TODO error
+
+            if self.fsm.state != 'running':
 
                 self.clear_all()
+                self.program_vis.set_running()
+                self.fsm.tr_running()
 
-            self.program_vis.set_running()
+            # TODO updatovat program_vis itemem ze zpravy - pokud se lisi (timestamp) ??
+            self.program_vis.set_active(inst_id=state.program_current_item.id)
+            it = state.program_current_item
 
-            # TODO check state.program_id and load it if its different from loaded one
-            self.program_vis.set_active(inst_id=state.instruction_id)
+            if our_state.program_current_item.id != state.program_current_item:
+                self.clear_all()
 
-    def interface_state_cb(self,  state):
+            if it.type == ProgIt.GET_READY:
 
-        self.emit(QtCore.SIGNAL('interface_state'),  state)
+                self.notif(translate("UICoreRos", "Robot is getting ready"))
+
+            elif it.type == ProgIt.WAIT:
+
+                if it.spec == ProgIt.WAIT_FOR_USER:
+                    self.notif(translate("UICoreRos", "Waiting for user"))
+                elif it.spec == ProgIt.WAIT_UNTIL_USER_FINISHES:
+                    self.notif(translate("UICoreRos", "Waiting for user to finish"))
+
+            # TODO MANIP_PICK, MANIP_PLACE
+            elif it.type == ProgIt.MANIP_PICK_PLACE:
+
+                obj_id = it.object
+
+                if it.spec == ProgIt.MANIP_ID:
+
+                    self.select_object(it.object)
+
+                elif it.spec == ProgIt.MANIP_TYPE:
+
+                    try:
+                        obj_id = flags["SELECTED_OBJECT_ID"]
+                    except KeyError:
+                        rospy.logerr("MANIP_PICK_PLACE/MANIP_TYPE: SELECTED_OBJECT_ID flag not set")
+                        pass
+
+                    # TODO how to highlight selected object (by brain) ?
+                    self.select_object_type(it.object)
+                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"),  poly_points=self.program_vis.active_item.get_pick_polygon_points()) # TODO fixed
+
+                self.notif(translate("UICoreRos", "Going to manipulate with object ID=") + obj_id)
+                self.add_place(translate("UICoreRos", "PLACE POSE"),  it.place_pose.pose.position.x,  it.place_pose.pose.position.y,  fixed=True)
+
+    def interface_state_cb(self,  our_state,  state,  flags):
+
+        self.emit(QtCore.SIGNAL('interface_state'),  our_state,  state,  flags)
 
     # callback from ProgramItem (button press)
     def program_state_changed(self,  state):
@@ -224,8 +273,11 @@ class UICoreRos(UICore):
 
                 self.notif(translate("UICoreRos", "Program stored. Starting..."),  temp=True)
 
-            self.art.start_program(prog.id)
+            # clear all and wait for state update from brain
+            self.clear_all()
             self.fsm.tr_program_learned()
+
+            self.art.start_program(prog.id)
 
         # TODO pause / stop -> fsm
         #elif state == ''
@@ -236,7 +288,7 @@ class UICoreRos(UICore):
         rospy.logdebug("Program ID:" + str(self.program_vis.prog.id) + ", active item ID: " + str(self.program_vis.active_item.item.id))
 
         self.clear_all()
-        self.state_manager.clear_all()
+        self.state_manager.update_program_item(self.program_vis.prog.id,  self.program_vis.active_item.item)
 
         if self.program_vis.active_item.item.type in [ProgIt.MANIP_PICK,  ProgIt.MANIP_PLACE,  ProgIt.MANIP_PICK_PLACE]:
 
@@ -248,8 +300,6 @@ class UICoreRos(UICore):
 
                 # TODO vypsat jaky je to task?
                 self.notif(translate("UICoreRos", "Program current manipulation task"))
-
-            #self.state_manager.set_syst_state(InterfaceStateItem.STATE_LEARNING,  self.program_vis.prog.id,  self.program_vis.active_item.id)
 
             # TODO loop across program item ids - not indices!!
             idx = self.program_vis.items.index(self.program_vis.active_item)
@@ -275,7 +325,7 @@ class UICoreRos(UICore):
                 # if program item already contains polygon - let's display it
                 if self.program_vis.active_item.is_pick_polygon_set():
 
-                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"),  poly_points=self.program_vis.active_item.get_pick_polygon_points(),  polygon_changed=self.polygon_changed)
+                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"),  poly_points=self.program_vis.active_item.get_pick_polygon_points(),  polygon_changed=self.polygon_changed,  fixed=True)
 
             else:
 
@@ -296,10 +346,15 @@ class UICoreRos(UICore):
     def place_pose_changed(self,  pos):
 
         self.program_vis.set_place_pose(pos[0],  pos[1])
+        self.state_manager.update_program_item(self.program_vis.prog.id,  self.program_vis.active_item.item)
 
     def is_template(self):
 
         return True
+
+    def cb_running(self):
+
+        pass
 
     def cb_learning(self):
 
@@ -355,11 +410,11 @@ class UICoreRos(UICore):
         self.notif(translate("UICoreRos", "Please select a program"))
 
         # TODO display list of programs -> let user select -> then load it
-        self.program = self.art.load_program(0)
+        program = self.art.load_program(0)
 
-        if self.program is not None: # TODO avoid self.program -> duplication
+        if program is not None:
 
-            self.program_vis.set_prog(self.program,  self.is_template())
+            self.program_vis.set_prog(program,  self.is_template())
             self.active_item_switched()
             self.fsm.tr_program_selected()
         else:
@@ -389,6 +444,7 @@ class UICoreRos(UICore):
     def polygon_changed(self,  pts):
 
         self.program_vis.set_polygon(pts)
+        self.state_manager.update_program_item(self.program_vis.prog.id,  self.program_vis.active_item.item)
 
     def object_selected(self,  id,  selected):
 
@@ -429,6 +485,7 @@ class UICoreRos(UICore):
             # TODO
             pass
 
+        self.state_manager.update_program_item(self.program_vis.prog.id,  self.program_vis.active_item.item)
         return True
 
 

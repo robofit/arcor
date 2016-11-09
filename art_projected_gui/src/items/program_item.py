@@ -18,6 +18,7 @@ class ProgramItemItem(Item):
         self.item_selected_cb = item_selected_cb
 
         super(ProgramItemItem,  self).__init__(scene,  rpm,  x,  y,  parent)
+        self.fixed = False
 
         self.item = item
         self.active_item = False
