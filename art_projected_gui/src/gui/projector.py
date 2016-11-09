@@ -27,13 +27,13 @@ class Projector(QtGui.QWidget):
         self.proj_id = rospy.get_param('~projector_id', 'test')
         self.world_frame = rospy.get_param('~world_frame', 'marker')
         self.screen = rospy.get_param('~screen_number', 0)
-        self.camera_image_topic = rospy.get_param('~camera_image_topic', '/kinect2/sd/image_color_rect')
-        self.camera_depth_topic = rospy.get_param('~camera_depth_topic', '/kinect2/sd/image_depth_rect')
-        self.camera_info_topic = rospy.get_param('~camera_info_topic', '/kinect2/sd/camera_info')
+        self.camera_image_topic = rospy.get_param('~camera_image_topic', '/kinect2/qhd/image_color_rect')
+        self.camera_depth_topic = rospy.get_param('~camera_depth_topic', '/kinect2/qhd/image_depth_rect')
+        self.camera_info_topic = rospy.get_param('~camera_info_topic', '/kinect2/qhd/camera_info')
 
         self.h_matrix = rospy.get_param('~calibration_matrix',  None)
         self.rpm = rospy.get_param('~rpm',  1280)
-        self.scene_size = rospy.get_param("~scene_size",  [1.2,  0.75])
+        self.scene_size = rospy.get_param("~scene_size",  [1.2,  0.64])
         self.scene_origin = rospy.get_param("~scene_origin",  [0,  0])
 
         rospy.loginfo("Projector '" + self.proj_id + "', on screen " + str(self.screen) )
@@ -83,6 +83,7 @@ class Projector(QtGui.QWidget):
         self.calibrated_pub.publish(self.is_calibrated())
 
         self.srv_calibrate = rospy.Service("/art/interface/projected_gui/projector/" + self.proj_id + "/calibrate", Empty, self.calibrate_srv_cb)
+        self.corners_pub = rospy.Publisher("/art/interface/projected_gui/projector/" + self.proj_id + "/corners", PoseArray,  queue_size=10,  latch=True)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('show_chessboard'), self.show_chessboard_evt)
 
@@ -121,14 +122,11 @@ class Projector(QtGui.QWidget):
 
             if not self.is_calibrated() or self.calibrating: return
 
-            #m = self.h_matrix
-            #tr = QtGui.QTransform(m[0, 0],  m[0, 1],  m[0, 2], m[1, 0],  m[1, 1],  m[1, 2], m[2, 0],  m[2, 1],  m[2, 2])
-            # TODO ?? The transformation matrix is internally adjusted to compensate for unwanted translation; i.e. the image produced is the smallest image that contains all the transformed points of the original image. Use the trueMatrix() function to retrieve the actual matrix used for transforming an image.
-            #pix = pix.transformed(tr,  QtCore.Qt.SmoothTransformation)
-
             img = pix.convertToFormat(QtGui.QImage.Format_ARGB32)
             v =qimage2ndarray.rgb_view(img)
-            image_np = cv2.warpPerspective(v, self.h_matrix, (self.width(), self.height()),  flags = cv2.INTER_LINEAR)
+            
+            # TODO gpu
+            image_np = cv2.warpPerspective(v, self.h_matrix, (self.width(), self.height())) # ,  flags = cv2.INTER_LINEAR
 
             height, width, channel = image_np.shape
             bytesPerLine = 3 * width
@@ -136,7 +134,6 @@ class Projector(QtGui.QWidget):
 
             self.pix_label.setPixmap(image)
             self.update()
-
             return
 
     def calibrate(self,  image,  info,  depth):
@@ -169,9 +166,6 @@ class Projector(QtGui.QWidget):
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.001)
         cv2.cornerSubPix(cv_img,corners,(11,11),(-1,-1),criteria)
         corners = corners.reshape(1,-1,2)[0]
-
-        #print "corners"
-        #print corners
 
         points = []
         ppoints = []
@@ -222,24 +216,21 @@ class Projector(QtGui.QWidget):
               # store x,y -> here we assume that points are 2D (on tabletop)
               points.append([self.rpm*ps.point.x, self.rpm*ps.point.y])
 
+        self.corners_pub.publish(ppp)
+
+        dx = (self.pix_label.width() - self.pix_label.pixmap().width())/2.0
+        dy = (self.pix_label.height() - self.pix_label.pixmap().height())/2.0
+        box_size = self.pix_label.pixmap().width()/12.0
+
+        # TODO self.scene_origin ???
         # generate requested table coordinates
-        for y in range(0,6):
-              for x in range(0,9):
+        for y in range(0, 6):
+            for x in range(0, 9):
+              
+                    px  = 2*box_size + x*box_size + dx
+                    py = 2*box_size + y*box_size + dy
 
-                    # TODO apply self.scene_origin
-                    px = self.scene_size[0] - (x/8.0*self.scene_size[0])
-                    py = y/5.0*self.scene_size[1]
-
-                    ppoints.append([self.rpm*px, self.rpm*py])
-
-#        print
-#        print "points"
-#        print points
-#        print
-#
-#        print "ppoints"
-#        print ppoints
-#        print
+                    ppoints.append([px, py])
 
         h, status = cv2.findHomography(np.array(points), np.array(ppoints), cv2.LMEDS)
 
@@ -287,7 +278,7 @@ class Projector(QtGui.QWidget):
 
     def show_chessboard_evt(self):
 
-        rat = 1.0 # TODO make checkerboard smaller and smaller if it cannot be detected?
+        rat = 1.0 # TODO make checkerboard smaller and smaller if it cannot be detected
         self.pix_label.setPixmap(self.checkerboard_img.scaled(rat*self.width(),  rat*self.height(),  QtCore.Qt.KeepAspectRatio))
 
     def timeout_timer_cb(self,  evt):
