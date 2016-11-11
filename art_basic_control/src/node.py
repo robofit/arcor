@@ -126,8 +126,8 @@ class ArtBasicControl:
         goal.target = where
         goal.pointing_frame = "high_def_frame"
         goal.min_duration = rospy.Duration(0.5)
-        goal.max_velocity = 0.8
-        self.head_action_client.send_goal_and_wait(goal, rospy.Duration(2))
+        goal.max_velocity = 0.5
+        self.head_action_client.send_goal_and_wait(goal, rospy.Duration(5))
 
     def spine_move_to(self, height):
 
