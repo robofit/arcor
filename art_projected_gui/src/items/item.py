@@ -17,6 +17,7 @@ class Item(QtGui.QGraphicsItem):
         self.fixed = True
         self.cursor_press_at = rospy.Time(0)
         self.default_font = 'Arial'
+        self.last_pointed = rospy.Time(0)
 
         self.setVisible(True)
         #self.setAcceptHoverEvents(True)
