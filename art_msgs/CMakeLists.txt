@@ -26,7 +26,7 @@ add_message_files(
   Program.msg
   ProgramArray.msg
   InterfaceState.msg
-  InterfaceStateItem.msg
+  KeyValue.msg
 )
 
 add_service_files(
@@ -43,7 +43,7 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS 
+  CATKIN_DEPENDS
     actionlib_msgs
     shape_msgs
     std_msgs
