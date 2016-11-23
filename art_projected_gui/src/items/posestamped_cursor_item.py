@@ -33,14 +33,20 @@ class PoseStampedCursorItemHelper(QtCore.QObject):
 
 class PoseStampedCursorItem(Item):
 
-    def __init__(self,  scene,  rpm,   topic,  offset = (0.1,  0.1),  world_frame="marker"):
+    def __init__(self,  scene,  rpm,   topic,  offset = (0.0,  0.0),  world_frame="marker"):
 
-        super(PoseStampedCursorItem,  self).__init__(scene,  rpm,  0.2,  0.2)
+        super(PoseStampedCursorItem,  self).__init__(scene,  rpm,  0.5,  0.5)
 
         self.offset = offset
         self.click = False
-
-        self.catched_item = None
+        
+        self.pointed_item = None
+        self.pointed_time = None
+        self.last_move = None
+        self.pointed_item_clicked = False
+        
+        self.fx = 0.0
+        self.fy = 0.0
 
         self.helper = PoseStampedCursorItemHelper(topic,  world_frame,  self.cb)
 
@@ -76,8 +82,9 @@ class PoseStampedCursorItem(Item):
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
-        if self.click: painter.setBrush(QtCore.Qt.red)
+        if self.pointed_item_clicked: painter.setBrush(QtCore.Qt.red)
         else: painter.setBrush(QtCore.Qt.green)
+        
         painter.setOpacity(0.5)
         painter.drawEllipse(QtCore.QPoint(0,  0), 20,  20)
 
@@ -85,66 +92,90 @@ class PoseStampedCursorItem(Item):
 
         x = self.m2pix(msg.pose.position.x + self.offset[0])
         y = self.m2pix(msg.pose.position.y + self.offset[1])
-        pt = QtCore.QPoint(x,  y)
+        
+        self.fx = 0.7*self.fx + 0.3*x
+        self.fy = 0.7*self.fy + 0.3*y
+        
+        pt = QtCore.QPoint(self.fx,  self.fy)
+        
+        # TODO omezit pohyb kurzoru na rozmery sceny (scene_origin, scene_size)
 
-        th = 0.02
-
-        click = None
-
-        # TODO smarter click (difference from long-term average?)
-        if msg.pose.position.z < 0.2 - th:
-            click = True
-        elif msg.pose.position.z > 0.2 + th and self.click:
-            click = False
-
-        self.mouse = False
-        self.handle_pt(pt,  click)
+        self.handle_pt(pt, False)
 
     def handle_pt(self,  pt,  click = None):
 
+        self.setPos(pt)
+        
         if self.last_pt is None:
             self.last_pt = pt
             return
 
-        if len(self.collidingItems())==0: click=False
+        if self.pointed_item is not None and not self.collidesWithItem(self.pointed_item):
+            self.pointed_item.set_hover(False,  self)
+            self.pointed_item = None
 
-        for it in self.scene().items():
+        if self.pointed_item is None:
+            
+            for it in self.scene().items():
 
-            if isinstance(it,  PoseStampedCursorItem): continue # TODO make some common class for cursors
+                if isinstance(it,  PoseStampedCursorItem): continue # TODO make some common class for cursors
+                
+                if self.collidesWithItem(it):
+                    
+                    if (rospy.Time.now() - it.last_pointed) < rospy.Duration(3.0): continue
 
-            # TODO take z-value into account?
+                    it.set_hover(True,  self)
+                    self.pointed_item = it
+                    self.pointed_time = rospy.Time.now()
+                    self.last_move = self.pointed_time
+                    self.pointed_item_clicked = False
+                    break
+                
+        if self.pointed_item is not None:
 
-            if self.collidesWithItem(it):
-
-                # TODO ted se nastavuje hover jen pro prvni polozku - chtelo by to podle prekryvu s kurzorem ;)
-                if self.catched_item is None: it.set_hover(True,  self)
-
-                if click is not None:
-                    if click and not self.click: it.cursor_press()
-                    if self.click and not click:
-                        self.catched_item = None
-                        it.cursor_release()
-                        break
-
-                if self.click and not it.fixed:
-
-                        if self.catched_item is None: self.catched_item = it
-                        break
-
-                break
-
+            if (rospy.Time.now() - self.pointed_time) > rospy.Duration(2.0):
+                
+                if not self.pointed_item_clicked:
+                    
+                    self.pointed_item.cursor_press()
+                    self.pointed_item_clicked = True
+                    
+                    if self.pointed_item.fixed:
+                        
+                        self.pointed_item.cursor_release()
+                        self.pointed_item.set_hover(False,  self)
+                        self.pointed_item.last_pointed = rospy.Time.now()
+                        self.pointed_item = None
+                        self.pointed_item_clicked = False
+                        self.last_pt = pt
+                        self.update()
+                        return
+                
+                self.pointed_item.moveBy(pt.x()-self.last_pt.x(),  pt.y()-self.last_pt.y())
+                self.pointed_item.item_moved()
+                
+                mm = max(abs(pt.x()-self.last_pt.x()), abs(pt.y()-self.last_pt.y()))
+                
+                if mm > 5:
+                    
+                    self.last_move = rospy.Time.now()
+                    
+                if (rospy.Time.now() - self.last_move) > rospy.Duration(2.0) and (self.last_move - self.pointed_time) > rospy.Duration(3.0):
+                    
+                    self.pointed_item.set_hover(False,  self)
+                    self.pointed_item.cursor_release()
+                    self.pointed_item.last_pointed = rospy.Time.now()
+                    self.pointed_item = None
+                    self.pointed_item_clicked = False
+            
             else:
-
-                it.set_hover(False,  self)
-
-        if self.catched_item is not None:
-
-            self.catched_item.moveBy(pt.x()-self.last_pt.x(),  pt.y()-self.last_pt.y())
-            self.catched_item.item_moved()
-
-        if not self.mouse: self.setPos(pt)
-
+                
+                 mm = max(abs(pt.x()-self.last_pt.x()), abs(pt.y()-self.last_pt.y()))
+                 
+                 if  mm  > 5:
+                     
+                    self.pointed_item.set_hover(False,  self)
+                    self.pointed_item = None
+                    
         self.last_pt = pt
-        if click is not None: self.click = click
         self.update()
-

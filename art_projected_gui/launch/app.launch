@@ -6,8 +6,10 @@
         <rosparam param="scene_origin">[0.0, 0.0]</rosparam>
         <rosparam param="scene_size">[1.2, 0.64]</rosparam>
 
-        <rosparam param="cursors">["left_hand"]</rosparam>
-        <rosparam param="projectors">["test"]</rosparam>
+        <param name="rpm" value="1280"/>
+
+        <rosparam param="cursors">["/art/user/pointing_left"]</rosparam>
+        <rosparam param="projectors">["test"]</rosparam> <!-- comment this param for testing purposes - gui will not wait for projector nodes -->
 
         <!-- open window with scene - for debugging purposes (can be controlled using mouse) -->
         <param name="show_scene" value="true"/>

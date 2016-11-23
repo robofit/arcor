@@ -199,7 +199,6 @@ class ProgramItem(Item):
 
         self.active_item_switched = active_item_switched
         self.program_state_changed = program_state_changed
-
         self.fixed = False
 
         self.setZValue(100)

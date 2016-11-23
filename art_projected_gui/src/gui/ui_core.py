@@ -62,7 +62,7 @@ class UICore(QtCore.QObject):
         #self.scene.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex) # should be good for dynamic scenes
 
         self.bottom_label = LabelItem(self.scene,  self.rpm,  0.1,  self.height - 0.05,  self.width-0.2,  0.1)
-        self.program_vis = ProgramItem(self.scene,  self.rpm,  0.1,  0.1)
+        self.program_vis = ProgramItem(self.scene,  self.rpm,  0.2,  0.2)
 
         self.scene_items = []
 
@@ -180,9 +180,9 @@ class UICore(QtCore.QObject):
 
         self.scene_items.append(PlaceItem(self.scene,  self.rpm,  caption,  x,  y,  place_pose_changed=place_cb,  fixed=fixed))
 
-    def add_polygon(self,  caption,  obj_coords=[],  poly_points=[],  polygon_changed=None):
+    def add_polygon(self,  caption,  obj_coords=[],  poly_points=[],  polygon_changed=None,  fixed = False):
 
-        self.scene_items.append(PolygonItem(self.scene,  self.rpm,  caption,  obj_coords,  poly_points, polygon_changed))
+        self.scene_items.append(PolygonItem(self.scene,  self.rpm,  caption,  obj_coords,  poly_points, polygon_changed,  fixed))
 
     def clear_places(self):
 
