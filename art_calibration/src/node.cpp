@@ -5,7 +5,7 @@
 
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
-
+#include <visualization_msgs/Marker.h>
 
 #include <geometry_msgs/PointStamped.h>
 #include <art_msgs/ObjectsCentroids.h>
@@ -18,10 +18,19 @@
 #include <tf/transform_broadcaster.h>
 #include <geometry_msgs/PointStamped.h>
 
+
+
 class NoMainMarker: public std::exception {
 public:
     virtual const char* what() const throw() {
         return "No main marker!";
+    }
+};
+
+class MissingMarker: public std::exception {
+public:
+    virtual const char* what() const throw() {
+        return "Marker is missing!";
     }
 };
 
@@ -42,7 +51,9 @@ public:
         nh_.param<std::string>("world_frame", world_frame_, "marker");
         table_marker_sub = nh_.subscribe ("/table/ar_pose_marker", 1, &ArtCalibration::table_marker_cb, this);
         pr2_marker_sub = nh_.subscribe ("/pr2/ar_pose_marker", 1, &ArtCalibration::pr2_marker_cb, this);
-        head_look_at_pub = nh_.advertise<geometry_msgs::PointStamped>("/art_basic_control/look_at", 1);
+        head_look_at_pub = nh_.advertise<geometry_msgs::PointStamped>("/art/pr2/look_at", 1);
+        marker_pub = nh_.advertise<visualization_msgs::Marker>("/art/calibration/viz_marker", 2);
+
     }
 
 private:
@@ -52,10 +63,12 @@ private:
     ros::Timer tr_timer_;
 
     ros::Subscriber table_marker_sub, pr2_marker_sub;
-    ros::Publisher head_look_at_pub;
+    ros::Publisher head_look_at_pub, marker_pub;
     ros::NodeHandle nh_;
 
     std::string world_frame_, robot_frame_, table_frame_;
+
+    int count = 0;
 
     std::vector<geometry_msgs::Pose> table_poses, pr2_poses;
 
@@ -63,9 +76,98 @@ private:
 
     static const int MAIN_MARKER_SIZE = 10, POSES_COUNT = 200;
 
+    tf::Vector3 pr2_position10_,
+                pr2_position11_,
+                pr2_position12_,
+                pr2_position13_;
+    int pr2_looking_for_marker_id_ = 10;
+
+
 
     void table_marker_cb(ar_track_alvar_msgs::AlvarMarkersConstPtr markers) {
-        geometry_msgs::Pose pose;
+        if (table_calibration_done_)
+            return;
+        ROS_INFO_STREAM_ONCE("First table marker arrived");
+        tf::Vector3 position10,
+                    position11,
+                    position12,
+                    position13;
+        try {
+            position10 = get_marker_position_by_id(*markers, 10),
+            position11 = get_marker_position_by_id(*markers, 11),
+            position12 = get_marker_position_by_id(*markers, 12),
+            position13 = get_marker_position_by_id(*markers, 13);
+        } catch (MissingMarker& e) {
+            std::cout << e.what() << std::endl;
+            return;
+        }
+
+        //10 + 11
+        //10 + 13
+
+
+
+        /*tf::Vector3 pp1011 = position10 - position11; //sub_two_points(position10, position11);
+        tf::Vector3 pp1013 = position10 - position13; //sub_two_points(position10, position13);
+        pp1011.normalize();
+        pp1013.normalize();
+
+        tf::Vector3 n = pp1011.cross(pp1013);
+        n.normalize();
+
+        tf::Matrix3x3 m(pp1011.getX(), pp1011.getY(), pp1011.getZ(), pp1013.getX(), pp1013.getY(), pp1013.getZ(), n.getX(), n.getY(), n.getZ());
+
+        tf::Transform tr = tf::Transform(m, position10);
+*/
+        //ROS_INFO_STREAM(position13.getX() << " " << position13.getY() << " " << position13.getZ());
+        //return;
+        /*position10.setY(position13.getY());
+        position12.setX(position13.getX());
+        //tf::Vector3 pp1310 = position13 - position10; //sub_two_points(position10, position11);
+        //tf::Vector3 pp1312 = position13 - position12; //sub_two_points(position10, position13);
+
+        tf::Vector3 pp1310 = position10 - position13;
+        tf::Vector3 pp1312 = position12 - position13;
+        pp1310.normalize();
+        pp1312.normalize();
+
+        tf::Vector3 n = pp1310.cross(pp1312);
+        n.normalize();
+
+        tf::Matrix3x3 m(pp1310.getX(), pp1310.getY(), pp1310.getZ(), pp1312.getX(), pp1312.getY(), pp1312.getZ(), n.getX(), n.getY(), n.getZ());
+
+        tf::Transform tr = tf::Transform(m, position13);*/
+
+        //position10.setX(position11.getX());
+        //position12.setY(position11.getY());
+        //tf::Vector3 pp1310 = position13 - position10; //sub_two_points(position10, position11);
+        //tf::Vector3 pp1312 = position13 - position12; //sub_two_points(position10, position13);
+
+        tf::Vector3 pp1110 = position10 - position11;
+        tf::Vector3 pp1112 = position12 - position11;
+        pp1110.normalize();
+        pp1112.normalize();
+
+
+        tf::Vector3 n = pp1112.cross(pp1110);
+        n.normalize();
+        ROS_INFO_STREAM(pp1110.dot(pp1112));
+        ROS_INFO_STREAM(pp1110.dot(n));
+        ROS_INFO_STREAM(pp1112.dot(pp1110));
+        ROS_INFO_STREAM(pp1112.dot(n));
+        ROS_INFO_STREAM(n.dot(pp1110));
+        ROS_INFO_STREAM(n.dot(pp1112));
+
+        //tf::Matrix3x3 m(pp1110.getX(), pp1110.getY(), pp1110.getZ(), pp1112.getX(), pp1112.getY(), pp1112.getZ(), n.getX(), n.getY(), n.getZ());
+        tf::Matrix3x3 m(pp1112.getX(), pp1110.getX(), n.getX(), pp1112.getY(), pp1110.getY(), n.getY(), pp1112.getZ(), pp1110.getZ(), n.getZ());
+
+        tf::Transform tr = tf::Transform(m, position11);
+
+        tr_table_ =  tf::StampedTransform(tr.inverse(), ros::Time::now(), world_frame_, table_frame_);
+
+        tr_timer_ = nh_.createTimer(ros::Duration(0.1), &ArtCalibration::trCallback, this);
+        table_calibration_done_ = true;
+        /*geometry_msgs::Pose pose;
         try {
             pose = get_main_marker_pose(*markers);
         }
@@ -74,6 +176,7 @@ private:
             return;
         }
         table_poses.push_back(pose);
+        ROS_INFO_STREAM("table_poses.size() - " << table_poses.size());
         if (table_poses.size() >= POSES_COUNT) {
             table_calibration_enough_poses_ = true;
             table_marker_sub.shutdown();
@@ -84,10 +187,130 @@ private:
         }
 
 
-
+        */
         //table_marker_sub.shutdown();
         //table_calibration_done_ = true;
         //tr_timer_ = nh_.createTimer(ros::Duration(0.1), &ArtCalibration::trCallback, this);
+    }
+
+    void pr2_marker_cb(ar_track_alvar_msgs::AlvarMarkersConstPtr markers) {
+        static int state = 0;
+        geometry_msgs::PointStamped point;
+        point.header.frame_id = "/base_link";
+        point.point.x = 0.3;
+
+        point.point.z = 1;
+        if (state == 0) {
+            point.point.y = -0.5;
+            head_look_at_pub.publish(point);
+            ros::Duration(5).sleep();
+
+            state = 1;
+        } else if (state == 1 && pr2_looking_for_marker_id_ == 12) {
+            point.point.y = 0.5;
+            head_look_at_pub.publish(point);
+            ros::Duration(5).sleep();
+            state = 2;
+        } else if (state == 2 && pr2_looking_for_marker_id_ > 20) {
+
+            tf::Vector3 pp1110 = pr2_position10_ - pr2_position11_;
+            tf::Vector3 pp1112 = pr2_position12_ - pr2_position11_;
+            pp1110.normalize();
+            pp1112.normalize();
+
+
+            tf::Vector3 n = pp1112.cross(pp1110);
+            n.normalize();
+            ROS_INFO_STREAM(pp1110.dot(pp1112));
+            ROS_INFO_STREAM(pp1110.dot(n));
+            ROS_INFO_STREAM(pp1112.dot(pp1110));
+            ROS_INFO_STREAM(pp1112.dot(n));
+            ROS_INFO_STREAM(n.dot(pp1110));
+            ROS_INFO_STREAM(n.dot(pp1112));
+
+            //tf::Matrix3x3 m(pp1110.getX(), pp1110.getY(), pp1110.getZ(), pp1112.getX(), pp1112.getY(), pp1112.getZ(), n.getX(), n.getY(), n.getZ());
+            tf::Matrix3x3 m(pp1112.getX(), pp1110.getX(), n.getX(), pp1112.getY(), pp1110.getY(), n.getY(), pp1112.getZ(), pp1110.getZ(), n.getZ());
+
+            tf::Transform tr = tf::Transform(m, pr2_position11_);
+
+            tr_pr2_ =  tf::StampedTransform(tr.inverse(), ros::Time::now(), world_frame_, robot_frame_);
+
+
+            pr2_marker_sub.shutdown();
+            pr2_calibration_done_ = true;
+            tr_timer_ = nh_.createTimer(ros::Duration(0.01), &ArtCalibration::trCallback, this);
+
+        }
+
+
+        try {
+            switch (pr2_looking_for_marker_id_) {
+            case 10:
+                pr2_position10_ += get_marker_position_by_id(*markers, 10);
+                ++count;
+                if (count == 10)
+                {
+                    pr2_position10_ /= count;
+                    count = 0;
+                    pr2_looking_for_marker_id_ += 1;
+
+                }
+                break;
+            case 11:
+                pr2_position11_ += get_marker_position_by_id(*markers, 11);
+                ++count;
+                if (count == 10)
+                {
+                    pr2_position11_ /= count;
+                    count = 0;
+                    pr2_looking_for_marker_id_ += 1;
+                }
+                break;
+            case 12:
+                pr2_position12_ += get_marker_position_by_id(*markers, 12);
+                ++count;
+                if (count == 10)
+                {
+                    pr2_position12_ /= count;
+                    count = 0;
+                    pr2_looking_for_marker_id_ += 100;
+                }
+                break;
+            case 13:
+                pr2_position13_ = get_marker_position_by_id(*markers, 13);
+
+                break;
+            }
+
+
+
+        }
+        catch (MissingMarker& e) {
+            ;
+        }
+
+    }
+
+    tf::Vector3 get_marker_position_by_id(ar_track_alvar_msgs::AlvarMarkers marker, int id) {
+        tf::Vector3 vec;
+        for (int i = 0; i < marker.markers.size(); ++i) {
+            if (marker.markers[i].id == id) {
+                vec.setX(marker.markers[i].pose.pose.position.x);
+                vec.setY(marker.markers[i].pose.pose.position.y);
+                vec.setZ(marker.markers[i].pose.pose.position.z);
+                return vec;
+            }
+        }
+        throw MissingMarker();
+    }
+
+
+    geometry_msgs::Point sub_two_points(geometry_msgs::Point p1, geometry_msgs::Point p2) {
+        geometry_msgs::Point pp;
+        pp.x = p1.x - p2.x;
+        pp.y = p1.y - p2.y;
+        pp.z = p1.z - p2.z;
+        return pp;
     }
 
     tf::StampedTransform create_transform_from_poses_vector(std::vector<geometry_msgs::Pose> poses, std::string output_frame) {
@@ -204,7 +427,7 @@ private:
         return create_transform_from_pose(avg_pose, output_frame);
     }
 
-    void pr2_marker_cb(ar_track_alvar_msgs::AlvarMarkersConstPtr markers) {
+    void pr2_marker_cb_old(ar_track_alvar_msgs::AlvarMarkersConstPtr markers) {
         static int state = 0;
         geometry_msgs::PointStamped point;
         point.header.frame_id = "/base_link";
@@ -264,6 +487,8 @@ private:
         }
         return geometry_msgs::Pose();
     }
+
+
 
     void trCallback(const ros::TimerEvent& event) {
 
