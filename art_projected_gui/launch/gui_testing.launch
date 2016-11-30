@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <node pkg="art_projected_gui" name="projected_gui" type="gui2.py" output="screen" ns="/art/interface/">
-      <remap from="camera_info" to="/kinect2/sd/camera_info"/>
-      <remap from="camera_image" to="/kinect2/sd/image_color_rect"/>
-      <remap from="camera_depth_image" to="/kinect2/sd/image_depth_rect"/>
-      <param name="calibration_matrix" value="[[1761.817, 27.166, 161.298], [3.916, 1807.725, -9.727], [0.0045, 0.046, 1.0]]"/>
-    </node>
-</launch>

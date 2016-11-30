@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="art_projected_gui" name="projected_gui" type="app.py" output="screen" ns="/art/interface/projected_gui/">
+
+        <!-- scene origin and size (width, height) in world coordinates -->
+        <rosparam param="scene_origin">[0.0, 0.0]</rosparam>
+        <rosparam param="scene_size">[1.2, 0.64]</rosparam>
+
+        <param name="rpm" value="1280"/>
+
+        <rosparam param="cursors">["/art/user/pointing_left"]</rosparam>
+        <rosparam param="projectors">["test"]</rosparam> <!-- comment this param for testing purposes - gui will not wait for projector nodes -->
+
+        <!-- open window with scene - for debugging purposes (can be controlled using mouse) -->
+        <param name="show_scene" value="true"/>
+    </node>
+</launch>
