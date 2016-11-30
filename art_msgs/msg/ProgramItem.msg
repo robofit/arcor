@@ -26,3 +26,6 @@ uint8 MANIP_TYPE=1 # do manipulation with any object of this type
 # operation_spec: WAIT
 uint8 WAIT_FOR_USER=0
 uint8 WAIT_UNTIL_USER_FINISHES=1
+
+# Text/graphic instructions for a human
+SceneLabel[] labels
