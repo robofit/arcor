@@ -22,6 +22,7 @@ add_message_files(
   UserStatus.msg
   UserActivity.msg
   SystemState.msg
+  SceneLabel.msg
   ProgramItem.msg
   Program.msg
   ProgramArray.msg
