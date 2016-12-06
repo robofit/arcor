@@ -4,6 +4,7 @@
 #include <pr2_controllers_msgs/PointHeadAction.h>
 #include <actionlib/client/simple_action_client.h>
 #include "art_msgs/InstancesArray.h"
+#include "art_msgs/getObjectType.h"
 #include <tf/transform_listener.h>
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit_simple_grasps/simple_grasps.h>
@@ -70,6 +71,8 @@ private:
 
   bool manipulation_in_progress_;
 
+  ros::ServiceClient object_type_srv_;
+
 public:
   artPr2Grasping()
     : nh_("~")
@@ -126,6 +129,7 @@ public:
 
     manipulation_in_progress_ = false;
 
+    object_type_srv_ = nh_.serviceClient<art_msgs::getObjectType>("/art/db/object_type/get");
     obj_sub_ = nh_.subscribe("/art/object_detector/object_filtered", 1, &artPr2Grasping::detectedObjectsCallback, this);
 
   }
@@ -209,9 +213,6 @@ public:
       // add and publish currently detected objects
       for(int i = 0; i < msg->instances.size(); i++) {
 
-        if (msg->instances[i].bbox.type != shape_msgs::SolidPrimitive::BOX) continue;
-        if (msg->instances[i].bbox.dimensions.size() != 3) continue;
-
         geometry_msgs::PoseStamped ps;
 
         ps.header = msg->header;
@@ -226,24 +227,36 @@ public:
         if (isKnownObject(msg->instances[i].object_id)) {
 
             objects_[msg->instances[i].object_id].h = ps.header;
-            objects_[msg->instances[i].object_id].bb = msg->instances[i].bbox;
             objects_[msg->instances[i].object_id].p = ps.pose;
 
         } else {
 
             tobj ob;
             ob.h = ps.header;
-            ob.bb = msg->instances[i].bbox;
+            //ob.bb = msg->instances[i].bbox;
             ob.p = ps.pose;
             //std::cout << ob.p.position.x << " " << ob.p.position.y << " " << ob.p.position.z << " " << std::endl;
-            objects_[msg->instances[i].object_id] = ob;
+
+            art_msgs::getObjectType srv;
+            srv.request.name = msg->instances[i].object_type;
+
+            if (object_type_srv_.call(srv))
+              {
+                ob.bb = srv.response.object_type.bbox;
+                objects_[msg->instances[i].object_id] = ob;
+              }
+              else
+              {
+                ROS_ERROR("Failed to call object_type service");
+                continue;
+              }
 
         }
 
         // don't publish for grasped object
         if (!(grasped_object_ && grasped_object_->id == msg->instances[i].object_id)) {
 
-            publishCollisionBB(ps.pose, msg->instances[i].object_id, msg->instances[i].bbox);
+            publishCollisionBB(objects_[msg->instances[i].object_id].p, msg->instances[i].object_id, objects_[msg->instances[i].object_id].bb);
         }
 
       }
