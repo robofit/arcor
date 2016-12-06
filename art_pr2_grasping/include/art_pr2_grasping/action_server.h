@@ -2,6 +2,8 @@
 #include <actionlib/server/simple_action_server.h>
 #include <art_msgs/pickplaceAction.h>
 #include <tf/transform_listener.h>
+#include <std_msgs/String.h>
+#include <pr2_controllers_msgs/JointControllerState.h>
 
 #ifndef ART_PR2_GRASPING_ACTION_SERVER_H
 #define ART_PR2_GRASPING_ACTION_SERVER_H
@@ -13,12 +15,14 @@ class artActionServer
 {
 
 public:
-  artActionServer(): nh_("~"),
+  artActionServer(): private_nh_("~"),
     max_attempts_(3)
   {
       tfl_.reset(new tf::TransformListener());
-      nh_.param<std::string>("group_name", group_name_, "left_arm");
-      as_.reset(new actionlib::SimpleActionServer<art_msgs::pickplaceAction>(nh_, "pp", boost::bind(&artActionServer::executeCB, this, _1), false));
+      private_nh_.param<std::string>("group_name", group_name_, "left_arm");
+      as_.reset(new actionlib::SimpleActionServer<art_msgs::pickplaceAction>(nh_, "/art/pr2/" + group_name_ + "/pp", boost::bind(&artActionServer::executeCB, this, _1), false));
+      grasped_object_ = nh_.advertise<std_msgs::String>("/art/pr2/" + group_name_ + "/grasped_object", 1, true);
+      private_nh_.param<std::string>("gripper_state", gripper_state_topic_, "/l_gripper_controller/state");
   }
 
   bool init()
@@ -37,24 +41,47 @@ public:
       return false;
     }
 
+    publish_object("");
+
+    pr2_controllers_msgs::JointControllerStateConstPtr msg = ros::topic::waitForMessage<pr2_controllers_msgs::JointControllerState>(gripper_state_topic_, ros::Duration(1));
+
+    if (!msg) {
+
+      ROS_ERROR("Can't get gripper state");
+      return false;
+    }
+
     as_->start();
     return true;
   }
 
 private:
+  ros::NodeHandle private_nh_;
   ros::NodeHandle nh_;
   artPr2Grasping gr_;
   boost::shared_ptr<actionlib::SimpleActionServer<art_msgs::pickplaceAction> > as_;
   int max_attempts_;
   boost::shared_ptr<tf::TransformListener> tfl_;
 
+  ros::Publisher grasped_object_;
+
   std::string group_name_;
+  std::string gripper_state_topic_;
+
+  void publish_object(const std::string &obj) {
+
+    std_msgs::String str;
+    str.data = obj;
+    grasped_object_.publish(str);
+  }
 
   void executeCB(const art_msgs::pickplaceGoalConstPtr &goal)
   {
 
     art_msgs::pickplaceResult res;
     art_msgs::pickplaceFeedback f;
+
+    // TODO check /art/pr2/xyz_arm/interaction/state topic!
 
     if (goal->operation != art_msgs::pickplaceGoal::PICK_AND_PLACE && goal->operation != art_msgs::pickplaceGoal::PICK && goal->operation != art_msgs::pickplaceGoal::PLACE)
     {
@@ -127,7 +154,20 @@ private:
         return;
       }
 
+      pr2_controllers_msgs::JointControllerStateConstPtr msg = ros::topic::waitForMessage<pr2_controllers_msgs::JointControllerState>(gripper_state_topic_);
+      if (msg->process_value < 0.005) {
+        
+        gr_.resetGraspedObject();
+	gr_.getReady();
+        ROS_ERROR("Gripper is closed - object missed or dropped :-(");
+        res.result = art_msgs::pickplaceResult::FAILURE;
+        as_->setAborted(res, "gripper closed after pick");
+        return;
+
+      }
+
       ROS_INFO("Picked the object.");
+      publish_object(goal->id);
 
       if (goal->operation == art_msgs::pickplaceGoal::PICK) gr_.getReady(); // get ready and wait with object grasped
 
@@ -181,6 +221,7 @@ private:
       }
 
       ROS_INFO("Placed the object.");
+      publish_object("");
 
       gr_.getReady();
     }

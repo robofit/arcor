@@ -11,6 +11,7 @@
     <param name="group_name" value="left_arm"/>
     <rosparam command="load" file="$(find pr2_moveit_config)/config/kinematics.yaml"/>
     <rosparam command="load" file="$(find art_pr2_grasping)/config/pr2_grasp_data.gazebo.yaml"/>
+    <param name="gripper_state" value="/l_gripper_controller/state"/>
   </node>
   
   <!-- Launch pick and place -->
