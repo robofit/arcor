@@ -11,6 +11,8 @@
 #include <moveit_visual_tools/visual_tools.h>
 #include <moveit_simple_grasps/grasp_data.h>
 #include <moveit_simple_grasps/grasp_filter.h>
+#include <boost/thread/recursive_mutex.hpp>
+
 
 // adapted from https://github.com/davetcoleman/baxter_cpp/blob/hydro-devel/baxter_pick_place/src/block_pick_place.cpp
 
@@ -61,6 +63,7 @@ private:
 
   ros::Subscriber obj_sub_;
 
+  boost::recursive_mutex objects_mutex_;
   std::map<std::string, tobj> objects_;
 
   boost::shared_ptr<tf::TransformListener> tfl_;
@@ -166,6 +169,10 @@ public:
 
   void detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr &msg) {
 
+      boost::recursive_mutex::scoped_try_lock lock(objects_mutex_);
+      
+      if (!lock) return; // we don't want to block message queue during pick/place execution
+
       ROS_INFO_ONCE("InstancesArray received");
 
       if (manipulation_in_progress_) return;
@@ -233,7 +240,6 @@ public:
 
             tobj ob;
             ob.h = ps.header;
-            //ob.bb = msg->instances[i].bbox;
             ob.p = ps.pose;
             //std::cout << ob.p.position.x << " " << ob.p.position.y << " " << ob.p.position.z << " " << std::endl;
 
@@ -265,6 +271,7 @@ public:
 
   bool isKnownObject(std::string id) {
 
+      boost::recursive_mutex::scoped_lock lock(objects_mutex_);
       std::map<std::string, tobj>::iterator it = objects_.find(id);
       return it != objects_.end();
   }
@@ -342,6 +349,8 @@ public:
 
   bool place(const geometry_msgs::Pose &ps, double z_axis_angle_increment = 0.0, bool keep_orientation = false)
   {
+
+    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
 
     if (!hasGraspedObject())
     {
@@ -460,6 +469,9 @@ public:
 
   void publishCollisionBB(geometry_msgs::Pose block_pose, std::string block_name, const shape_msgs::SolidPrimitive & shape)
   {
+  
+    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
+
     moveit_msgs::CollisionObject collision_obj;
 
     collision_obj.header.stamp = ros::Time::now();
@@ -485,15 +497,19 @@ public:
 
   bool hasGraspedObject()
   {
+   boost::recursive_mutex::scoped_lock lock(objects_mutex_);
    return grasped_object_;
   }
 
   bool resetGraspedObject() {
-    grasped_object_.reset();
+   boost::recursive_mutex::scoped_lock lock(objects_mutex_);
+   grasped_object_.reset();
   }
 
   bool pick(const std::string &id)
   {
+
+    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
 
     if (hasGraspedObject())
     {
