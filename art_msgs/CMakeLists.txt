@@ -17,6 +17,7 @@ add_action_files(
 add_message_files(
   FILES
   ObjInstance.msg
+  ObjectType.msg
   InstancesArray.msg
   ObjectsCentroids.msg
   UserStatus.msg
@@ -34,8 +35,8 @@ add_service_files(
     FILES
     getProgram.srv
     storeProgram.srv
-    getObject.srv
-    storeObject.srv
+    getObjectType.srv
+    storeObjectType.srv
     startProgram.srv
 )
 
