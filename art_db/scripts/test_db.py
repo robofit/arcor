@@ -2,27 +2,27 @@
 
 import sys
 import rospy
-from art_msgs.msg import Program,  ProgramItem
-from art_msgs.srv import getProgram,  storeProgram,   getObject,  storeObject
+from art_msgs.msg import Program,  ProgramItem,  ObjectType
+from art_msgs.srv import getProgram,  storeProgram,   getObjectType,  storeObjectType
 from shape_msgs.msg import SolidPrimitive
 
 def main(args):
-    
+
     global p
 
     rospy.init_node('art_db_service_tester', anonymous=True)
-    
+
     p = Program()
     p.id = 0
     p.name = "Basic pick&place"
-    
+
     p0 = ProgramItem()
     p0.id = 0
     p0.on_success = 1
     p0.on_failure = 100
     p0.type = ProgramItem.GET_READY
     p.items.append(p0)
-    
+
     p1 = ProgramItem()
     p1.id = 1
     p1.on_success = 2
@@ -30,7 +30,7 @@ def main(args):
     p1.type = ProgramItem.WAIT
     p1.spec = ProgramItem.WAIT_FOR_USER
     p.items.append(p1)
-    
+
     p2 = ProgramItem()
     p2.id = 2
     p2.on_success = 3
@@ -43,7 +43,7 @@ def main(args):
     p2.place_pose.pose.position.x = 0.75
     p2.place_pose.pose.position.y = 0.5
     p.items.append(p2)
-    
+
     p3 = ProgramItem()
     p3.id = 3
     p3.on_success = 4
@@ -51,7 +51,7 @@ def main(args):
     p3.type = ProgramItem.WAIT
     p3.spec = ProgramItem.WAIT_UNTIL_USER_FINISHES
     p.items.append(p3)
-    
+
     p4 = ProgramItem()
     p4.id = 4
     p4.on_success = 0
@@ -65,18 +65,18 @@ def main(args):
     p4.place_pose.pose.position.x = 0.25
     p4.place_pose.pose.position.y = 0.5
     p.items.append(p4)
-    
+
     rospy.wait_for_service('/art/db/program/store')
-    
+
     try:
         store_program_srv = rospy.ServiceProxy('/art/db/program/store', storeProgram)
         resp = store_program_srv(program=p)
     except rospy.ServiceException, e:
         print "Service call failed: %s"%e
         return
-    
+
     rospy.wait_for_service('/art/db/program/get')
-    
+
     try:
         get_program_srv = rospy.ServiceProxy('/art/db/program/get', getProgram)
         resp = get_program_srv(id=0)
@@ -84,42 +84,44 @@ def main(args):
     except rospy.ServiceException, e:
         print "Service call failed: %s"%e
         return
-        
-    rospy.wait_for_service('/art/db/object/store')
-    
-    # self.objects_table.insert(dict(name="profile_3", model_url="blablabla", obj_id=16))
-    # self.objects_table.insert(dict(name="profile_2", model_url="blablabla", obj_id=16))
-    # self.objects_table.update(dict(name="profile_3", model_url="blablabla", obj_id=15), ['name'])
-    
-    bb = SolidPrimitive()
-    bb.type = SolidPrimitive.BOX
-    bb.dimensions.append(0.1)
-    bb.dimensions.append(0.1)
-    bb.dimensions.append(0.1)
-    
+
+    rospy.wait_for_service('/art/db/object_type/store')
+
+    ot = ObjectType()
+    ot.name = "profile_20_60"
+    ot.bbox.type = SolidPrimitive.BOX
+    ot.bbox.dimensions.append(0.1)
+    ot.bbox.dimensions.append(0.1)
+    ot.bbox.dimensions.append(0.1)
+
     try:
-        store_object_srv = rospy.ServiceProxy('/art/db/object/store', storeObject)
-        resp = store_object_srv(obj_id=3,  name="profile_2",  model_url="",  type="profile",  bbox=bb)
-        resp = store_object_srv(obj_id=4,  name="profile_3",  model_url="",  type="profile",  bbox=bb)
+        store_object_srv = rospy.ServiceProxy('/art/db/object_type/store', storeObjectType)
+        resp = store_object_srv(ot)
     except rospy.ServiceException, e:
         print "Service call failed: %s"%e
         return
-        
-    rospy.wait_for_service('/art/db/object/get')
-    
+
+    ot.name = "profile_20_80"
+
     try:
-        get_object_srv = rospy.ServiceProxy('/art/db/object/get', getObject)
-        resp = get_object_srv(obj_id=3)
+        store_object_srv = rospy.ServiceProxy('/art/db/object_type/store', storeObjectType)
+        resp = store_object_srv(ot)
+    except rospy.ServiceException, e:
+        print "Service call failed: %s"%e
+        return
+
+    rospy.wait_for_service('/art/db/object_type/get')
+
+    try:
+        get_object_srv = rospy.ServiceProxy('/art/db/object_type/get', getObjectType)
+        resp = get_object_srv(name="profile_20_60")
         print resp
-        resp = get_object_srv(obj_id=4)
-        print resp
-        resp = get_object_srv(obj_id=50)
+        resp = get_object_srv(name="profile_20_80")
         print resp
     except rospy.ServiceException, e:
         print "Service call failed: %s"%e
         return
-    
-    
+
 if __name__ == '__main__':
     try:
         main(sys.argv)
