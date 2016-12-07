@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from PyQt4 import QtGui, QtCore
-from items import ObjectItem,  PlaceItem,  LabelItem,  ProgramItem,  PolygonItem
+from items import ObjectItem,  PlaceItem,  LabelItem,  ProgramItem,  PolygonItem, SquareItem
 import rospy
 
 class customGraphicsView(QtGui.QGraphicsView):
@@ -184,6 +184,13 @@ class UICore(QtCore.QObject):
 
         self.scene_items.append(PolygonItem(self.scene,  self.rpm,  caption,  obj_coords,  poly_points, polygon_changed))
 
+    # ! ja som pridal ! #
+    def add_square(self, caption, obj_coords=[], square_points=[], square_changed=None):
+        print "ui_core - add_square_grid"
+        self.scene_items.append(SquareItem(self.scene, self.rpm, caption, obj_coords, square_points, square_changed))
+    # ! ! #
+
+
     def clear_places(self):
 
         self.remove_scene_items_by_type(PlaceItem)
@@ -196,3 +203,4 @@ class UICore(QtCore.QObject):
 
         self.remove_scene_items_by_type(PlaceItem)
         self.remove_scene_items_by_type(PolygonItem)
+        self.remove_scene_items_by_type(SquareItem)     # JA SOM PRIDAL

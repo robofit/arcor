@@ -390,6 +390,12 @@ class UICoreRos(UICore):
 
         self.program_vis.set_polygon(pts)
 
+    # ! ja som pridal ! #
+    def square_changed(self,  pts):
+
+        self.program_vis.set_polygon(pts)   # ???
+    # ! ! #
+
     def object_selected(self,  id,  selected):
 
         if self.fsm.state != 'learning': return False
@@ -411,14 +417,24 @@ class UICoreRos(UICore):
                 pass
 
             poly_points = []
+            square_points = []
 
             self.program_vis.set_object(obj.object_type)
             self.select_object_type(obj.object_type)
 
+            # pozicie itemov na scene (tie dva co tam su momentalne)
             for obj in self.get_scene_items_by_type(ObjectItem):
                 poly_points.append(obj.get_pos())
+                square_points.append(obj.get_pos())
 
-            self.add_polygon(translate("UICoreRos", "PICK POLYGON"),  poly_points,  polygon_changed=self.polygon_changed)
+
+            # !vytvori polygon po dvojkliku na item! #
+            # self.add_polygon(translate("UICoreRos", "PICK POLYGON"),  poly_points,  polygon_changed=self.polygon_changed)
+
+
+            # ! ja som pridal ! #
+            self.add_square(translate("UICoreRos", "PICK SQUARE GRID"),  square_points,  square_changed=self.square_changed)
+            # !! #
             self.notif(translate("UICoreRos", "Check and adjust pick polygon"),  temp=True)
 
             self.notif(translate("UICoreRos", "Set where to place picked object"),  temp=True)

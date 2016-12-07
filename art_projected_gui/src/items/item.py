@@ -24,6 +24,7 @@ class Item(QtGui.QGraphicsItem):
         self.setActive(True)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
 
+
     def get_font_size(self,  f=1.0):
 
         return 12/1280.0*self.rpm*f

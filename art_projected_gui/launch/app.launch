@@ -7,7 +7,7 @@
         <rosparam param="scene_size">[1.2, 0.64]</rosparam>
 
         <rosparam param="cursors">["left_hand"]</rosparam>
-        <rosparam param="projectors">["test"]</rosparam>
+        <!-- <rosparam param="projectors">["test"]</rosparam> -->
 
         <!-- open window with scene - for debugging purposes (can be controlled using mouse) -->
         <param name="show_scene" value="true"/>

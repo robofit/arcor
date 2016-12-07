@@ -27,15 +27,15 @@ class PolygonPointItem(Item):
         return path
 
     def item_moved(self):
-
+        # toto sa vola ked sa hybe s okrajovym bodom polygonu
         self.parentItem().point_changed()
 
     def cursor_release(self):
-
+        # toto sa vola ked dohybeme s okrajovym bodom a pustime ho
         self.parentItem().point_changed(True)
 
     def paint(self, painter, option, widget):
-
+        # toto sa vola vzdy ked ukazem kurzorom na okrajovy bod polygonu
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
@@ -84,10 +84,10 @@ class PolygonItem(Item):
 
             self.pts = []
 
-            self.pts.append(PolygonPointItem(scene,  rpm,  self.min[0],  self.min[1],  self))
-            self.pts.append(PolygonPointItem(scene,  rpm,  self.max[0], self.min[1],  self))
-            self.pts.append(PolygonPointItem(scene,  rpm,  self.max[0],  self.max[1],  self))
-            self.pts.append(PolygonPointItem(scene,  rpm,  self.min[0], self.max[1],  self))
+            self.pts.append(PolygonPointItem(scene,  rpm,  self.min[0],  self.min[1],  self))   # lavy horny roh
+            self.pts.append(PolygonPointItem(scene,  rpm,  self.max[0], self.min[1],  self))    # pravy horny roh
+            self.pts.append(PolygonPointItem(scene,  rpm,  self.max[0],  self.max[1],  self))   # pravy dolny roh
+            self.pts.append(PolygonPointItem(scene,  rpm,  self.min[0], self.max[1],  self))  # lavy dolny roh
 
             if self.polygon_changed is not None:
                 self.polygon_changed(self.get_poly_points())
@@ -170,7 +170,7 @@ class PolygonItem(Item):
 
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.DotLine)
-        pen.setWidth(5)
+        pen.setWidth(15)
         pen.setBrush(QtCore.Qt.white)
         pen.setCapStyle(QtCore.Qt.RoundCap)
         pen.setJoinStyle(QtCore.Qt.RoundJoin)
@@ -180,8 +180,8 @@ class PolygonItem(Item):
         poly = QtGui.QPolygon()
 
         for i in range(0,  len(self.pts)):
-
             poly.append(self.pts[i].pos().toPoint())
+            # print self.pts[i].pos().toPoint()
 
         painter.drawPolygon(poly)
 
