@@ -4,12 +4,15 @@
 #include <pr2_controllers_msgs/PointHeadAction.h>
 #include <actionlib/client/simple_action_client.h>
 #include "art_msgs/InstancesArray.h"
+#include "art_msgs/getObjectType.h"
 #include <tf/transform_listener.h>
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit_simple_grasps/simple_grasps.h>
 #include <moveit_visual_tools/visual_tools.h>
 #include <moveit_simple_grasps/grasp_data.h>
 #include <moveit_simple_grasps/grasp_filter.h>
+#include <boost/thread/recursive_mutex.hpp>
+
 
 // adapted from https://github.com/davetcoleman/baxter_cpp/blob/hydro-devel/baxter_pick_place/src/block_pick_place.cpp
 
@@ -60,6 +63,7 @@ private:
 
   ros::Subscriber obj_sub_;
 
+  boost::recursive_mutex objects_mutex_;
   std::map<std::string, tobj> objects_;
 
   boost::shared_ptr<tf::TransformListener> tfl_;
@@ -69,6 +73,8 @@ private:
   std::string group_name_;
 
   bool manipulation_in_progress_;
+
+  ros::ServiceClient object_type_srv_;
 
 public:
   artPr2Grasping()
@@ -126,6 +132,7 @@ public:
 
     manipulation_in_progress_ = false;
 
+    object_type_srv_ = nh_.serviceClient<art_msgs::getObjectType>("/art/db/object_type/get");
     obj_sub_ = nh_.subscribe("/art/object_detector/object_filtered", 1, &artPr2Grasping::detectedObjectsCallback, this);
 
   }
@@ -161,6 +168,10 @@ public:
   }
 
   void detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr &msg) {
+
+      boost::recursive_mutex::scoped_try_lock lock(objects_mutex_);
+      
+      if (!lock) return; // we don't want to block message queue during pick/place execution
 
       ROS_INFO_ONCE("InstancesArray received");
 
@@ -209,9 +220,6 @@ public:
       // add and publish currently detected objects
       for(int i = 0; i < msg->instances.size(); i++) {
 
-        if (msg->instances[i].bbox.type != shape_msgs::SolidPrimitive::BOX) continue;
-        if (msg->instances[i].bbox.dimensions.size() != 3) continue;
-
         geometry_msgs::PoseStamped ps;
 
         ps.header = msg->header;
@@ -226,24 +234,35 @@ public:
         if (isKnownObject(msg->instances[i].object_id)) {
 
             objects_[msg->instances[i].object_id].h = ps.header;
-            objects_[msg->instances[i].object_id].bb = msg->instances[i].bbox;
             objects_[msg->instances[i].object_id].p = ps.pose;
 
         } else {
 
             tobj ob;
             ob.h = ps.header;
-            ob.bb = msg->instances[i].bbox;
             ob.p = ps.pose;
             //std::cout << ob.p.position.x << " " << ob.p.position.y << " " << ob.p.position.z << " " << std::endl;
-            objects_[msg->instances[i].object_id] = ob;
+
+            art_msgs::getObjectType srv;
+            srv.request.name = msg->instances[i].object_type;
+
+            if (object_type_srv_.call(srv))
+              {
+                ob.bb = srv.response.object_type.bbox;
+                objects_[msg->instances[i].object_id] = ob;
+              }
+              else
+              {
+                ROS_ERROR("Failed to call object_type service");
+                continue;
+              }
 
         }
 
         // don't publish for grasped object
         if (!(grasped_object_ && grasped_object_->id == msg->instances[i].object_id)) {
 
-            publishCollisionBB(ps.pose, msg->instances[i].object_id, msg->instances[i].bbox);
+            publishCollisionBB(objects_[msg->instances[i].object_id].p, msg->instances[i].object_id, objects_[msg->instances[i].object_id].bb);
         }
 
       }
@@ -252,6 +271,7 @@ public:
 
   bool isKnownObject(std::string id) {
 
+      boost::recursive_mutex::scoped_lock lock(objects_mutex_);
       std::map<std::string, tobj>::iterator it = objects_.find(id);
       return it != objects_.end();
   }
@@ -329,6 +349,8 @@ public:
 
   bool place(const geometry_msgs::Pose &ps, double z_axis_angle_increment = 0.0, bool keep_orientation = false)
   {
+
+    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
 
     if (!hasGraspedObject())
     {
@@ -447,6 +469,9 @@ public:
 
   void publishCollisionBB(geometry_msgs::Pose block_pose, std::string block_name, const shape_msgs::SolidPrimitive & shape)
   {
+  
+    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
+
     moveit_msgs::CollisionObject collision_obj;
 
     collision_obj.header.stamp = ros::Time::now();
@@ -472,15 +497,19 @@ public:
 
   bool hasGraspedObject()
   {
+   boost::recursive_mutex::scoped_lock lock(objects_mutex_);
    return grasped_object_;
   }
 
   bool resetGraspedObject() {
-    grasped_object_.reset();
+   boost::recursive_mutex::scoped_lock lock(objects_mutex_);
+   grasped_object_.reset();
   }
 
   bool pick(const std::string &id)
   {
+
+    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
 
     if (hasGraspedObject())
     {

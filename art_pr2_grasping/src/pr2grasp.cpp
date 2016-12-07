@@ -6,6 +6,8 @@ int main(int argc, char **argv)
 
   ros::AsyncSpinner spinner(1);
   spinner.start();
+  
+  ROS_INFO("Starting...");
 
   art_pr2_grasping::artActionServer as;
   ros::Duration(1).sleep();
@@ -14,6 +16,8 @@ int main(int argc, char **argv)
     ROS_ERROR("Init failed.");
     return 1;
   }
+  
+  ROS_INFO("Started - waiting for goals.");
 
   ros::waitForShutdown();
   return 0;
