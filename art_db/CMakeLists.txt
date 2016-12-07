@@ -4,6 +4,7 @@ project(art_db)
 find_package(catkin REQUIRED COMPONENTS
   art_msgs
   rospy
+  mongodb_store
 )
 
 catkin_package()

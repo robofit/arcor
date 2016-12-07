@@ -21,7 +21,7 @@ def main():
 
     obj = ObjInstance()
     obj.object_id = "my_object"
-    obj.object_type = "object"
+    obj.object_type = "profile_20_60"
     obj.pose.position.x = 0.5
     obj.pose.position.y = 0.5
     obj.pose.position.z = 0.0
@@ -30,17 +30,11 @@ def main():
     obj.pose.orientation.z = 0.0
     obj.pose.orientation.w = 1.0
 
-    obj.bbox = SolidPrimitive()
-    obj.bbox.type = SolidPrimitive.BOX
-    obj.bbox.dimensions.append(0.05)
-    obj.bbox.dimensions.append(0.05)
-    obj.bbox.dimensions.append(0.2)
-
     arr.instances.append(obj)
 
     obj2 = ObjInstance()
     obj2.object_id = "another_object"
-    obj2.object_type = "object"
+    obj2.object_type = "profile_20_60"
     obj2.pose.position.x = 0.9
     obj2.pose.position.y = 0.3
     obj2.pose.position.z = 0.0
@@ -48,12 +42,6 @@ def main():
     obj2.pose.orientation.y = 0.0
     obj2.pose.orientation.z = 0.0
     obj2.pose.orientation.w = 1.0
-
-    obj2.bbox = SolidPrimitive()
-    obj2.bbox.type = SolidPrimitive.BOX
-    obj2.bbox.dimensions.append(0.05)
-    obj2.bbox.dimensions.append(0.05)
-    obj2.bbox.dimensions.append(0.2)
 
     arr.instances.append(obj2)
 

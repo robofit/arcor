@@ -1,3 +1,9 @@
 <launch>
+
+    <include file="$(find mongodb_store)/launch/mongodb_store.launch">
+        <arg name="db_path" value="$(find art_db)/db/"/>
+    </include>
+
 	<node name="art_db" pkg="art_db" type="db.py" respawn="true" output="screen" />
+
 </launch>

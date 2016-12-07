@@ -438,6 +438,8 @@ class UICoreRos(UICore):
             if obj: obj.set_pos(inst.pose.position.x,  inst.pose.position.y)
             else:
 
+                # TODO get and display bounding box
+                # obj_type = self.art.get_object_type(inst.object_type)
                 self.add_object(inst.object_id,  inst.object_type,  inst.pose.position.x,  inst.pose.position.y,  self.object_selected)
                 self.notif(translate("UICoreRos", "New object") + " ID=" + str(inst.object_id),  temp=True)
 

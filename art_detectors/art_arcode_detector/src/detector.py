@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
-from ar_track_alvar_msgs.msg import AlvarMarkers, AlvarMarker
+from ar_track_alvar_msgs.msg import AlvarMarkers
 from art_msgs.msg import ObjInstance, InstancesArray
-from art_msgs.srv import getObject
-from shape_msgs.msg import SolidPrimitive
-import sys
+from art_msgs.srv import getObjectType
 import rospy
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
@@ -17,43 +15,45 @@ class ArCodeDetector:
     objects_table = None
 
     def __init__(self):
-        
-        self.get_object_srv = rospy.ServiceProxy('/art/db/object/get', getObject)
+
+        self.get_object_srv = rospy.ServiceProxy('/art/db/object_type/get', getObjectType)
         self.ar_code_sub = rospy.Subscriber("ar_pose_marker", AlvarMarkers, self.ar_code_cb)
         self.detected_objects_pub = rospy.Publisher("/art/object_detector/object", InstancesArray, queue_size=10)
         self.visualize_pub = rospy.Publisher("art/object_detector/visualize_objects", Marker, queue_size=10)
-        
+
         # TODO make a timer clearing this cache from time to time
         self.objects_cache = {}
 
     def ar_code_cb(self, data):
+
         rospy.logdebug("New arcodes arrived:")
         instances = InstancesArray()
         id = 0
-        
+
         for arcode in data.markers:
-            
+
             aid = int(arcode.id)
-            
+
             if aid not in self.objects_cache:
-            
+
                 try:
-                    resp = self.get_object_srv(obj_id=aid)
-                except rospy.ServiceException, e:
-                    
+                    # TODO AR code ID / object type assignment should be done somewhere...
+                    # type "profile_20_60" is just for example (used in art_db/test_db.py)
+                    resp = self.get_object_srv(name="profile_20_60")
+                except rospy.ServiceException:
+
                     # error or unknown object - let's ignore it
                     self.objects_cache[aid] = None
                     continue
-                    
-                self.objects_cache[aid] = {'name': resp.name,  'model_url': resp.model_url,  'type': resp.type,  'bb': resp.bbox}
-            
+
+                self.objects_cache[aid] = {'type': resp.object_type.name,  'bb': resp.object_type.bbox}
+
             if self.objects_cache[aid] is None: continue
-            
+
             obj_in = ObjInstance()
-            obj_in.object_id = self.objects_cache[aid]['name']
+            obj_in.object_id = str(aid)
             obj_in.object_type = self.objects_cache[aid]['type']
             obj_in.pose = arcode.pose.pose
-            
 
             angles = transformations.euler_from_quaternion([obj_in.pose.orientation.x,
                                                             obj_in.pose.orientation.y,
@@ -102,9 +102,6 @@ class ArCodeDetector:
         marker.lifetime = rospy.Duration(5)
         marker.pose = obj.pose
 
-
-        pos = obj.pose.position
-
         bbox_x = float(obj.bbox.dimensions[0]/2)
         bbox_y = float(obj.bbox.dimensions[1]/2)
         bbox_z = float(obj.bbox.dimensions[2])
@@ -151,8 +148,8 @@ if __name__ == '__main__':
     rospy.init_node('art_arcode_detector')
     # rospy.init_node('art_arcode_detector', log_level=rospy.DEBUG)
     try:
-        rospy.wait_for_service('/art/db/object/get')
-        node = ArCodeDetector()
+        rospy.wait_for_service('/art/db/object_type/get')
+        ArCodeDetector()
         rospy.spin()
     except rospy.ROSInterruptException:
         pass
