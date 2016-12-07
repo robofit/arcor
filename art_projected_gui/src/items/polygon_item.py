@@ -170,7 +170,7 @@ class PolygonItem(Item):
 
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.DotLine)
-        pen.setWidth(15)
+        pen.setWidth(5)
         pen.setBrush(QtCore.Qt.white)
         pen.setCapStyle(QtCore.Qt.RoundCap)
         pen.setJoinStyle(QtCore.Qt.RoundJoin)
@@ -180,8 +180,8 @@ class PolygonItem(Item):
         poly = QtGui.QPolygon()
 
         for i in range(0,  len(self.pts)):
+
             poly.append(self.pts[i].pos().toPoint())
-            # print self.pts[i].pos().toPoint()
 
         painter.drawPolygon(poly)
 
