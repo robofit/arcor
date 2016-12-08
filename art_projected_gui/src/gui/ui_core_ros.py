@@ -288,10 +288,10 @@ class UICoreRos(UICore):
 
                 if  self.program_vis.active_item.is_place_pose_set():
                     (x,  y) = self.program_vis.active_item.get_place_pose()
-                    self.add_place(translate("UICoreRos", "PLACE POSEi"),  x,  y,  self.place_pose_changed)
+                    self.add_place(translate("UICoreRos", "PLACE POSE"),  x,  y,  self.place_pose_changed)
                 else:
                     self.notif(translate("UICoreRos", "Set where to place picked object"))
-                    self.add_place(translate("UICoreRos", "PLACE POSEi"),  self.width/2,  self.height/2,  self.place_pose_changed)
+                    self.add_place(translate("UICoreRos", "PLACE POSE"),  self.width/2,  self.height/2,  self.place_pose_changed)
 
     def place_pose_changed(self,  pos):
 
@@ -429,7 +429,7 @@ class UICoreRos(UICore):
             self.notif(translate("UICoreRos", "Set where to place picked object"),  temp=True)
 
             self.add_place(translate("UICoreRos", "PLACE POSE"),  self.width/2,  self.height/2,  self.place_pose_changed)
-            self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), square_changed=self.square_changed)
+            self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.square_changed)
 
         elif self.program_vis.active_item.item.spec == ProgIt.MANIP_ID:
 
