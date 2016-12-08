@@ -288,10 +288,10 @@ class UICoreRos(UICore):
 
                 if  self.program_vis.active_item.is_place_pose_set():
                     (x,  y) = self.program_vis.active_item.get_place_pose()
-                    self.add_place(translate("UICoreRos", "PLACE POSE"),  x,  y,  self.place_pose_changed)
+                    self.add_place(translate("UICoreRos", "PLACE POSEi"),  x,  y,  self.place_pose_changed)
                 else:
                     self.notif(translate("UICoreRos", "Set where to place picked object"))
-                    self.add_place(translate("UICoreRos", "PLACE POSE"),  self.width/2,  self.height/2,  self.place_pose_changed)
+                    self.add_place(translate("UICoreRos", "PLACE POSEi"),  self.width/2,  self.height/2,  self.place_pose_changed)
 
     def place_pose_changed(self,  pos):
 
@@ -390,11 +390,9 @@ class UICoreRos(UICore):
 
         self.program_vis.set_polygon(pts)
 
-    # ! ja som pridal ! #
-    def square_changed(self,  pts):
+    def square_changed(self):
 
-        self.program_vis.set_polygon(pts)   # ???
-    # ! ! #
+        self.program_vis.set_place_grid()
 
     def object_selected(self,  id,  selected):
 
@@ -417,28 +415,21 @@ class UICoreRos(UICore):
                 pass
 
             poly_points = []
-            square_points = []
 
             self.program_vis.set_object(obj.object_type)
             self.select_object_type(obj.object_type)
 
-            # pozicie itemov na scene (tie dva co tam su momentalne)
             for obj in self.get_scene_items_by_type(ObjectItem):
                 poly_points.append(obj.get_pos())
-                square_points.append(obj.get_pos())
 
+            self.add_polygon(translate("UICoreRos", "PICK POLYGON"),  poly_points,  polygon_changed=self.polygon_changed)
 
-            # !vytvori polygon po dvojkliku na item! #
-            # self.add_polygon(translate("UICoreRos", "PICK POLYGON"),  poly_points,  polygon_changed=self.polygon_changed)
-
-
-            # ! ja som pridal ! #
-            self.add_square(translate("UICoreRos", "PICK SQUARE GRID"),  square_points,  square_changed=self.square_changed)
-            # !! #
             self.notif(translate("UICoreRos", "Check and adjust pick polygon"),  temp=True)
 
             self.notif(translate("UICoreRos", "Set where to place picked object"),  temp=True)
+
             self.add_place(translate("UICoreRos", "PLACE POSE"),  self.width/2,  self.height/2,  self.place_pose_changed)
+            self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), square_changed=self.square_changed)
 
         elif self.program_vis.active_item.item.spec == ProgIt.MANIP_ID:
 
@@ -446,7 +437,6 @@ class UICoreRos(UICore):
             pass
 
         return True
-
 
     def user_status_cb(self,  msg):
 

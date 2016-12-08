@@ -366,6 +366,10 @@ class ProgramItem(Item):
         self.program_updated()
         self.update_size()
 
+    def set_place_grid(self):
+        # TODO
+        pass
+
     def boundingRect(self):
 
         return QtCore.QRectF(0,  -30, self.w, self.h+30)

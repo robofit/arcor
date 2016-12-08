@@ -184,12 +184,9 @@ class UICore(QtCore.QObject):
 
         self.scene_items.append(PolygonItem(self.scene,  self.rpm,  caption,  obj_coords,  poly_points, polygon_changed))
 
-    # ! ja som pridal ! #
-    def add_square(self, caption, obj_coords=[], square_points=[], square_changed=None):
-        print "ui_core - add_square_grid"
-        self.scene_items.append(SquareItem(self.scene, self.rpm, caption, obj_coords, square_points, square_changed))
-    # ! ! #
+    def add_square(self, caption, square_changed=None):
 
+        self.scene_items.append(SquareItem(self.scene, self.rpm, caption, square_changed))
 
     def clear_places(self):
 
@@ -203,4 +200,3 @@ class UICore(QtCore.QObject):
 
         self.remove_scene_items_by_type(PlaceItem)
         self.remove_scene_items_by_type(PolygonItem)
-        self.remove_scene_items_by_type(SquareItem)     # JA SOM PRIDAL

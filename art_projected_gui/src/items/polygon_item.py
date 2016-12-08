@@ -84,10 +84,10 @@ class PolygonItem(Item):
 
             self.pts = []
 
-            self.pts.append(PolygonPointItem(scene,  rpm,  self.min[0],  self.min[1],  self))   # lavy horny roh
-            self.pts.append(PolygonPointItem(scene,  rpm,  self.max[0], self.min[1],  self))    # pravy horny roh
-            self.pts.append(PolygonPointItem(scene,  rpm,  self.max[0],  self.max[1],  self))   # pravy dolny roh
-            self.pts.append(PolygonPointItem(scene,  rpm,  self.min[0], self.max[1],  self))  # lavy dolny roh
+            self.pts.append(PolygonPointItem(scene,  rpm,  self.min[0],  self.min[1],  self))   # top-left corner
+            self.pts.append(PolygonPointItem(scene,  rpm,  self.max[0], self.min[1],  self))    # top-right corner
+            self.pts.append(PolygonPointItem(scene,  rpm,  self.max[0],  self.max[1],  self))   # bottom-right corner
+            self.pts.append(PolygonPointItem(scene,  rpm,  self.min[0], self.max[1],  self))    # bottom-left corner
 
             if self.polygon_changed is not None:
                 self.polygon_changed(self.get_poly_points())
