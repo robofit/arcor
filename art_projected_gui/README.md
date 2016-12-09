@@ -12,7 +12,7 @@ sudo apt-get install graphviz libgraphviz-dev pkg-config pygraphviz
 Usage (for testing purposes):
 
 ```
-rosrun art_db db.py
+roslaunch art_db db.launch
 rosrun art_projected_gui test_gui.py (publishes two objects)
 rosrun art_projected_gui test_brain.py (simulated art_brain)
 rosrun art_projected_gui projector_node.py _screen_number:=1
