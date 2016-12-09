@@ -10,6 +10,12 @@ Related repositories:
  
 New launch - art_brain/launch/Table.launch - should run all nodes on table (pr2 has its own launch) - not stable, USE WITH CAUTION!
 
+### Contributing
+
+ - Follow [PyStyleGuide](http://wiki.ros.org/PyStyleGuide) or [CppStyleGuide](http://wiki.ros.org/CppStyleGuide)
+ - Use [catkin_lint](http://fkie.github.io/catkin_lint/) to check for common problems (```catkin_lint -W2 your_package_name```)
+ - Use [roslint](http://wiki.ros.org/roslint) to run static analysis of your code.
+
 ### ARTable API
 
 All topics, parameters and services can be found in `/art` namespace.
