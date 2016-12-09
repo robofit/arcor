@@ -1,6 +1,6 @@
-uint8 id # id of the item (operation)
-uint8 on_success # id of next item
-uint8 on_failure
+uint16 id # id of the item (operation)
+uint16 on_success # id of next item
+uint16 on_failure
 
 uint8 type
 uint8 spec

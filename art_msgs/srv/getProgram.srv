@@ -1,4 +1,4 @@
-uint8 id
+uint16 id
 ---
 Program program
 

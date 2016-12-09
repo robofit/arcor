@@ -25,8 +25,8 @@ add_message_files(
   SystemState.msg
   SceneLabel.msg
   ProgramItem.msg
+  ProgramBlock.msg
   Program.msg
-  ProgramArray.msg
   InterfaceState.msg
   KeyValue.msg
 )
