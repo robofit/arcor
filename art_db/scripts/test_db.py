@@ -6,6 +6,7 @@ from art_msgs.msg import Program,  ProgramBlock, ProgramItem,  ObjectType
 from art_msgs.srv import getProgram,  storeProgram,   getObjectType,  storeObjectType
 from shape_msgs.msg import SolidPrimitive
 
+
 def main(args):
 
     global p
@@ -18,7 +19,7 @@ def main(args):
 
     pb = ProgramBlock()
     pb.id = 0
-    pb.name= "First block"
+    pb.name = "First block"
     p.blocks.append(pb)
 
     p0 = ProgramItem()
@@ -77,7 +78,7 @@ def main(args):
         store_program_srv = rospy.ServiceProxy('/art/db/program/store', storeProgram)
         resp = store_program_srv(program=p)
     except rospy.ServiceException, e:
-        print "Service call failed: %s"%e
+        print "Service call failed: " + str(e)
         return
 
     rospy.wait_for_service('/art/db/program/get')
@@ -87,7 +88,7 @@ def main(args):
         resp = get_program_srv(id=0)
         print resp
     except rospy.ServiceException, e:
-        print "Service call failed: %s"%e
+        print "Service call failed: " + str(e)
         return
 
     rospy.wait_for_service('/art/db/object_type/store')
@@ -103,7 +104,7 @@ def main(args):
         store_object_srv = rospy.ServiceProxy('/art/db/object_type/store', storeObjectType)
         resp = store_object_srv(ot)
     except rospy.ServiceException, e:
-        print "Service call failed: %s"%e
+        print "Service call failed: " + str(e)
         return
 
     ot.name = "profile_20_80"
@@ -112,7 +113,7 @@ def main(args):
         store_object_srv = rospy.ServiceProxy('/art/db/object_type/store', storeObjectType)
         resp = store_object_srv(ot)
     except rospy.ServiceException, e:
-        print "Service call failed: %s"%e
+        print "Service call failed: " + str(e)
         return
 
     rospy.wait_for_service('/art/db/object_type/get')
@@ -124,7 +125,7 @@ def main(args):
         resp = get_object_srv(name="profile_20_80")
         print resp
     except rospy.ServiceException, e:
-        print "Service call failed: %s"%e
+        print "Service call failed: " + str(e)
         return
 
 if __name__ == '__main__':

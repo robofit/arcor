@@ -7,6 +7,7 @@ import rospy
 
 from mongodb_store.message_store import MessageStoreProxy
 
+
 class ArtDB:
 
     def __init__(self):
@@ -30,7 +31,7 @@ class ArtDB:
             resp.program = self.db.query_named(name, Program._type)[0]
             return resp
         except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
+            print "Service call failed: " + str(e)
             return None
 
     def srv_store_program_cb(self,  req):
@@ -41,7 +42,7 @@ class ArtDB:
         try:
             ret = self.db.update_named(name,  req.program,  upsert=True)
         except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
+            print "Service call failed: " + str(e)
             resp.success = False
             return resp
 
@@ -57,23 +58,24 @@ class ArtDB:
             resp.object_type = self.db.query_named(name, ObjectType._type)[0]
             return resp
         except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
+            print "Service call failed: " + str(e)
             return None
 
     def srv_store_object_cb(self,  req):
 
-        resp =storeObjectTypeResponse()
+        resp = storeObjectTypeResponse()
         name = "object_type:" + str(req.object_type.name)
 
         try:
             ret = self.db.update_named(name,  req.object_type,  upsert=True)
         except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
+            print "Service call failed: " + str(e)
             resp.success = False
             return resp
 
         resp.success = ret.success
         return resp
+
 
 def main(args):
 
@@ -86,5 +88,3 @@ if __name__ == '__main__':
         main(sys.argv)
     except KeyboardInterrupt:
         print("Shutting down")
-
-
