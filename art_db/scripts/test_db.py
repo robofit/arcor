@@ -2,7 +2,7 @@
 
 import sys
 import rospy
-from art_msgs.msg import Program,  ProgramItem,  ObjectType
+from art_msgs.msg import Program,  ProgramBlock, ProgramItem,  ObjectType
 from art_msgs.srv import getProgram,  storeProgram,   getObjectType,  storeObjectType
 from shape_msgs.msg import SolidPrimitive
 
@@ -16,12 +16,17 @@ def main(args):
     p.id = 0
     p.name = "Basic pick&place"
 
+    pb = ProgramBlock()
+    pb.id = 0
+    pb.name= "First block"
+    p.blocks.append(pb)
+
     p0 = ProgramItem()
     p0.id = 0
     p0.on_success = 1
     p0.on_failure = 100
     p0.type = ProgramItem.GET_READY
-    p.items.append(p0)
+    pb.items.append(p0)
 
     p1 = ProgramItem()
     p1.id = 1
@@ -29,7 +34,7 @@ def main(args):
     p1.on_failure = 100
     p1.type = ProgramItem.WAIT
     p1.spec = ProgramItem.WAIT_FOR_USER
-    p.items.append(p1)
+    pb.items.append(p1)
 
     p2 = ProgramItem()
     p2.id = 2
@@ -42,7 +47,7 @@ def main(args):
     p2.place_pose.header.frame_id = "marker"
     p2.place_pose.pose.position.x = 0.75
     p2.place_pose.pose.position.y = 0.5
-    p.items.append(p2)
+    pb.items.append(p2)
 
     p3 = ProgramItem()
     p3.id = 3
@@ -50,7 +55,7 @@ def main(args):
     p3.on_failure = 100
     p3.type = ProgramItem.WAIT
     p3.spec = ProgramItem.WAIT_UNTIL_USER_FINISHES
-    p.items.append(p3)
+    pb.items.append(p3)
 
     p4 = ProgramItem()
     p4.id = 4
@@ -64,7 +69,7 @@ def main(args):
     p4.place_pose.header.frame_id = "marker"
     p4.place_pose.pose.position.x = 0.25
     p4.place_pose.pose.position.y = 0.5
-    p.items.append(p4)
+    pb.items.append(p4)
 
     rospy.wait_for_service('/art/db/program/store')
 

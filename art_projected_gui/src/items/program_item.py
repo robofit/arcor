@@ -239,11 +239,12 @@ class ProgramItem(Item):
 
     def get_prog(self):
 
-        del self.prog.items[:]
+        # TODO deal with more blocks
+        del self.prog.blocks[0].items[:]
 
         for it in self.items:
 
-            self.prog.items.append(it.item)
+            self.prog.blocks[0].items.append(it.item)
 
         return self.prog
 
@@ -258,7 +259,8 @@ class ProgramItem(Item):
         cnt = 0
         max_w = 0
 
-        for pitem in self.prog.items:
+        # TODO Handle program groups - create ProgramGroupItem class and allow switching between groups. For now, let's assume that there will always be just one group
+        for pitem in self.prog.blocks[0].items:
 
             if self.template:
 

@@ -132,11 +132,12 @@ class ArtBrain:
         return instructions.get(self.instruction, self.unknown_instruction)
 
     @staticmethod
-    def get_item_by_id(program, item_id):
+    def get_item_by_id(program, item_id): # TODO item should be specified using both block id and item id?
         print "get_item_by_id: " + str(item_id)
-        for it in program.items:
-            if it.id == item_id:
-                return it
+        for bl in program.blocks:
+            for it in bl.items:
+                if it.id == item_id:
+                    return it
         return None
 
     def get_ready(self, instruction):
@@ -410,7 +411,7 @@ class ArtBrain:
             self.state_manager.set_system_state(InterfaceState.STATE_PROGRAM_RUNNING)
 
             # for it in prog.items:
-            it = self.program.items[0]
+            it = self.program.blocks[0].items[0]
             while self.executing_program:
 
                 self.prog_id = self.program.id

@@ -3,7 +3,7 @@
 import sys
 import rospy
 from art_msgs.srv import getProgram,  startProgram,  startProgramResponse
-from art_msgs.msg import InterfaceState
+from art_msgs.msg import InterfaceState,  ProgramItem
 from art_interface_utils.interface_state_manager import InterfaceStateManager
 prog_timer = None
 program = None
@@ -16,13 +16,16 @@ def timer_callback(event):
     global program
     global state_manager
 
-    state_manager.update_program_item(program.id,  program.items[current_item])
+    flags = {}
+    if program.blocks[0].items[current_item].type == ProgramItem.MANIP_PICK_PLACE:
+        flags["SELECTED_OBJECT_ID"] = "my_object"
 
-    # TODO set_object / place etc.
+    state_manager.update_program_item(program.id,  program.blocks[0].items[current_item],  flags)
 
+    # TODO go through blocks/items according to their ids
     current_item += 1
 
-    if current_item == len(program.items): current_item=0
+    if current_item == len(program.blocks[0].items): current_item=0
 
 def start_program(req):
 
