@@ -3,62 +3,63 @@
 from PyQt4 import QtGui, QtCore
 import rospy
 
+
 # spolecny predek vseho ve scene
 class Item(QtGui.QGraphicsItem):
 
-    def __init__(self,  scene,  rpm,  x,  y,  parent = None):
+    def __init__(self, scene, rpm, x, y, parent=None):
 
-        super(Item, self).__init__(parent=parent,  scene=scene)
+        super(Item, self).__init__(parent=parent, scene=scene)
 
         self.rpm = rpm
-        self.set_pos(x,  y,  parent is not None)
+        self.set_pos(x, y, parent is not None)
         self.hover = False
-        self.hover_sources=[]
+        self.hover_sources = []
         self.fixed = True
         self.cursor_press_at = rospy.Time(0)
         self.default_font = 'Arial'
         self.last_pointed = rospy.Time(0)
 
         self.setVisible(True)
-        #self.setAcceptHoverEvents(True)
+        # self.setAcceptHoverEvents(True)
         self.setEnabled(True)
         self.setActive(True)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
 
-    def get_font_size(self,  f=1.0):
+    def get_font_size(self, f=1.0):
 
-        return 12/1280.0*self.rpm*f
+        return 12 / 1280.0 * self.rpm * f
 
-    def m2pix(self,  m):
+    def m2pix(self, m):
 
-        return m*self.rpm
+        return m * self.rpm
 
-    def pix2m(self,  p):
+    def pix2m(self, p):
 
-        return p/self.rpm
+        return p / self.rpm
 
     # world coordinates to scene coords
-    def set_pos(self,  x,  y,  parent_coords=False):
+    def set_pos(self, x, y, parent_coords=False):
 
         # we usually want to work with scene/world coordinates
         if self.parentItem() and not parent_coords:
 
             ppos = self.parentItem().scenePos()
 
-            self.setPos(self.m2pix(x) - ppos.x(),  self.m2pix(y) - ppos.y())
+            self.setPos(self.m2pix(x) - ppos.x(), self.m2pix(y) - ppos.y())
 
         else:
 
-            self.setPos(self.m2pix(x),  self.m2pix(y))
+            self.setPos(self.m2pix(x), self.m2pix(y))
 
-    def get_pos(self,  pixels = False):
+    def get_pos(self, pixels=False):
 
         pos = self.scenePos()
 
         if not pixels:
-            return (self.pix2m(pos.x()),  self.pix2m(pos.y()))
+            return (self.pix2m(pos.x()), self.pix2m(pos.y()))
         else:
-            return (pos.x(),  pos.y())
+            return (pos.x(), pos.y())
 
     def get_pos_str(self):
 
@@ -66,7 +67,7 @@ class Item(QtGui.QGraphicsItem):
         # TODO fixed width format
         return "[X: " + str(round(x, 3)).ljust(5, '0') + ", Y: " + str(round(y, 3)).ljust(5, '0') + "]"
 
-    def set_enabled(self,  state):
+    def set_enabled(self, state):
 
         self.setEnabled(state)
         self.update()
@@ -75,14 +76,16 @@ class Item(QtGui.QGraphicsItem):
 
         self.update()
 
-    def set_hover(self,  state,  source):
+    def set_hover(self, state, source):
 
         if state:
-            if source not in self.hover_sources: self.hover_sources.append(source)
+            if source not in self.hover_sources:
+                self.hover_sources.append(source)
         else:
-            if source in self.hover_sources: self.hover_sources.remove(source)
+            if source in self.hover_sources:
+                self.hover_sources.remove(source)
 
-        if len(self.hover_sources) ==  0:
+        if len(self.hover_sources) == 0:
             if self.hover:
                 self.hover = False
                 self.hover_changed()
