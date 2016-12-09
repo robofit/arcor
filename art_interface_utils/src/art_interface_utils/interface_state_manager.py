@@ -1,9 +1,10 @@
 import rospy
 from art_msgs.msg import InterfaceState,  KeyValue
 
+
 class InterfaceStateManager():
 
-    def __init__(self,  interface_id,  cb = None):
+    def __init__(self,  interface_id,  cb=None):
 
         self.brain = False
         self.state = InterfaceState()
@@ -14,7 +15,7 @@ class InterfaceStateManager():
 
             rospy.loginfo('InterfaceStateManager: brain mode')
             self.brain = True
-            self.interface_state_pub = rospy.Publisher("/art/interface/state", InterfaceState, queue_size=10,  latch = True)
+            self.interface_state_pub = rospy.Publisher("/art/interface/state", InterfaceState, queue_size=10,  latch=True)
 
         else:
 
@@ -25,7 +26,8 @@ class InterfaceStateManager():
 
     def state_cb(self,  msg):
 
-        if msg.interface_id == self.state.interface_id: return
+        if msg.interface_id == self.state.interface_id:
+            return
 
         flags = {}
 
@@ -34,7 +36,8 @@ class InterfaceStateManager():
             flags[kv.key] = kv.value
 
         # TODO use thread
-        if self.cb is not None: self.cb(self.state,  msg,  flags)
+        if self.cb is not None:
+            self.cb(self.state,  msg,  flags)
 
         # TODO updadovat stav (ne vse  - treba interface_id ne ;))
         # TODO system_state brat v potaz jen od brainu?
@@ -48,7 +51,7 @@ class InterfaceStateManager():
 
         self.state.system_state = st
 
-    def update_program_item(self,  prog_id,  program_item_msg,  flags = {},  auto_send=True):
+    def update_program_item(self,  prog_id,  program_item_msg,  flags={},  auto_send=True):
 
         self.state.timestamp = rospy.Time.now()
         self.state.program_id = prog_id
@@ -59,11 +62,10 @@ class InterfaceStateManager():
 
             self.state.flags.append(KeyValue(k,  v))
 
-        if auto_send: self.send()
+        if auto_send:
+            self.send()
 
     def send(self):
 
         # TODO send only if auto_send was not used
         self.interface_state_pub.publish(self.state)
-
-
