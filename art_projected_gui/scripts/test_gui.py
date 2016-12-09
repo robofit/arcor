@@ -1,13 +1,13 @@
 #! /usr/bin/env python
-import roslib; roslib.load_manifest('art_projected_gui')
 import rospy
 from geometry_msgs.msg import PoseStamped
-from shape_msgs.msg import SolidPrimitive
 from art_msgs.msg import InstancesArray, ObjInstance
-import random
+
 
 def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+
     return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
 
 def main():
 
@@ -72,7 +72,6 @@ def main():
 
     noise = 0.0001
 
-
     rospy.sleep(2.0)
     pub.publish(arr)
     rospy.sleep(1.0)
@@ -95,7 +94,6 @@ def main():
 
         pub_point_right.publish(psr)
 
-
         if ps.pose.position.x < 0.8:
 
             ps.pose.position.x += 0.002
@@ -115,7 +113,7 @@ def main():
 
         if isclose(ps.pose.position.x, 0.6):
 
-           for i in range(0, 300):
+            for i in range(0, 300):
 
                 pub.publish(arr)
                 pub_point_left.publish(ps)

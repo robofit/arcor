@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 from PyQt4 import QtGui, QtCore
-from items import ObjectItem,  PlaceItem,  LabelItem,  ProgramItem,  PolygonItem
+from items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem
 import rospy
+
 
 class customGraphicsView(QtGui.QGraphicsView):
 
@@ -14,7 +15,8 @@ class customGraphicsView(QtGui.QGraphicsView):
 
     def resizeEvent(self, evt=None):
 
-        self.fitInView(self.sceneRect(),  QtCore.Qt.KeepAspectRatio)
+        self.fitInView(self.sceneRect(), QtCore.Qt.KeepAspectRatio)
+
 
 class UICore(QtCore.QObject):
     """Class holds QGraphicsScene and its content (items).
@@ -36,7 +38,7 @@ class UICore(QtCore.QObject):
         view (QGraphicsView): To show content of the scene in debug window.
     """
 
-    def __init__(self,  x,  y,  width,  height,  rpm):
+    def __init__(self, x, y, width, height, rpm):
         """
         Args:
             x (float): x coordinate of the scene's origin (in world coordinate system, meters).
@@ -54,24 +56,24 @@ class UICore(QtCore.QObject):
         self.height = height
         self.rpm = rpm
 
-        w = self.width*self.rpm
-        h = self.height/self.width*w
+        w = self.width * self.rpm
+        h = self.height / self.width * w
 
-        self.scene = QtGui.QGraphicsScene(0, 0,  int(w),  int(h))
+        self.scene = QtGui.QGraphicsScene(0, 0, int(w), int(h))
         self.scene.setBackgroundBrush(QtCore.Qt.black)
-        #self.scene.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex) # should be good for dynamic scenes
+        # self.scene.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex) # should be good for dynamic scenes
 
-        self.bottom_label = LabelItem(self.scene,  self.rpm,  0.1,  self.height - 0.05,  self.width-0.2,  0.1)
-        self.program_vis = ProgramItem(self.scene,  self.rpm,  0.2,  0.2)
+        self.bottom_label = LabelItem(self.scene, self.rpm, 0.1, self.height - 0.05, self.width - 0.2, 0.1)
+        self.program_vis = ProgramItem(self.scene, self.rpm, 0.2, 0.2)
 
         self.scene_items = []
 
         self.view = customGraphicsView(self.scene)
         self.view.setRenderHint(QtGui.QPainter.Antialiasing)
         self.view.setViewportUpdateMode(QtGui.QGraphicsView.SmartViewportUpdate)
-        self.view.setStyleSheet( "QGraphicsView { border-style: none; }" )
+        self.view.setStyleSheet("QGraphicsView { border-style: none; }")
 
-    def notif(self,  msg,  min_duration=3.0,  temp = False):
+    def notif(self, msg, min_duration=3.0, temp=False):
         """Display message (notification) to the user.
 
         Args:
@@ -80,27 +82,29 @@ class UICore(QtCore.QObject):
             temp (:obj:`bool`, optional): temporal message disappears after min_duration and last non-temporal message is displayed instead.
         """
 
-        self.bottom_label.add_msg(msg,  rospy.Duration(min_duration),  temp)
+        self.bottom_label.add_msg(msg, rospy.Duration(min_duration), temp)
 
     def debug_view(self):
         """Show window with scene - for debugging purposes."""
 
         self.view.show()
 
-    def get_scene_items_by_type(self,  type):
+    def get_scene_items_by_type(self, type):
         """Generator to filter content of scene_items array."""
 
         for el in self.scene_items:
-           if isinstance(el,  type): yield el
+            if isinstance(el, type):
+                yield el
 
-    def remove_scene_items_by_type(self,  type):
+    def remove_scene_items_by_type(self, type):
         """Removes items of the given type from scene (from scene_items and scene)."""
 
         its = []
 
         for it in self.scene_items:
 
-            if not isinstance(it, type): continue
+            if not isinstance(it, type):
+                continue
             its.append(it)
 
         for it in its:
@@ -108,7 +112,7 @@ class UICore(QtCore.QObject):
             self.scene.removeItem(it)
             self.scene_items.remove(it)
 
-    def add_object(self,  object_id,  object_type,  x,  y,  sel_cb=None):
+    def add_object(self, object_id, object_type, x, y, sel_cb=None):
         """Adds object to the scene.
 
         Args:
@@ -118,9 +122,9 @@ class UICore(QtCore.QObject):
             sel_cb (method): Callback which gets called one the object is selected.
         """
 
-        self.scene_items.append(ObjectItem(self.scene,  self.rpm, object_id,  object_type,  x,  y,  sel_cb))
+        self.scene_items.append(ObjectItem(self.scene, self.rpm, object_id, object_type, x, y, sel_cb))
 
-    def remove_object(self,  object_id):
+    def remove_object(self, object_id):
         """Removes ObjectItem with given object_id from the scene."""
 
         obj = None
@@ -140,49 +144,54 @@ class UICore(QtCore.QObject):
 
         return False
 
-    def select_object(self,  obj_id,  unselect_others=True):
+    def select_object(self, obj_id, unselect_others=True):
         """Sets ObjectItem with given obj_id as selected. By default, all other items are unselected."""
 
-        if obj_id == "": return
+        if obj_id == "":
+            return
 
         for it in self.get_scene_items_by_type(ObjectItem):
 
             if it.object_id == obj_id:
 
                 it.set_selected(True)
-                if not unselect_others: break
+                if not unselect_others:
+                    break
 
             elif unselect_others:
 
                 it.set_selected(False)
 
-    def select_object_type(self,  obj_type,  unselect_others=True):
+    def select_object_type(self, obj_type, unselect_others=True):
         """Sets all ObjectItems with geiven object_type and selected. By default, all objects of other types are unselected."""
 
-        if obj_type == "": return
+        if obj_type == "":
+            return
 
         for it in self.get_scene_items_by_type(ObjectItem):
 
             if it.object_type == obj_type:
                 it.set_selected(True)
-            elif unselect_others: it.set_selected(False)
+            elif unselect_others:
+                it.set_selected(False)
 
-    def get_object(self,  obj_id):
+    def get_object(self, obj_id):
         """Returns ObjectItem with given object_id or None if the ID is not found."""
 
         for it in self.get_scene_items_by_type(ObjectItem):
 
-            if it.object_id == obj_id: return it
+            if it.object_id == obj_id:
+                return it
 
         return None
 
-    def add_place(self,  caption,  x,  y,  place_cb=None,  fixed=False):
+    def add_place(self, caption, x, y, place_cb=None, fixed=False):
 
-        self.scene_items.append(PlaceItem(self.scene,  self.rpm,  caption,  x,  y,  place_pose_changed=place_cb,  fixed=fixed))
+        self.scene_items.append(PlaceItem(self.scene, self.rpm, caption, x, y, place_pose_changed=place_cb, fixed=fixed))
 
-    def add_polygon(self,  caption,  obj_coords=[],  poly_points=[],  polygon_changed=None,  fixed = False):
+    def add_polygon(self, caption, obj_coords=[], poly_points=[], polygon_changed=None, fixed=False):
 
-        self.scene_items.append(PolygonItem(self.scene,  self.rpm,  caption,  obj_coords,  poly_points, polygon_changed,  fixed))
+        self.scene_items.append(PolygonItem(self.scene, self.rpm, caption, obj_coords, poly_points, polygon_changed, fixed))
 
     def clear_places(self):
 

@@ -5,14 +5,15 @@ from item import Item
 import rospy
 from collections import deque
 
+
 class LabelItem(Item):
 
-    def __init__(self,  scene,  rpm,  x,  y,  w,  h):
+    def __init__(self, scene, rpm, x, y, w, h):
 
         self.w = w
         self.h = h
 
-        super(LabelItem,  self).__init__(scene,  rpm,  x,  y)
+        super(LabelItem, self).__init__(scene, rpm, x, y)
 
         # TODO list of messages - display them intelligently, optional duration of message etc
         self.msgs = deque()
@@ -24,9 +25,9 @@ class LabelItem(Item):
         self.timer = rospy.Timer(rospy.Duration(0.1), self.timer_cb)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
 
-    def add_msg(self,  msg,  min_duration=rospy.Duration(3),  temp=False):
+    def add_msg(self, msg, min_duration=rospy.Duration(3), temp=False):
 
-        self.msgs.append({"msg": msg,  "min_duration": min_duration,  "shown_at": None,  "temp": temp})
+        self.msgs.append({"msg": msg, "min_duration": min_duration, "shown_at": None, "temp": temp})
         self.check_for_msgs()
 
     def boundingRect(self):
@@ -34,21 +35,22 @@ class LabelItem(Item):
         w = self.m2pix(self.w)
         h = self.m2pix(self.h)
 
-        return QtCore.QRectF(0,  0, w, h)
+        return QtCore.QRectF(0, 0, w, h)
 
-    def prune_old_msgs(self,  arr):
+    def prune_old_msgs(self, arr):
 
         msgs_to_delete = []
 
         for msg in arr:
 
-            if msg["temp"] is False: # still messages
+            if msg["temp"] is False:  # still messages
 
-                if len(arr) <= 1: # nothing to do if there is only one message
+                if len(arr) <= 1:  # nothing to do if there is only one message
 
                     break
 
-                if len(msgs_to_delete)==0: msgs_to_delete.append(msg)
+                if len(msgs_to_delete) == 0:
+                    msgs_to_delete.append(msg)
                 else:
 
                     if msg["shown_at"] is not None and rospy.Time.now() - msg["shown_at"] > msg["min_duration"] and msg["shown_at"] < msgs_to_delete[0]["shown_at"]:
@@ -81,28 +83,34 @@ class LabelItem(Item):
 
                 self.temp_msgs.append(tmp)
 
-        if len(self.still_msgs) > 0 or len(self.temp_msgs) > 0: self.update()
+        if len(self.still_msgs) > 0 or len(self.temp_msgs) > 0:
+            self.update()
 
-    def timer_cb(self,  evt):
+    def timer_cb(self, evt):
 
-        if self.prune_old_msgs(self.still_msgs) or self.prune_old_msgs(self.temp_msgs): self.update()
+        if self.prune_old_msgs(self.still_msgs) or self.prune_old_msgs(self.temp_msgs):
+            self.update()
 
     def paint(self, painter, option, widget):
 
         msg = None
 
-        if len(self.temp_msgs) > 0: msg = self.temp_msgs[0]
-        elif len(self.still_msgs) > 0: msg = self.still_msgs[0]
+        if len(self.temp_msgs) > 0:
+            msg = self.temp_msgs[0]
+        elif len(self.still_msgs) > 0:
+            msg = self.still_msgs[0]
 
-        if msg is None: return
+        if msg is None:
+            return
 
-        if msg["shown_at"] is None: msg["shown_at"] = rospy.Time.now()
+        if msg["shown_at"] is None:
+            msg["shown_at"] = rospy.Time.now()
 
         # TODO animate text as it is shown / disappears
-        painter.setClipRect( option.exposedRect )
+        painter.setClipRect(option.exposedRect)
         painter.setBrush(QtCore.Qt.white)
         painter.setPen(QtCore.Qt.white)
 
         # TODO font size
         painter.setFont(QtGui.QFont('Arial', self.get_font_size(1.5)))
-        painter.drawText(0,  0, self.m2pix(self.w),  self.m2pix(self.h), 0,  msg["msg"])
+        painter.drawText(0, 0, self.m2pix(self.w), self.m2pix(self.h), 0, msg["msg"])

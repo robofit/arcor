@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
 from ui_core import UICore
-from PyQt4 import QtCore,  QtGui,  QtNetwork
+from PyQt4 import QtCore, QtGui, QtNetwork
 import rospy
-from art_msgs.msg import InstancesArray,  UserStatus,  InterfaceState,  ProgramItem as ProgIt
+from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt
 from fsm import FSM
 from transitions import MachineError
-from items import ObjectItem, ButtonItem,  PoseStampedCursorItem
-from helpers import ProjectorHelper,  ArtApiHelper
+from items import ObjectItem, ButtonItem, PoseStampedCursorItem
+from helpers import ProjectorHelper, ArtApiHelper
 from art_interface_utils.interface_state_manager import InterfaceStateManager
 
 translate = QtCore.QCoreApplication.translate
+
 
 class UICoreRos(UICore):
     """The class builds on top of UICore and adds ROS-related stuff and application logic.
@@ -28,11 +29,11 @@ class UICoreRos(UICore):
 
     def __init__(self):
 
-        origin = rospy.get_param("~scene_origin",  [0,  0])
-        size = rospy.get_param("~scene_size",  [1.2,  0.75])
-        rpm = rospy.get_param("~rpm",  1280)
+        origin = rospy.get_param("~scene_origin", [0, 0])
+        size = rospy.get_param("~scene_size", [1.2, 0.75])
+        rpm = rospy.get_param("~rpm", 1280)
 
-        super(UICoreRos,  self).__init__(origin[0], origin[1],  size[0],  size[1],  rpm)
+        super(UICoreRos, self).__init__(origin[0], origin[1], size[0], size[1], rpm)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('objects'), self.object_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('user_status'), self.user_status_cb_evt)
@@ -56,17 +57,17 @@ class UICoreRos(UICore):
         self.fsm.cb_running = self.cb_running
         self.fsm.is_template = self.is_template
 
-        self.state_manager = InterfaceStateManager("PROJECTED UI",  cb=self.interface_state_cb)
+        self.state_manager = InterfaceStateManager("PROJECTED UI", cb=self.interface_state_cb)
 
-        cursors = rospy.get_param("~cursors",  [])
+        cursors = rospy.get_param("~cursors", [])
         for cur in cursors:
-            self.scene_items.append(PoseStampedCursorItem(self.scene,  self.rpm,  cur))
+            self.scene_items.append(PoseStampedCursorItem(self.scene, self.rpm, cur))
 
-        self.scene_items.append(ButtonItem(self.scene,  self.rpm,  0,  0,  "STOP",  None,  self.stop_btn_clicked,  2.0,  QtCore.Qt.red))
-        self.scene_items[-1].setPos(self.scene.width()-self.scene_items[-1].w,  self.scene.height() - self.scene_items[-1].h - 60)
+        self.scene_items.append(ButtonItem(self.scene, self.rpm, 0, 0, "STOP", None, self.stop_btn_clicked, 2.0, QtCore.Qt.red))
+        self.scene_items[-1].setPos(self.scene.width() - self.scene_items[-1].w, self.scene.height() - self.scene_items[-1].h - 60)
         self.scene_items[-1].set_enabled(True)
 
-        self.port = rospy.get_param("~scene_server_port",  1234)
+        self.port = rospy.get_param("~scene_server_port", 1234)
 
         self.tcpServer = QtNetwork.QTcpServer(self)
         if not self.tcpServer.listen(port=self.port):
@@ -81,7 +82,7 @@ class UICoreRos(UICore):
 
         self.projectors = []
 
-        projs = rospy.get_param("~projectors",  [])
+        projs = rospy.get_param("~projectors", [])
         for proj in projs:
             self.add_projector(proj)
 
@@ -92,11 +93,11 @@ class UICoreRos(UICore):
         rospy.loginfo('Some projector node just connected.')
         self.connections.append(self.tcpServer.nextPendingConnection())
         self.connections[-1].setSocketOption(QtNetwork.QAbstractSocket.LowDelayOption, 1)
-        self.emit(QtCore.SIGNAL('send_scene'),  self.connections[-1])
+        self.emit(QtCore.SIGNAL('send_scene'), self.connections[-1])
         # TODO deal with disconnected clients!
-        #self.connections[-1].disconnected.connect(clientConnection.deleteLater)
+        # self.connections[-1].disconnected.connect(clientConnection.deleteLater)
 
-    def send_to_clients_evt(self,  client=None):
+    def send_to_clients_evt(self, client=None):
 
         # if all connections are sending scene image, there is no need to render the new one
         if client is None:
@@ -110,7 +111,7 @@ class UICoreRos(UICore):
                 return
 
         # TODO try to use Format_RGB16 - BMP is anyway converted to 32bits (send raw data instead)
-        pix = QtGui.QImage(self.scene.width(), self.scene.height(),  QtGui.QImage.Format_ARGB32_Premultiplied)
+        pix = QtGui.QImage(self.scene.width(), self.scene.height(), QtGui.QImage.Format_ARGB32_Premultiplied)
         painter = QtGui.QPainter(pix)
         self.scene.render(painter)
         painter.end()
@@ -124,12 +125,12 @@ class UICoreRos(UICore):
         buffer = QtCore.QBuffer(img)
         buffer.open(QtCore.QIODevice.WriteOnly)
         pix.save(buffer, "BMP")
-        out << QtCore.qCompress(img,  1) # this seem to be much faster than using PNG compression
+        out << QtCore.qCompress(img, 1)  # this seem to be much faster than using PNG compression
 
         out.device().seek(0)
         out.writeUInt32(block.size() - 4)
 
-        #print block.size()
+        # print block.size()
 
         if client is None:
 
@@ -157,28 +158,28 @@ class UICoreRos(UICore):
 
         # TODO move this to ArtApiHelper ??
         self.obj_sub = rospy.Subscriber('/art/object_detector/object_filtered', InstancesArray, self.object_cb, queue_size=1)
-        self.user_status_sub = rospy.Subscriber('/art/user/status',  UserStatus,  self.user_status_cb,  queue_size=1)
+        self.user_status_sub = rospy.Subscriber('/art/user/status', UserStatus, self.user_status_cb, queue_size=1)
 
         self.fsm.tr_start()
 
-    def add_projector(self,  proj_id):
+    def add_projector(self, proj_id):
 
         self.projectors.append(ProjectorHelper(proj_id))
 
-    def scene_changed(self,  rects):
+    def scene_changed(self, rects):
 
-        if len(rects) == 0: return
-
+        if len(rects) == 0:
+            return
         # TODO Publish only changes? How to accumulate them (to be able to send it only at certain fps)?
 
         now = rospy.Time.now()
         if self.last_scene_update is None:
             self.last_scene_update = now
         else:
-            if now - self.last_scene_update < rospy.Duration(1.0/20):
+            if now - self.last_scene_update < rospy.Duration(1.0 / 20):
                 return
 
-        #print 1.0/(now - self.last_scene_update).to_sec()
+        # print 1.0/(now - self.last_scene_update).to_sec()
         self.last_scene_update = now
 
         self.emit(QtCore.SIGNAL('send_scene'))
@@ -186,9 +187,9 @@ class UICoreRos(UICore):
     def stop_btn_clicked(self):
 
         # TODO
-        self.notif(translate("UICoreRos", "Emergency stop pressed"),  temp=True)
+        self.notif(translate("UICoreRos", "Emergency stop pressed"), temp=True)
 
-    def interface_state_evt(self, our_state,  state,  flags):
+    def interface_state_evt(self, our_state, state, flags):
 
         if state.system_state == InterfaceState.STATE_LEARNING:
 
@@ -199,11 +200,11 @@ class UICoreRos(UICore):
 
             if self.program_vis.prog is None or self.program_vis.prog.id != state.program_id:
 
-                            program = self.art.load_program(state.program_id)
-                            if program is not None:
-                                self.program_vis.set_prog(program,  False)
-                            else:
-                                pass # TODO error
+                program = self.art.load_program(state.program_id)
+                if program is not None:
+                    self.program_vis.set_prog(program, False)
+                else:
+                    pass  # TODO error
 
             if self.fsm.state != 'running':
 
@@ -248,17 +249,17 @@ class UICoreRos(UICore):
 
                     # TODO how to highlight selected object (by brain) ?
                     self.select_object_type(it.object)
-                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"),  poly_points=self.program_vis.active_item.get_pick_polygon_points()) # TODO fixed
+                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=self.program_vis.active_item.get_pick_polygon_points())  # TODO fixed
 
                 self.notif(translate("UICoreRos", "Going to manipulate with object ID=") + obj_id)
-                self.add_place(translate("UICoreRos", "PLACE POSE"),  it.place_pose.pose.position.x,  it.place_pose.pose.position.y,  fixed=True)
+                self.add_place(translate("UICoreRos", "PLACE POSE"), it.place_pose.pose.position.x, it.place_pose.pose.position.y, fixed=True)
 
-    def interface_state_cb(self,  our_state,  state,  flags):
+    def interface_state_cb(self, our_state, state, flags):
 
-        self.emit(QtCore.SIGNAL('interface_state'),  our_state,  state,  flags)
+        self.emit(QtCore.SIGNAL('interface_state'), our_state, state, flags)
 
     # callback from ProgramItem (button press)
-    def program_state_changed(self,  state):
+    def program_state_changed(self, state):
 
         if state == 'RUNNING':
 
@@ -267,11 +268,11 @@ class UICoreRos(UICore):
 
             if not self.art.store_program(prog):
                 # TODO what to do?
-                self.notif(translate("UICoreRos", "Failed to store program"),  temp=True)
+                self.notif(translate("UICoreRos", "Failed to store program"), temp=True)
 
             else:
 
-                self.notif(translate("UICoreRos", "Program stored. Starting..."),  temp=True)
+                self.notif(translate("UICoreRos", "Program stored. Starting..."), temp=True)
 
             # clear all and wait for state update from brain
             self.clear_all()
@@ -280,17 +281,17 @@ class UICoreRos(UICore):
             self.art.start_program(prog.id)
 
         # TODO pause / stop -> fsm
-        #elif state == ''
+        # elif state == ''
 
-    # callback from ProgramItem
+        # callback from ProgramItem
     def active_item_switched(self):
 
         rospy.logdebug("Program ID:" + str(self.program_vis.prog.id) + ", active item ID: " + str(self.program_vis.active_item.item.id))
 
         self.clear_all()
-        self.state_manager.update_program_item(self.program_vis.prog.id,  self.program_vis.active_item.item)
+        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.active_item.item)
 
-        if self.program_vis.active_item.item.type in [ProgIt.MANIP_PICK,  ProgIt.MANIP_PLACE,  ProgIt.MANIP_PICK_PLACE]:
+        if self.program_vis.active_item.item.type in [ProgIt.MANIP_PICK, ProgIt.MANIP_PLACE, ProgIt.MANIP_PICK_PLACE]:
 
             if self.program_vis.active_item.item_learned():
 
@@ -303,50 +304,50 @@ class UICoreRos(UICore):
 
             # TODO loop across program item ids - not indices!!
             idx = self.program_vis.items.index(self.program_vis.active_item)
-            if idx  > 0:
-                for i in range(idx-1, -1, -1):
+            if idx > 0:
+                for i in range(idx - 1, -1, -1):
 
                     it = self.program_vis.items[i]
 
-                    if it.item.type in  [ProgIt.MANIP_PLACE,  ProgIt.MANIP_PICK_PLACE] and it.is_place_pose_set():
+                    if it.item.type in [ProgIt.MANIP_PLACE, ProgIt.MANIP_PICK_PLACE] and it.is_place_pose_set():
 
                         # TODO add "artif." object instead of place??
-                        self.add_place(translate("UICoreRos", "OBJECT FROM STEP") + " " + str(it.item.id),  it.item.place_pose.pose.position.x,  it.item.place_pose.pose.position.y,  fixed=True)
+                        self.add_place(translate("UICoreRos", "OBJECT FROM STEP") + " " + str(it.item.id), it.item.place_pose.pose.position.x, it.item.place_pose.pose.position.y, fixed=True)
                         break
 
             if self.program_vis.active_item.item.spec == ProgIt.MANIP_TYPE:
 
                 if not self.program_vis.active_item.is_object_set():
 
-                    self.notif(translate("UICoreRos", "Select object type to be picked up"),  temp=True)
+                    self.notif(translate("UICoreRos", "Select object type to be picked up"), temp=True)
 
                 self.select_object_type(self.program_vis.active_item.item.object)
 
                 # if program item already contains polygon - let's display it
                 if self.program_vis.active_item.is_pick_polygon_set():
 
-                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"),  poly_points=self.program_vis.active_item.get_pick_polygon_points(),  polygon_changed=self.polygon_changed,  fixed=True)
+                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=self.program_vis.active_item.get_pick_polygon_points(), polygon_changed=self.polygon_changed, fixed=True)
 
             else:
 
-                self.notif(translate("UICoreRos", "Select object to be picked up"),  temp=True)
+                self.notif(translate("UICoreRos", "Select object to be picked up"), temp=True)
                 self.select_object(self.program_vis.active_item.item.object)
 
             if self.program_vis.active_item.is_object_set():
 
                 # TODO kdy misto place pose pouzi place polygon? umoznit zmenit pose na polygon a opacne?
 
-                if  self.program_vis.active_item.is_place_pose_set():
-                    (x,  y) = self.program_vis.active_item.get_place_pose()
-                    self.add_place(translate("UICoreRos", "PLACE POSE"),  x,  y,  self.place_pose_changed)
+                if self.program_vis.active_item.is_place_pose_set():
+                    (x, y) = self.program_vis.active_item.get_place_pose()
+                    self.add_place(translate("UICoreRos", "PLACE POSE"), x, y, self.place_pose_changed)
                 else:
                     self.notif(translate("UICoreRos", "Set where to place picked object"))
-                    self.add_place(translate("UICoreRos", "PLACE POSE"),  self.width/2,  self.height/2,  self.place_pose_changed)
+                    self.add_place(translate("UICoreRos", "PLACE POSE"), self.width / 2, self.height / 2, self.place_pose_changed)
 
-    def place_pose_changed(self,  pos):
+    def place_pose_changed(self, pos):
 
-        self.program_vis.set_place_pose(pos[0],  pos[1])
-        self.state_manager.update_program_item(self.program_vis.prog.id,  self.program_vis.active_item.item)
+        self.program_vis.set_place_pose(pos[0], pos[1])
+        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.active_item.item)
 
     def is_template(self):
 
@@ -361,7 +362,7 @@ class UICoreRos(UICore):
         # TODO zobrazit instrukce k tasku
         pass
 
-    def calib_done_cb(self,  proj):
+    def calib_done_cb(self, proj):
 
         if proj.is_calibrated():
 
@@ -414,17 +415,17 @@ class UICoreRos(UICore):
 
         if program is not None:
 
-            self.program_vis.set_prog(program,  self.is_template())
+            self.program_vis.set_prog(program, self.is_template())
             self.active_item_switched()
             self.fsm.tr_program_selected()
         else:
-           self.notif(translate("UICoreRos", "Loading of requested program failed"),  temp=True)
+            self.notif(translate("UICoreRos", "Loading of requested program failed"), temp=True)
 
-    def object_cb(self,  msg):
+    def object_cb(self, msg):
 
-        self.emit(QtCore.SIGNAL('objects'),  msg)
+        self.emit(QtCore.SIGNAL('objects'), msg)
 
-    def object_cb_evt(self,  msg):
+    def object_cb_evt(self, msg):
 
         for obj_id in msg.lost_objects:
 
@@ -435,23 +436,24 @@ class UICoreRos(UICore):
 
             obj = self.get_object(inst.object_id)
 
-            if obj: obj.set_pos(inst.pose.position.x,  inst.pose.position.y)
+            if obj:
+                obj.set_pos(inst.pose.position.x, inst.pose.position.y)
             else:
 
                 # TODO get and display bounding box
                 # obj_type = self.art.get_object_type(inst.object_type)
-                self.add_object(inst.object_id,  inst.object_type,  inst.pose.position.x,  inst.pose.position.y,  self.object_selected)
-                self.notif(translate("UICoreRos", "New object") + " ID=" + str(inst.object_id),  temp=True)
+                self.add_object(inst.object_id, inst.object_type, inst.pose.position.x, inst.pose.position.y, self.object_selected)
+                self.notif(translate("UICoreRos", "New object") + " ID=" + str(inst.object_id), temp=True)
 
-    def polygon_changed(self,  pts):
+    def polygon_changed(self, pts):
 
         self.program_vis.set_polygon(pts)
-        self.state_manager.update_program_item(self.program_vis.prog.id,  self.program_vis.active_item.item)
+        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.active_item.item)
 
-    def object_selected(self,  id,  selected):
+    def object_selected(self, id, selected):
 
-        if self.fsm.state != 'learning': return False
-
+        if self.fsm.state != 'learning':
+            return False
         # TODO handle un-selected
 
         print "selected object: " + str(id)
@@ -463,7 +465,8 @@ class UICoreRos(UICore):
         if self.program_vis.active_item.item.spec == ProgIt.MANIP_TYPE:
 
             # this type of object is already set
-            if obj.object_type == self.program_vis.active_item.item.object: return
+            if obj.object_type == self.program_vis.active_item.item.object:
+                return
             else:
                 # TODO remove previously inserted polygon, do not insert new place
                 pass
@@ -476,26 +479,25 @@ class UICoreRos(UICore):
             for obj in self.get_scene_items_by_type(ObjectItem):
                 poly_points.append(obj.get_pos())
 
-            self.add_polygon(translate("UICoreRos", "PICK POLYGON"),  poly_points,  polygon_changed=self.polygon_changed)
-            self.notif(translate("UICoreRos", "Check and adjust pick polygon"),  temp=True)
+            self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points, polygon_changed=self.polygon_changed)
+            self.notif(translate("UICoreRos", "Check and adjust pick polygon"), temp=True)
 
-            self.notif(translate("UICoreRos", "Set where to place picked object"),  temp=True)
-            self.add_place(translate("UICoreRos", "PLACE POSE"),  self.width/2,  self.height/2,  self.place_pose_changed)
+            self.notif(translate("UICoreRos", "Set where to place picked object"), temp=True)
+            self.add_place(translate("UICoreRos", "PLACE POSE"), self.width / 2, self.height / 2, self.place_pose_changed)
 
         elif self.program_vis.active_item.item.spec == ProgIt.MANIP_ID:
 
             # TODO
             pass
 
-        self.state_manager.update_program_item(self.program_vis.prog.id,  self.program_vis.active_item.item)
+        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.active_item.item)
         return True
 
+    def user_status_cb(self, msg):
 
-    def user_status_cb(self,  msg):
+        self.emit(QtCore.SIGNAL('user_status'), msg)
 
-        self.emit(QtCore.SIGNAL('user_status'),  msg)
-
-    def user_status_cb_evt(self,  msg):
+    def user_status_cb_evt(self, msg):
 
         self.user_status = msg
 

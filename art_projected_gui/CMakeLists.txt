@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(art_projected_gui)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roslint
   art_msgs
@@ -16,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_python_setup()
 
+set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
 roslint_python()
 roslint_add_test()
 

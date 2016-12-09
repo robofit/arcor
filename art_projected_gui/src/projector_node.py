@@ -12,6 +12,7 @@ def sigint_handler(*args):
     sys.stderr.write('\r')
     QtGui.QApplication.quit()
 
+
 def main(args):
 
     rospy.init_node('projected_gui_projector', anonymous=True)

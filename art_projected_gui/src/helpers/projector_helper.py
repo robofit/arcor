@@ -4,9 +4,10 @@ import rospy
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty
 
+
 class ProjectorHelper():
 
-    def __init__(self,  proj_id):
+    def __init__(self, proj_id):
 
         self.proj_id = proj_id
         self.calibrated = False
@@ -15,14 +16,14 @@ class ProjectorHelper():
 
         proj_ns = "/art/interface/projected_gui/projector/" + proj_id + "/"
 
-        self.calib_sub = rospy.Subscriber(proj_ns + "calibrated",  Bool,  self.calib_cb,  queue_size=10)
+        self.calib_sub = rospy.Subscriber(proj_ns + "calibrated", Bool, self.calib_cb, queue_size=10)
         self.srv_calibrate = rospy.ServiceProxy(proj_ns + "calibrate", Empty)
 
     def wait_until_available(self):
 
         self.srv_calibrate.wait_for_service()
 
-    def calibrate(self,  calibrated_cb = None):
+    def calibrate(self, calibrated_cb=None):
 
         if self.calibrating:
             return False
@@ -43,7 +44,7 @@ class ProjectorHelper():
 
         return self.calibrated
 
-    def calib_cb(self,  msg):
+    def calib_cb(self, msg):
 
         self.calibrated = msg.data
         self.calibrating = False

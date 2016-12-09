@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import rospy
-from art_msgs.srv import getProgram,  storeProgram,  startProgram,  getObjectType
+from art_msgs.srv import getProgram, storeProgram, startProgram, getObjectType
+
 
 class ArtApiHelper():
 
@@ -22,7 +23,7 @@ class ArtApiHelper():
         self.start_program_srv.wait_for_service()
         self.get_obj_type_srv.wait_for_service()
 
-    def load_program(self,  prog_id):
+    def load_program(self, prog_id):
 
         rospy.loginfo('Loading program: ' + str(prog_id))
 
@@ -30,36 +31,36 @@ class ArtApiHelper():
             resp = self.get_prog_srv(prog_id)
             return resp.program
         except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
+            print "Service call failed: %s" % e
 
         return None
 
-    def store_program(self,  prog):
-
-            try:
-                self.store_prog_srv(prog)
-            except rospy.ServiceException, e:
-                print "Service call failed: %s"%e
-                return False
-
-            return True
-
-    def start_program(self,  prog_id):
+    def store_program(self, prog):
 
         try:
-            self.start_program_srv(prog_id)
+            self.store_prog_srv(prog)
         except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
+            print "Service call failed: %s" % e
             return False
 
         return True
 
-    def get_object_type(self,  name):
+    def start_program(self, prog_id):
+
+        try:
+            self.start_program_srv(prog_id)
+        except rospy.ServiceException, e:
+            print "Service call failed: %s" % e
+            return False
+
+        return True
+
+    def get_object_type(self, name):
 
         try:
             resp = self.get_obj_type_srv(name)
             return resp.object_type
         except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
+            print "Service call failed: %s" % e
 
         return None
