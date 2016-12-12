@@ -149,7 +149,7 @@ public:
         return false;
       }
     }
-    catch (tf::TransformException ex)
+    catch (tf::TransformException& ex)
     {
       ROS_ERROR("%s", ex.what());
       return false;
@@ -174,7 +174,7 @@ public:
     // remove outdated objects
     std::map<std::string, tobj>::iterator it;
     std::vector<std::string> ids_to_remove;
-    for (it = objects_.begin(); it != objects_.end(); it++)
+    for (it = objects_.begin(); it != objects_.end(); ++it)
     {
       bool found = false;
 
