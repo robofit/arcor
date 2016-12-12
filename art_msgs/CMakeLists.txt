@@ -38,6 +38,7 @@ add_service_files(
     getObjectType.srv
     storeObjectType.srv
     startProgram.srv
+    TouchCalibrationPoints.srv
 )
 
 generate_messages(
