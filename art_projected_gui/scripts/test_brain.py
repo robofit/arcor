@@ -4,7 +4,7 @@ import sys
 import rospy
 from art_msgs.srv import getProgram,  startProgram,  startProgramResponse
 from art_msgs.msg import InterfaceState,  ProgramItem
-from art_interface_utils.interface_state_manager import InterfaceStateManager
+from art_utils.interface_state_manager import InterfaceStateManager
 prog_timer = None
 program = None
 current_item = 0  # idx of item
