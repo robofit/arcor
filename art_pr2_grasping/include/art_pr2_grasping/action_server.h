@@ -61,7 +61,7 @@ private:
   ros::NodeHandle private_nh_;
   ros::NodeHandle nh_;
   artPr2Grasping gr_;
-  boost::shared_ptr<actionlib::SimpleActionServer<art_msgs::pickplaceAction>> as_;
+  boost::shared_ptr<actionlib::SimpleActionServer<art_msgs::pickplaceAction> > as_;
   int max_attempts_;
   boost::shared_ptr<tf::TransformListener> tfl_;
 
