@@ -268,7 +268,7 @@ public:
     return it != objects_.end();
   }
 
-  //! Points the high-def camera frame at a point in a given frame
+  // Points the high-def camera frame at a point in a given frame
   void lookAt(geometry_msgs::Point pt)
   {
     if (!enable_looking_)
