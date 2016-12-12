@@ -1,0 +1,4 @@
+# points to be displayed by an interface
+geometry_msgs/PoseStamped[] points
+---
+bool success
