@@ -118,7 +118,8 @@ class UICoreRos(UICore):
 
     def touch_detected_evt(self,  msg):
 
-        if  self.touch_points is None: return
+        if self.touch_points is None:
+            return
 
         if not self.touch_points.next():
 
