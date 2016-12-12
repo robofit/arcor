@@ -7,8 +7,9 @@ from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem
 from fsm import FSM
 from transitions import MachineError
 from items import ObjectItem, ButtonItem, PoseStampedCursorItem
-from helpers import ProjectorHelper, ArtApiHelper
-from art_interface_utils.interface_state_manager import InterfaceStateManager
+from helpers import ProjectorHelper
+from art_utils.interface_state_manager import InterfaceStateManager
+from art_utils.art_api_helper import ArtApiHelper
 
 translate = QtCore.QCoreApplication.translate
 

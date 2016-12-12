@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(art_interface_utils)
+project(art_utils)
 
 find_package(catkin REQUIRED COMPONENTS
   art_msgs

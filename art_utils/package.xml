@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>art_interface_utils</name>
+  <name>art_utils</name>
   <version>0.0.0</version>
   <description>The art_interface_utils package</description>
 
