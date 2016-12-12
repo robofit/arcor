@@ -1,3 +1,5 @@
+// Copyright 2016 Robo@FIT
+
 #include "art_pr2_grasping/action_server.h"
 
 int main(int argc, char **argv)
@@ -6,7 +8,7 @@ int main(int argc, char **argv)
 
   ros::AsyncSpinner spinner(1);
   spinner.start();
-  
+
   ROS_INFO("Starting...");
 
   art_pr2_grasping::artActionServer as;
@@ -16,7 +18,7 @@ int main(int argc, char **argv)
     ROS_ERROR("Init failed.");
     return 1;
   }
-  
+
   ROS_INFO("Started - waiting for goals.");
 
   ros::waitForShutdown();

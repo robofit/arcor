@@ -50,5 +50,6 @@ add_executable(pr2grasp src/pr2grasp.cpp)
 #target_link_libraries(pr2grasp ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(pr2grasp ${catkin_LIBRARIES})
 
+set(ROSLINT_CPP_OPTS "--filter=-runtime/references,-runtime/int")
 roslint_cpp()
-
+roslint_add_test()
