@@ -24,7 +24,7 @@ class tracker:
     self.ao = 0.1 # filtering coeficient - orientation
     
     self.min_cnt = 5 # publish object after it has been seen x times at least
-    self.max_age = rospy.Duration(5)
+    self.max_age = rospy.Duration(3*60)
   
   def timer_cb(self, event):
   
@@ -141,6 +141,8 @@ class tracker:
       if ps is None:
       
         return
+    
+      ps.pose.position.z *= -1
     
       if inst.object_id in self.objects:
       
