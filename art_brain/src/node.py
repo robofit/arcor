@@ -14,7 +14,7 @@ from art_msgs.msg import pickplaceAction, pickplaceGoal, SystemState, ObjInstanc
 import matplotlib.path as mplPath
 import numpy as np
 import random
-from art_utils.interface_state_manager import InterfaceStateManager,  ArtApiHelper,  ProgramHelper
+from art_utils import InterfaceStateManager,  ArtApiHelper,  ProgramHelper
 
 
 class ArtBrain:
