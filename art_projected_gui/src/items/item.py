@@ -26,15 +26,6 @@ class Item(QtGui.QGraphicsItem):
         self.setActive(True)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
 
-    def enable(self):
-        self.setVisible(True)
-        self.setEnabled(True)
-
-    def disable(self):
-
-        self.setVisible(False)
-        self.setEnabled(False)
-
     def get_font_size(self, f=1.0):
 
         return 12 / 1280.0 * self.rpm * f
@@ -76,10 +67,11 @@ class Item(QtGui.QGraphicsItem):
         # TODO fixed width format
         return "[X: " + str(round(x, 3)).ljust(5, '0') + ", Y: " + str(round(y, 3)).ljust(5, '0') + "]"
 
-    def set_enabled(self, state):
+    def set_enabled(self, state,  also_set_visibility=False):
 
         self.setEnabled(state)
-        self.update()
+        if also_set_visibility:
+            self.setVisible(state)
 
     def hover_changed(self):
 

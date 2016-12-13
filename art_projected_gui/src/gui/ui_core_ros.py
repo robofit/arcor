@@ -8,8 +8,7 @@ from fsm import FSM
 from transitions import MachineError
 from items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem
 from helpers import ProjectorHelper
-from art_utils.interface_state_manager import InterfaceStateManager
-from art_utils.art_api_helper import ArtApiHelper
+from art_utils import InterfaceStateManager,  ArtApiHelper
 from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse
 from std_msgs.msg import Empty
 
@@ -102,10 +101,9 @@ class UICoreRos(UICore):
         for it in self.scene_items:
 
             if isinstance(it, LabelItem):
-                print "label"
                 continue
 
-            it.disable()
+            it.set_enabled(False, True)
 
         self.notif(translate("UICoreRos", "Touch table calibration started. Please press the white point."), temp=False)
         self.touch_points = TouchPointsItem(self.scene, self.rpm,  pts)
@@ -144,7 +142,7 @@ class UICoreRos(UICore):
                 if isinstance(it, LabelItem):
                     continue
 
-                it.enable()
+                it.set_enabled(True, True)
 
             self.notif(translate("UICoreRos", "Touch table calibration finished."), temp=False)
             self.scene.removeItem(self.touch_points)
