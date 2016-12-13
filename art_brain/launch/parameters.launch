@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+  <group ns="/art/params">
+  
+    <param name="world_frame" value="marker"/>
+    
+    <group ns ="table">
+    
+      <rosparam param="size">[1.5, 0.74, 0.8]</rosparam> <!-- width, depth, height -->
+      <rosparam param="offset">[0.2, 0.2]</rosparam> <!-- offset from world_frame to tabletop corner-->
+    
+    </group>
+  
+  </group>
+</launch>

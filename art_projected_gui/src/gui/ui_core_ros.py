@@ -6,10 +6,9 @@ import rospy
 from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt
 from fsm import FSM
 from transitions import MachineError
-from items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem
+from items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem
 from helpers import ProjectorHelper
-from art_utils.interface_state_manager import InterfaceStateManager
-from art_utils.art_api_helper import ArtApiHelper
+from art_utils import InterfaceStateManager,  ArtApiHelper
 from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse
 from std_msgs.msg import Empty
 
@@ -17,6 +16,7 @@ translate = QtCore.QCoreApplication.translate
 
 
 class UICoreRos(UICore):
+
     """The class builds on top of UICore and adds ROS-related stuff and application logic.
 
     Attributes:
@@ -28,6 +28,7 @@ class UICoreRos(UICore):
         scene_img_deq (Queue.Queue): thread-safe queue for scene images (which are published in separate thread)
         projectors (list): array of ProjectorHelper instances
         art (ArtApiHelper): easy access to ARTable services
+
     """
 
     def __init__(self):
@@ -96,11 +97,25 @@ class UICoreRos(UICore):
 
     def touch_calibration_points_evt(self,  pts):
 
-        # TODO trigger state change or what? Hide all other elements, disable cursors (?) etc.
+        # TODO trigger state change?
+        for it in self.scene_items:
+
+            if isinstance(it, LabelItem):
+                continue
+
+            it.set_enabled(False, True)
+
         self.notif(translate("UICoreRos", "Touch table calibration started. Please press the white point."), temp=False)
         self.touch_points = TouchPointsItem(self.scene, self.rpm,  pts)
 
     def touch_calibration_points_cb(self,  req):
+
+        resp = TouchCalibrationPointsResponse()
+
+        if self.fsm.state not in ['program_selection', 'learning', 'running']:
+            resp.success = False
+            rospy.logerr('Cannot start touchtable calibration without a user!')
+            return resp
 
         pts = []
 
@@ -109,10 +124,7 @@ class UICoreRos(UICore):
             pts.append((pt.point.x,  pt.point.y))
 
         self.emit(QtCore.SIGNAL('touch_calibration_points_evt'), pts)
-
         self.touched_sub = rospy.Subscriber('/art/interface/touchtable/touch_detected',  Empty,  self.touch_detected_cb,  queue_size=10)
-
-        resp = TouchCalibrationPointsResponse()
         resp.success = True
         return resp
 
@@ -123,6 +135,15 @@ class UICoreRos(UICore):
 
         if not self.touch_points.next():
 
+            self.notif(translate("UICoreRos", "Touch saved."), temp=True)
+
+            for it in self.scene_items:
+
+                if isinstance(it, LabelItem):
+                    continue
+
+                it.set_enabled(True, True)
+
             self.notif(translate("UICoreRos", "Touch table calibration finished."), temp=False)
             self.scene.removeItem(self.touch_points)
             self.touch_points = None
@@ -130,7 +151,8 @@ class UICoreRos(UICore):
 
         else:
 
-            self.notif(translate("UICoreRos", "Touch saved. Please press the next point."), temp=True)
+            self.notif(translate("UICoreRos", "Touch saved."), temp=True)
+            self.notif(translate("UICoreRos", "Please press the next point."), temp=False)
 
     def touch_detected_cb(self,  msg):
 

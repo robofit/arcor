@@ -67,10 +67,11 @@ class Item(QtGui.QGraphicsItem):
         # TODO fixed width format
         return "[X: " + str(round(x, 3)).ljust(5, '0') + ", Y: " + str(round(y, 3)).ljust(5, '0') + "]"
 
-    def set_enabled(self, state):
+    def set_enabled(self, state,  also_set_visibility=False):
 
         self.setEnabled(state)
-        self.update()
+        if also_set_visibility:
+            self.setVisible(state)
 
     def hover_changed(self):
 
