@@ -14,7 +14,7 @@ from art_msgs.msg import pickplaceAction, pickplaceGoal, SystemState, ObjInstanc
 import matplotlib.path as mplPath
 import numpy as np
 import random
-from art_utils.interface_state_manager import InterfaceStateManager
+from art_utils.interface_state_manager import InterfaceStateManager,  ArtApiHelper,  ProgramHelper
 
 
 class ArtBrain:
@@ -55,6 +55,8 @@ class ArtBrain:
         # self.srv_program_resume = rospy.Service(/art/brain/program/resume', Empty, self.program_resume_cb)
 
         self.state_manager = InterfaceStateManager(InterfaceState.BRAIN_ID)  # TODO callback?
+        self.art = ArtApiHelper(brain=True)
+        self.ph = ProgramHelper()
 
         self.user_activity = None
 
@@ -78,10 +80,7 @@ class ArtBrain:
         self.recalibrate = False
 
         self.quit = False
-
-        self.program = None
-        self.prog_id = None
-        self.it_id = None
+        self.art.wait_for_api()
 
     def program_start_cb(self,  req):
 
@@ -95,18 +94,12 @@ class ArtBrain:
 
         rospy.loginfo('Loading program ' + str(req.program_id) + ' from db...')
 
-        prog_srv = rospy.ServiceProxy('/art/db/program/get', getProgram)
+        program = self.art.load_program(req.program_id)
 
-        try:
-            presp = prog_srv(req.program_id)
-        except rospy.ServiceException, e:
-            rospy.logerr('Cannot get program :(')
+        if not self.ph.load(program):
             resp.success = False
             resp.error = 'Cannot get program'
             return resp
-
-        self.prog_id = req.program_id
-        self.program = presp.program
 
         rospy.loginfo('Starting program')
         self.executing_program = True
@@ -131,18 +124,9 @@ class ArtBrain:
         }
         return instructions.get(self.instruction, self.unknown_instruction)
 
-    @staticmethod
-    def get_item_by_id(program, item_id):  # TODO item should be specified using both block id and item id?
-        print "get_item_by_id: " + str(item_id)
-        for bl in program.blocks:
-            for it in bl.items:
-                if it.id == item_id:
-                    return it
-        return None
-
     def get_ready(self, instruction):
         # TODO: call some service to set PR2 to ready position
-        self.state_manager.update_program_item(self.program.id,  instruction)
+        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction)
         return self.INST_OK
 
     def get_pick_obj_id(self, instruction):
@@ -214,7 +198,7 @@ class ArtBrain:
         :return:
         """
         obj_id = self.get_pick_obj_id(instruction)
-        self.state_manager.update_program_item(self.program.id,  instruction,  {"SELECTED_OBJECT_ID": obj_id})
+        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction,  {"SELECTED_OBJECT_ID": obj_id})
 
         if obj_id is None:
             return self.INST_BAD_DATA
@@ -232,7 +216,7 @@ class ArtBrain:
         """
 
         pose = self.get_place_pose(instruction)
-        self.state_manager.update_program_item(self.program.id,  instruction)  # TODO place pose
+        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction)  # TODO place pose
 
         if pose is None:
             return self.INST_BAD_DATA
@@ -250,7 +234,7 @@ class ArtBrain:
         obj_id = self.get_pick_obj_id(instruction)
         pose = self.get_place_pose(instruction)
 
-        self.state_manager.update_program_item(self.program.id,  instruction,  {"SELECTED_OBJECT_ID": obj_id})
+        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction,  {"SELECTED_OBJECT_ID": obj_id})
         # TODO also update p.i. with selected place pose when not given (place polygon)
 
         if obj_id is None or pose is None:
@@ -272,7 +256,7 @@ class ArtBrain:
         print "waiting"
 
         # return self.INST_OK
-        self.state_manager.update_program_item(self.program.id,  instruction)
+        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction)
 
         rate = rospy.Rate(10)
 
@@ -410,23 +394,30 @@ class ArtBrain:
 
             self.state_manager.set_system_state(InterfaceState.STATE_PROGRAM_RUNNING)
 
-            # for it in prog.items:
-            it = self.program.blocks[0].items[0]
+            (block_id, item_id) = self.ph.get_first_item_id()
+            it = self.ph.get_item_msg(block_id,  item_id)
+
             while self.executing_program:
 
-                self.prog_id = self.program.id
-                self.it_id = it.id
-
-                rospy.loginfo('Program id: ' + str(self.program.id) + ', item id: ' + str(it.id) + ', item type: ' + str(it.type))
+                rospy.loginfo('Program id: ' + str(self.ph.prog.id) + ', item id: ' + str(it.id) + ', item type: ' + str(it.type))
 
                 self.instruction = it.type
                 instruction_function = self.instruction_switcher()
                 result = instruction_function(it)
                 if result == self.INST_OK:
-                    it = self.get_item_by_id(self.program, it.on_success)
+                    (block_id, item_id) = self.ph.get_id_on_success()
+                    it = self.ph.get_item_msg(block_id,  item_id)
                 elif result == self.INST_BAD_DATA or result == self.INST_FAILED:
-                    it = self.get_item_by_id(self.program, it.on_failure)
+                    (block_id, item_id) = self.ph.get_id_on_failure()
                     print "bad_data/failed"
+
+                    if block_id == 0:
+
+                        rospy.logerr("End of program")
+                        return
+
+                    it = self.ph.get_item_msg(block_id,  item_id)
+
                 else:
                     it = None
                     print "strange return value"
@@ -520,13 +511,9 @@ class ArtBrain:
 if __name__ == '__main__':
     rospy.init_node('art_brain')
 
-    rospy.loginfo('Waiting for other nodes to come up...')
-    rospy.wait_for_service('/art/db/program/get')
-    rospy.wait_for_service('/art/db/program/store')
-    rospy.loginfo('Ready!')
-
     try:
         node = ArtBrain()
+        rospy.loginfo('Ready!')
         rate = rospy.Rate(30)
         while not rospy.is_shutdown() or node.quit:
             node.process()

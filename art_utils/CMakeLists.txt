@@ -10,6 +10,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_python_setup()
 
+catkin_add_nosetests(test/program_helper.py)
+
 set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
 roslint_python()
 roslint_add_test()

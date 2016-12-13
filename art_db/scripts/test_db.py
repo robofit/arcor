@@ -18,29 +18,31 @@ def main(args):
     p.name = "Basic pick&place"
 
     pb = ProgramBlock()
-    pb.id = 0
+    pb.id = 1  # can't be zero
     pb.name = "First block"
+    pb.on_success = 1
+    pb.on_failure = 0
     p.blocks.append(pb)
 
     p0 = ProgramItem()
-    p0.id = 0
-    p0.on_success = 1
-    p0.on_failure = 100
+    p0.id = 1
+    p0.on_success = 2
+    p0.on_failure = 0
     p0.type = ProgramItem.GET_READY
     pb.items.append(p0)
 
     p1 = ProgramItem()
-    p1.id = 1
-    p1.on_success = 2
-    p1.on_failure = 100
+    p1.id = 2
+    p1.on_success = 3
+    p1.on_failure = 0
     p1.type = ProgramItem.WAIT
     p1.spec = ProgramItem.WAIT_FOR_USER
     pb.items.append(p1)
 
     p2 = ProgramItem()
-    p2.id = 2
-    p2.on_success = 3
-    p2.on_failure = 100
+    p2.id = 3
+    p2.on_success = 4
+    p2.on_failure = 0
     p2.type = ProgramItem.MANIP_PICK_PLACE
     p2.spec = ProgramItem.MANIP_TYPE
     p2.object = "profile"
@@ -51,17 +53,17 @@ def main(args):
     pb.items.append(p2)
 
     p3 = ProgramItem()
-    p3.id = 3
-    p3.on_success = 4
-    p3.on_failure = 100
+    p3.id = 4
+    p3.on_success = 5
+    p3.on_failure = 0
     p3.type = ProgramItem.WAIT
     p3.spec = ProgramItem.WAIT_UNTIL_USER_FINISHES
     pb.items.append(p3)
 
     p4 = ProgramItem()
-    p4.id = 4
+    p4.id = 5
     p4.on_success = 0
-    p4.on_failure = 100
+    p4.on_failure = 0
     p4.type = ProgramItem.MANIP_PICK_PLACE
     p4.spec = ProgramItem.MANIP_TYPE
     p4.object = "profile"

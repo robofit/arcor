@@ -6,22 +6,26 @@ from art_msgs.srv import getProgram, storeProgram, startProgram, getObjectType
 
 class ArtApiHelper():
 
-    def __init__(self):
+    def __init__(self,  brain=False):
 
-        # DB
+        # DB API
         self.get_prog_srv = rospy.ServiceProxy('/art/db/program/get', getProgram)
         self.store_prog_srv = rospy.ServiceProxy('/art/db/program/store', storeProgram)
         self.get_obj_type_srv = rospy.ServiceProxy('/art/db/object_type/get', getObjectType)
 
-        # Brain
-        self.start_program_srv = rospy.ServiceProxy('/art/brain/program/start', startProgram)
+        # Brain API
+        self.brain = brain
+        if not self.brain:
+            self.start_program_srv = rospy.ServiceProxy('/art/brain/program/start', startProgram)
 
     def wait_for_api(self):
 
         self.get_prog_srv.wait_for_service()
         self.store_prog_srv.wait_for_service()
-        self.start_program_srv.wait_for_service()
         self.get_obj_type_srv.wait_for_service()
+
+        if not self.brain:
+            self.start_program_srv.wait_for_service()
 
     def load_program(self, prog_id):
 
