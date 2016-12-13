@@ -17,6 +17,7 @@ translate = QtCore.QCoreApplication.translate
 
 
 class UICoreRos(UICore):
+
     """The class builds on top of UICore and adds ROS-related stuff and application logic.
 
     Attributes:
@@ -28,6 +29,7 @@ class UICoreRos(UICore):
         scene_img_deq (Queue.Queue): thread-safe queue for scene images (which are published in separate thread)
         projectors (list): array of ProjectorHelper instances
         art (ArtApiHelper): easy access to ARTable services
+
     """
 
     def __init__(self):
@@ -124,10 +126,7 @@ class UICoreRos(UICore):
             pts.append((pt.point.x,  pt.point.y))
 
         self.emit(QtCore.SIGNAL('touch_calibration_points_evt'), pts)
-
         self.touched_sub = rospy.Subscriber('/art/interface/touchtable/touch_detected',  Empty,  self.touch_detected_cb,  queue_size=10)
-
-
         resp.success = True
         return resp
 
