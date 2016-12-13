@@ -24,8 +24,8 @@ class tracker:
     self.ao = 0.1 # filtering coeficient - orientation
     
     self.min_cnt = 5 # publish object after it has been seen x times at least
-    self.max_age = rospy.Duration(3*60)
-  
+    self.max_age = rospy.Duration(5)
+
   def timer_cb(self, event):
   
     ia = InstancesArray()
@@ -50,7 +50,6 @@ class tracker:
       obj = ObjInstance()
       obj.pose = v["pose"].pose
       obj.pose.orientation = self.normalize(obj.pose.orientation)
-      obj.bbox = v["bbox"]
       obj.object_id = k
       obj.object_type = v["object_type"]
       ia.instances.append(obj)
@@ -129,40 +128,36 @@ class tracker:
     p.orientation.y = (1.0 - self.ao)*old.orientation.y + self.ao*new.orientation.y
     p.orientation.z = (1.0 - self.ao)*old.orientation.z + self.ao*new.orientation.z
     p.orientation.w = (1.0 - self.ao)*old.orientation.w + self.ao*new.orientation.w
-    
+
     return p
-    
+
   def cb(self, msg):
-  
+
     for inst in msg.instances:
-    
+
       ps = self.transform(msg.header, inst.pose)
-        
+
       if ps is None:
-      
+
         return
-    
-      ps.pose.position.z *= -1
-    
+
       if inst.object_id in self.objects:
-      
+
         rospy.logdebug("Updating object: " + inst.object_id)
-        
-        self.objects[inst.object_id]["bbox"] = inst.bbox # should be same...
-        self.objects[inst.object_id]["object_type"] = inst.object_type 
+
+        self.objects[inst.object_id]["object_type"] = inst.object_type
         self.objects[inst.object_id]["cnt"] += 1
         self.objects[inst.object_id]["pose"].header = ps.header
         self.objects[inst.object_id]["pose"].pose = self.filterPose(self.objects[inst.object_id]["pose"].pose, ps.pose)
-        
+
       else:
-      
+
         rospy.loginfo("Adding new object: " + inst.object_id)
-        
+
         obj = {}
         obj["pose"] = ps
-        obj["bbox"] = inst.bbox
         obj["cnt"] = 1
-        
+
         self.objects[inst.object_id] = obj
 
 if __name__ == '__main__':
