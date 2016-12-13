@@ -3,7 +3,9 @@
 import unittest
 from art_utils import ProgramHelper
 from art_msgs.msg import Program,  ProgramBlock,  ProgramItem
+import os.path, sys
 
+sys.path = [os.path.abspath(os.path.dirname(__file__))] + sys.path
 
 class TestProgramHelper(unittest.TestCase):
 
@@ -175,7 +177,6 @@ class TestProgramHelper(unittest.TestCase):
         prog_id = self.ph.get_program_id()
         self.assertEquals(prog_id, 666, "get_program_id - id")
 
-
 if __name__ == '__main__':
     import rosunit
-    rosunit.unitrun("art_utils", 'test_program_helper', TestProgramHelper)
+    rosunit.unitrun("art_utils", 'program_helper', TestProgramHelper)
