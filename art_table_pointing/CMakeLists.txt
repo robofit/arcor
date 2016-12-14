@@ -43,3 +43,8 @@ add_dependencies(art_table_pointing_kinect art_msgs_generate_messages_cpp)
 target_link_libraries(art_table_pointing_kinect
   ${catkin_LIBRARIES}
 )
+
+if (CATKIN_ENABLE_TESTING)
+  find_package(catkin REQUIRED COMPONENTS roslaunch)
+  roslaunch_add_file_check(launch)
+endif()

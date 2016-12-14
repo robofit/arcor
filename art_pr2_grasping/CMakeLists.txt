@@ -53,3 +53,8 @@ target_link_libraries(pr2grasp ${catkin_LIBRARIES})
 set(ROSLINT_CPP_OPTS "--filter=-runtime/references,-runtime/int")
 roslint_cpp()
 roslint_add_test()
+
+if (CATKIN_ENABLE_TESTING)
+  find_package(catkin REQUIRED COMPONENTS roslaunch)
+  roslaunch_add_file_check(launch)
+endif()

@@ -40,5 +40,7 @@
   <run_depend>actionlib_msgs</run_depend>
   <run_depend>shape_msgs</run_depend>
   <run_depend>art_msgs</run_depend>
+  
+  <test_depend>roslaunch</test_depend>
 
 </package>
