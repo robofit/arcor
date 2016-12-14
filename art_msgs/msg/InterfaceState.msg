@@ -18,7 +18,8 @@ int16 system_state
 time timestamp # when this state was updated (usefull especially during learning - newer timestamp indicates that some interface changed program_current_item)
 
 # valid for STATE_LEARNING, STATE_PROGRAM_*
-int16 program_id
+uint16 program_id
+uint16 block_id
 
 # item currently being learned
 ProgramItem program_current_item
