@@ -14,7 +14,7 @@ from art_msgs.msg import pickplaceAction, pickplaceGoal, SystemState, ObjInstanc
 import matplotlib.path as mplPath
 import numpy as np
 import random
-from art_utils.interface_state_manager import InterfaceStateManager
+from art_utils import InterfaceStateManager,  ArtApiHelper,  ProgramHelper
 
 
 class ArtBrain:
@@ -22,7 +22,7 @@ class ArtBrain:
     NOP = -1  # no operation
     GET_READY = 0  # retract arms etc.
     MANIP_PICK = 1
-    MANIP_PLACE = 2 # TODO proc nepouzit ProgramItem.MANIP_PLACE?
+    MANIP_PLACE = 2  # TODO proc nepouzit ProgramItem.MANIP_PLACE?
     MANIP_PICK_PLACE = 3
     WAIT = 4
 
@@ -30,13 +30,12 @@ class ArtBrain:
     INST_BAD_DATA = 101
     INST_FAILED = 102
 
-    SYSTEM_UNKNOWN = 0 # TODO proc nepouzit SystemState.SYSTEM_UNKNOWN?
+    SYSTEM_UNKNOWN = 0  # TODO proc nepouzit SystemState.SYSTEM_UNKNOWN?
     SYSTEM_START = 1
     SYSTEM_CALIBRATING = 2
     SYSTEM_STARTING_PROGRAM_SERVER = 3
     SYSTEM_READY_FOR_PROGRAM_REQUESTS = 4
     SYSTEM_STOPPING_PROGRAM_SERVER = 5
-
 
     def __init__(self):
         self.show_marker_service = rospy.get_param('show_marker_service', '/art/interface/projected_gui/show_marker')
@@ -52,10 +51,12 @@ class ArtBrain:
 
         self.srv_program_start = rospy.Service('/art/brain/program/start', startProgram, self.program_start_cb)
         self.srv_program_stop = rospy.Service('/art/brain/program/stop', Empty, self.program_stop_cb)
-        #self.srv_program_pause = rospy.Service(/art/brain/program/pause', Empty, self.program_pause_cb)
-        #self.srv_program_resume = rospy.Service(/art/brain/program/resume', Empty, self.program_resume_cb)
+        # self.srv_program_pause = rospy.Service(/art/brain/program/pause', Empty, self.program_pause_cb)
+        # self.srv_program_resume = rospy.Service(/art/brain/program/resume', Empty, self.program_resume_cb)
 
-        self.state_manager = InterfaceStateManager(InterfaceState.BRAIN_ID) # TODO callback?
+        self.state_manager = InterfaceStateManager(InterfaceState.BRAIN_ID)  # TODO callback?
+        self.art = ArtApiHelper(brain=True)
+        self.ph = ProgramHelper()
 
         self.user_activity = None
 
@@ -65,10 +66,9 @@ class ArtBrain:
         # TODO move (pub/sub) to InterfaceStateManager?
         self.state_publisher = rospy.Publisher("/art/brain/system_state", SystemState, queue_size=1)
 
-        self.left_arm_pp_client = actionlib.SimpleActionClient('/art/pr2/left_arm/pp', pickplaceAction)
-        self.right_arm_pp_client = actionlib.SimpleActionClient('/art/pr2/right_arm/pp', pickplaceAction)
+        self.pp_client = actionlib.SimpleActionClient('/art/pr2/left_arm/pp', pickplaceAction)
 
-        self.state = self.SYSTEM_READY_FOR_PROGRAM_REQUESTS
+        self.state = self.SYSTEM_START
         self.user_id = 0
 
         self.objects = InstancesArray()
@@ -80,15 +80,7 @@ class ArtBrain:
         self.recalibrate = False
 
         self.quit = False
-
-        self.program = None
-        self.prog_id = None
-        self.it_id = None
-        
-        self.left_arm_holding_id = -1
-        self.right_arm_holding_id = -1
-        
-        self.listener = tf.TransformListener()
+        self.art.wait_for_api()
 
     def program_start_cb(self,  req):
 
@@ -102,21 +94,14 @@ class ArtBrain:
 
         rospy.loginfo('Loading program ' + str(req.program_id) + ' from db...')
 
-        prog_srv = rospy.ServiceProxy('/art/db/program/get', getProgram)
+        program = self.art.load_program(req.program_id)
 
-        try:
-            presp = prog_srv(req.program_id)
-        except rospy.ServiceException, e:
-            rospy.logerr('Cannot get program :(')
+        if not self.ph.load(program):
             resp.success = False
             resp.error = 'Cannot get program'
             return resp
 
-        self.prog_id = req.program_id
-        self.program = presp.program
-
         rospy.loginfo('Starting program')
-        print self.state
         self.executing_program = True
         resp.success = True
         return resp
@@ -150,7 +135,7 @@ class ArtBrain:
 
     def get_ready(self, instruction):
         # TODO: call some service to set PR2 to ready position
-        self.state_manager.update_program_item(self.program.id,  instruction)
+        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction)
         return self.INST_OK
 
     def get_pick_obj_id(self, instruction):
@@ -161,13 +146,13 @@ class ArtBrain:
             pick_polygon = []
             pol = None
 
-            for point in instruction.pick_polygon.polygon.points: # TODO check frame_id and transform to table frame?
+            for point in instruction.pick_polygon.polygon.points:  # TODO check frame_id and transform to table frame?
                 pick_polygon.append([point.x,  point.y])
             if len(pick_polygon) > 0:
                 pol = mplPath.Path(np.array(pick_polygon), closed=True)
 
             # shuffle the array to not get the same object each time
-            #random.shuffle(self.objects.instances)
+            # random.shuffle(self.objects.instances)
 
             print self.objects.instances
 
@@ -203,20 +188,16 @@ class ArtBrain:
         return obj_id
 
     def get_place_pose(self, instruction):
-        #if self.holding_object is None:
+        # if self.holding_object is None:
         #    return None
-        
-        
         if instruction.spec == instruction.MANIP_ID:
             pose = instruction.place_pose
         elif instruction.spec == instruction.MANIP_TYPE:
-            #pose = None
+            # pose = None
             pose = instruction.place_pose
             # TODO: how to get free position inside polygon? some perception node?
         else:
             return None
-        pose.pose.orientation.w = 1
-        print instruction.place_pose
         return pose
 
     def manip_pick(self, instruction):
@@ -226,13 +207,10 @@ class ArtBrain:
         :return:
         """
         obj_id = self.get_pick_obj_id(instruction)
-        self.state_manager.update_program_item(self.program.id,  instruction,  {"SELECTED_OBJECT_ID": obj_id})
+        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction,  {"SELECTED_OBJECT_ID": obj_id})
 
         if obj_id is None:
             return self.INST_BAD_DATA
-        else:
-            self.state_manager.update_program_item(self.program.id,  instruction,  {"SELECTED_OBJECT_ID": obj_id})
-            
         if self.pick_object(obj_id):
             self.holding_object = obj_id
             return self.INST_OK
@@ -247,7 +225,7 @@ class ArtBrain:
         """
 
         pose = self.get_place_pose(instruction)
-        self.state_manager.update_program_item(self.program.id,  instruction) # TODO place pose
+        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction)  # TODO place pose
 
         if pose is None:
             return self.INST_BAD_DATA
@@ -265,19 +243,17 @@ class ArtBrain:
         obj_id = self.get_pick_obj_id(instruction)
         pose = self.get_place_pose(instruction)
 
-        self.state_manager.update_program_item(self.program.id,  instruction,  {"SELECTED_OBJECT_ID": obj_id})
+        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction,  {"SELECTED_OBJECT_ID": obj_id})
         # TODO also update p.i. with selected place pose when not given (place polygon)
 
         if obj_id is None or pose is None:
             print 'could not get obj_id or pose'
             return self.INST_BAD_DATA
-        '''if self.pick_object(obj_id): # TODO call pick&place and not pick and then place
+        if self.pick_object(obj_id):  # TODO call pick&place and not pick and then place
             self.holding_object = obj_id
             if self.place_object(obj_id, pose):
                 self.holding_object = None
-                return self.INST_OK'''
-        if self.pick_and_place_object(obj_id,  pose):
-            return self.INST_OK
+                return self.INST_OK
         return self.INST_FAILED
 
     def wait(self, instruction):
@@ -288,8 +264,8 @@ class ArtBrain:
         """
         print "waiting"
 
-        #return self.INST_OK
-        self.state_manager.update_program_item(self.program.id,  instruction)
+        # return self.INST_OK
+        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction)
 
         rate = rospy.Rate(10)
 
@@ -413,37 +389,44 @@ class ArtBrain:
 
     def state_starting_program_server(self):
         rospy.loginfo('Starting program server')
-        #self.prog_as = actionlib.SimpleActionServer("/art/brain/do_program", RobotProgramAction,
+        # self.prog_as = actionlib.SimpleActionServer("/art/brain/do_program", RobotProgramAction,
         #                                            execute_cb=self.execute_cb, auto_start=False)
-        #self.prog_as.start()
+        # self.prog_as.start()
         self.state = self.SYSTEM_READY_FOR_PROGRAM_REQUESTS
 
     def state_ready_for_program_requests(self):
         if self.stop_server:
             self.state = self.SYSTEM_STOPPING_PROGRAM_SERVER
-            self.stop_server = False # TODO refuse requests to startProgram service when 'server' is not enabled?
+            self.stop_server = False  # TODO refuse requests to startProgram service when 'server' is not enabled?
 
-        if self.executing_program: # flag set in service request
+        if self.executing_program:  # flag set in service request
 
             self.state_manager.set_system_state(InterfaceState.STATE_PROGRAM_RUNNING)
 
-            # for it in prog.items:
-            it = self.program.blocks[0].items[0]
+            (block_id, item_id) = self.ph.get_first_item_id()
+            it = self.ph.get_item_msg(block_id,  item_id)
+
             while self.executing_program:
 
-                self.prog_id = self.program.id
-                self.it_id = it.id
-
-                rospy.loginfo('Program id: ' + str(self.program.id) + ', item id: ' + str(it.id) + ', item type: ' + str(it.type))
+                rospy.loginfo('Program id: ' + str(self.ph.prog.id) + ', item id: ' + str(it.id) + ', item type: ' + str(it.type))
 
                 self.instruction = it.type
                 instruction_function = self.instruction_switcher()
                 result = instruction_function(it)
                 if result == self.INST_OK:
-                    it = self.get_item_by_id(self.program, it.on_success)
+                    (block_id, item_id) = self.ph.get_id_on_success()
+                    it = self.ph.get_item_msg(block_id,  item_id)
                 elif result == self.INST_BAD_DATA or result == self.INST_FAILED:
-                    it = self.get_item_by_id(self.program, it.on_failure)
+                    (block_id, item_id) = self.ph.get_id_on_failure()
                     print "bad_data/failed"
+
+                    if block_id == 0:
+
+                        rospy.logerr("End of program")
+                        return
+
+                    it = self.ph.get_item_msg(block_id,  item_id)
+
                 else:
                     it = None
                     print "strange return value"
@@ -457,13 +440,13 @@ class ArtBrain:
             if not self.executing_program:
 
                 pass
-                #self.state_manager.publish(InterfaceState.EVT_STATE_PROGRAM_STOPPED)
+                # self.state_manager.publish(InterfaceState.EVT_STATE_PROGRAM_STOPPED)
 
         # TODO feedback
         self.executing_program = False
 
     def state_stopping_program_server(self):
-        #self.prog_as = None
+        # self.prog_as = None
         if self.recalibrate:
             self.state = self.SYSTEM_CALIBRATING
             self.recalibrate = False
@@ -482,29 +465,20 @@ class ArtBrain:
         :type object_id: str
         :return:
         """
-        '''pose = self.get_obj_pose_by_id(object_id)
-        pp_client,  hand = self.get_pp_client_by_pose(pose)'''
-        
-        pp_client = self.left_arm_pp_client
-        
         goal = pickplaceGoal()
         goal.id = object_id
         goal.operation = goal.PICK
         goal.keep_orientation = False
         rospy.loginfo("Picking object with ID: " + str(object_id))
-        pp_client.send_goal(goal)
-        pp_client.wait_for_result()
+        self.pp_client.send_goal(goal)
+        self.pp_client.wait_for_result()
         # TODO: make some error msg etc
         rospy.loginfo('got result')
-        print pp_client.get_result()
-        print "status: " + pp_client.get_goal_status_text()
-        print "state: " + str(pp_client.get_state())
+        print self.pp_client.get_result()
+        print "status: " + self.pp_client.get_goal_status_text()
+        print "state: " + str(self.pp_client.get_state())
 
-        if pp_client.get_result().result == 0:
-            ''' if hand == "left":
-                self.left_arm_holding_id = object_id
-            elif hand == "right":
-                self.right_arm_holding_id = object_id'''
+        if self.pp_client.get_result().result == 0:
             return True
         else:
             return False
@@ -516,15 +490,6 @@ class ArtBrain:
         :type place: Pose
         :return:
         """
-        
-        '''if obj == self.left_arm_holding_id:
-            pp_client = self.left_arm_pp_client
-        elif obj == self.right_arm_holding_id:
-            pp_client = self.right_arm_pp_client
-        else:
-            return False'''
-        pp_client = self.left_arm_pp_client
-        
         goal = pickplaceGoal()
         goal.operation = goal.PLACE
         goal.id = obj
@@ -533,49 +498,14 @@ class ArtBrain:
         goal.place_pose = place
         goal.place_pose.header.stamp = rospy.Time.now()
         # TODO: how to deal with this?
-        goal.place_pose.pose.position.z = 0.06# + obj.bbox.dimensions[2]/2
+        goal.place_pose.pose.position.z = 0.06  # + obj.bbox.dimensions[2]/2
         self.pp_client.send_goal(goal)
         self.pp_client.wait_for_result()
         if self.pp_client.get_result().result == 0:
-            '''if obj == self.left_arm_holding_id:
-                left_arm_holding_id = -1
-            elif obj == self.right_arm_holding_id:
-                right_arm_holding_id = -1'''
             return True
         else:
             return False
-            
-    def pick_and_place_object(self,  object_id,  place):
-        pp_client = self.left_arm_pp_client
-    
-        goal = pickplaceGoal()
-        goal.id = object_id
-        goal.operation = goal.PICK_AND_PLACE
-        goal.keep_orientation = True
-        goal.place_pose = PoseStamped()
 
-        goal.place_pose = place
-        goal.place_pose.header.stamp = rospy.Time.now()
-    # TODO: how to deal with this?
-        goal.place_pose.pose.position.z = -0.06# + obj.bbox.dimensions[2]/2
-        rospy.loginfo("Picking and placing object with ID: " + str(object_id))
-        
-        pp_client.send_goal(goal)
-        pp_client.wait_for_result()
-        # TODO: make some error msg etc
-        rospy.loginfo('got result')
-        print pp_client.get_result()
-        print "status: " + pp_client.get_goal_status_text()
-        print "state: " + str(pp_client.get_state())
-
-        if pp_client.get_result().result == 0:
-            ''' if hand == "left":
-                self.left_arm_holding_id = object_id
-            elif hand == "right":
-                self.right_arm_holding_id = object_id'''
-            return True
-        else:
-            return False
     def publish_state(self):
         data = SystemState()
         data.state = self.state
@@ -585,30 +515,6 @@ class ArtBrain:
         state_function = self.state_switcher()
         state_function()
         self.publish_state()
-        
-    def get_pp_client_by_pose(self,  pose):
-        """
-
-        :type point: PoseStamped
-        :return: actionlib.SimpleActionClient
-        """
-        try:
-            pose = self.listener.transformPose('/kinect2_link',  pose)
-
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            return None
-        if pose.pose.position.x > 0:
-            return self.right_arm_pp_client,  "right"
-        else:
-            return self.left_arm_pp_client,  "left"
-        
-    def get_obj_pose_by_id(self,  obj_id):
-        for obj in self.objects.instances:
-            if obj.object_id == obj_id:
-                pose = PoseStamped
-                pose.pose = obj.pose
-                pose.header = self.objects.header
-                return pose
 
 
 if __name__ == '__main__':
@@ -621,6 +527,7 @@ if __name__ == '__main__':
 
     try:
         node = ArtBrain()
+        rospy.loginfo('Ready!')
         rate = rospy.Rate(30)
         while not rospy.is_shutdown() or node.quit:
             node.process()

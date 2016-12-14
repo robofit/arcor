@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 
-"""
-Visualization of point(s) to be touched during touchtable calibration.
-
-"""
+""" Visualization of point(s) to be touched during touchtable calibration. """
 
 from PyQt4 import QtGui, QtCore
 from item import Item

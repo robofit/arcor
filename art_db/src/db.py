@@ -4,6 +4,7 @@ from art_msgs.msg import Program,  ObjectType
 from art_msgs.srv import getProgram,  getProgramResponse,  storeProgram,  storeProgramResponse,  getObjectType,  getObjectTypeResponse,  storeObjectType,  storeObjectTypeResponse
 import sys
 import rospy
+from art_utils import ProgramHelper
 
 from mongodb_store.message_store import MessageStoreProxy
 
@@ -37,6 +38,14 @@ class ArtDB:
     def srv_store_program_cb(self,  req):
 
         resp = storeProgramResponse()
+
+        ph = ProgramHelper()
+        if not ph.load(req.program):
+
+            resp.success = False
+            resp.error = "Invalid program"
+            return resp
+
         name = "program:" + str(req.program.id)
 
         try:

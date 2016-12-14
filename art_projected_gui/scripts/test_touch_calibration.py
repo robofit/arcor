@@ -55,7 +55,7 @@ class TestTouchCalibration():
         if resp.success:
 
             self.touch_cnt = 0
-            self.tmr = rospy.Timer(rospy.Duration(3), self.tmr_cb)
+            self.tmr = rospy.Timer(rospy.Duration(5), self.tmr_cb)
             self.calibrating_pub.publish(True)
             rospy.loginfo('Starting calibration')
 

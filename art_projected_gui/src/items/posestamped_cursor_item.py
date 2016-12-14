@@ -95,6 +95,9 @@ class PoseStampedCursorItem(Item):
 
     def cb(self, msg):
 
+        if not self.isEnabled():
+            return
+
         x = self.m2pix(msg.pose.position.x + self.offset[0])
         y = self.m2pix(msg.pose.position.y + self.offset[1])
 
