@@ -135,7 +135,7 @@ class ArtBrain:
 
     def get_ready(self, instruction):
         # TODO: call some service to set PR2 to ready position
-        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction)
+        self.state_manager.update_program_item(self.ph.get_program_id(),  self.block_id,  instruction)
         return self.INST_OK
 
     def get_pick_obj_id(self, instruction):
@@ -207,7 +207,7 @@ class ArtBrain:
         :return:
         """
         obj_id = self.get_pick_obj_id(instruction)
-        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction,  {"SELECTED_OBJECT_ID": obj_id})
+        self.state_manager.update_program_item(self.ph.get_program_id(),  self.block_id,  instruction,  {"SELECTED_OBJECT_ID": obj_id})
 
         if obj_id is None:
             return self.INST_BAD_DATA
@@ -225,7 +225,7 @@ class ArtBrain:
         """
 
         pose = self.get_place_pose(instruction)
-        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction)  # TODO place pose
+        self.state_manager.update_program_item(self.ph.get_program_id(),  self.block_id,  instruction)  # TODO place pose
 
         if pose is None:
             return self.INST_BAD_DATA
@@ -243,7 +243,7 @@ class ArtBrain:
         obj_id = self.get_pick_obj_id(instruction)
         pose = self.get_place_pose(instruction)
 
-        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction,  {"SELECTED_OBJECT_ID": obj_id})
+        self.state_manager.update_program_item(self.ph.get_program_id(),  self.block_id,  instruction,  {"SELECTED_OBJECT_ID": obj_id})
         # TODO also update p.i. with selected place pose when not given (place polygon)
 
         if obj_id is None or pose is None:
@@ -265,7 +265,7 @@ class ArtBrain:
         print "waiting"
 
         # return self.INST_OK
-        self.state_manager.update_program_item(self.ph.get_program_id(),  instruction)
+        self.state_manager.update_program_item(self.ph.get_program_id(), self.block_id,  instruction)
 
         rate = rospy.Rate(10)
 
@@ -403,8 +403,8 @@ class ArtBrain:
 
             self.state_manager.set_system_state(InterfaceState.STATE_PROGRAM_RUNNING)
 
-            (block_id, item_id) = self.ph.get_first_item_id()
-            it = self.ph.get_item_msg(block_id,  item_id)
+            (self.block_id, item_id) = self.ph.get_first_item_id()
+            it = self.ph.get_item_msg(self.block_id,  item_id)
 
             while self.executing_program:
 
@@ -414,18 +414,18 @@ class ArtBrain:
                 instruction_function = self.instruction_switcher()
                 result = instruction_function(it)
                 if result == self.INST_OK:
-                    (block_id, item_id) = self.ph.get_id_on_success()
-                    it = self.ph.get_item_msg(block_id,  item_id)
+                    (self.block_id, item_id) = self.ph.get_id_on_success()
+                    it = self.ph.get_item_msg(self.block_id,  item_id)
                 elif result == self.INST_BAD_DATA or result == self.INST_FAILED:
-                    (block_id, item_id) = self.ph.get_id_on_failure()
+                    (self.block_id, item_id) = self.ph.get_id_on_failure()
                     print "bad_data/failed"
 
-                    if block_id == 0:
+                    if self.block_id == 0:
 
                         rospy.logerr("End of program")
                         return
 
-                    it = self.ph.get_item_msg(block_id,  item_id)
+                    it = self.ph.get_item_msg(self.block_id,  item_id)
 
                 else:
                     it = None
