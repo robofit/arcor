@@ -10,7 +10,12 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   std_srvs
+  roslint
 )
+
+set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
+roslint_python()
+roslint_add_test()
 
 catkin_package(
 #  INCLUDE_DIRS include
