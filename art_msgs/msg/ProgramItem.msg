@@ -1,6 +1,6 @@
 uint16 id # id of the item (operation)
 uint16 on_success # id of next item
-uint16 on_failure
+uint16 on_failure # 0 means jump to block end
 
 uint8 type
 uint8 spec
