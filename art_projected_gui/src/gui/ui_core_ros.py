@@ -362,7 +362,8 @@ class UICoreRos(UICore):
         rospy.logdebug("Program ID:" + str(self.program_vis.prog.id) + ", active item ID: " + str(self.program_vis.active_item.item.id))
 
         self.clear_all()
-        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.active_item.item)
+        # TODO block_id
+        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.prog.blocks[0].id,  self.program_vis.active_item.item)
 
         if self.program_vis.active_item.item.type in [ProgIt.MANIP_PICK, ProgIt.MANIP_PLACE, ProgIt.MANIP_PICK_PLACE]:
 
@@ -420,7 +421,8 @@ class UICoreRos(UICore):
     def place_pose_changed(self, pos):
 
         self.program_vis.set_place_pose(pos[0], pos[1])
-        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.active_item.item)
+        # TODO block_id
+        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.prog.blocks[0].id,  self.program_vis.active_item.item)
 
     def is_template(self):
 
@@ -521,7 +523,8 @@ class UICoreRos(UICore):
     def polygon_changed(self, pts):
 
         self.program_vis.set_polygon(pts)
-        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.active_item.item)
+        # TODO block_id
+        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.prog.blocks[0].id, self.program_vis.active_item.item)
 
     def object_selected(self, id, selected):
 
@@ -563,7 +566,8 @@ class UICoreRos(UICore):
             # TODO
             pass
 
-        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.active_item.item)
+        # TODO block_id
+        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.prog.blocks[0].id, self.program_vis.active_item.item)
         return True
 
     def user_status_cb(self, msg):
