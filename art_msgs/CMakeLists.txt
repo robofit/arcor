@@ -27,6 +27,7 @@ add_message_files(
   ProgramArray.msg
   InterfaceState.msg
   InterfaceStateItem.msg
+  Touch.msg
 )
 
 add_service_files(
