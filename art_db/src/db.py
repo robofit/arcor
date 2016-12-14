@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 from art_msgs.msg import Program,  ObjectType
-from art_msgs.srv import getProgram,  getProgramResponse,  storeProgram,  storeProgramResponse,  getObjectType,  getObjectTypeResponse,  storeObjectType,  storeObjectTypeResponse
+from art_msgs.srv import getProgram,  getProgramResponse,  storeProgram,  storeProgramResponse,  getObjectType,  \
+    getObjectTypeResponse,  storeObjectType,  storeObjectTypeResponse
 import sys
 import rospy
 from art_utils import ProgramHelper

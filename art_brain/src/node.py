@@ -124,6 +124,15 @@ class ArtBrain:
         }
         return instructions.get(self.instruction, self.unknown_instruction)
 
+    @staticmethod
+    def get_item_by_id(program, item_id):  # TODO item should be specified using both block id and item id?
+        print "get_item_by_id: " + str(item_id)
+        for bl in program.blocks:
+            for it in bl.items:
+                if it.id == item_id:
+                    return it
+        return None
+
     def get_ready(self, instruction):
         # TODO: call some service to set PR2 to ready position
         self.state_manager.update_program_item(self.ph.get_program_id(),  instruction)
@@ -510,6 +519,11 @@ class ArtBrain:
 
 if __name__ == '__main__':
     rospy.init_node('art_brain')
+
+    rospy.loginfo('Waiting for other nodes to come up...')
+    rospy.wait_for_service('/art/db/program/get')
+    rospy.wait_for_service('/art/db/program/store')
+    rospy.loginfo('Ready!')
 
     try:
         node = ArtBrain()
