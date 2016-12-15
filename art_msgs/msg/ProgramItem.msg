@@ -1,6 +1,6 @@
-uint8 id # id of the item (operation)
-uint8 on_success # id of next item
-uint8 on_failure
+uint16 id # id of the item (operation)
+uint16 on_success # id of next item
+uint16 on_failure # 0 means jump to block end
 
 uint8 type
 uint8 spec
@@ -26,3 +26,6 @@ uint8 MANIP_TYPE=1 # do manipulation with any object of this type
 # operation_spec: WAIT
 uint8 WAIT_FOR_USER=0
 uint8 WAIT_UNTIL_USER_FINISHES=1
+
+# Text/graphic instructions for a human
+SceneLabel[] labels

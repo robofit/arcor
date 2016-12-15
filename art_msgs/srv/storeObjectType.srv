@@ -1,4 +1,4 @@
-uint16 program_id
+ObjectType object_type
 ---
 bool success
 string error

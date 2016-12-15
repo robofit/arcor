@@ -17,16 +17,18 @@ add_action_files(
 add_message_files(
   FILES
   ObjInstance.msg
+  ObjectType.msg
   InstancesArray.msg
   ObjectsCentroids.msg
   UserStatus.msg
   UserActivity.msg
   SystemState.msg
+  SceneLabel.msg
   ProgramItem.msg
+  ProgramBlock.msg
   Program.msg
-  ProgramArray.msg
   InterfaceState.msg
-  InterfaceStateItem.msg
+  KeyValue.msg
   Touch.msg
 )
 
@@ -34,11 +36,10 @@ add_service_files(
     FILES
     getProgram.srv
     storeProgram.srv
-    getObject.srv
-    storeObject.srv
+    getObjectType.srv
+    storeObjectType.srv
     startProgram.srv
-    getProgramsList.srv
-    getObjectsTypes.srv
+    TouchCalibrationPoints.srv
 )
 
 generate_messages(
@@ -46,7 +47,7 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS 
+  CATKIN_DEPENDS
     actionlib_msgs
     shape_msgs
     std_msgs
