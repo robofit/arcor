@@ -29,6 +29,7 @@ add_message_files(
   Program.msg
   InterfaceState.msg
   KeyValue.msg
+  Touch.msg
 )
 
 add_service_files(
