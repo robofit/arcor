@@ -66,6 +66,8 @@ class ArtTouchDriver:
                 if self.slot is None:
                     self.slot = Slot(track_id=event.value, slot_id=0)
                     self.slots.append(self.slot)
+                else:
+                    self.slot.track_id = event.value
 
             elif event.evtype == 3 and event.code == 57 and event.value < 0:
                 # MT_TRACK_ID end
