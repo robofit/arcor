@@ -27,14 +27,22 @@ class ArtDB:
     def srv_get_program_cb(self,  req):
 
         resp = getProgramResponse()
+        resp.success = False
         name = "program:" + str(req.id)
 
+        prog = None
+
         try:
-            resp.program = self.db.query_named(name, Program._type)[0]
-            return resp
+            prog = self.db.query_named(name, Program._type)[0]
         except rospy.ServiceException, e:
             print "Service call failed: " + str(e)
-            return None
+
+        if prog is not None:
+
+            resp.program = prog
+            resp.success = True
+
+        return resp
 
     def srv_store_program_cb(self,  req):
 
@@ -62,14 +70,21 @@ class ArtDB:
     def srv_get_object_cb(self,  req):
 
         resp = getObjectTypeResponse()
+        resp.success = False
         name = "object_type:" + str(req.name)
+        object_type = None
 
         try:
-            resp.object_type = self.db.query_named(name, ObjectType._type)[0]
-            return resp
+            object_type = self.db.query_named(name, ObjectType._type)[0]
         except rospy.ServiceException, e:
             print "Service call failed: " + str(e)
-            return None
+
+        if object_type is not None:
+
+            resp.success = True
+            resp.object_type = object_type
+
+        return resp
 
     def srv_store_object_cb(self,  req):
 
