@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
+import sys
 import unittest
-
 import rospy
-import rosunit
+import rostest
 
 from art_msgs.msg import Program,  ProgramBlock, ProgramItem,  ObjectType
 from art_msgs.srv import getProgram,  storeProgram,   getObjectType,  storeObjectType
 from shape_msgs.msg import SolidPrimitive
+
 
 class TestArtDb(unittest.TestCase):
 
@@ -158,4 +159,4 @@ class TestArtDb(unittest.TestCase):
 
 if __name__ == '__main__':
 
-    rosunit.unitrun('art_db', 'test_art_db', TestArtDb)
+    rostest.run('art_db', 'test_art_db', TestArtDb, sys.argv)
