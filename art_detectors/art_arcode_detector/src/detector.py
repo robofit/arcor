@@ -2,12 +2,12 @@
 
 from ar_track_alvar_msgs.msg import AlvarMarkers
 from art_msgs.msg import ObjInstance, InstancesArray
-from art_msgs.srv import getObjectType
 import rospy
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 from tf import transformations
 import copy
+from art_utils import ArtApiHelper
 
 
 class ArCodeDetector:
@@ -16,13 +16,15 @@ class ArCodeDetector:
 
     def __init__(self):
 
-        self.get_object_srv = rospy.ServiceProxy('/art/db/object_type/get', getObjectType)
         self.ar_code_sub = rospy.Subscriber("ar_pose_marker", AlvarMarkers, self.ar_code_cb)
         self.detected_objects_pub = rospy.Publisher("/art/object_detector/object", InstancesArray, queue_size=10)
         self.visualize_pub = rospy.Publisher("art/object_detector/visualize_objects", Marker, queue_size=10)
 
         # TODO make a timer clearing this cache from time to time
         self.objects_cache = {}
+        
+        self.art = ArtApiHelper()
+        self.art.wait_for_api()
 
     def ar_code_cb(self, data):
 
@@ -36,19 +38,22 @@ class ArCodeDetector:
 
             if aid not in self.objects_cache:
 
-                try:
-                    # TODO AR code ID / object type assignment should be done somewhere...
-                    # type "profile_20_60" is just for example (used in art_db/test_db.py)
-                    resp = self.get_object_srv(name="profile_20_60")
-                except rospy.ServiceException:
+                # TODO AR code ID / object type assignment should be done somewhere...
+                # type "profile_20_60" is just for example (used in art_db/test_db.py)
 
+                object_type = self.art.get_object_type("profile_20_60")
+
+                if object_type is None:
+                
                     # error or unknown object - let's ignore it
                     self.objects_cache[aid] = None
                     continue
 
-                self.objects_cache[aid] = {'type': resp.object_type.name,  'bb': resp.object_type.bbox}
+                self.objects_cache[aid] = {'type': object_type.name,  'bb': object_type.bbox}
 
-            if self.objects_cache[aid] is None: continue
+            # skip unknown objects
+            if self.objects_cache[aid] is None:
+                continue
 
             obj_in = ObjInstance()
             obj_in.object_id = str(aid)
@@ -65,10 +70,9 @@ class ArCodeDetector:
             obj_in.pose.orientation.y = q[1]
             obj_in.pose.orientation.z = q[2]
             obj_in.pose.orientation.w = q[3]
-
-            obj_in.bbox =  self.objects_cache[aid]['bb']
-            obj_in.pose.position.z = float(obj_in.bbox.dimensions[2]/2)
-            self.show_rviz_bb(obj_in, arcode.id)
+            print self.objects_cache[aid]['bb']
+            obj_in.pose.position.z = float(self.objects_cache[aid]['bb'].dimensions[2]/2)
+            self.show_rviz_bb(obj_in, arcode.id, self.objects_cache[aid]['bb'])
             instances.header.stamp = arcode.header.stamp
             instances.header.frame_id = arcode.header.frame_id
             instances.instances.append(obj_in)
@@ -81,7 +85,7 @@ class ArCodeDetector:
             #print instances
             self.detected_objects_pub.publish(instances)
 
-    def show_rviz_bb(self, obj_in, id):
+    def show_rviz_bb(self, obj_in, id, bb):
         '''
 
         :type obj: ObjInstance
@@ -102,9 +106,9 @@ class ArCodeDetector:
         marker.lifetime = rospy.Duration(5)
         marker.pose = obj.pose
 
-        bbox_x = float(obj.bbox.dimensions[0]/2)
-        bbox_y = float(obj.bbox.dimensions[1]/2)
-        bbox_z = float(obj.bbox.dimensions[2])
+        bbox_x = float(bb.dimensions[0]/2)
+        bbox_y = float(bb.dimensions[1]/2)
+        bbox_z = float(bb.dimensions[2])
         marker.points = [
             Point(- bbox_x,- bbox_y, - bbox_z/2),
             Point(+ bbox_x,- bbox_y, - bbox_z/2),
