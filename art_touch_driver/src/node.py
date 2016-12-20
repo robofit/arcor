@@ -12,7 +12,7 @@ from std_srvs.srv import Empty as EmptySrv, EmptyResponse
 from std_msgs.msg import Bool, Empty
 from copy import deepcopy
 import cv2
-
+import ast
 
 class Slot:
 
@@ -63,6 +63,8 @@ class ArtTouchDriver:
         self.h_matrix = rospy.get_param('~calibration_matrix', None)
 
         if self.h_matrix is not None:
+            rospy.loginfo("Loaded calibration from param server")
+            self.h_matrix = np.matrix(ast.literal_eval(self.h_matrix))
             self.set_calibrated(True)
 
     def set_calibrated(self, state):
