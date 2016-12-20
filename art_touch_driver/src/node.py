@@ -14,6 +14,7 @@ from copy import deepcopy
 import cv2
 import ast
 
+
 class Slot:
 
     def __init__(self, slot_id=None, track_id=None):

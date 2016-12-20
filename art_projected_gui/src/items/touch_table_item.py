@@ -6,6 +6,7 @@ import rospy
 from art_msgs.msg import Touch
 from desc_item import DescItem
 
+
 class TouchPointItem(Item):
 
     def __init__(self,  scene,  rpm,  x,  y,  parent):
@@ -63,7 +64,7 @@ class TouchPointItem(Item):
                         it_pos = self.pointed_item.get_pos()
 
                         self.offset = (it_pos[0]-my_pos[0], it_pos[1]-my_pos[1])
-                        
+
                     break
 
         else:
@@ -134,10 +135,10 @@ class TouchTableItem(Item):
         pass
 
     def delete_id(self,  id):
-        
+
         if id not in self.touch_points:
             return
-            
+
         self.touch_points[id].end_of_touch()
         self.scene.removeItem(self.touch_points[id])
         del self.touch_points[id]
@@ -171,12 +172,12 @@ class TouchTableItem(Item):
         to_delete = []
         now = rospy.Time.now()
         for k, v in self.touch_points.iteritems():
-            
+
             if now - v.last_update > rospy.Duration(1.0):
                 to_delete.append(k)
-                
+
         for k in to_delete:
-            
+
             self.delete_id(k)
 
         # enable / disable given items

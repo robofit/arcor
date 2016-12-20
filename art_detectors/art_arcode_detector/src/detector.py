@@ -70,7 +70,7 @@ class ArCodeDetector:
             obj_in.pose.orientation.y = q[1]
             obj_in.pose.orientation.z = q[2]
             obj_in.pose.orientation.w = q[3]
-            print self.objects_cache[aid]['bb']
+            # print self.objects_cache[aid]['bb']
             obj_in.pose.position.z = float(self.objects_cache[aid]['bb'].dimensions[2]/2)
             self.show_rviz_bb(obj_in, arcode.id, self.objects_cache[aid]['bb'])
             instances.header.stamp = arcode.header.stamp

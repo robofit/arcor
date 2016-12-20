@@ -35,7 +35,7 @@ class Projector(QtGui.QWidget):
 
         self.h_matrix = rospy.get_param("/art/interface/projected_gui/projector/" + self.proj_id + "/calibration_matrix", None)
 
-        if  self.h_matrix is not None:
+        if self.h_matrix is not None:
             rospy.loginfo('Loaded calibration from param.')
             self.h_matrix = np.matrix(ast.literal_eval(self.h_matrix))
 
@@ -94,7 +94,7 @@ class Projector(QtGui.QWidget):
         self.corners_pub = rospy.Publisher("/art/interface/projected_gui/projector/" + self.proj_id + "/corners", PoseArray, queue_size=10, latch=True)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('show_chessboard'), self.show_chessboard_evt)
-        
+
         self.showFullScreen()
 
     def getScene(self):
