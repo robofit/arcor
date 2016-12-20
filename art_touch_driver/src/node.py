@@ -8,6 +8,12 @@ import pycopia.OS.Linux.Input as input
 
 from geometry_msgs.msg import PointStamped
 from art_msgs.msg import Touch
+from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsRequest
+from std_srvs.srv import Empty as EmptySrv, EmptyResponse
+from std_msgs.msg import Bool,  Empty
+from copy import deepcopy
+import cv2
+import numpy as np
 
 
 class Slot:
@@ -38,10 +44,72 @@ class ArtTouchDriver:
         self.touch = False
         self.touch_id = -1
         self.device = input.EventDevice("/dev/input/event17")
-        self.touch_pub = rospy.Publisher("/art/interface/touchtable/touch", Touch, queue_size=1)
+        
         self.slots = []
         self.slot = None
         self.to_delete_id = -1
+
+        self.ns = '/art/interface/touchtable/'
+        
+        self.touch_pub = rospy.Publisher(self.ns + "touch", Touch, queue_size=100) # make sure that all messages will be sent
+        self.calibrated_pub = rospy.Publisher(self.ns + 'calibrated', Bool, queue_size=1,  latch=True)
+        self.calibrating_pub = rospy.Publisher(self.ns + 'calibrating', Bool, queue_size=1,  latch=True)
+        self.touch_det_pub = rospy.Publisher(self.ns + 'touch_detected', Empty, queue_size=10)
+        self.calibrate_req_srv = rospy.Service(self.ns + "calibrate", EmptySrv, self.calibrate_req_srv_cb)
+        
+        self.calib_srv = rospy.ServiceProxy('/art/interface/projected_gui/touch_calibration', TouchCalibrationPoints)
+        
+        self.set_calibrated(False)
+        self.set_calibrating(False)
+        
+    def set_calibrated(self,  state):
+        
+        self.calibrated = state
+        self.calibrated_pub.publish(self.calibrated)
+        
+    def set_calibrating(self,  state):
+        
+        self.calibrating = state
+        self.calibrating_pub.publish(self.calibrating)
+        
+    def calibrate_req_srv_cb(self,  req):
+        
+        rospy.wait_for_service('/art/interface/projected_gui/touch_calibration') # TODO wait in __init__??
+        
+        req = TouchCalibrationPointsRequest()
+        ps = PointStamped()
+        ps.header.stamp = rospy.Time.now()
+        ps.header.frame_id = "marker"
+        ps.point.z = 0
+        
+        self.ref_points = ((0.4,  0.1),  (1.0,  0.1),  (0.4,  0.5),  (1.0,  0.5))
+        
+        for pt in self.ref_points:
+
+            ps.point.x = pt[0]
+            ps.point.y = pt[1]
+            req.points.append(deepcopy(ps))
+
+        try:
+            resp = self.calib_srv(req)
+        except rospy.ServiceException, e:
+            print "Service call failed: %s" % e
+            self.set_calibrating(False)
+            return EmptyResponse()
+
+        if resp.success:
+
+            self.touch_cnt = 0
+            self.calib_points = []
+            self.set_calibrating(True)
+            rospy.loginfo('Starting calibration')
+
+        else:
+
+            self.set_calibrating(False)
+            rospy.logerr('Failed to start calibration')
+        
+        return EmptyResponse()
 
     def get_slot_by_id(self, slot_id):
         for slot in self.slots:
@@ -87,7 +155,7 @@ class ArtTouchDriver:
                 print("y")
 
             elif event.evtype == 0:
-
+                
                 touch = Touch()
                 if self.slot is None:
                     touch.id = self.to_delete_id
@@ -96,10 +164,33 @@ class ArtTouchDriver:
                     touch.touch = True
                     touch.id = self.slot.track_id
                     touch.point = PointStamped()
-                    touch.point.point.x = self.slot.x
-                    touch.point.point.y = self.slot.y
+                    
+                    
+                    if self.calibrated:
+                        
+                        pt = [self.slot.x,  self.slot.y,  1]
+                        
+                        pt = self.h_matrix.dot(np.array(pt, dtype='float64')).tolist()
+                        print pt
+                        touch.point.point.x = pt[0][0]
+                        touch.point.point.y = pt[0][1]
+                    
+                    if self.calibrating:
+                        
+                        # TODO check for "double click" (calc distance from prev touch?)
+                        if self.touch_cnt < 4:
 
-                self.touch_pub.publish(touch)
+                            self.calib_points.append((self.slot.x,  self.slot.y))
+                            self.touch_det_pub.publish()
+                            self.touch_cnt += 1
+                            
+                            if self.touch_cnt == 4:
+                                
+                                self.calculate_calibration()
+                                self.set_calibrating(False)
+                            
+                if self.calibrated:
+                    self.touch_pub.publish(touch)
 
             else:
                 pass
@@ -108,6 +199,21 @@ class ArtTouchDriver:
             if not self.device._eventq:
                 break
             event = self.device.read()
+
+    def calculate_calibration(self):
+        
+        print self.calib_points
+        print self.ref_points
+        
+        h, status = cv2.findHomography(np.array(self.calib_points, dtype='float64'), np.array(self.ref_points, dtype='float64'))
+        self.h_matrix = np.matrix(h)
+        
+        s = str(self.h_matrix.tolist())
+        rospy.set_param("~calibration_matrix", s)
+        
+        print self.h_matrix
+        
+        self.set_calibrated(True)
 
 if __name__ == '__main__':
     rospy.init_node('art_touch_driver')
