@@ -14,6 +14,7 @@ import message_filters
 from image_geometry import PinholeCameraModel
 from geometry_msgs.msg import PointStamped, Pose, PoseArray
 import tf
+import ast
 
 # TODO create ProjectorROS (to separate QT / ROS stuff)
 # podle vysky v pointcloudu / pozice projektoru se vymaskuji mista kde je neco vyssiho - aby se promitalo jen na plochu stolu ????
@@ -32,7 +33,12 @@ class Projector(QtGui.QWidget):
         self.camera_depth_topic = rospy.get_param('~camera_depth_topic', '/kinect2/qhd/image_depth_rect')
         self.camera_info_topic = rospy.get_param('~camera_info_topic', '/kinect2/qhd/camera_info')
 
-        self.h_matrix = rospy.get_param('~calibration_matrix', None)
+        self.h_matrix = rospy.get_param("/art/interface/projected_gui/projector/" + self.proj_id + "/calibration_matrix", None)
+
+        if  self.h_matrix is not None:
+            rospy.loginfo('Loaded calibration from param.')
+            self.h_matrix = np.matrix(ast.literal_eval(self.h_matrix))
+
         self.rpm = rospy.get_param('~rpm', 1280)
         self.scene_size = rospy.get_param("~scene_size", [1.2, 0.64])
         self.scene_origin = rospy.get_param("~scene_origin", [0, 0])
@@ -88,7 +94,7 @@ class Projector(QtGui.QWidget):
         self.corners_pub = rospy.Publisher("/art/interface/projected_gui/projector/" + self.proj_id + "/corners", PoseArray, queue_size=10, latch=True)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('show_chessboard'), self.show_chessboard_evt)
-
+        
         self.showFullScreen()
 
     def getScene(self):
@@ -242,7 +248,7 @@ class Projector(QtGui.QWidget):
 
         # store homography matrix to parameter server
         s = str(self.h_matrix.tolist())
-        rospy.set_param("~calibration_matrix", s)
+        rospy.set_param("/art/interface/projected_gui/projector/" + self.proj_id + "/calibration_matrix", s)
         print s
 
         return True
