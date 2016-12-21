@@ -233,6 +233,6 @@ if __name__ == '__main__':
 
         while not rospy.is_shutdown():
             node.process()
-            rate.sleep()
+            # rate.sleep()
     except rospy.ROSInterruptException:
         pass

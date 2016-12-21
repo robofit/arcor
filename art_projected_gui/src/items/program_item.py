@@ -365,6 +365,7 @@ class ProgramItem(Item):
 
         self.active_item.item.place_pose.pose.position.x = x
         self.active_item.item.place_pose.pose.position.y = y
+        self.active_item.item.place_pose.pose.orientation.w = 1.0
         self.program_updated()
         self.update_size()
 
