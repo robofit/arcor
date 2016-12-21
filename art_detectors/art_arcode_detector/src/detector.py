@@ -36,6 +36,11 @@ class ArCodeDetector:
 
             aid = int(arcode.id)
 
+            # list of allowed object ids
+            # TODO load from param
+            if aid not in [4, 5, 3]: 
+                continue
+
             if aid not in self.objects_cache:
 
                 # TODO AR code ID / object type assignment should be done somewhere...
@@ -44,7 +49,7 @@ class ArCodeDetector:
                 object_type = self.art.get_object_type("profile_20_60")
 
                 if object_type is None:
-                
+
                     # error or unknown object - let's ignore it
                     self.objects_cache[aid] = None
                     continue
@@ -73,6 +78,8 @@ class ArCodeDetector:
             # print self.objects_cache[aid]['bb']
             obj_in.pose.position.z = float(self.objects_cache[aid]['bb'].dimensions[2]/2)
             self.show_rviz_bb(obj_in, arcode.id, self.objects_cache[aid]['bb'])
+            obj_in.pose.position.z *= -1.0
+
             instances.header.stamp = arcode.header.stamp
             instances.header.frame_id = arcode.header.frame_id
             instances.instances.append(obj_in)
