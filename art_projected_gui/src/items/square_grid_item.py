@@ -2,6 +2,7 @@
 
 from PyQt4 import QtGui, QtCore
 from item import Item
+from desc_item import DescItem
 
 
 class SquarePointItem(Item):
@@ -72,15 +73,19 @@ class SquarePointItem(Item):
 
 class SquareItem(Item):
 
-    def __init__(self,  scene,  rpm, caption, square_changed=None):
+    def __init__(self,  scene,  rpm, caption, min_x, min_y, square_width, square_height, square_changed=None):
 
         self.caption = caption
         self.square_changed = square_changed
 
         super(SquareItem, self).__init__(scene, rpm, 0, 0)
 
-        self.min = [0.65, 0.4]
-        self.max = [0.75, 0.475]
+        self.min = [min_x, min_y]
+        self.max = [min_x + square_width, min_y + square_height]
+
+        self.desc = DescItem(scene, rpm, self.min[0] - 0.02, self.max[1] + 0.015, self)
+        self.update_text()
+
 
         self.pts = []
         self.pts.append(SquarePointItem(scene, rpm, self.min[0], self.min[1], self, "LH"))  # top-left corner
@@ -89,6 +94,12 @@ class SquareItem(Item):
         self.pts.append(SquarePointItem(scene, rpm, self.min[0], self.max[1], self, "LD"))  # bottom-left corner
 
         self.update()
+
+    def update_text(self):
+
+        desc = []
+        desc.append(self.caption)
+        self.desc.set_content(desc)
 
     def find_corner(self, corner):
         for pt in self.pts:
@@ -120,18 +131,22 @@ class SquareItem(Item):
             if (pt.get_corner() == "PD") and pt.get_changed():
                 self.find_corner("PH").setPos(pt.x(), self.find_corner("PH").y())
                 self.find_corner("LD").setPos(self.find_corner("LD").x(), pt.y())
+                self.desc.setPos(self.m2pix(self.min[0] - 0.02), self.m2pix(self.max[1] + 0.015))
                 pt.set_changed(False)
             elif (pt.get_corner() == "LD") and pt.get_changed():
                 self.find_corner("LH").setPos(pt.x(), self.find_corner("LH").y())
                 self.find_corner("PD").setPos(self.find_corner("PD").x(), pt.y())
+                self.desc.setPos(self.m2pix(self.min[0] - 0.02), self.m2pix(self.max[1] + 0.015))
                 pt.set_changed(False)
             elif (pt.get_corner() == "LH") and pt.get_changed():
                 self.find_corner("LD").setPos(pt.x(), self.find_corner("LD").y())
                 self.find_corner("PH").setPos(self.find_corner("PH").x(), pt.y())
+                self.desc.setPos(self.m2pix(self.min[0] - 0.02), self.m2pix(self.max[1] + 0.015))
                 pt.set_changed(False)
             elif (pt.get_corner() == "PH") and pt.get_changed():
                 self.find_corner("PD").setPos(pt.x(), self.find_corner("PD").y())
                 self.find_corner("LH").setPos(self.find_corner("LH").x(), pt.y())
+                self.desc.setPos(self.m2pix(self.min[0] - 0.02), self.m2pix(self.max[1] + 0.015))
                 pt.set_changed(False)
 
         self.update()
