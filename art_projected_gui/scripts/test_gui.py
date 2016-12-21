@@ -1,13 +1,13 @@
 #! /usr/bin/env python
-import roslib; roslib.load_manifest('art_projected_gui')
 import rospy
 from geometry_msgs.msg import PoseStamped
-from shape_msgs.msg import SolidPrimitive
 from art_msgs.msg import InstancesArray, ObjInstance
-import random
+
 
 def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+
     return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
 
 def main():
 
@@ -21,7 +21,7 @@ def main():
 
     obj = ObjInstance()
     obj.object_id = "my_object"
-    obj.object_type = "object"
+    obj.object_type = "profile_20_60"
     obj.pose.position.x = 0.5
     obj.pose.position.y = 0.5
     obj.pose.position.z = 0.0
@@ -30,17 +30,11 @@ def main():
     obj.pose.orientation.z = 0.0
     obj.pose.orientation.w = 1.0
 
-    obj.bbox = SolidPrimitive()
-    obj.bbox.type = SolidPrimitive.BOX
-    obj.bbox.dimensions.append(0.05)
-    obj.bbox.dimensions.append(0.05)
-    obj.bbox.dimensions.append(0.2)
-
     arr.instances.append(obj)
 
     obj2 = ObjInstance()
     obj2.object_id = "another_object"
-    obj2.object_type = "object"
+    obj2.object_type = "profile_20_60"
     obj2.pose.position.x = 0.9
     obj2.pose.position.y = 0.3
     obj2.pose.position.z = 0.0
@@ -48,12 +42,6 @@ def main():
     obj2.pose.orientation.y = 0.0
     obj2.pose.orientation.z = 0.0
     obj2.pose.orientation.w = 1.0
-
-    obj2.bbox = SolidPrimitive()
-    obj2.bbox.type = SolidPrimitive.BOX
-    obj2.bbox.dimensions.append(0.05)
-    obj2.bbox.dimensions.append(0.05)
-    obj2.bbox.dimensions.append(0.2)
 
     arr.instances.append(obj2)
 
@@ -84,7 +72,6 @@ def main():
 
     noise = 0.0001
 
-
     rospy.sleep(2.0)
     pub.publish(arr)
     rospy.sleep(1.0)
@@ -107,7 +94,6 @@ def main():
 
         pub_point_right.publish(psr)
 
-
         if ps.pose.position.x < 0.8:
 
             ps.pose.position.x += 0.002
@@ -127,7 +113,7 @@ def main():
 
         if isclose(ps.pose.position.x, 0.6):
 
-           for i in range(0, 300):
+            for i in range(0, 300):
 
                 pub.publish(arr)
                 pub_point_left.publish(ps)

@@ -6,7 +6,7 @@ import time
 import actionlib
 from art_msgs.msg import LocalizeAgainstUMFAction, LocalizeAgainstUMFGoal, LocalizeAgainstUMFResult
 from std_srvs.srv import Empty, EmptyRequest, EmptyResponse
-from art_msgs.msg import UserStatus,  UserActivity, InterfaceState,  InterfaceStateItem
+from art_msgs.msg import UserStatus,  UserActivity, InterfaceState
 from art_msgs.srv import startProgram,  startProgramResponse,  getProgram
 from geometry_msgs.msg import PoseStamped, Pose
 from std_msgs.msg import String
@@ -14,14 +14,15 @@ from art_msgs.msg import pickplaceAction, pickplaceGoal, SystemState, ObjInstanc
 import matplotlib.path as mplPath
 import numpy as np
 import random
-from art_interface_utils.interface_state_manager import interface_state_manager
+from art_utils import InterfaceStateManager,  ArtApiHelper,  ProgramHelper
+
 
 class ArtBrain:
     UNKNOWN = -2  # should not happen!
     NOP = -1  # no operation
     GET_READY = 0  # retract arms etc.
     MANIP_PICK = 1
-    MANIP_PLACE = 2 # TODO proc nepouzit ProgramItem.MANIP_PLACE?
+    MANIP_PLACE = 2  # TODO proc nepouzit ProgramItem.MANIP_PLACE?
     MANIP_PICK_PLACE = 3
     WAIT = 4
 
@@ -29,13 +30,12 @@ class ArtBrain:
     INST_BAD_DATA = 101
     INST_FAILED = 102
 
-    SYSTEM_UNKNOWN = 0 # TODO proc nepouzit SystemState.SYSTEM_UNKNOWN?
+    SYSTEM_UNKNOWN = 0  # TODO proc nepouzit SystemState.SYSTEM_UNKNOWN?
     SYSTEM_START = 1
     SYSTEM_CALIBRATING = 2
     SYSTEM_STARTING_PROGRAM_SERVER = 3
     SYSTEM_READY_FOR_PROGRAM_REQUESTS = 4
     SYSTEM_STOPPING_PROGRAM_SERVER = 5
-
 
     def __init__(self):
         self.show_marker_service = rospy.get_param('show_marker_service', '/art/interface/projected_gui/show_marker')
@@ -48,25 +48,29 @@ class ArtBrain:
 
         self.user_status_sub = rospy.Subscriber("/art/user/status", UserStatus, self.user_status_cb)
         self.user_activity_sub = rospy.Subscriber("/art/user/activity", UserActivity, self.user_activity_cb)
-        
+
         self.srv_program_start = rospy.Service('/art/brain/program/start', startProgram, self.program_start_cb)
         self.srv_program_stop = rospy.Service('/art/brain/program/stop', Empty, self.program_stop_cb)
-        #self.srv_program_pause = rospy.Service(/art/brain/program/pause', Empty, self.program_pause_cb)
-        #self.srv_program_resume = rospy.Service(/art/brain/program/resume', Empty, self.program_resume_cb)
-        
-        self.state_manager = interface_state_manager(InterfaceState.BRAIN_ID)
-        
+        # self.srv_program_pause = rospy.Service(/art/brain/program/pause', Empty, self.program_pause_cb)
+        # self.srv_program_resume = rospy.Service(/art/brain/program/resume', Empty, self.program_resume_cb)
+
+        self.state_manager = InterfaceStateManager(InterfaceState.BRAIN_ID)  # TODO callback?
+        self.art = ArtApiHelper(brain=True)
+        self.ph = ProgramHelper()
+
         self.user_activity = None
-        
+
         self.objects_sub = rospy.Subscriber("/art/object_detector/object_filtered", InstancesArray, self.objects_cb)
 
+        # TODO use this topic instead of system_state in InterfaceState (duplication) ??
+        # TODO move (pub/sub) to InterfaceStateManager?
         self.state_publisher = rospy.Publisher("/art/brain/system_state", SystemState, queue_size=1)
 
         self.pp_client = actionlib.SimpleActionClient('/art/pr2/left_arm/pp', pickplaceAction)
 
         self.state = self.SYSTEM_START
         self.user_id = 0
-      
+
         self.objects = InstancesArray()
         self.executing_program = False
 
@@ -76,43 +80,34 @@ class ArtBrain:
         self.recalibrate = False
 
         self.quit = False
-        
-        self.program = None
-        self.prog_id = None
-        self.it_id = None
-        
+        self.art.wait_for_api()
+
     def program_start_cb(self,  req):
-        
+
         resp = startProgramResponse()
-        
+
         if self.executing_program:
-            
+
             resp.success = False
             resp.error = 'Program already running'
             return resp
-        
+
         rospy.loginfo('Loading program ' + str(req.program_id) + ' from db...')
-        
-        prog_srv = rospy.ServiceProxy('/art/db/program/get', getProgram)
-        
-        try:
-            presp = prog_srv(req.program_id)
-        except rospy.ServiceException, e:
-            rospy.logerr('Cannot get program :(')
+
+        program = self.art.load_program(req.program_id)
+
+        if not self.ph.load(program):
             resp.success = False
             resp.error = 'Cannot get program'
             return resp
-            
-        self.prog_id = req.program_id
-        self.program = presp.program
-        
+
         rospy.loginfo('Starting program')
         self.executing_program = True
         resp.success = True
         return resp
 
     def program_stop_cb(self,  req):
-        
+
         rospy.loginfo('Stopping program ' + str(req.program_id) + '...')
         self.executing_program = False
         return EmptyResponse()
@@ -130,15 +125,17 @@ class ArtBrain:
         return instructions.get(self.instruction, self.unknown_instruction)
 
     @staticmethod
-    def get_item_by_id(program, item_id):
+    def get_item_by_id(program, item_id):  # TODO item should be specified using both block id and item id?
         print "get_item_by_id: " + str(item_id)
-        for it in program.items:
-            if it.id == item_id:
-                return it
+        for bl in program.blocks:
+            for it in bl.items:
+                if it.id == item_id:
+                    return it
         return None
 
     def get_ready(self, instruction):
         # TODO: call some service to set PR2 to ready position
+        self.state_manager.update_program_item(self.ph.get_program_id(),  self.block_id,  instruction)
         return self.INST_OK
 
     def get_pick_obj_id(self, instruction):
@@ -149,37 +146,37 @@ class ArtBrain:
             pick_polygon = []
             pol = None
 
-            for point in instruction.pick_polygon.polygon.points: # TODO check frame_id and transform to table frame?
+            for point in instruction.pick_polygon.polygon.points:  # TODO check frame_id and transform to table frame?
                 pick_polygon.append([point.x,  point.y])
             if len(pick_polygon) > 0:
-                pol = mplPath.Path(np.array(pick_polygon),  closed = True)
+                pol = mplPath.Path(np.array(pick_polygon), closed=True)
 
             # shuffle the array to not get the same object each time
-            #random.shuffle(self.objects.instances)
-            
+            # random.shuffle(self.objects.instances)
+
             print self.objects.instances
-            
+
             for obj in self.objects.instances:
-                
+
                 if pol is None:
-                    
+
                     print "no polygon"
-                    
+
                     # if no pick polygon is specified - let's take the first object of that type
                     if obj.object_type == instruction.object:
                         obj_id = obj.object_id
                         break
-                        
+
                 else:
-                    
+
                     print "polygon"
-                    
+
                     # test if some object is in polygon and take the first one
                     if pol.contains_point([obj.pose.position.x,  obj.pose.position.y]):
                         obj_id = obj.object_id
                         rospy.loginfo('Selected object: ' + obj_id)
                         break
-                    
+
             else:
                 if pol is not None:
                     rospy.loginfo('No object in the specified polygon')
@@ -191,12 +188,12 @@ class ArtBrain:
         return obj_id
 
     def get_place_pose(self, instruction):
-        #if self.holding_object is None:
+        # if self.holding_object is None:
         #    return None
         if instruction.spec == instruction.MANIP_ID:
             pose = instruction.place_pose
         elif instruction.spec == instruction.MANIP_TYPE:
-            #pose = None
+            # pose = None
             pose = instruction.place_pose
             # TODO: how to get free position inside polygon? some perception node?
         else:
@@ -210,6 +207,7 @@ class ArtBrain:
         :return:
         """
         obj_id = self.get_pick_obj_id(instruction)
+        self.state_manager.update_program_item(self.ph.get_program_id(),  self.block_id,  instruction,  {"SELECTED_OBJECT_ID": obj_id})
 
         if obj_id is None:
             return self.INST_BAD_DATA
@@ -227,6 +225,7 @@ class ArtBrain:
         """
 
         pose = self.get_place_pose(instruction)
+        self.state_manager.update_program_item(self.ph.get_program_id(),  self.block_id,  instruction)  # TODO place pose
 
         if pose is None:
             return self.INST_BAD_DATA
@@ -238,19 +237,19 @@ class ArtBrain:
                 return self.INST_FAILED
 
     def manip_pick_place(self, instruction):
-        
+
         print "manip_pick_place"
-        
+
         obj_id = self.get_pick_obj_id(instruction)
         pose = self.get_place_pose(instruction)
-        
-        self.state_manager.select_object_id(obj_id)
-        # TODO also publish selected place pose when not given (polygon)
-        
+
+        self.state_manager.update_program_item(self.ph.get_program_id(),  self.block_id,  instruction,  {"SELECTED_OBJECT_ID": obj_id})
+        # TODO also update p.i. with selected place pose when not given (place polygon)
+
         if obj_id is None or pose is None:
             print 'could not get obj_id or pose'
             return self.INST_BAD_DATA
-        if self.pick_object(obj_id): # TODO call pick&place and not pick and then place
+        if self.pick_object(obj_id):  # TODO call pick&place and not pick and then place
             self.holding_object = obj_id
             if self.place_object(obj_id, pose):
                 self.holding_object = None
@@ -264,9 +263,10 @@ class ArtBrain:
         :return:
         """
         print "waiting"
-        
-        #return self.INST_OK
-        
+
+        # return self.INST_OK
+        self.state_manager.update_program_item(self.ph.get_program_id(), self.block_id,  instruction)
+
         rate = rospy.Rate(10)
 
         if instruction.spec == instruction.WAIT_FOR_USER:
@@ -277,7 +277,7 @@ class ArtBrain:
                 rate.sleep()
         else:
             return self.INST_BAD_DATA
-                
+
         return self.INST_OK
 
     def unknown_instruction(self, instruction):
@@ -288,7 +288,7 @@ class ArtBrain:
         return self.INST_OK
 
     def user_activity_cb(self,  data):
-        
+
         self.user_activity = data.activity
 
     def user_status_cb(self, data):
@@ -335,7 +335,7 @@ class ArtBrain:
             show_marker()
 
         except rospy.ServiceException, e:
-            rospy.logerr("Service call failed: %s"%e)
+            rospy.logerr("Service call failed: " + str(e))
             return False
 
         while table_calibration:
@@ -360,7 +360,7 @@ class ArtBrain:
             hide_marker()
 
         except rospy.ServiceException, e:
-            rospy.logerr("Service call failed: %s"%e)
+            rospy.logerr("Service call failed: " + str(e))
             return False
 
         pass
@@ -371,7 +371,7 @@ class ArtBrain:
     def state_start(self):
         rospy.loginfo('Starting')
         self.state = self.SYSTEM_CALIBRATING
-        #self.state = self.SYSTEM_STARTING_PROGRAM_SERVER
+        # self.state = self.SYSTEM_STARTING_PROGRAM_SERVER
 
     def state_calibrating(self):
         self.calibrate_all(self.calibrate_table, self.calibrate_pr2)
@@ -389,57 +389,44 @@ class ArtBrain:
 
     def state_starting_program_server(self):
         rospy.loginfo('Starting program server')
-        #self.prog_as = actionlib.SimpleActionServer("/art/brain/do_program", RobotProgramAction,
+        # self.prog_as = actionlib.SimpleActionServer("/art/brain/do_program", RobotProgramAction,
         #                                            execute_cb=self.execute_cb, auto_start=False)
-        #self.prog_as.start()
+        # self.prog_as.start()
         self.state = self.SYSTEM_READY_FOR_PROGRAM_REQUESTS
 
     def state_ready_for_program_requests(self):
         if self.stop_server:
             self.state = self.SYSTEM_STOPPING_PROGRAM_SERVER
-            self.stop_server = False # TODO refuse requests to startProgram service when 'server' is not enabled?
-            
-        if self.executing_program: # flag set in service request
-            
-            # for it in prog.items:
-            it = self.program.items[0]
-            while self.executing_program:
-                
-                self.prog_id = self.program.id
-                self.it_id = it.id
-                
-                self.state_manager.set_syst_state(InterfaceStateItem.STATE_PROGRAM_RUNNING,  self.prog_id,  self.it_id)
-                self.state_manager.clear_all()
-                
-                # let's tell interface what to display
-                if it.type == ProgramItem.MANIP_PICK_PLACE:
-            
-                    if it.spec == ProgramItem.MANIP_ID:
-                        
-                        self.state_manager.select_object_id(it.object)
-                        
-                    #elif it.spec == ProgramItem.MANIP_TYPE:
-                    #    self.state_manager.publish(InterfaceState.EVT_OBJECT_TYPE_SELECTED,  obj)
-                        
-                    if len(it.pick_polygon.polygon.points) > 0: self.state_manager.select_polygon(it.pick_polygon)
-                    
-                    self.state_manager.select_place(it.place_pose)
-                    
-                else:
+            self.stop_server = False  # TODO refuse requests to startProgram service when 'server' is not enabled?
 
-                    # TODO other types of operations
-                    pass
-                
-                rospy.loginfo('Program id: ' + str(self.program.id) + ', item id: ' + str(it.id) + ', item type: ' + str(it.type))
+        if self.executing_program:  # flag set in service request
+
+            self.state_manager.set_system_state(InterfaceState.STATE_PROGRAM_RUNNING)
+
+            (self.block_id, item_id) = self.ph.get_first_item_id()
+            it = self.ph.get_item_msg(self.block_id,  item_id)
+
+            while self.executing_program:
+
+                rospy.loginfo('Program id: ' + str(self.ph.prog.id) + ', item id: ' + str(it.id) + ', item type: ' + str(it.type))
 
                 self.instruction = it.type
                 instruction_function = self.instruction_switcher()
                 result = instruction_function(it)
                 if result == self.INST_OK:
-                    it = self.get_item_by_id(self.program, it.on_success)
+                    (self.block_id, item_id) = self.ph.get_id_on_success()
+                    it = self.ph.get_item_msg(self.block_id,  item_id)
                 elif result == self.INST_BAD_DATA or result == self.INST_FAILED:
-                    it = self.get_item_by_id(self.program, it.on_failure)
+                    (self.block_id, item_id) = self.ph.get_id_on_failure()
                     print "bad_data/failed"
+
+                    if self.block_id == 0:
+
+                        rospy.logerr("End of program")
+                        return
+
+                    it = self.ph.get_item_msg(self.block_id,  item_id)
+
                 else:
                     it = None
                     print "strange return value"
@@ -449,17 +436,17 @@ class ArtBrain:
                     # TODO feedback
                     self.executing_program = False
                     return
-                    
+
             if not self.executing_program:
-                
+
                 pass
-                #self.state_manager.publish(InterfaceState.EVT_STATE_PROGRAM_STOPPED)
+                # self.state_manager.publish(InterfaceState.EVT_STATE_PROGRAM_STOPPED)
 
         # TODO feedback
         self.executing_program = False
 
     def state_stopping_program_server(self):
-        #self.prog_as = None
+        # self.prog_as = None
         if self.recalibrate:
             self.state = self.SYSTEM_CALIBRATING
             self.recalibrate = False
@@ -490,7 +477,7 @@ class ArtBrain:
         print self.pp_client.get_result()
         print "status: " + self.pp_client.get_goal_status_text()
         print "state: " + str(self.pp_client.get_state())
-        
+
         if self.pp_client.get_result().result == 0:
             return True
         else:
@@ -511,7 +498,7 @@ class ArtBrain:
         goal.place_pose = place
         goal.place_pose.header.stamp = rospy.Time.now()
         # TODO: how to deal with this?
-        goal.place_pose.pose.position.z = 0.06# + obj.bbox.dimensions[2]/2
+        goal.place_pose.pose.position.z = 0.06  # + obj.bbox.dimensions[2]/2
         self.pp_client.send_goal(goal)
         self.pp_client.wait_for_result()
         if self.pp_client.get_result().result == 0:
@@ -532,14 +519,15 @@ class ArtBrain:
 
 if __name__ == '__main__':
     rospy.init_node('art_brain')
-    
+
     rospy.loginfo('Waiting for other nodes to come up...')
     rospy.wait_for_service('/art/db/program/get')
     rospy.wait_for_service('/art/db/program/store')
     rospy.loginfo('Ready!')
-    
+
     try:
         node = ArtBrain()
+        rospy.loginfo('Ready!')
         rate = rospy.Rate(30)
         while not rospy.is_shutdown() or node.quit:
             node.process()

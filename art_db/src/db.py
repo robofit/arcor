@@ -1,81 +1,115 @@
 #!/usr/bin/env python
 
-from art_msgs.msg import ObjInstance, InstancesArray
-from art_msgs.srv import getProgram,  getProgramResponse,  storeProgram,  storeProgramResponse,  getObject,  getObjectResponse,  storeObject,  storeObjectResponse
+from art_msgs.msg import Program,  ObjectType
+from art_msgs.srv import getProgram,  getProgramResponse,  storeProgram,  storeProgramResponse,  getObjectType,  \
+    getObjectTypeResponse,  storeObjectType,  storeObjectTypeResponse
 import sys
 import rospy
-import dataset
-import rospkg
-import message_converter
-import json
-import sqlite3
+from art_utils import ProgramHelper
+
+from mongodb_store.message_store import MessageStoreProxy
+
 
 class ArtDB:
-    
+
     def __init__(self):
-        
-        rospack = rospkg.RosPack()
-        self.db_path = rospack.get_path('art_db') + '/art.db' # TODO where to store?
-        
+
+        self.db = MessageStoreProxy()
+
         self.srv_get_program = rospy.Service('/art/db/program/get', getProgram, self.srv_get_program_cb)
         self.srv_store_program = rospy.Service('/art/db/program/store', storeProgram, self.srv_store_program_cb)
-        
-        self.srv_get_object = rospy.Service('/art/db/object/get', getObject, self.srv_get_object_cb)
-        self.srv_store_object = rospy.Service('/art/db/object/store', storeObject, self.srv_store_object_cb)
-        
+
+        self.srv_get_object = rospy.Service('/art/db/object_type/get', getObjectType, self.srv_get_object_cb)
+        self.srv_store_object = rospy.Service('/art/db/object_type/store', storeObjectType, self.srv_store_object_cb)
+
+        rospy.loginfo('art_db ready')
+
     def srv_get_program_cb(self,  req):
-        
-        db = dataset.connect('sqlite:////' + self.db_path)
-        obj = db['programs'].find_one(program_id=req.id)
-        if obj is None:
-            rospy.logerr('Program ' + str(req.id) + ' does not exist in the database.')
-            return None
+
         resp = getProgramResponse()
-        resp.program = message_converter.convert_dictionary_to_ros_message('art_msgs/Program', json.loads(obj['json']))
+        resp.success = False
+        name = "program:" + str(req.id)
+
+        prog = None
+
+        try:
+            prog = self.db.query_named(name, Program._type)[0]
+        except rospy.ServiceException, e:
+            print "Service call failed: " + str(e)
+
+        if prog is not None:
+
+            resp.program = prog
+            resp.success = True
+
         return resp
-        
+
     def srv_store_program_cb(self,  req):
-        
-        db = dataset.connect('sqlite:////' + self.db_path)
-        programs = db['programs']
-        prog_json = json.dumps(message_converter.convert_ros_message_to_dictionary(req.program))
+
         resp = storeProgramResponse()
-        resp.success = True
-        programs.upsert(dict(program_id=req.program.id,  name=req.program.name,  json=prog_json),  ['program_id'])
+
+        ph = ProgramHelper()
+        if not ph.load(req.program):
+
+            resp.success = False
+            resp.error = "Invalid program"
+            return resp
+
+        name = "program:" + str(req.program.id)
+
+        try:
+            ret = self.db.update_named(name,  req.program,  upsert=True)
+        except rospy.ServiceException, e:
+            print "Service call failed: " + str(e)
+            resp.success = False
+            return resp
+
+        resp.success = ret.success
         return resp
-        
+
     def srv_get_object_cb(self,  req):
-        
-        db = dataset.connect('sqlite:////' + self.db_path)
-        obj = db['objects'].find_one(obj_id=req.obj_id)
-        if obj is None: return None
-        resp = getObjectResponse()
-        resp.name = obj['name']
-        resp.model_url = obj['model_url']
-        resp.type = obj['type']
-        resp.bbox = message_converter.convert_dictionary_to_ros_message('shape_msgs/SolidPrimitive', json.loads(obj['bb']))
+
+        resp = getObjectTypeResponse()
+        resp.success = False
+        name = "object_type:" + str(req.name)
+        object_type = None
+
+        try:
+            object_type = self.db.query_named(name, ObjectType._type)[0]
+        except rospy.ServiceException, e:
+            print "Service call failed: " + str(e)
+
+        if object_type is not None:
+
+            resp.success = True
+            resp.object_type = object_type
+
         return resp
-        
+
     def srv_store_object_cb(self,  req):
-        
-        db = dataset.connect('sqlite:////' + self.db_path)
-        objects = db['objects']
-        bb_json = json.dumps(message_converter.convert_ros_message_to_dictionary(req.bbox))
-        objects.insert(dict(name=req.name, model_url=req.model_url, obj_id=req.obj_id,  type=req.type,  bb=bb_json))
-        resp =storeObjectResponse()
-        resp.success = True
+
+        resp = storeObjectTypeResponse()
+        name = "object_type:" + str(req.object_type.name)
+
+        try:
+            ret = self.db.update_named(name,  req.object_type,  upsert=True)
+        except rospy.ServiceException, e:
+            print "Service call failed: " + str(e)
+            resp.success = False
+            return resp
+
+        resp.success = ret.success
         return resp
-        
+
+
 def main(args):
-    
-    rospy.init_node('art_db', anonymous=True)
-    db = ArtDB()
+
+    rospy.init_node('art_db')
+    ArtDB()
     rospy.spin()
-    
+
 if __name__ == '__main__':
     try:
         main(sys.argv)
     except KeyboardInterrupt:
         print("Shutting down")
-        
-        

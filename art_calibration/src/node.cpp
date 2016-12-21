@@ -149,7 +149,7 @@ private:
         pp1112.normalize();
 
 
-        tf::Vector3 n = pp1110.cross(pp1112);
+        tf::Vector3 n = pp1112.cross(pp1110);
         n.normalize();
         ROS_INFO_STREAM(pp1110.dot(pp1112));
         ROS_INFO_STREAM(pp1110.dot(n));
@@ -159,7 +159,7 @@ private:
         ROS_INFO_STREAM(n.dot(pp1112));
 
         //tf::Matrix3x3 m(pp1110.getX(), pp1110.getY(), pp1110.getZ(), pp1112.getX(), pp1112.getY(), pp1112.getZ(), n.getX(), n.getY(), n.getZ());
-        tf::Matrix3x3 m(pp1110.getX(), pp1112.getX(), n.getX(), pp1110.getY(), pp1112.getY(), n.getY(), pp1110.getZ(), pp1112.getZ(), n.getZ());
+        tf::Matrix3x3 m(pp1112.getX(), pp1110.getX(), n.getX(), pp1112.getY(), pp1110.getY(), n.getY(), pp1112.getZ(), pp1110.getZ(), n.getZ());
 
         tf::Transform tr = tf::Transform(m, position11);
 
@@ -207,7 +207,7 @@ private:
 
             state = 1;
         } else if (state == 1 && pr2_looking_for_marker_id_ == 12) {
-            point.point.y = 0.2;
+            point.point.y = 0.5;
             head_look_at_pub.publish(point);
             ros::Duration(5).sleep();
             state = 2;
@@ -219,7 +219,7 @@ private:
             pp1112.normalize();
 
 
-            tf::Vector3 n = pp1110.cross(pp1112);
+            tf::Vector3 n = pp1112.cross(pp1110);
             n.normalize();
             ROS_INFO_STREAM(pp1110.dot(pp1112));
             ROS_INFO_STREAM(pp1110.dot(n));
@@ -229,7 +229,7 @@ private:
             ROS_INFO_STREAM(n.dot(pp1112));
 
             //tf::Matrix3x3 m(pp1110.getX(), pp1110.getY(), pp1110.getZ(), pp1112.getX(), pp1112.getY(), pp1112.getZ(), n.getX(), n.getY(), n.getZ());
-            tf::Matrix3x3 m(pp1110.getX(), pp1112.getX(), n.getX(), pp1110.getY(), pp1112.getY(), n.getY(), pp1110.getZ(), pp1112.getZ(), n.getZ());
+            tf::Matrix3x3 m(pp1112.getX(), pp1110.getX(), n.getX(), pp1112.getY(), pp1110.getY(), n.getY(), pp1112.getZ(), pp1110.getZ(), n.getZ());
 
             tf::Transform tr = tf::Transform(m, pr2_position11_);
 

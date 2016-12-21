@@ -8,10 +8,12 @@ import rospkg
 
 from gui import UICoreRos
 
+
 def sigint_handler(*args):
     """Handler for the SIGINT signal."""
     sys.stderr.write('\r')
     QtGui.QApplication.quit()
+
 
 def main(args):
 
@@ -24,14 +26,15 @@ def main(args):
     rospack = rospkg.RosPack()
 
     translator = QtCore.QTranslator()
-    translator.load(QtCore.QLocale.system().name() + '.qm',  rospack.get_path('art_projected_gui') + '/lang')
+    translator.load(QtCore.QLocale.system().name() + '.qm', rospack.get_path('art_projected_gui') + '/lang')
     app.installTranslator(translator)
 
     ui = UICoreRos()
     ui.start()
 
-    dbg = rospy.get_param('~show_scene',  False)
-    if dbg: ui.debug_view()
+    dbg = rospy.get_param('~show_scene', False)
+    if dbg:
+        ui.debug_view()
 
     timer = QtCore.QTimer()
     timer.start(500)

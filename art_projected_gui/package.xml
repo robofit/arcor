@@ -2,22 +2,29 @@
 <package>
   <name>art_projected_gui</name>
   <version>0.0.0</version>
-  <description>The art_projected_gui package</description>
+  <description>Augmented reality user interface</description>
 
   <maintainer email="imaterna@fit.vutbr.cz">Zdenek Materna</maintainer>
 
   <license>TODO</license>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roslint</build_depend>
   <build_depend>cv_bridge</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>image_geometry</build_depend>
   <build_depend>rospy</build_depend>
+  <build_depend>art_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
+
   <run_depend>cv_bridge</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>image_geometry</run_depend>
   <run_depend>rospy</run_depend>
+  <run_depend>art_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
+
+  <test_depend>roslaunch</test_depend>
+  <test_depend>rosunit</test_depend>
 
 </package>

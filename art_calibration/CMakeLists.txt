@@ -35,3 +35,8 @@ include_directories(
 target_link_libraries(art_calibration_node
   ${catkin_LIBRARIES}
 )
+
+if (CATKIN_ENABLE_TESTING)
+  find_package(catkin REQUIRED COMPONENTS roslaunch)
+  roslaunch_add_file_check(launch)
+endif()

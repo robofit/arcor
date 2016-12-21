@@ -9,17 +9,18 @@ from item import Item
 from object_item import ObjectItem
 from desc_item import DescItem
 
+
 class PlaceItem(Item):
 
-    def __init__(self,  scene,  rpm, caption,  x,  y,  place_pose_changed=None,  outline_diameter=0.1,  selected = False,  fixed=False):
+    def __init__(self, scene, rpm, caption, x, y, place_pose_changed=None, outline_diameter=0.1, selected=False, fixed=False):
 
         self.outline_diameter = outline_diameter
         self.caption = caption
         self.in_collision = False
 
-        super(PlaceItem,  self).__init__(scene,  rpm,  x,  y)
+        super(PlaceItem, self).__init__(scene, rpm, x, y)
 
-        self.desc = DescItem(scene,  rpm,  -self.outline_diameter*1.3/2.0, self.outline_diameter*1.3/2+0.01,  self)
+        self.desc = DescItem(scene, rpm, -self.outline_diameter * 1.3 / 2.0, self.outline_diameter * 1.3 / 2 + 0.01, self)
         self.update_text()
 
         self.fixed = fixed
@@ -44,25 +45,26 @@ class PlaceItem(Item):
 
     def cursor_release(self):
 
-        if self.place_pose_changed is not None: self.place_pose_changed(self.get_pos())
+        if self.place_pose_changed is not None:
+            self.place_pose_changed(self.get_pos())
 
     def boundingRect(self):
 
-        es = self.m2pix(self.outline_diameter*1.3)
-        return QtCore.QRectF(-es/2, -es/2, es, es+40)
+        es = self.m2pix(self.outline_diameter * 1.3)
+        return QtCore.QRectF(-es / 2, -es / 2, es, es + 40)
 
     def shape(self):
 
         path = QtGui.QPainterPath()
         es = self.m2pix(self.outline_diameter)
-        path.addEllipse(QtCore.QPoint(0,  0),  es/2,  es/2)
+        path.addEllipse(QtCore.QPoint(0, 0), es / 2, es / 2)
         return path
 
     def item_moved(self):
 
         # TODO testovat kolize jen s PlaceItem?
         for it in self.collidingItems():
-            if isinstance(it,  PlaceItem) or isinstance(it,  ObjectItem):
+            if isinstance(it, PlaceItem) or isinstance(it, ObjectItem):
                 self.in_collision = True
                 break
         else:
@@ -78,7 +80,7 @@ class PlaceItem(Item):
         if self.hover and not self.fixed:
             painter.setBrush(QtCore.Qt.gray)
             painter.setPen(QtCore.Qt.gray)
-            painter.drawEllipse(QtCore.QPoint(0,  0), es/2*1.3, es/2*1.3)
+            painter.drawEllipse(QtCore.QPoint(0, 0), es / 2 * 1.3, es / 2 * 1.3)
 
         if self.fixed:
             painter.setBrush(QtCore.Qt.gray)
@@ -87,4 +89,4 @@ class PlaceItem(Item):
         else:
             painter.setBrush(QtCore.Qt.red)
 
-        painter.drawEllipse(QtCore.QPoint(0,  0), es/2, es/2)
+        painter.drawEllipse(QtCore.QPoint(0, 0), es / 2, es / 2)
