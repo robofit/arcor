@@ -36,7 +36,7 @@ public:
     ros::Duration(1).sleep();
 
     // todo - read from param?
-    if (!gr_.addTable(0.75, 0, 0, 1.5, 0.74, 0.80, "table1"))
+    if (!gr_.addTable(0.75, 0, 0, 1.5, 0.78, 0.70, "table1"))
     {
       ROS_ERROR("failed to add table");
       return false;
