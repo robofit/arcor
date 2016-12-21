@@ -8,11 +8,11 @@
   <!-- Launch pick and place -->
   <node name="kinect_pointing" launch-prefix="$(arg launch_prefix)" pkg="art_table_pointing" 
 	type="art_table_pointing_kinect" output="screen" respawn="false">
-        <param name="x_offset" value="-1.5"/>
-    <param name="y_offset" value="-0.8"/>
-    <param name="table_width" value="1.5"/>
-    <param name="table_height" value="0.8"/>
-    <param name="table_frame" value="/marker"/>
+        <param name="x_offset" value="0"/>
+        <param name="y_offset" value="0"/>
+        <param name="table_width" value="1.5"/>
+        <param name="table_height" value="0.8"/>
+        <param name="table_frame" value="/marker"/>
 
   </node>
   
