@@ -376,7 +376,7 @@ class ArtBrain:
         # self.state = self.SYSTEM_STARTING_PROGRAM_SERVER
 
     def state_calibrating(self):
-        #self.calibrate_all(self.calibrate_table, self.calibrate_pr2)
+        # self.calibrate_all(self.calibrate_table, self.calibrate_pr2)
         self.state = self.SYSTEM_STARTING_PROGRAM_SERVER
 
     def state_switcher(self):
