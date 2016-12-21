@@ -98,9 +98,9 @@ def main(args):
     ot = ObjectType()
     ot.name = "profile_20_60"
     ot.bbox.type = SolidPrimitive.BOX
-    ot.bbox.dimensions.append(0.1)
-    ot.bbox.dimensions.append(0.1)
-    ot.bbox.dimensions.append(0.1)
+    ot.bbox.dimensions.append(0.05)
+    ot.bbox.dimensions.append(0.05)
+    ot.bbox.dimensions.append(0.16)
 
     try:
         store_object_srv = rospy.ServiceProxy('/art/db/object_type/store', storeObjectType)
