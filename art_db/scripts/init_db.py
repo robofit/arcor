@@ -14,8 +14,8 @@ def main(args):
     rospy.init_node('art_db_service_tester', anonymous=True)
 
     p = Program()
-    p.id = 0
-    p.name = "Basic pick&place"
+    p.header.id = 0
+    p.header.name = "Basic pick&place"
 
     pb = ProgramBlock()
     pb.id = 1  # can't be zero

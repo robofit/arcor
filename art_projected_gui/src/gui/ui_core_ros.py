@@ -273,7 +273,7 @@ class UICoreRos(UICore):
 
         elif state.system_state == InterfaceState.STATE_PROGRAM_RUNNING:
 
-            if self.program_vis.prog is None or self.program_vis.prog.id != state.program_id:
+            if self.program_vis.prog is None or self.program_vis.prog.header.id != state.program_id:
 
                 program = self.art.load_program(state.program_id)
                 if program is not None:
@@ -339,7 +339,7 @@ class UICoreRos(UICore):
         if state == 'RUNNING':
 
             prog = self.program_vis.get_prog()
-            prog.id = 1
+            prog.header.id = 1
 
             if not self.art.store_program(prog):
                 # TODO what to do?
@@ -353,7 +353,7 @@ class UICoreRos(UICore):
             self.clear_all()
             self.fsm.tr_program_learned()
 
-            self.art.start_program(prog.id)
+            self.art.start_program(prog.header.id)
 
         # TODO pause / stop -> fsm
         # elif state == ''
@@ -361,11 +361,11 @@ class UICoreRos(UICore):
         # callback from ProgramItem
     def active_item_switched(self):
 
-        rospy.logdebug("Program ID:" + str(self.program_vis.prog.id) + ", active item ID: " + str(self.program_vis.active_item.item.id))
+        rospy.logdebug("Program ID:" + str(self.program_vis.prog.header.id) + ", active item ID: " + str(self.program_vis.active_item.item.id))
 
         self.clear_all()
         # TODO block_id
-        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.prog.blocks[0].id,  self.program_vis.active_item.item)
+        self.state_manager.update_program_item(self.program_vis.prog.header.id, self.program_vis.prog.blocks[0].id,  self.program_vis.active_item.item)
 
         if self.program_vis.active_item.item.type in [ProgIt.MANIP_PICK, ProgIt.MANIP_PLACE, ProgIt.MANIP_PICK_PLACE]:
 
@@ -424,7 +424,7 @@ class UICoreRos(UICore):
 
         self.program_vis.set_place_pose(pos[0], pos[1])
         # TODO block_id
-        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.prog.blocks[0].id,  self.program_vis.active_item.item)
+        self.state_manager.update_program_item(self.program_vis.prog.header.id, self.program_vis.prog.blocks[0].id,  self.program_vis.active_item.item)
 
     def is_template(self):
 
@@ -526,7 +526,7 @@ class UICoreRos(UICore):
 
         self.program_vis.set_polygon(pts)
         # TODO block_id
-        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.prog.blocks[0].id, self.program_vis.active_item.item)
+        self.state_manager.update_program_item(self.program_vis.prog.header.id, self.program_vis.prog.blocks[0].id, self.program_vis.active_item.item)
 
     def object_selected(self, id, selected):
 
@@ -569,7 +569,7 @@ class UICoreRos(UICore):
             pass
 
         # TODO block_id
-        self.state_manager.update_program_item(self.program_vis.prog.id, self.program_vis.prog.blocks[0].id, self.program_vis.active_item.item)
+        self.state_manager.update_program_item(self.program_vis.prog.header.id, self.program_vis.prog.blocks[0].id, self.program_vis.active_item.item)
         return True
 
     def user_status_cb(self, msg):

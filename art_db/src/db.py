@@ -55,7 +55,7 @@ class ArtDB:
             resp.error = "Invalid program"
             return resp
 
-        name = "program:" + str(req.program.id)
+        name = "program:" + str(req.program.header.id)
 
         try:
             ret = self.db.update_named(name,  req.program,  upsert=True)

@@ -61,8 +61,8 @@ class TestArtDb(unittest.TestCase):
     def test_program(self):
 
         p = Program()
-        p.id = 999
-        p.name = "Test pick&place"
+        p.header.id = 999
+        p.header.name = "Test pick&place"
 
         pb = ProgramBlock()
         pb.id = 1  # can't be zero
@@ -134,7 +134,7 @@ class TestArtDb(unittest.TestCase):
             pass
 
         self.assertEquals(resp_get.success, True, "program_get")
-        self.assertEquals(resp_get.program.id, 999, "program_get")
+        self.assertEquals(resp_get.program.header.id, 999, "program_get")
 
     def test_invalid_program_get(self):
 
