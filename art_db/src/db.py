@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 from art_msgs.msg import Program,  ObjectType
-from art_msgs.srv import getProgram,  getProgramResponse,  storeProgram,  storeProgramResponse,  getObjectType,  \
-    getObjectTypeResponse,  storeObjectType,  storeObjectTypeResponse
+from art_msgs.srv import getProgram,  getProgramResponse,  getProgramHeaders,  getProgramHeadersResponse, \
+    storeProgram,  storeProgramResponse,  getObjectType, getObjectTypeResponse,  storeObjectType,  storeObjectTypeResponse
 import sys
 import rospy
 from art_utils import ProgramHelper
@@ -17,12 +17,30 @@ class ArtDB:
         self.db = MessageStoreProxy()
 
         self.srv_get_program = rospy.Service('/art/db/program/get', getProgram, self.srv_get_program_cb)
+        self.srv_get_program_headers = rospy.Service('/art/db/program_headers/get', getProgramHeaders, self.srv_get_program_headers_cb)
         self.srv_store_program = rospy.Service('/art/db/program/store', storeProgram, self.srv_store_program_cb)
 
         self.srv_get_object = rospy.Service('/art/db/object_type/get', getObjectType, self.srv_get_object_cb)
         self.srv_store_object = rospy.Service('/art/db/object_type/store', storeObjectType, self.srv_store_object_cb)
 
         rospy.loginfo('art_db ready')
+
+    def srv_get_program_headers_cb(self,  req):
+
+        resp = getProgramHeadersResponse()
+
+        programs = []
+
+        try:
+            programs = self.db.query(Program._type)
+        except rospy.ServiceException, e:
+            print "Service call failed: " + str(e)
+
+        for prog in programs:
+            if len(req.ids) == 0 or prog[0].header.id in req.ids:
+                resp.headers.append(prog[0].header)
+
+        return resp
 
     def srv_get_program_cb(self,  req):
 
