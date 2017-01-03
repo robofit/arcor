@@ -145,7 +145,6 @@ class TestArtDb(unittest.TestCase):
         self.assertEquals(len(resp_headers.headers), 1, "program_headers_len")
         self.assertEquals(resp_headers.headers[0].id, 999, "program_headers_id")
 
-
     def test_invalid_program_get(self):
 
         try:
@@ -161,7 +160,6 @@ class TestArtDb(unittest.TestCase):
             pass
 
         self.assertEquals(len(resp_headers.headers), 0, "invalid_program_headers_len")
-
 
     def test_invalid_program_store(self):
 
