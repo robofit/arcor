@@ -15,13 +15,13 @@ def sigint_handler(*args):
 
 def main(args):
 
-    rospy.init_node('projected_gui_projector')
+    rospy.init_node('projected_gui_projector',  anonymous=True)
 
     signal.signal(signal.SIGINT, sigint_handler)
 
     app = QtGui.QApplication(sys.argv)
 
-    proj = Projector()
+    Projector()
 
     timer = QtCore.QTimer()
     timer.start(500)

@@ -14,10 +14,10 @@ class ProjectorHelper():
         self.calibrated_cb = None
         self.calibrating = False
 
-        proj_ns = "/art/interface/projected_gui/projector/" + proj_id + "/"
+        self.proj_ns = "/art/interface/projected_gui/projector/" + proj_id + "/"
 
-        self.calib_sub = rospy.Subscriber(proj_ns + "calibrated", Bool, self.calib_cb, queue_size=10)
-        self.srv_calibrate = rospy.ServiceProxy(proj_ns + "calibrate", Empty)
+        self.calib_sub = rospy.Subscriber(self.proj_ns + "calibrated", Bool, self.calib_cb, queue_size=10)
+        self.srv_calibrate = rospy.ServiceProxy(self.proj_ns + "calibrate", Empty)
 
     def wait_until_available(self):
 
@@ -27,6 +27,12 @@ class ProjectorHelper():
 
         if self.calibrating:
             return False
+
+        if self.is_calibrated():
+
+            if calibrated_cb is not None:
+                calibrated_cb(self)
+            return True
 
         self.calibrated_cb = calibrated_cb
         self.calibrating = True
@@ -50,3 +56,4 @@ class ProjectorHelper():
         self.calibrating = False
         if self.calibrated_cb is not None:
             self.calibrated_cb(self)
+            self.calibrated_cb = None

@@ -450,7 +450,7 @@ class UICoreRos(UICore):
                 self.projectors[self.calib_proj_cnt].calibrate(self.calib_done_cb)
             else:
                 rospy.loginfo('Projectors calibrated.')
-                self.fsm.tr_calibrated()
+                self.fsm.tr_projectors_calibrated()
 
         else:
 
@@ -463,7 +463,7 @@ class UICoreRos(UICore):
         if len(self.projectors) == 0:
 
             rospy.loginfo('No projectors to calibrate.')
-            self.fsm.tr_calibrated()
+            self.fsm.tr_projectors_calibrated()
 
         else:
 
@@ -533,8 +533,6 @@ class UICoreRos(UICore):
         if self.fsm.state != 'learning':
             return False
         # TODO handle un-selected
-
-        print "selected object: " + str(id)
 
         obj = self.get_object(id)
 
