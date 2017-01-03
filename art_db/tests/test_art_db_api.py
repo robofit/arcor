@@ -6,7 +6,7 @@ import rospy
 import rostest
 
 from art_msgs.msg import Program,  ProgramBlock, ProgramItem,  ObjectType
-from art_msgs.srv import getProgram,  storeProgram,   getObjectType,  storeObjectType
+from art_msgs.srv import getProgram,  getProgramHeaders,  storeProgram,   getObjectType,  storeObjectType
 from shape_msgs.msg import SolidPrimitive
 
 
@@ -23,6 +23,7 @@ class TestArtDb(unittest.TestCase):
         self.store_object_srv = rospy.ServiceProxy('/art/db/object_type/store', storeObjectType)
         self.store_program_srv = rospy.ServiceProxy('/art/db/program/store', storeProgram)
         self.get_program_srv = rospy.ServiceProxy('/art/db/program/get', getProgram)
+        self.get_program_headers_srv = rospy.ServiceProxy('/art/db/program_headers/get', getProgramHeaders)
 
     def test_object_type(self):
 
@@ -136,6 +137,15 @@ class TestArtDb(unittest.TestCase):
         self.assertEquals(resp_get.success, True, "program_get")
         self.assertEquals(resp_get.program.header.id, 999, "program_get")
 
+        try:
+            resp_headers = self.get_program_headers_srv(ids=[999])
+        except rospy.ServiceException:
+            pass
+
+        self.assertEquals(len(resp_headers.headers), 1, "program_headers_len")
+        self.assertEquals(resp_headers.headers[0].id, 999, "program_headers_id")
+
+
     def test_invalid_program_get(self):
 
         try:
@@ -144,6 +154,14 @@ class TestArtDb(unittest.TestCase):
             pass
 
         self.assertEquals(resp_get.success, False, "invalid_program_get")
+
+        try:
+            resp_headers = self.get_program_headers_srv(ids=[1234])
+        except rospy.ServiceException:
+            pass
+
+        self.assertEquals(len(resp_headers.headers), 0, "invalid_program_headers_len")
+
 
     def test_invalid_program_store(self):
 
