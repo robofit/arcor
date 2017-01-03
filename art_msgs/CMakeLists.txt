@@ -27,6 +27,7 @@ add_message_files(
   ProgramItem.msg
   ProgramBlock.msg
   Program.msg
+  ProgramHeader.msg
   InterfaceState.msg
   KeyValue.msg
   Touch.msg
@@ -35,6 +36,7 @@ add_message_files(
 add_service_files(
     FILES
     getProgram.srv
+    getProgramHeaders.srv
     storeProgram.srv
     getObjectType.srv
     storeObjectType.srv

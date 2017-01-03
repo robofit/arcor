@@ -1,3 +1,2 @@
-uint16 id
-string name
+ProgramHeader header
 ProgramBlock[] blocks
