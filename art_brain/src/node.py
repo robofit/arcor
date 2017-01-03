@@ -411,7 +411,7 @@ class ArtBrain:
 
             while self.executing_program:
 
-                rospy.loginfo('Program id: ' + str(self.ph.prog.id) + ', item id: ' + str(it.id) + ', item type: ' + str(it.type))
+                rospy.loginfo('Program id: ' + str(self.ph.get_program_id()) + ', item id: ' + str(it.id) + ', item type: ' + str(it.type))
 
                 self.instruction = it.type
                 instruction_function = self.instruction_switcher()

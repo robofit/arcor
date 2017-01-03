@@ -33,7 +33,7 @@ class Projector(QtGui.QWidget):
         self.camera_depth_topic = rospy.get_param('~camera_depth_topic', '/kinect2/qhd/image_depth_rect')
         self.camera_info_topic = rospy.get_param('~camera_info_topic', '/kinect2/qhd/camera_info')
 
-        self.h_matrix = rospy.get_param("/art/interface/projected_gui/projector/" + self.proj_id + "/calibration_matrix", None)
+        self.h_matrix = rospy.get_param("~calibration_matrix", None)
 
         if self.h_matrix is not None:
             rospy.loginfo('Loaded calibration from param.')
@@ -87,11 +87,11 @@ class Projector(QtGui.QWidget):
 
         rospy.loginfo('Connected to scene server.')
 
-        self.calibrated_pub = rospy.Publisher("/art/interface/projected_gui/projector/" + self.proj_id + "/calibrated", Bool, queue_size=1, latch=True)
+        self.calibrated_pub = rospy.Publisher("~calibrated", Bool, queue_size=1, latch=True)
         self.calibrated_pub.publish(self.is_calibrated())
 
-        self.srv_calibrate = rospy.Service("/art/interface/projected_gui/projector/" + self.proj_id + "/calibrate", Empty, self.calibrate_srv_cb)
-        self.corners_pub = rospy.Publisher("/art/interface/projected_gui/projector/" + self.proj_id + "/corners", PoseArray, queue_size=10, latch=True)
+        self.srv_calibrate = rospy.Service("~calibrate", Empty, self.calibrate_srv_cb)
+        self.corners_pub = rospy.Publisher("~corners", PoseArray, queue_size=10, latch=True)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('show_chessboard'), self.show_chessboard_evt)
 
@@ -248,7 +248,7 @@ class Projector(QtGui.QWidget):
 
         # store homography matrix to parameter server
         s = str(self.h_matrix.tolist())
-        rospy.set_param("/art/interface/projected_gui/projector/" + self.proj_id + "/calibration_matrix", s)
+        rospy.set_param("~calibration_matrix", s)
         print s
 
         return True

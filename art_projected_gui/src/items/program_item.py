@@ -406,7 +406,7 @@ class ProgramItem(Item):
         painter.setFont(font)
         painter.setPen(QtCore.Qt.white)
 
-        painter.drawText(0, -10, translate("ProgramItem", "Program") + " ID=" + str(self.prog.id))
+        painter.drawText(0, -10, translate("ProgramItem", "Program") + " ID=" + str(self.prog.header.id))
 
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.NoPen)
