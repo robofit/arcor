@@ -115,7 +115,7 @@ class UICore(QtCore.QObject):
             self.scene.removeItem(it)
             self.scene_items.remove(it)
 
-    def add_object(self, object_id, object_type, x, y, sel_cb=None):
+    def add_object(self, object_id, object_type, x, y, yaw,  sel_cb=None):
         """Adds object to the scene.
 
         Args:
@@ -125,7 +125,7 @@ class UICore(QtCore.QObject):
             sel_cb (method): Callback which gets called one the object is selected.
         """
 
-        self.scene_items.append(ObjectItem(self.scene, self.rpm, object_id, object_type, x, y, sel_cb))
+        self.scene_items.append(ObjectItem(self.scene, self.rpm, object_id, object_type, x, y, yaw,  sel_cb))
 
     def remove_object(self, object_id):
         """Removes ObjectItem with given object_id from the scene."""

@@ -39,7 +39,7 @@ class Item(QtGui.QGraphicsItem):
         return p / self.rpm
 
     # world coordinates to scene coords
-    def set_pos(self, x, y, parent_coords=False):
+    def set_pos(self, x, y, parent_coords=False,  yaw=0.0):
 
         # we usually want to work with scene/world coordinates
         if self.parentItem() and not parent_coords:
@@ -51,6 +51,8 @@ class Item(QtGui.QGraphicsItem):
         else:
 
             self.setPos(self.m2pix(x), self.m2pix(y))
+
+        self.setRotation(yaw)
 
     def get_pos(self, pixels=False):
 

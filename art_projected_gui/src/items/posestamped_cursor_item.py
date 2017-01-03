@@ -4,6 +4,8 @@ from PyQt4 import QtGui, QtCore
 from item import Item
 import rospy
 from geometry_msgs.msg import PoseStamped
+from touch_table_item import TouchTableItem
+from desc_item import DescItem
 
 # TODO optional filtering (kalman?)
 # TODO option to select when hovered for some time (instead of 'click')
@@ -125,7 +127,7 @@ class PoseStampedCursorItem(Item):
 
             for it in self.scene().items():
 
-                if isinstance(it, PoseStampedCursorItem):
+                if isinstance(it, PoseStampedCursorItem) or isinstance(it, TouchTableItem) or isinstance(it, DescItem):
                     continue  # TODO make some common class for cursors
 
                 if self.collidesWithItem(it):
@@ -133,6 +135,7 @@ class PoseStampedCursorItem(Item):
                     if (rospy.Time.now() - it.last_pointed) < rospy.Duration(3.0):
                         continue
 
+                    rospy.logdebug("new pointed item: " + it.__class__.__name__)
                     it.set_hover(True, self)
                     self.pointed_item = it
                     self.pointed_time = rospy.Time.now()
@@ -171,6 +174,7 @@ class PoseStampedCursorItem(Item):
 
                 if (rospy.Time.now() - self.last_move) > rospy.Duration(2.0) and (self.last_move - self.pointed_time) > rospy.Duration(3.0):
 
+                    rospy.logdebug("releasing pointed item: " + self.pointed_item.__class__.__name__)
                     self.pointed_item.set_hover(False, self)
                     self.pointed_item.cursor_release()
                     self.pointed_item.last_pointed = rospy.Time.now()
