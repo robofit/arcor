@@ -14,8 +14,8 @@ Usage (for testing purposes):
 ```
 roslaunch art_db db.launch
 rosrun art_projected_gui test_gui.py (publishes two objects)
-rosrun art_projected_gui test_brain.py (simulated art_brain)
-rosrun art_projected_gui projector_node.py _screen_number:=1
+rosrun art_projected_gui test_brain.py (simulates art_brain)
+roslaunch art_projected_gui projector.launch
 roslaunch art_projected_gui app.launch
 ```
 
