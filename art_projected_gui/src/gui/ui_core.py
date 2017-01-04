@@ -92,21 +92,21 @@ class UICore(QtCore.QObject):
 
         self.view.show()
 
-    def get_scene_items_by_type(self, type):
+    def get_scene_items_by_type(self, itype):
         """Generator to filter content of scene_items array."""
 
         for el in self.scene_items:
-            if isinstance(el, type):
+            if type(el) is itype:  # TODO option for 'isinstance' ??
                 yield el
 
-    def remove_scene_items_by_type(self, type):
+    def remove_scene_items_by_type(self, itype):
         """Removes items of the given type from scene (from scene_items and scene)."""
 
         its = []
 
         for it in self.scene_items:
 
-            if not isinstance(it, type):
+            if type(it) is not itype:
                 continue
             its.append(it)
 
@@ -188,9 +188,9 @@ class UICore(QtCore.QObject):
 
         return None
 
-    def add_place(self, caption, x, y, place_cb=None, fixed=False):
+    def add_place(self, caption,  x, y, object_type,  object_id=None,  place_cb=None, fixed=False):
 
-        self.scene_items.append(PlaceItem(self.scene, self.rpm, caption, x, y, place_pose_changed=place_cb, fixed=fixed))
+        self.scene_items.append(PlaceItem(self.scene, self.rpm, caption,  x, y, object_type,  object_id,  place_pose_changed=place_cb, fixed=fixed))
 
     def add_polygon(self, caption, obj_coords=[], poly_points=[], polygon_changed=None, fixed=False):
 

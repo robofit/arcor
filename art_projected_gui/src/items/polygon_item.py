@@ -2,55 +2,7 @@
 
 from PyQt4 import QtGui, QtCore
 from item import Item
-
-
-class PolygonPointItem(Item):
-
-    def __init__(self, scene, rpm, x, y, parent, fixed=False):
-
-        self.outline_diameter = 0.025
-
-        super(PolygonPointItem, self).__init__(scene, rpm, x, y, parent)
-        self.fixed = fixed
-
-    def boundingRect(self):
-
-        es = self.m2pix(self.outline_diameter * 1.8)
-
-        return QtCore.QRectF(-es / 2, -es / 2, es, es)
-
-    def shape(self):
-
-        path = QtGui.QPainterPath()
-        es = self.m2pix(self.outline_diameter)
-        path.addEllipse(QtCore.QPoint(0, 0), es / 2, es / 2)
-        return path
-
-    def item_moved(self):
-
-        self.parentItem().point_changed()
-
-    def cursor_release(self):
-
-        self.parentItem().point_changed(True)
-
-    def paint(self, painter, option, widget):
-
-        painter.setClipRect(option.exposedRect)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-
-        es = self.m2pix(self.outline_diameter)
-
-        if self.hover:
-            # TODO coordinates
-            painter.setBrush(QtCore.Qt.gray)
-            painter.setPen(QtCore.Qt.gray)
-            painter.drawEllipse(QtCore.QPoint(0, 0), es / 2 * 1.8, es / 2 * 1.8)
-
-        painter.setBrush(QtCore.Qt.cyan)
-        painter.setPen(QtCore.Qt.cyan)
-
-        painter.drawEllipse(QtCore.QPoint(0, 0), es / 2, es / 2)
+from point_item import PointItem
 
 
 class PolygonItem(Item):
@@ -59,6 +11,8 @@ class PolygonItem(Item):
 
         self.caption = caption
         self.polygon_changed = polygon_changed
+        self.min = [0, 0]
+        self.max = [0,  0]
 
         super(PolygonItem, self).__init__(scene, rpm, 0, 0)
         self.fixed = fixed
@@ -90,10 +44,10 @@ class PolygonItem(Item):
 
             self.pts = []
 
-            self.pts.append(PolygonPointItem(scene, rpm, self.min[0], self.min[1], self))
-            self.pts.append(PolygonPointItem(scene, rpm, self.max[0], self.min[1], self))
-            self.pts.append(PolygonPointItem(scene, rpm, self.max[0], self.max[1], self))
-            self.pts.append(PolygonPointItem(scene, rpm, self.min[0], self.max[1], self))
+            self.pts.append(PointItem(scene, rpm, self.min[0], self.min[1], self))
+            self.pts.append(PointItem(scene, rpm, self.max[0], self.min[1], self))
+            self.pts.append(PointItem(scene, rpm, self.max[0], self.max[1], self))
+            self.pts.append(PointItem(scene, rpm, self.min[0], self.max[1], self))
 
             if self.polygon_changed is not None:
                 self.polygon_changed(self.get_poly_points())
@@ -120,7 +74,7 @@ class PolygonItem(Item):
 
             for pt in poly_points:
 
-                self.pts.append(PolygonPointItem(scene, rpm, pt[0], pt[1], self, fixed))
+                self.pts.append(PointItem(scene, rpm, pt[0], pt[1], self, fixed))
 
         else:
 

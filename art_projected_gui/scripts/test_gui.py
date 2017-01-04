@@ -5,9 +5,11 @@ from art_msgs.msg import InstancesArray, ObjInstance
 import tf
 from math import pi
 
+
 def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
 
     return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
 
 def yaw2orientation(yaw):
 
@@ -20,6 +22,7 @@ def yaw2orientation(yaw):
     orientation.w = quaternion[3]
 
     return orientation
+
 
 def main():
 
@@ -38,7 +41,6 @@ def main():
     obj.pose.position.y = 0.3
     obj.pose.position.z = 0.0
     obj.pose.orientation = yaw2orientation(0)
-
 
     arr.instances.append(obj)
 

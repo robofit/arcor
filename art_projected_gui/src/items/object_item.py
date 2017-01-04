@@ -3,11 +3,6 @@
 """
 Visualization of detected object(s).
 
-TODO:
- - preselect (highlight)
- - display additional information on highlight
- - diameter based on boundingbox size?
-
 """
 
 from PyQt4 import QtGui, QtCore
@@ -19,15 +14,21 @@ translate = QtCore.QCoreApplication.translate
 
 class ObjectItem(Item):
 
-    def __init__(self, scene, rpm, object_id, object_type, x, y, yaw,  sel_cb=None, outline_diameter=0.1, selected=False):
+    """The class to visualize (detected) object.
+
+    It currently supports only rotation around z-axis.
+
+    """
+
+    def __init__(self, scene, rpm, object_id, object_type, x, y, yaw,  sel_cb=None, selected=False):
 
         self.object_id = object_id
-        self.outline_diameter = outline_diameter
         self.selected = selected
         self.sel_cb = sel_cb
-        self.object_type = object_type
+        self.object_type = object_type  # TODO check bbox type and use rectangle (used now) / ellipse, consider other angles
         self.inflate = 2.0
-        self.hover_ratio = 1.3
+        self.hover_ratio = 1.1
+        self.def_color = QtCore.Qt.gray
 
         self.desc = None
 
@@ -43,13 +44,24 @@ class ObjectItem(Item):
         if selected:
             self.set_selected()
 
+        self._update_desc_pos()
+
+    def set_color(self, color=QtCore.Qt.gray):
+
+        self.def_color = color
+        self.update()
+
+    def _update_desc_pos(self):
+
+        if self.desc is not None:
+
+            # make upper left corner of description aligned with left extent of the (possibly rotated) object bounding box (highlight area)
+            self.desc.setPos(self.mapFromScene(self.x()-self.sceneBoundingRect().width()/2,  self.y()+self.sceneBoundingRect().height()/2 + self.m2pix(0.01)))
+
     def set_pos(self, x, y, parent_coords=False,  yaw=0.0):
 
         super(ObjectItem, self).set_pos(x, y,  parent_coords,  yaw)
-
-        if self.desc is not None:
-            print self.sceneBoundingRect().height()/2
-            self.desc.setPos(-self.boundingRect().width()/2, self.sceneBoundingRect().height()/2 + self.m2pix(0.01))
+        self._update_desc_pos()
 
     def update_text(self):
 
@@ -75,15 +87,6 @@ class ObjectItem(Item):
         p = 1.0
         return QtCore.QRectF(-lx / 2 - p, -ly / 2 - p, lx + 2 * p, ly + 2 * p)
 
-    def shape(self):
-
-        lx = self.hover_ratio*self.inflate*self.m2pix(self.object_type.bbox.dimensions[0])
-        ly = self.hover_ratio*self.inflate*self.m2pix(self.object_type.bbox.dimensions[1])
-        p = 1.0
-        path = QtGui.QPainterPath()
-        path.addRect(-lx / 2 - p, -ly / 2 - p, lx + 2 * p, ly + 2 * p)
-        return path
-
     def paint(self, painter, option, widget):
 
         painter.setClipRect(option.exposedRect)
@@ -108,18 +111,20 @@ class ObjectItem(Item):
 
             painter.drawRoundedRect(-lx/2*self.hover_ratio,  -ly/2*self.hover_ratio,  lx*self.hover_ratio,  ly*self.hover_ratio,  rr, rr,  QtCore.Qt.RelativeSize)
 
-        painter.setBrush(QtCore.Qt.white)
-        painter.setPen(QtCore.Qt.white)
+        painter.setBrush(self.def_color)
+        painter.setPen(self.def_color)
 
         painter.drawRoundedRect(-lx/2,  -ly/2,  lx,  ly,  rr, rr,  QtCore.Qt.RelativeSize)
 
-        fr = 1.0 - (self.hover_ratio - 1.0) # fill ratio
+        fr = 1.0 - (self.hover_ratio - 1.0)  # fill ratio
 
         painter.setBrush(QtCore.Qt.black)
         painter.setPen(QtCore.Qt.black)
         painter.drawRoundedRect(-lx/2*fr,  -ly/2*fr,  lx*fr,  ly*fr,  rr, rr,  QtCore.Qt.RelativeSize)
 
-    def cursor_press(self):  # TODO cursor_click??
+    def cursor_press(self):
+
+        # TODO call base class method
 
         if self.sel_cb is not None:
             # callback should handle object selection
