@@ -3,6 +3,7 @@
 from PyQt4 import QtGui, QtCore
 from item import Item
 
+
 class PointItem(Item):
 
     def __init__(self, scene, rpm, x, y, parent, fixed=False):
