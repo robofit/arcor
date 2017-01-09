@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from ui_core import UICore
-from PyQt4 import QtCore, QtGui, QtNetwork
+from PyQt4 import QtCore, QtGui
 import rospy
 from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt
 from fsm import FSM
@@ -37,13 +37,13 @@ class UICoreRos(UICore):
         origin = rospy.get_param("~scene_origin", [0, 0])
         size = rospy.get_param("~scene_size", [1.2, 0.75])
         rpm = rospy.get_param("~rpm", 1280)
+        port = rospy.get_param("~scene_server_port", 1234)
 
-        super(UICoreRos, self).__init__(origin[0], origin[1], size[0], size[1], rpm)
+        super(UICoreRos, self).__init__(origin[0], origin[1], size[0], size[1], rpm,  port)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('objects'), self.object_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('user_status'), self.user_status_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('interface_state'), self.interface_state_evt)
-        QtCore.QObject.connect(self, QtCore.SIGNAL('send_scene'), self.send_to_clients_evt)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('touch_calibration_points_evt'), self.touch_calibration_points_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('touch_detected_evt'), self.touch_detected_evt)
@@ -76,19 +76,6 @@ class UICoreRos(UICore):
         self.scene_items.append(ButtonItem(self.scene, self.rpm, 0, 0, "STOP", None, self.stop_btn_clicked, 2.0, QtCore.Qt.red))
         self.scene_items[-1].setPos(self.scene.width() - self.scene_items[-1].w, self.scene.height() - self.scene_items[-1].h - 60)
         self.scene_items[-1].set_enabled(True)
-
-        self.port = rospy.get_param("~scene_server_port", 1234)
-
-        self.tcpServer = QtNetwork.QTcpServer(self)
-        if not self.tcpServer.listen(port=self.port):
-
-            rospy.logerr('Failed to start scene TCP server on port ' + str(self.port))
-
-        self.tcpServer.newConnection.connect(self.newConnection)
-        self.connections = []
-
-        self.last_scene_update = None
-        self.scene.changed.connect(self.scene_changed)
 
         self.projectors = []
 
@@ -161,62 +148,6 @@ class UICoreRos(UICore):
 
         self.emit(QtCore.SIGNAL('touch_detected_evt'), msg)
 
-    def newConnection(self):
-
-        rospy.loginfo('Some projector node just connected.')
-        self.connections.append(self.tcpServer.nextPendingConnection())
-        self.connections[-1].setSocketOption(QtNetwork.QAbstractSocket.LowDelayOption, 1)
-        self.emit(QtCore.SIGNAL('send_scene'), self.connections[-1])
-        # TODO deal with disconnected clients!
-        # self.connections[-1].disconnected.connect(clientConnection.deleteLater)
-
-    def send_to_clients_evt(self, client=None):
-
-        # if all connections are sending scene image, there is no need to render the new one
-        if client is None:
-
-            for con in self.connections:
-
-                if con.bytesToWrite() == 0:
-                    break
-
-            else:
-                return
-
-        # TODO try to use Format_RGB16 - BMP is anyway converted to 32bits (send raw data instead)
-        pix = QtGui.QImage(self.scene.width(), self.scene.height(), QtGui.QImage.Format_ARGB32_Premultiplied)
-        painter = QtGui.QPainter(pix)
-        self.scene.render(painter)
-        painter.end()
-
-        block = QtCore.QByteArray()
-        out = QtCore.QDataStream(block, QtCore.QIODevice.WriteOnly)
-        out.setVersion(QtCore.QDataStream.Qt_4_0)
-        out.writeUInt32(0)
-
-        img = QtCore.QByteArray()
-        buffer = QtCore.QBuffer(img)
-        buffer.open(QtCore.QIODevice.WriteOnly)
-        pix.save(buffer, "BMP")
-        out << QtCore.qCompress(img, 1)  # this seem to be much faster than using PNG compression
-
-        out.device().seek(0)
-        out.writeUInt32(block.size() - 4)
-
-        # print block.size()
-
-        if client is None:
-
-            for con in self.connections:
-
-                if con.bytesToWrite() > 0:
-                    return
-                con.write(block)
-
-        else:
-
-            client.write(block)
-
     def start(self):
 
         rospy.loginfo("Waiting for ART services...")
@@ -241,24 +172,6 @@ class UICoreRos(UICore):
     def add_projector(self, proj_id):
 
         self.projectors.append(ProjectorHelper(proj_id))
-
-    def scene_changed(self, rects):
-
-        if len(rects) == 0:
-            return
-        # TODO Publish only changes? How to accumulate them (to be able to send it only at certain fps)?
-
-        now = rospy.Time.now()
-        if self.last_scene_update is None:
-            self.last_scene_update = now
-        else:
-            if now - self.last_scene_update < rospy.Duration(1.0 / 20):
-                return
-
-        # print 1.0/(now - self.last_scene_update).to_sec()
-        self.last_scene_update = now
-
-        self.emit(QtCore.SIGNAL('send_scene'))
 
     def stop_btn_clicked(self):
 

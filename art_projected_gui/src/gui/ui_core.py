@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from PyQt4 import QtGui, QtCore
+from PyQt4 import QtGui, QtCore, QtNetwork
 from items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem
 import rospy
 from helpers import conversions
@@ -39,7 +39,7 @@ class UICore(QtCore.QObject):
         view (QGraphicsView): To show content of the scene in debug window.
     """
 
-    def __init__(self, x, y, width, height, rpm):
+    def __init__(self, x, y, width, height, rpm,  scene_server_port):
         """
         Args:
             x (float): x coordinate of the scene's origin (in world coordinate system, meters).
@@ -56,6 +56,7 @@ class UICore(QtCore.QObject):
         self.width = width
         self.height = height
         self.rpm = rpm
+        self.port = scene_server_port
 
         w = self.width * self.rpm
         h = self.height / self.width * w
@@ -76,6 +77,93 @@ class UICore(QtCore.QObject):
         self.view.setRenderHint(QtGui.QPainter.Antialiasing)
         self.view.setViewportUpdateMode(QtGui.QGraphicsView.SmartViewportUpdate)
         self.view.setStyleSheet("QGraphicsView { border-style: none; }")
+
+        QtCore.QObject.connect(self, QtCore.SIGNAL('send_scene'), self.send_to_clients_evt)
+
+        self.tcpServer = QtNetwork.QTcpServer(self)
+        if not self.tcpServer.listen(port=self.port):
+
+            rospy.logerr('Failed to start scene TCP server on port ' + str(self.port))
+
+        self.tcpServer.newConnection.connect(self.new_connection)
+        self.connections = []
+
+        self.last_scene_update = None
+        self.scene.changed.connect(self.scene_changed)
+
+    def new_connection(self):
+
+        rospy.loginfo('Some projector node just connected.')
+        self.connections.append(self.tcpServer.nextPendingConnection())
+        self.connections[-1].setSocketOption(QtNetwork.QAbstractSocket.LowDelayOption, 1)
+        self.emit(QtCore.SIGNAL('send_scene'), self.connections[-1])
+        # TODO deal with disconnected clients!
+        # self.connections[-1].disconnected.connect(clientConnection.deleteLater)
+
+    def send_to_clients_evt(self, client=None):
+
+        # if all connections are sending scene image, there is no need to render the new one
+        if client is None:
+
+            for con in self.connections:
+
+                if con.bytesToWrite() == 0:
+                    break
+
+            else:
+                return
+
+        # TODO try to use Format_RGB16 - BMP is anyway converted to 32bits (send raw data instead)
+        pix = QtGui.QImage(self.scene.width(), self.scene.height(), QtGui.QImage.Format_ARGB32_Premultiplied)
+        painter = QtGui.QPainter(pix)
+        self.scene.render(painter)
+        painter.end()
+
+        block = QtCore.QByteArray()
+        out = QtCore.QDataStream(block, QtCore.QIODevice.WriteOnly)
+        out.setVersion(QtCore.QDataStream.Qt_4_0)
+        out.writeUInt32(0)
+
+        img = QtCore.QByteArray()
+        buffer = QtCore.QBuffer(img)
+        buffer.open(QtCore.QIODevice.WriteOnly)
+        pix.save(buffer, "BMP")
+        out << QtCore.qCompress(img, 1)  # this seem to be much faster than using PNG compression
+
+        out.device().seek(0)
+        out.writeUInt32(block.size() - 4)
+
+        # print block.size()
+
+        if client is None:
+
+            for con in self.connections:
+
+                if con.bytesToWrite() > 0:
+                    return
+                con.write(block)
+
+        else:
+
+            client.write(block)
+
+    def scene_changed(self, rects):
+
+        if len(rects) == 0:
+            return
+        # TODO Publish only changes? How to accumulate them (to be able to send it only at certain fps)?
+
+        now = rospy.Time.now()
+        if self.last_scene_update is None:
+            self.last_scene_update = now
+        else:
+            if now - self.last_scene_update < rospy.Duration(1.0 / 20):
+                return
+
+        # print 1.0/(now - self.last_scene_update).to_sec()
+        self.last_scene_update = now
+
+        self.emit(QtCore.SIGNAL('send_scene'))
 
     def notif(self, msg, min_duration=3.0, temp=False):
         """Display message (notification) to the user.
