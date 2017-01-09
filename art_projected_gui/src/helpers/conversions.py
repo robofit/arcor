@@ -2,6 +2,7 @@ import tf
 from math import pi
 from geometry_msgs.msg import Quaternion
 
+
 def yaw2quaternion(yaw):
 
     quaternion = tf.transformations.quaternion_from_euler(0, 0, yaw/360.0*2*pi)
@@ -13,6 +14,7 @@ def yaw2quaternion(yaw):
     q.w = quaternion[3]
 
     return q
+
 
 def quaternion2yaw(q):
 
