@@ -58,7 +58,7 @@ class ObjectItem(Item):
             # make upper left corner of description aligned with left extent of the (possibly rotated) object bounding box (highlight area)
             self.desc.setPos(self.mapFromScene(self.x()-self.sceneBoundingRect().width()/2,  self.y()+self.sceneBoundingRect().height()/2 + self.m2pix(0.01)))
 
-    def set_pos(self, x, y, parent_coords=False,  yaw=0.0):
+    def set_pos(self, x, y, parent_coords=False,  yaw=None):
 
         super(ObjectItem, self).set_pos(x, y,  parent_coords,  yaw)
         self._update_desc_pos()

@@ -7,10 +7,11 @@ from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem
 from fsm import FSM
 from transitions import MachineError
 from items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem
-from helpers import ProjectorHelper
+from helpers import ProjectorHelper,  conversions
 from art_utils import InterfaceStateManager,  ArtApiHelper
 from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse
 from std_msgs.msg import Empty
+from geometry_msgs.msg import PoseStamped
 
 translate = QtCore.QCoreApplication.translate
 
@@ -320,15 +321,14 @@ class UICoreRos(UICore):
                         obj_id = flags["SELECTED_OBJECT_ID"]
                     except KeyError:
                         rospy.logerr("MANIP_PICK_PLACE/MANIP_TYPE: SELECTED_OBJECT_ID flag not set")
-                        pass
+                        return
 
-                    # TODO how to highlight selected object (by brain) ?
-                    self.select_object_type(it.object)
-                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=self.program_vis.active_item.get_pick_polygon_points())  # TODO fixed
+                    self.select_object(obj_id)
+                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=self.program_vis.active_item.get_pick_polygon_points(),  fixed=True)
 
                 obj = self.get_object(obj_id)
                 self.notif(translate("UICoreRos", "Going to manipulate with object ID=") + obj_id)
-                self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  it.place_pose.pose.position.x, it.place_pose.pose.position.y, obj.object_type, obj_id,  fixed=True)
+                self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  it.place_pose, obj.object_type, obj_id,  fixed=True)
 
     def interface_state_cb(self, our_state, state, flags):
 
@@ -390,9 +390,9 @@ class UICoreRos(UICore):
 
                         if it.item.spec == ProgIt.MANIP_ID:
                             obj = self.get_object(it.item.id)
-                            self.add_place(translate("UICoreRos", "OBJECT FROM STEP") + " " + str(it.item.id), it.item.place_pose.pose.position.x, it.item.place_pose.pose.position.y, obj.object_type,  it.item.object, fixed=True)
+                            self.add_place(translate("UICoreRos", "OBJECT FROM STEP") + " " + str(it.item.id), it.item.place_pose, obj.object_type,  it.item.object, fixed=True)
                         elif it.item.spec == ProgIt.MANIP_TYPE:
-                            self.add_place(translate("UICoreRos", "OBJECT FROM STEP") + " " + str(it.item.id), it.item.place_pose.pose.position.x, it.item.place_pose.pose.position.y, self.art.get_object_type(it.item.object), fixed=True)
+                            self.add_place(translate("UICoreRos", "OBJECT FROM STEP") + " " + str(it.item.id), it.item.place_pose, self.art.get_object_type(it.item.object), fixed=True)
 
                         break
 
@@ -407,7 +407,7 @@ class UICoreRos(UICore):
                 # if program item already contains polygon - let's display it
                 if self.program_vis.active_item.is_pick_polygon_set():
 
-                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=self.program_vis.active_item.get_pick_polygon_points(), polygon_changed=self.polygon_changed, fixed=True)
+                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=self.program_vis.active_item.get_pick_polygon_points(), polygon_changed=self.polygon_changed)
 
             else:
 
@@ -417,20 +417,32 @@ class UICoreRos(UICore):
             if self.program_vis.active_item.is_object_set():
 
                 # TODO kdy misto place pose pouzi place polygon? umoznit zmenit pose na polygon a opacne?
-
-                obj = self.get_object(self.program_vis.active_item.item.object)
+                if self.program_vis.active_item.item.spec == ProgIt.MANIP_TYPE:
+                    object_type = self.art.get_object_type(self.program_vis.active_item.item.object)
+                    object_id = None
+                else:
+                    obj = self.get_object(self.program_vis.active_item.item.object)
+                    object_type = obj.object_type
+                    object_id = obj.object_id
 
                 if self.program_vis.active_item.is_place_pose_set():
-                    (x, y) = self.program_vis.active_item.get_place_pose()
-                    self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  x, y, obj.object_type,  obj.object_id, self.place_pose_changed)
+
+                    self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), self.program_vis.active_item.get_place_pose(), object_type,  object_id, place_cb=self.place_pose_changed)
                 else:
                     self.notif(translate("UICoreRos", "Set where to place picked object"))
-                    self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  self.width / 2, self.height / 2, obj.object_type,  obj.object_id, self.place_pose_changed)
+                    self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  self.get_def_pose(), object_type,  object_id, place_cb=self.place_pose_changed)
+
+    def get_def_pose(self):
+
+        ps = PoseStamped()
+        ps.pose.position.x = self.width / 2
+        ps.pose.position.y = self.height / 2
+        ps.pose.orientation.w = 1.0
+        return ps
 
     def place_pose_changed(self, pos,  yaw):
 
-        # TODO convert yaw to quaternion
-        self.program_vis.set_place_pose(pos[0], pos[1])
+        self.program_vis.set_place_pose(pos[0], pos[1],  yaw)
         # TODO block_id
         self.state_manager.update_program_item(self.program_vis.prog.header.id, self.program_vis.prog.blocks[0].id,  self.program_vis.active_item.item)
 
@@ -522,26 +534,12 @@ class UICoreRos(UICore):
             obj = self.get_object(inst.object_id)
 
             if obj:
-                obj.set_pos(inst.pose.position.x, inst.pose.position.y,  yaw=self.quaternion2yaw(inst.pose))
+                obj.set_pos(inst.pose.position.x, inst.pose.position.y,  yaw=conversions.quaternion2yaw(inst.pose.orientation))
             else:
 
                 obj_type = self.art.get_object_type(inst.object_type)
-                self.add_object(inst.object_id, obj_type, inst.pose.position.x, inst.pose.position.y, self.quaternion2yaw(inst.pose),  self.object_selected)
+                self.add_object(inst.object_id, obj_type, inst.pose.position.x, inst.pose.position.y, conversions.quaternion2yaw(inst.pose.orientation),  self.object_selected)
                 self.notif(translate("UICoreRos", "New object") + " ID=" + str(inst.object_id), temp=True)
-
-    def quaternion2yaw(self,  pose):  # TODO move to some helper class
-
-        import tf
-        from math import pi
-
-        quaternion = (
-            pose.orientation.x,
-            pose.orientation.y,
-            pose.orientation.z,
-            pose.orientation.w)
-
-        euler = tf.transformations.euler_from_quaternion(quaternion)
-        return euler[2]/(2*pi)*360
 
     def polygon_changed(self, pts):
 
@@ -580,7 +578,7 @@ class UICoreRos(UICore):
             self.notif(translate("UICoreRos", "Check and adjust pick polygon"), temp=True)
 
             self.notif(translate("UICoreRos", "Set where to place picked object"), temp=True)
-            self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), self.width / 2, self.height / 2, obj.object_type, place_cb=self.place_pose_changed)
+            self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), self.get_def_pose(), obj.object_type, place_cb=self.place_pose_changed)
 
         elif self.program_vis.active_item.item.spec == ProgIt.MANIP_ID:
 

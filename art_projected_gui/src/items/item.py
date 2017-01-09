@@ -39,20 +39,20 @@ class Item(QtGui.QGraphicsItem):
         return p / self.rpm
 
     # world coordinates to scene coords
-    def set_pos(self, x, y, parent_coords=False,  yaw=0.0):
+    def set_pos(self, x, y, parent_coords=False,  yaw=None):
 
         # we usually want to work with scene/world coordinates
         if self.parentItem() and not parent_coords:
 
-            ppos = self.parentItem().scenePos()
-
-            self.setPos(self.m2pix(x) - ppos.x(), self.m2pix(y) - ppos.y())
+            pt = QtCore.QPointF(self.m2pix(x),  self.m2pix(y))
+            self.setPos(self.parentItem().mapFromScene(pt))
 
         else:
 
             self.setPos(self.m2pix(x), self.m2pix(y))
 
-        self.setRotation(yaw)
+        if yaw is not None:
+            self.setRotation(yaw)
 
     def get_pos(self, pixels=False):
 

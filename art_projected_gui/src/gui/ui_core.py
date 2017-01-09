@@ -3,6 +3,7 @@
 from PyQt4 import QtGui, QtCore
 from items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem
 import rospy
+from helpers import conversions
 
 
 class customGraphicsView(QtGui.QGraphicsView):
@@ -188,9 +189,23 @@ class UICore(QtCore.QObject):
 
         return None
 
-    def add_place(self, caption,  x, y, object_type,  object_id=None,  place_cb=None, fixed=False):
+    def add_place(self, caption,  pose_stamped, object_type,  object_id=None,  place_cb=None, fixed=False):
 
-        self.scene_items.append(PlaceItem(self.scene, self.rpm, caption,  x, y, object_type,  object_id,  place_pose_changed=place_cb, fixed=fixed))
+        # TODO check frame_id in pose_stamped and transform if needed
+        self.scene_items.append(
+            PlaceItem(
+                self.scene,
+                self.rpm,
+                caption,
+                pose_stamped.pose.position.x,
+                pose_stamped.pose.position.y,
+                object_type,
+                object_id,
+                place_pose_changed=place_cb,
+                fixed=fixed,
+                yaw=conversions.quaternion2yaw(pose_stamped.pose.orientation)
+                )
+            )
 
     def add_polygon(self, caption, obj_coords=[], poly_points=[], polygon_changed=None, fixed=False):
 

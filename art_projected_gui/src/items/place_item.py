@@ -66,15 +66,18 @@ class PlaceItem(ObjectItem):
         from math import atan2, pi
 
         # follow angle between "free" point and object center, after release put object back on topLeft corner
-        # TODO make point "free" from its parent
-        angle = atan2(self.point.y(),  self.point.x())/(2*pi)*360+135
+        angle = atan2(self.point.scenePos().y()-self.scenePos().y(),  self.point.scenePos().x()-self.scenePos().x())/(2*pi)*360+135
         self.setRotation(angle)
+        self.point.setRotation(-angle)
+
         self._update_desc_pos()
-        # self.point.resetTransform()
 
         if finished:
-            print "finished"
+
             self.point.setPos(self.boundingRect().topLeft())
+
+            if self.place_pose_changed is not None:
+                self.place_pose_changed(self.get_pos(),  self.rotation())
 
     def item_moved(self):
 
