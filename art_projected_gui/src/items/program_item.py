@@ -5,6 +5,7 @@ from item import Item
 from art_msgs.msg import ProgramItem as ProgIt
 from geometry_msgs.msg import Point32
 from button_item import ButtonItem
+from helpers import conversions
 
 translate = QtCore.QCoreApplication.translate
 
@@ -105,7 +106,7 @@ class ProgramItemItem(Item):
 
     def get_place_pose(self):
 
-        return (self.item.place_pose.pose.position.x, self.item.place_pose.pose.position.y)
+        return self.item.place_pose
 
     def is_object_set(self):
 
@@ -361,11 +362,12 @@ class ProgramItem(Item):
         self.program_updated()
         self.update_size()
 
-    def set_place_pose(self, x, y):
+    def set_place_pose(self, x, y,  yaw):
 
         self.active_item.item.place_pose.pose.position.x = x
         self.active_item.item.place_pose.pose.position.y = y
-        self.active_item.item.place_pose.pose.orientation.w = 1.0
+        self.active_item.item.place_pose.pose.orientation = conversions.yaw2quaternion(yaw)
+
         self.program_updated()
         self.update_size()
 
