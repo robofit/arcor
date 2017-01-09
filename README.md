@@ -4,6 +4,8 @@
 
 ARTable - vision of a near future workspace, where human and robot may safely and effectively collaborate. Our main focus is on human-robot interaction and especially on robot programming - to make it feasible for any ordinary skilled worker. Currently, the system uses pointing gestures and touch sensitive table as an input and augmented reality as an feedback (projected user interface).
 
+![system](http://i.imgur.com/C4QDTR3m.png "System overview") ![interaction](http://i.imgur.com/sJRl9WVm.png "Pointing-based interaction")
+
 The video below shows how operator uses touch sensitive table and augmented reality interface to set parameters of a program consisting of two pick and place tasks. For each task, the operator sets object type to be picked up, area from which objects of that type should be picked and location on the table where the robot (PR2) should place them.
 
 [![ARTable video](https://i.ytimg.com/vi/M_KxpIJo1LA/0.jpg)](https://youtu.be/M_KxpIJo1LA)
