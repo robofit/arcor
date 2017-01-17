@@ -1,8 +1,8 @@
 <launch>
 	
 	<!-- these two does not exist -->
-	<!--include file="$(find art_brain)/launch/pr2_indiv.launch" />
-    <include file="$(find art_brain)/launch/table_indiv_no_kinect.launch" /-->
+	<!--include file="$(find art_brain)/launch/pr2_indiv.launch" />-->
+        <include file="$(find art_calibration)/launch/table_indiv_no_kinect.launch" />
 
 	<node name="art_calibration" pkg="art_calibration" type="art_calibration_node" respawn="false" output="screen">
 	</node>
