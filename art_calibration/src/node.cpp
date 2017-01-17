@@ -175,8 +175,8 @@ private:
             tf::Matrix3x3 m(pp1112.getX(), pp1110.getX(), n.getX(), pp1112.getY(), pp1110.getY(), n.getY(), pp1112.getZ(), pp1110.getZ(), n.getZ());
             */
 
-            tf::Vector3 pp1011 = position11 - position10;
-            tf::Vector3 pp1013 = position13 - position10;
+            tf::Vector3 pp1011 = pr2_position11_ - pr2_position10_;
+            tf::Vector3 pp1013 = pr2_position13_ - pr2_position10_;
 
             pp1011.normalize();
             pp1013.normalize();
