@@ -40,6 +40,9 @@ class TouchPointItem(Item):
 
             for it in self.scene().items():
 
+                if not isinstance(it,  Item):  # TODO skip item not derived from Item
+                    continue
+
                 # TODO what types to skip?
                 if isinstance(it,  TouchTableItem) or isinstance(it,  TouchPointItem) or isinstance(it,  DescItem):
                     continue
