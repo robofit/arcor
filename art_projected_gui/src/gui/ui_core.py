@@ -68,8 +68,8 @@ class UICore(QtCore.QObject):
 
         self.scene_items = []
 
-        self.bottom_label = LabelItem(self.scene, self.rpm, 0.2, self.height - 0.05, self.width - 0.4, 0.05)
-        self.program_vis = ProgramItem(self.scene, self.rpm, 0.2, 0.2)
+        self.bottom_label = LabelItem(self.scene, self.rpm, 0.2, 0.05, self.width - 0.4, 0.05)
+        self.program_vis = ProgramItem(self.scene, self.rpm, 0.2, self.height-0.2)
 
         self.scene_items.append(self.bottom_label)
         self.scene_items.append(self.program_vis)

@@ -51,8 +51,6 @@ class ProgramItemItem(Item):
             self.item_selected_cb(self)
 
     def boundingRect(self):
-        # w = self.m2pix(self.w)
-        # h = self.m2pix(self.h)
 
         return QtCore.QRectF(0, 0, self.w, self.h)
 
