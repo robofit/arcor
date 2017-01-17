@@ -4,6 +4,7 @@ from PyQt4 import QtGui, QtCore, QtNetwork
 from items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem
 import rospy
 from helpers import conversions
+from art_msgs.srv import NotifyUserRequest
 
 
 class customGraphicsView(QtGui.QGraphicsView):
@@ -67,7 +68,7 @@ class UICore(QtCore.QObject):
 
         self.scene_items = []
 
-        self.bottom_label = LabelItem(self.scene, self.rpm, 0.1, self.height - 0.05, self.width - 0.2, 0.1)
+        self.bottom_label = LabelItem(self.scene, self.rpm, 0.2, self.height - 0.05, self.width - 0.4, 0.05)
         self.program_vis = ProgramItem(self.scene, self.rpm, 0.2, 0.2)
 
         self.scene_items.append(self.bottom_label)
@@ -165,7 +166,7 @@ class UICore(QtCore.QObject):
 
         self.emit(QtCore.SIGNAL('send_scene'))
 
-    def notif(self, msg, min_duration=3.0, temp=False):
+    def notif(self, msg, min_duration=3.0, temp=False, message_type=NotifyUserRequest.INFO):
         """Display message (notification) to the user.
 
         Args:
@@ -174,7 +175,7 @@ class UICore(QtCore.QObject):
             temp (:obj:`bool`, optional): temporal message disappears after min_duration and last non-temporal message is displayed instead.
         """
 
-        self.bottom_label.add_msg(msg, rospy.Duration(min_duration), temp)
+        self.bottom_label.add_msg(msg, message_type,  rospy.Duration(min_duration), temp)
 
     def debug_view(self):
         """Show window with scene - for debugging purposes."""

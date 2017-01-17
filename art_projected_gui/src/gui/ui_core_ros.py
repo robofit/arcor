@@ -9,7 +9,7 @@ from transitions import MachineError
 from items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem
 from helpers import ProjectorHelper,  conversions
 from art_utils import InterfaceStateManager,  ArtApiHelper
-from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse
+from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse,  NotifyUser,  NotifyUserResponse
 from std_msgs.msg import Empty
 from geometry_msgs.msg import PoseStamped
 
@@ -47,6 +47,7 @@ class UICoreRos(UICore):
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('touch_calibration_points_evt'), self.touch_calibration_points_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('touch_detected_evt'), self.touch_detected_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('notify_user_evt'), self.notify_user_evt)
 
         self.user_status = None
 
@@ -166,8 +167,21 @@ class UICoreRos(UICore):
 
         self.touch_points = None
         self.touch_calib_srv = rospy.Service('/art/interface/projected_gui/touch_calibration', TouchCalibrationPoints, self.touch_calibration_points_cb)
+        self.notify_user_srv = rospy.Service('/art/interface/projected_gui/notify_user', NotifyUser, self.notify_user_srv_cb)
 
         self.fsm.tr_start()
+
+    def notify_user_srv_cb(self,  req):
+
+        self.emit(QtCore.SIGNAL('notify_user_evt'), req)
+        return NotifyUserResponse()
+
+    def notify_user_evt(self,  req):
+
+        if req.duration == rospy.Duration(0):  # TODO message should be displayed until user closes it
+            self.notif(req.message,  message_type=req.type)
+        else:
+            self.notif(req.message,  min_duration=req.duration.to_sec(),  temp=True, message_type=req.type)
 
     def add_projector(self, proj_id):
 
