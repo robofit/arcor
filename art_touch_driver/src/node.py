@@ -126,7 +126,6 @@ class ArtTouchDriver:
     def process(self):
         # print 1 if self.device._eventq else 0
         event = self.device.read()
-        print event
         while True:
             if event.evtype == 3 and event.code == 47 and event.value >= 0:
                 # MT_SLOT
@@ -153,12 +152,10 @@ class ArtTouchDriver:
             elif event.evtype == 3 and event.code == 53:
                 # x position
                 self.slot.x = event.value
-                print("x")
 
             elif event.evtype == 3 and event.code == 54:
                 # y position
                 self.slot.y = event.value
-                print("y")
 
             elif event.evtype == 0:
 

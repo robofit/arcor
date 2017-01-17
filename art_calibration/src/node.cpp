@@ -102,95 +102,38 @@ private:
             return;
         }
 
-        //10 + 11
-        //10 + 13
+        /*    Markers on the table
+         *
+         *
+         *             Robot
+         *    11 ------------------12
+         *    |                     |
+         *    |                     |
+         *    |                     |
+         *    |                     |
+         *    10-------------------13
+         *
+         */
 
 
+        tf::Vector3 pp1011 = position11 - position10;
+        tf::Vector3 pp1013 = position13 - position10;
 
-        /*tf::Vector3 pp1011 = position10 - position11; //sub_two_points(position10, position11);
-        tf::Vector3 pp1013 = position10 - position13; //sub_two_points(position10, position13);
         pp1011.normalize();
         pp1013.normalize();
 
-        tf::Vector3 n = pp1011.cross(pp1013);
-        n.normalize();
+        tf::Vector3 n = pp1013.cross(pp1011);
 
-        tf::Matrix3x3 m(pp1011.getX(), pp1011.getY(), pp1011.getZ(), pp1013.getX(), pp1013.getY(), pp1013.getZ(), n.getX(), n.getY(), n.getZ());
+
+        tf::Matrix3x3 m(pp1013.getX(), pp1011.getX(), n.getX(), pp1013.getY(), pp1011.getY(), n.getY(), pp1013.getZ(), pp1011.getZ(), n.getZ());
 
         tf::Transform tr = tf::Transform(m, position10);
-*/
-        //ROS_INFO_STREAM(position13.getX() << " " << position13.getY() << " " << position13.getZ());
-        //return;
-        /*position10.setY(position13.getY());
-        position12.setX(position13.getX());
-        //tf::Vector3 pp1310 = position13 - position10; //sub_two_points(position10, position11);
-        //tf::Vector3 pp1312 = position13 - position12; //sub_two_points(position10, position13);
-
-        tf::Vector3 pp1310 = position10 - position13;
-        tf::Vector3 pp1312 = position12 - position13;
-        pp1310.normalize();
-        pp1312.normalize();
-
-        tf::Vector3 n = pp1310.cross(pp1312);
-        n.normalize();
-
-        tf::Matrix3x3 m(pp1310.getX(), pp1310.getY(), pp1310.getZ(), pp1312.getX(), pp1312.getY(), pp1312.getZ(), n.getX(), n.getY(), n.getZ());
-
-        tf::Transform tr = tf::Transform(m, position13);*/
-
-        //position10.setX(position11.getX());
-        //position12.setY(position11.getY());
-        //tf::Vector3 pp1310 = position13 - position10; //sub_two_points(position10, position11);
-        //tf::Vector3 pp1312 = position13 - position12; //sub_two_points(position10, position13);
-
-        tf::Vector3 pp1110 = position10 - position11;
-        tf::Vector3 pp1112 = position12 - position11;
-        pp1110.normalize();
-        pp1112.normalize();
-
-
-        tf::Vector3 n = pp1112.cross(pp1110);
-        n.normalize();
-        ROS_INFO_STREAM(pp1110.dot(pp1112));
-        ROS_INFO_STREAM(pp1110.dot(n));
-        ROS_INFO_STREAM(pp1112.dot(pp1110));
-        ROS_INFO_STREAM(pp1112.dot(n));
-        ROS_INFO_STREAM(n.dot(pp1110));
-        ROS_INFO_STREAM(n.dot(pp1112));
-
-        //tf::Matrix3x3 m(pp1110.getX(), pp1110.getY(), pp1110.getZ(), pp1112.getX(), pp1112.getY(), pp1112.getZ(), n.getX(), n.getY(), n.getZ());
-        tf::Matrix3x3 m(pp1112.getX(), pp1110.getX(), n.getX(), pp1112.getY(), pp1110.getY(), n.getY(), pp1112.getZ(), pp1110.getZ(), n.getZ());
-
-        tf::Transform tr = tf::Transform(m, position11);
 
         tr_table_ =  tf::StampedTransform(tr.inverse(), ros::Time::now(), world_frame_, table_frame_);
 
         tr_timer_ = nh_.createTimer(ros::Duration(0.1), &ArtCalibration::trCallback, this);
         table_calibration_done_ = true;
-        /*geometry_msgs::Pose pose;
-        try {
-            pose = get_main_marker_pose(*markers);
-        }
-        catch (NoMainMarker& e) {
-            std::cout << e.what() << std::endl;
-            return;
-        }
-        table_poses.push_back(pose);
-        ROS_INFO_STREAM("table_poses.size() - " << table_poses.size());
-        if (table_poses.size() >= POSES_COUNT) {
-            table_calibration_enough_poses_ = true;
-            table_marker_sub.shutdown();
 
-            tr_table_ = create_transform_from_poses_vector(table_poses, table_frame_);
-            table_calibration_done_ = true;
-            tr_timer_ = nh_.createTimer(ros::Duration(0.1), &ArtCalibration::trCallback, this);
-        }
-
-
-        */
-        //table_marker_sub.shutdown();
-        //table_calibration_done_ = true;
-        //tr_timer_ = nh_.createTimer(ros::Duration(0.1), &ArtCalibration::trCallback, this);
     }
 
     void pr2_marker_cb(ar_track_alvar_msgs::AlvarMarkersConstPtr markers) {
@@ -212,7 +155,7 @@ private:
             ros::Duration(5).sleep();
             state = 2;
         } else if (state == 2 && pr2_looking_for_marker_id_ > 20) {
-
+            /*
             tf::Vector3 pp1110 = pr2_position10_ - pr2_position11_;
             tf::Vector3 pp1112 = pr2_position12_ - pr2_position11_;
             pp1110.normalize();
@@ -230,8 +173,20 @@ private:
 
             //tf::Matrix3x3 m(pp1110.getX(), pp1110.getY(), pp1110.getZ(), pp1112.getX(), pp1112.getY(), pp1112.getZ(), n.getX(), n.getY(), n.getZ());
             tf::Matrix3x3 m(pp1112.getX(), pp1110.getX(), n.getX(), pp1112.getY(), pp1110.getY(), n.getY(), pp1112.getZ(), pp1110.getZ(), n.getZ());
+            */
 
-            tf::Transform tr = tf::Transform(m, pr2_position11_);
+            tf::Vector3 pp1011 = pr2_position11_ - pr2_position10_;
+            tf::Vector3 pp1013 = pr2_position13_ - pr2_position10_;
+
+            pp1011.normalize();
+            pp1013.normalize();
+
+            tf::Vector3 n = pp1013.cross(pp1011);
+
+
+            tf::Matrix3x3 m(pp1013.getX(), pp1011.getX(), n.getX(), pp1013.getY(), pp1011.getY(), n.getY(), pp1013.getZ(), pp1011.getZ(), n.getZ());
+
+            tf::Transform tr = tf::Transform(m, pr2_position10_);
 
             tr_pr2_ =  tf::StampedTransform(tr.inverse(), ros::Time::now(), world_frame_, robot_frame_);
 
