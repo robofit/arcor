@@ -120,7 +120,7 @@ class ProgramHelper():
         if self.prog is None:
             return None
 
-        return self.prog.id
+        return self.prog.header.id
 
     def get_block_msg(self,  block_id):
 

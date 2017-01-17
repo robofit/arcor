@@ -411,7 +411,7 @@ class ArtBrain:
 
             while self.executing_program:
 
-                rospy.loginfo('Program id: ' + str(self.ph.prog.id) + ', item id: ' + str(it.id) + ', item type: ' + str(it.type))
+                rospy.loginfo('Program id: ' + str(self.ph.get_program_id()) + ', item id: ' + str(it.id) + ', item type: ' + str(it.type))
 
                 self.instruction = it.type
                 instruction_function = self.instruction_switcher()
@@ -497,6 +497,10 @@ class ArtBrain:
         goal = pickplaceGoal()
         goal.operation = goal.PLACE
         goal.id = obj
+
+        # TODO how to decide between 180 and 90 deg?
+        goal.z_axis_angle_increment = 3.14/2  # allow object to be rotated by 90 deg around z axis
+
         goal.place_pose = PoseStamped()
 
         goal.place_pose = place

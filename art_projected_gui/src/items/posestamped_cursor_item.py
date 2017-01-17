@@ -4,6 +4,8 @@ from PyQt4 import QtGui, QtCore
 from item import Item
 import rospy
 from geometry_msgs.msg import PoseStamped
+from touch_table_item import TouchTableItem
+from desc_item import DescItem
 
 # TODO optional filtering (kalman?)
 # TODO option to select when hovered for some time (instead of 'click')
@@ -39,7 +41,6 @@ class PoseStampedCursorItem(Item):
         super(PoseStampedCursorItem, self).__init__(scene, rpm, 0.5, 0.5)
 
         self.offset = offset
-        self.click = False
 
         self.pointed_item = None
         self.pointed_time = None
@@ -59,20 +60,14 @@ class PoseStampedCursorItem(Item):
         self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
         self.setCacheMode(QtGui.QGraphicsItem.DeviceCoordinateCache)
 
-        self.mouse = False
-
     # for debugging purposes
     def mouseDoubleClickEvent(self, evt):
 
-        if self.click:
-            self.handle_pt(self.pos(), click=False)
-        else:
-            self.handle_pt(self.pos(), click=True)
+        self.handle_pt(self.pos(), True,  True)
 
     def mouseMoveEvent(self, event):
 
-        self.mouse = True
-        self.handle_pt(self.pos())
+        self.handle_pt(self.pos(),  True,  False)
 
         super(Item, self).mouseMoveEvent(event)
 
@@ -109,7 +104,7 @@ class PoseStampedCursorItem(Item):
 
         self.handle_pt(pt, False)
 
-    def handle_pt(self, pt, click=None):
+    def handle_pt(self, pt, mouse=False, click=False):
 
         self.setPos(pt)
 
@@ -117,37 +112,47 @@ class PoseStampedCursorItem(Item):
             self.last_pt = pt
             return
 
-        if self.pointed_item is not None and not self.collidesWithItem(self.pointed_item):
-            self.pointed_item.set_hover(False, self)
-            self.pointed_item = None
-
         if self.pointed_item is None:
 
             for it in self.scene().items():
 
-                if isinstance(it, PoseStampedCursorItem):
+                if isinstance(it, PoseStampedCursorItem) or isinstance(it, TouchTableItem) or isinstance(it, DescItem):
                     continue  # TODO make some common class for cursors
 
-                if self.collidesWithItem(it):
-
-                    if (rospy.Time.now() - it.last_pointed) < rospy.Duration(3.0):
-                        continue
+                if self.pointed_item is None and self.collidesWithItem(it):
 
                     it.set_hover(True, self)
+
+                    if mouse and not click:
+                        continue
+
+                    if not click and (rospy.Time.now() - it.last_pointed) < rospy.Duration(3.0):
+                        continue
+
+                    rospy.logdebug("new pointed item: " + it.__class__.__name__)
+
                     self.pointed_item = it
                     self.pointed_time = rospy.Time.now()
                     self.last_move = self.pointed_time
                     self.pointed_item_clicked = False
-                    break
+                    my_pos = self.get_pos()
+                    it_pos = self.pointed_item.get_pos()
+                    self.offset = (it_pos[0]-my_pos[0], it_pos[1]-my_pos[1])
+                    click = False
+
+                else:
+
+                    it.set_hover(False, self)
 
         if self.pointed_item is not None:
 
-            if (rospy.Time.now() - self.pointed_time) > rospy.Duration(2.0):
+            mm = max(abs(pt.x() - self.last_pt.x()), abs(pt.y() - self.last_pt.y()))
+
+            if (rospy.Time.now() - self.pointed_time) > rospy.Duration(2.0) or mouse:
 
                 if not self.pointed_item_clicked:
 
                     self.pointed_item.cursor_press()
-                    self.pointed_item_clicked = True
 
                     if self.pointed_item.fixed:
 
@@ -155,22 +160,21 @@ class PoseStampedCursorItem(Item):
                         self.pointed_item.set_hover(False, self)
                         self.pointed_item.last_pointed = rospy.Time.now()
                         self.pointed_item = None
-                        self.pointed_item_clicked = False
-                        self.last_pt = pt
                         self.update()
                         return
 
-                self.pointed_item.moveBy(pt.x() - self.last_pt.x(), pt.y() - self.last_pt.y())
-                self.pointed_item.item_moved()
+                    self.pointed_item_clicked = True
 
-                mm = max(abs(pt.x() - self.last_pt.x()), abs(pt.y() - self.last_pt.y()))
+                self.pointed_item.set_pos(self.pix2m(pt.x())+self.offset[0], self.pix2m(pt.y())+self.offset[1])
+                self.pointed_item.item_moved()
 
                 if mm > 5:
 
                     self.last_move = rospy.Time.now()
 
-                if (rospy.Time.now() - self.last_move) > rospy.Duration(2.0) and (self.last_move - self.pointed_time) > rospy.Duration(3.0):
+                if click or ((rospy.Time.now() - self.last_move) > rospy.Duration(2.0) and (self.last_move - self.pointed_time) > rospy.Duration(3.0)):
 
+                    rospy.logdebug("releasing pointed item: " + self.pointed_item.__class__.__name__)
                     self.pointed_item.set_hover(False, self)
                     self.pointed_item.cursor_release()
                     self.pointed_item.last_pointed = rospy.Time.now()
@@ -179,9 +183,7 @@ class PoseStampedCursorItem(Item):
 
             else:
 
-                mm = max(abs(pt.x() - self.last_pt.x()), abs(pt.y() - self.last_pt.y()))
-
-                if mm > 5:
+                if not click and mm > 5:
 
                     self.pointed_item.set_hover(False, self)
                     self.pointed_item = None
