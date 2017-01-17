@@ -34,7 +34,7 @@ class TouchPointItem(Item):
 
     def set_poss(self,  x,  y):
 
-        self.setPos(self.m2pix(x), self.m2pix(y))
+        self.setPos(*self.m2pix(x, y))
 
         if self.pointed_item is None:
 
@@ -119,7 +119,6 @@ class TouchTableItem(Item):
 
         super(TouchTableItem, self).__init__(scene, rpm, 0.0, 0.0)
 
-        self.scene = scene
         self.rpm = rpm
         self.touch_points = {}
 
@@ -131,7 +130,7 @@ class TouchTableItem(Item):
 
     def boundingRect(self):
 
-        return QtCore.QRectF(0, 0, self.scene.width(), self.scene.height())  # TODO is this ok?
+        return QtCore.QRectF(0, 0, self.scene().width(), self.scene().height())  # TODO is this ok?
 
     def paint(self, painter, option, widget):
 
@@ -143,7 +142,7 @@ class TouchTableItem(Item):
             return
 
         self.touch_points[id].end_of_touch()
-        self.scene.removeItem(self.touch_points[id])
+        self.scene().removeItem(self.touch_points[id])
         del self.touch_points[id]
 
     def touch_cb(self,  msg):
@@ -158,7 +157,7 @@ class TouchTableItem(Item):
 
             # TODO check frame_id
             rospy.logdebug("new touch point, id: " + str(msg.id))
-            self.touch_points[msg.id] = TouchPointItem(self.scene,  self.rpm,  msg.point.point.x,  msg.point.point.y,  self)
+            self.touch_points[msg.id] = TouchPointItem(self.scene(),  self.rpm,  msg.point.point.x,  msg.point.point.y,  self)
 
         else:
 

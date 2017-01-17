@@ -31,7 +31,7 @@ class PlaceItem(ObjectItem):
         self.place_pose_changed = place_pose_changed
         if not self.fixed:
             self.set_color(QtCore.Qt.white)
-            self.point = PointItem(scene, rpm, 0, 0, self)  # TODO option to pass pixels?
+            self.point = PointItem(scene, rpm, 0, 0, self,  self.point_changed)  # TODO option to pass pixels?
             self.point.setPos(self.boundingRect().topLeft())
 
     def update_text(self):
@@ -61,7 +61,7 @@ class PlaceItem(ObjectItem):
 
         pass
 
-    def point_changed(self, finished=False):
+    def point_changed(self, pt,  finished=False):
 
         from math import atan2, pi
 

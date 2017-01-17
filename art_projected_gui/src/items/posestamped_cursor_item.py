@@ -93,8 +93,7 @@ class PoseStampedCursorItem(Item):
         if not self.isEnabled():
             return
 
-        x = self.m2pix(msg.pose.position.x + self.offset[0])
-        y = self.m2pix(msg.pose.position.y + self.offset[1])
+        (x,  y) = self.m2pix(msg.pose.position.x + self.offset[0],  msg.pose.position.y + self.offset[1])
 
         self.fx = 0.7 * self.fx + 0.3 * x
         self.fy = 0.7 * self.fy + 0.3 * y
@@ -168,7 +167,8 @@ class PoseStampedCursorItem(Item):
 
                     self.pointed_item_clicked = True
 
-                self.pointed_item.set_pos(self.pix2m(pt.x())+self.offset[0], self.pix2m(pt.y())+self.offset[1])
+                (x,  y) = self.pix2m(pt.x(), pt.y())
+                self.pointed_item.set_pos(x+self.offset[0], y+self.offset[1])
                 self.pointed_item.item_moved()
 
                 if mm > 5:

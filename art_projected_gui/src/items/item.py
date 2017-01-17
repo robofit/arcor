@@ -12,7 +12,7 @@ class Item(QtGui.QGraphicsItem):
         super(Item, self).__init__(parent=parent, scene=scene)
 
         self.rpm = rpm
-        self.set_pos(x, y, parent is not None)
+        self.set_pos(x, y)
         self.hover = False
         self.hover_sources = []
         self.fixed = True
@@ -30,26 +30,33 @@ class Item(QtGui.QGraphicsItem):
 
         return 12 / 1280.0 * self.rpm * f
 
-    def m2pix(self, m):
+    def m2pix(self, x,  y=None):
 
-        return m * self.rpm
+        if y is None:
+            return x * self.rpm
 
-    def pix2m(self, p):
+        return (self.m2pix(x),  self.scene().height()-self.m2pix(y))
 
-        return p / self.rpm
+    def pix2m(self, x,  y=None):
 
-    # world coordinates to scene coords
+        if y is None:
+            return x / self.rpm
+
+        return (self.pix2m(x),  self.pix2m(self.scene().height()-y))
+
+    # world coordinates to scene coords - y has to be inverted
     def set_pos(self, x, y, parent_coords=False,  yaw=None):
+
+        pt = self.m2pix(x,  y)
 
         # we usually want to work with scene/world coordinates
         if self.parentItem() and not parent_coords:
 
-            pt = QtCore.QPointF(self.m2pix(x),  self.m2pix(y))
-            self.setPos(self.parentItem().mapFromScene(pt))
+            self.setPos(self.parentItem().mapFromScene(pt[0], pt[1]))
 
         else:
 
-            self.setPos(self.m2pix(x), self.m2pix(y))
+            self.setPos(pt[0], pt[1])
 
         if yaw is not None:
             self.setRotation(yaw)
@@ -59,7 +66,7 @@ class Item(QtGui.QGraphicsItem):
         pos = self.scenePos()
 
         if not pixels:
-            return (self.pix2m(pos.x()), self.pix2m(pos.y()))
+            return self.pix2m(pos.x(),  pos.y())
         else:
             return (pos.x(), pos.y())
 
