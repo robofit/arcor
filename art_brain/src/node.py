@@ -497,10 +497,10 @@ class ArtBrain:
         goal = pickplaceGoal()
         goal.operation = goal.PLACE
         goal.id = obj
-        
+
         # TODO how to decide between 180 and 90 deg?
-        goal.z_axis_angle_increment = 3.14/2 # allow object to be rotated by 90 deg around z axis
-        
+        goal.z_axis_angle_increment = 3.14/2  # allow object to be rotated by 90 deg around z axis
+
         goal.place_pose = PoseStamped()
 
         goal.place_pose = place
