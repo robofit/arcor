@@ -42,6 +42,7 @@ add_service_files(
     storeObjectType.srv
     startProgram.srv
     TouchCalibrationPoints.srv
+    NotifyUser.srv
 )
 
 generate_messages(
