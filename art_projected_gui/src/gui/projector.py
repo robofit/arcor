@@ -39,9 +39,9 @@ class Projector(QtGui.QWidget):
             rospy.loginfo('Loaded calibration from param.')
             self.h_matrix = np.matrix(ast.literal_eval(self.h_matrix))
 
-        self.rpm = rospy.get_param('~rpm', 1280)
-        self.scene_size = rospy.get_param("~scene_size", [1.2, 0.64])
-        self.scene_origin = rospy.get_param("~scene_origin", [0, 0])
+        self.rpm = rospy.get_param('rpm', 1280)
+        self.scene_size = rospy.get_param("scene_size", [1.2, 0.64])
+        self.scene_origin = rospy.get_param("scene_origin", [0, 0])
 
         rospy.loginfo("Projector '" + self.proj_id + "', on screen " + str(self.screen))
 
@@ -67,8 +67,8 @@ class Projector(QtGui.QWidget):
         # self.pix_label.setScaledContents(True)
         self.pix_label.resize(self.size())
 
-        self.server = rospy.get_param("~scene_server", "127.0.0.1")
-        self.port = rospy.get_param("~scene_server_port", 1234)
+        self.server = rospy.get_param("scene_server", "127.0.0.1")
+        self.port = rospy.get_param("scene_server_port", 1234)
         self.tcpSocket = QtNetwork.QTcpSocket(self)
         self.blockSize = 0
         self.tcpSocket.readyRead.connect(self.getScene)
