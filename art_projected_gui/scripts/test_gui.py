@@ -38,7 +38,7 @@ def main():
     obj.object_id = "my_object"
     obj.object_type = "profile_20_60"
     obj.pose.position.x = 0.5
-    obj.pose.position.y = 0.3
+    obj.pose.position.y = 0.5
     obj.pose.position.z = 0.0
     obj.pose.orientation = yaw2orientation(0)
 
@@ -48,7 +48,7 @@ def main():
     obj2.object_id = "another_object"
     obj2.object_type = "profile_20_60"
     obj2.pose.position.x = 0.7
-    obj2.pose.position.y = 0.3
+    obj2.pose.position.y = 0.2
     obj2.pose.position.z = 0.0
     obj2.pose.orientation = yaw2orientation(45/2)
 
