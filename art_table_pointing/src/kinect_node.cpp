@@ -130,7 +130,7 @@ void ArtTablePointingKinect::visualizeIntersection(tf::Vector3 point, int id) {
 }
 
 bool ArtTablePointingKinect::pointingAtTable(tf::Vector3 point, tf::StampedTransform elbow, tf::StampedTransform hand) {
-    if (elbow.getOrigin().z() > hand.getOrigin().z()) {
+    if (elbow.getOrigin().z() < hand.getOrigin().z()) {
         return false;
     }
     //std::cout << "x " << point.x() << " y " << point.y() << std::endl;
