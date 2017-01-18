@@ -34,10 +34,10 @@ class UICoreRos(UICore):
 
     def __init__(self):
 
-        origin = rospy.get_param("scene_origin", [0, 0])
-        size = rospy.get_param("scene_size", [1.2, 0.75])
-        rpm = rospy.get_param("rpm", 1280)
-        port = rospy.get_param("scene_server_port", 1234)
+        origin = rospy.get_param("scene_origin")
+        size = rospy.get_param("scene_size")
+        rpm = rospy.get_param("rpm")
+        port = rospy.get_param("scene_server_port")
 
         super(UICoreRos, self).__init__(origin[0], origin[1], size[0], size[1], rpm,  port)
 
