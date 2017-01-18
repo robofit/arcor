@@ -72,8 +72,22 @@ class Projector(QtGui.QWidget):
         self.tcpSocket = QtNetwork.QTcpSocket(self)
         self.blockSize = 0
         self.tcpSocket.readyRead.connect(self.getScene)
-        # self.tcpSocket.error.connect(self.displayError)
+        self.tcpSocket.error.connect(self.on_error)
         self.tcpSocket.connectToHost(self.server, self.port)
+
+        self.connect()
+
+        self.calibrated_pub = rospy.Publisher("~calibrated", Bool, queue_size=1, latch=True)
+        self.calibrated_pub.publish(self.is_calibrated())
+
+        self.srv_calibrate = rospy.Service("~calibrate", Empty, self.calibrate_srv_cb)
+        self.corners_pub = rospy.Publisher("~corners", PoseArray, queue_size=10, latch=True)
+
+        QtCore.QObject.connect(self, QtCore.SIGNAL('show_chessboard'), self.show_chessboard_evt)
+
+        self.showFullScreen()
+
+    def connect(self):
 
         r = rospy.Rate(1.0 / 5)
 
@@ -87,15 +101,9 @@ class Projector(QtGui.QWidget):
 
         rospy.loginfo('Connected to scene server.')
 
-        self.calibrated_pub = rospy.Publisher("~calibrated", Bool, queue_size=1, latch=True)
-        self.calibrated_pub.publish(self.is_calibrated())
+    def on_error(self):
 
-        self.srv_calibrate = rospy.Service("~calibrate", Empty, self.calibrate_srv_cb)
-        self.corners_pub = rospy.Publisher("~corners", PoseArray, queue_size=10, latch=True)
-
-        QtCore.QObject.connect(self, QtCore.SIGNAL('show_chessboard'), self.show_chessboard_evt)
-
-        self.showFullScreen()
+        QtCore.QTimer.singleShot(0, self.connect)
 
     def getScene(self):
 
