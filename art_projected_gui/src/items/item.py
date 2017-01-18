@@ -59,7 +59,7 @@ class Item(QtGui.QGraphicsItem):
             self.setPos(pt[0], pt[1])
 
         if yaw is not None:
-            self.setRotation(yaw)
+            self.setRotation(-yaw)
 
     def get_pos(self, pixels=False):
 

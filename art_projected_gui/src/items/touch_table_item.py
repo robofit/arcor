@@ -34,7 +34,7 @@ class TouchPointItem(Item):
 
     def set_poss(self,  x,  y):
 
-        self.setPos(*self.m2pix(x, y))
+        self.set_pos(x, y)
 
         if self.pointed_item is None:
 
