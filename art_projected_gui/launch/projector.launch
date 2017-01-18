@@ -8,7 +8,7 @@
 
         <param name="projector_id" value="$(arg projector_id)"/>
         <param name="screen_number" value="$(arg screen_number)"/>
-
+        <!--param name="scene_server" value="192.168.104.201"/-->
     </node>
 
 </launch>

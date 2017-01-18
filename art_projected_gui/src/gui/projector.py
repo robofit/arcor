@@ -132,6 +132,7 @@ class Projector(QtGui.QWidget):
                 return
 
             img = pix.convertToFormat(QtGui.QImage.Format_ARGB32)
+            img = img.mirrored()
             v = qimage2ndarray.rgb_view(img)
 
             # TODO gpu
