@@ -45,6 +45,7 @@ class ObjectItem(Item):
             self.set_selected()
 
         self._update_desc_pos()
+        self.setZValue(50)
 
     def set_color(self, color=QtCore.Qt.gray):
 
