@@ -12,7 +12,6 @@ class Item(QtGui.QGraphicsItem):
         super(Item, self).__init__(parent=parent, scene=scene)
 
         self.rpm = rpm
-        self.set_pos(x, y)
         self.hover = False
         self.hover_sources = []
         self.fixed = True
@@ -25,6 +24,8 @@ class Item(QtGui.QGraphicsItem):
         self.setEnabled(True)
         self.setActive(True)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
+
+        self.set_pos(x, y)
 
     def get_font_size(self, f=1.0):
 
@@ -59,7 +60,7 @@ class Item(QtGui.QGraphicsItem):
             self.setPos(pt[0], pt[1])
 
         if yaw is not None:
-            self.setRotation(yaw)
+            self.setRotation(-yaw)
 
     def get_pos(self, pixels=False):
 

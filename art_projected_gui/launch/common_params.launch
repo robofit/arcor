@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+
+    <rosparam param="scene_origin">[0.0, 0.0]</rosparam>
+    <rosparam param="scene_size">[1.2, 0.64]</rosparam>
+    <param name="rpm" value="1280"/>
+    <param name="scene_server" value="192.168.104.201"/>
+    <param name="scene_server_port" value="1234"/>
+
+</launch>
