@@ -6,7 +6,6 @@ import rospy
 from helpers import conversions
 from art_msgs.srv import NotifyUserRequest
 
-
 class customGraphicsView(QtGui.QGraphicsView):
 
     def __init__(self, parent=None):
@@ -240,9 +239,6 @@ class UICore(QtCore.QObject):
     def select_object(self, obj_id, unselect_others=True):
         """Sets ObjectItem with given obj_id as selected. By default, all other items are unselected."""
 
-        if obj_id == "":
-            return
-
         for it in self.get_scene_items_by_type(ObjectItem):
 
             if it.object_id == obj_id:
@@ -255,15 +251,12 @@ class UICore(QtCore.QObject):
 
                 it.set_selected(False)
 
-    def select_object_type(self, obj_type, unselect_others=True):
+    def select_object_type(self, obj_type_name, unselect_others=True):
         """Sets all ObjectItems with geiven object_type and selected. By default, all objects of other types are unselected."""
-
-        if obj_type == "":
-            return
 
         for it in self.get_scene_items_by_type(ObjectItem):
 
-            if it.object_type == obj_type:
+            if it.object_type.name == obj_type_name:
                 it.set_selected(True)
             elif unselect_others:
                 it.set_selected(False)
