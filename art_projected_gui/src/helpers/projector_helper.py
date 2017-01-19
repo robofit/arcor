@@ -10,7 +10,7 @@ class ProjectorHelper():
     def __init__(self, proj_id):
 
         self.proj_id = proj_id
-        self.calibrated = False
+        self.calibrated = None
         self.calibrated_cb = None
         self.calibrating = False
 
@@ -22,6 +22,10 @@ class ProjectorHelper():
     def wait_until_available(self):
 
         self.srv_calibrate.wait_for_service()
+
+        while self.calibrated is None:
+
+            rospy.sleep(0.1)
 
     def calibrate(self, calibrated_cb=None):
 
