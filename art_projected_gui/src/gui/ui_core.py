@@ -6,6 +6,7 @@ import rospy
 from helpers import conversions
 from art_msgs.srv import NotifyUserRequest
 
+
 class customGraphicsView(QtGui.QGraphicsView):
 
     def __init__(self, parent=None):
