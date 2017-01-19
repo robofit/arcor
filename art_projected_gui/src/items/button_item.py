@@ -20,6 +20,7 @@ class ButtonItem(Item):
 
         super(ButtonItem, self).__init__(scene, rpm, x, y, parent)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
+        self.setZValue(100)
 
     def boundingRect(self):
 

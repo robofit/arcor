@@ -59,10 +59,6 @@ class TouchPointItem(Item):
                     if self.pointed_item.fixed:
 
                         self.pointed_item.cursor_release()
-                        self.pointed_item.set_hover(False, self)
-                        self.pointed_item = None
-                        # TODO remember last item and dont "grab" it again?
-                        continue
 
                     else:
 
@@ -75,8 +71,17 @@ class TouchPointItem(Item):
 
         else:
 
-            self.pointed_item.set_pos(x+self.offset[0], y+self.offset[1])
-            self.pointed_item.item_moved()
+            if self.pointed_item.fixed:
+
+                if not self.collidesWithItem(self.pointed_item):
+
+                    self.pointed_item.set_hover(False, self)
+                    self.pointed_item = None
+
+            else:
+
+                self.pointed_item.set_pos(x+self.offset[0], y+self.offset[1])
+                self.pointed_item.item_moved()
 
         self.update()
 
