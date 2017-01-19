@@ -42,6 +42,7 @@ class LabelItem(Item):
 
         self.timer = rospy.Timer(rospy.Duration(0.1), self.timer_cb)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
+        self.setZValue(200)
 
     def add_msg(self, msg, message_type,  min_duration=rospy.Duration(3), temp=False):
 

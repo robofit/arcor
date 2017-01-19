@@ -33,6 +33,8 @@ class PlaceItem(ObjectItem):
             self.set_color(QtCore.Qt.white)
             self.point = PointItem(scene, rpm, 0, 0, self,  self.point_changed)  # TODO option to pass pixels?
             self.point.setPos(self.boundingRect().topLeft())
+            
+        self.setZValue(50)
 
     def update_text(self):
 
