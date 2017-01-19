@@ -36,6 +36,9 @@ class PlaceItem(ObjectItem):
 
     def update_text(self):
 
+        if self.desc is None:
+            return
+
         desc = []
         desc.append(self.caption)
 
