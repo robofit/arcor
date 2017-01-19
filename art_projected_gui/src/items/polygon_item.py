@@ -3,6 +3,8 @@
 from PyQt4 import QtGui, QtCore
 from item import Item
 from point_item import PointItem
+from desc_item import DescItem
+from math import fabs,  atan2
 
 
 class PolygonItem(Item):
@@ -13,9 +15,11 @@ class PolygonItem(Item):
         self.polygon_changed = polygon_changed
 
         self.poly = QtGui.QPolygon()
+        self.desc = None
 
         super(PolygonItem, self).__init__(scene, rpm, 0.5, 0.5)  # TODO what should be here?
         self.fixed = fixed
+        self.convex = True
 
         self.pts = []
 
@@ -65,15 +69,68 @@ class PolygonItem(Item):
         for pt in self.pts:
                 self.poly.append(pt.pos().toPoint())
 
+        self.desc = DescItem(scene, rpm, 0,  0, self)
+        self.desc.setFlag(QtGui.QGraphicsItem.ItemIgnoresTransformations)
+        self.__update_desc_pos()
+        self.__update_text()
+
         self.update()
+
+    def __update_desc_pos(self):
+
+         if self.desc is not None:
+
+            p = self.poly.boundingRect().bottomLeft() + QtCore.QPointF(0,  self.m2pix(0.02))
+            self.desc.setPos(p)
+
+    def __update_text(self):
+
+        if self.desc is None:
+            return
+
+        desc = []
+        desc.append(self.caption)
+        # TODO number of objects in polygon?
+        self.desc.set_content(desc)
 
     def point_changed(self, pt, finished):
 
         self.poly.setPoint(self.pts.index(pt),  pt.pos().toPoint())
 
+        ps = self.poly.size()
+
+        # TODO what to do with shuffled points? should be fixed...
+        for i in range(2,  ps+2):
+
+            line1 = QtCore.QLineF(self.poly.point(i-2),  self.poly.point((i-1)%ps))
+            line2 = QtCore.QLineF(self.poly.point((i-1)% ps),  self.poly.point(i%ps))
+
+            a1 = line1.angle()
+            a2 = line2.angle()
+
+            d = a2-a1
+
+            if d < 0:
+                d = 360 + d
+
+            if d < 315 and d > 180:
+
+                self.convex = False
+                break
+        else:
+            self.convex = True
+
+        self.__update_desc_pos()
         self.update()
 
-        if finished and self.polygon_changed is not None:
+        if finished and self.convex and self.polygon_changed is not None:
+            self.polygon_changed(self.get_poly_points())
+
+    def cursor_release(self):
+
+        # TODO call base class method
+
+        if self.convex and self.polygon_changed is not None:
             self.polygon_changed(self.get_poly_points())
 
     def get_poly_points(self):
@@ -85,8 +142,12 @@ class PolygonItem(Item):
             pts.append(pt.get_pos())
 
         return pts
-    # TODO impl.
-    # def shape(self):
+
+    def shape(self):
+
+        path = QtGui.QPainterPath()
+        path.addPolygon(QtGui.QPolygonF(self.poly))
+        return path
 
     def boundingRect(self):
 
@@ -105,15 +166,14 @@ class PolygonItem(Item):
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.DotLine)
         pen.setWidth(5)
-        pen.setBrush(QtCore.Qt.white)
+
+        if self.convex:
+            pen.setBrush(QtCore.Qt.white)
+        else:
+            pen.setBrush(QtCore.Qt.red)
+
         pen.setCapStyle(QtCore.Qt.RoundCap)
         pen.setJoinStyle(QtCore.Qt.RoundJoin)
-
         painter.setPen(pen)
 
         painter.drawPolygon(self.poly)
-
-        # TODO nazev polygonu -> kam kreslit? Polopruhledne / sede pres cely polygon?
-        # painter.setFont(QtGui.QFont('Arial', 12));
-        # painter.setPen(QtCore.Qt.white)
-        # painter.drawText(QtCore.QPoint(self.pts[0].x(), self.pts[0].y()), self.caption)
