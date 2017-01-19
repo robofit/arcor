@@ -70,11 +70,11 @@ class TouchPointItem(Item):
                     break
 
         else:
-            
+
             if self.pointed_item.fixed:
 
                 if not self.collidesWithItem(self.pointed_item):
-                
+
                     self.pointed_item.set_hover(False, self)
                     self.pointed_item = None
 

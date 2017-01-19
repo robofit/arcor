@@ -78,7 +78,7 @@ class PolygonItem(Item):
 
     def __update_desc_pos(self):
 
-         if self.desc is not None:
+        if self.desc is not None:
 
             p = self.poly.boundingRect().bottomLeft() + QtCore.QPointF(0,  self.m2pix(0.02))
             self.desc.setPos(p)
@@ -102,8 +102,8 @@ class PolygonItem(Item):
         # TODO what to do with shuffled points? should be fixed...
         for i in range(2,  ps+2):
 
-            line1 = QtCore.QLineF(self.poly.point(i-2),  self.poly.point((i-1)%ps))
-            line2 = QtCore.QLineF(self.poly.point((i-1)% ps),  self.poly.point(i%ps))
+            line1 = QtCore.QLineF(self.poly.point(i-2),  self.poly.point((i-1) % ps))
+            line2 = QtCore.QLineF(self.poly.point((i-1) % ps),  self.poly.point(i % ps))
 
             a1 = line1.angle()
             a2 = line2.angle()
