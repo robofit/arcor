@@ -1,5 +1,6 @@
 import matplotlib.path as mplPath
 import numpy as np
+import rospy
 
 
 class ArtBrainUtils(object):
@@ -64,3 +65,14 @@ class ArtBrainUtils(object):
         else:
             return None
         return pose
+
+
+class ArtCell(object):
+
+
+    def __init__(self, cell_id):
+        self.cell_id = cell_id
+        self.calibrated = None
+
+
+
