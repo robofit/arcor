@@ -67,12 +67,4 @@ class ArtBrainUtils(object):
         return pose
 
 
-class ArtCell(object):
-
-
-    def __init__(self, cell_id):
-        self.cell_id = cell_id
-        self.calibrated = None
-
-
 

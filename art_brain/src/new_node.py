@@ -76,8 +76,7 @@ class ArtBrainMachine(object):
     stop_server = False
     recalibrate = False
     table_calibrated = False
-    robot_calibrated = False
-    cells_calibrated = [ArtCell('table_top')]
+    cells_calibrated = False
 
     quit = False
 
@@ -456,7 +455,7 @@ class ArtBrainMachine(object):
             resp.error = 'Something is not calibrated'
             rospy.loginfo('Something is not calibrated')
             return resp
-        
+
         if self.executing_program:
 
             resp.success = False
