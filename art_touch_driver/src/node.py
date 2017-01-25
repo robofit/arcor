@@ -50,7 +50,7 @@ class ArtTouchDriver:
 
         self.ns = '/art/interface/touchtable/'
 
-        self.touch_pub = rospy.Publisher(self.ns + "touch", Touch, queue_size=100)  # make sure that all messages will be sent
+        self.touch_pub = rospy.Publisher(self.ns + "touch", Touch, queue_size=100,  tcp_nodelay=True)  # make sure that all messages will be sent
         self.calibrated_pub = rospy.Publisher(self.ns + 'calibrated', Bool, queue_size=1, latch=True)
         self.calibrating_pub = rospy.Publisher(self.ns + 'calibrating', Bool, queue_size=1, latch=True)
         self.touch_det_pub = rospy.Publisher(self.ns + 'touch_detected', Empty, queue_size=10)

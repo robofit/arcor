@@ -45,6 +45,7 @@ class ObjectItem(Item):
             self.set_selected()
 
         self._update_desc_pos()
+        self.setZValue(50)
 
     def set_color(self, color=QtCore.Qt.gray):
 
@@ -62,8 +63,12 @@ class ObjectItem(Item):
 
         super(ObjectItem, self).set_pos(x, y,  parent_coords,  yaw)
         self._update_desc_pos()
+        self.update_text()
 
     def update_text(self):
+
+        if self.desc is None:
+            return
 
         desc = []
         desc.append(translate("ObjectItem", "ID: ") + self.object_id)

@@ -34,10 +34,10 @@ class UICoreRos(UICore):
 
     def __init__(self):
 
-        origin = rospy.get_param("~scene_origin", [0, 0])
-        size = rospy.get_param("~scene_size", [1.2, 0.75])
-        rpm = rospy.get_param("~rpm", 1280)
-        port = rospy.get_param("~scene_server_port", 1234)
+        origin = rospy.get_param("scene_origin")
+        size = rospy.get_param("scene_size")
+        rpm = rospy.get_param("rpm")
+        port = rospy.get_param("scene_server_port")
 
         super(UICoreRos, self).__init__(origin[0], origin[1], size[0], size[1], rpm,  port)
 
@@ -329,7 +329,9 @@ class UICoreRos(UICore):
 
                     self.notif(translate("UICoreRos", "Select object type to be picked up"), temp=True)
 
-                self.select_object_type(self.program_vis.active_item.item.object)
+                else:
+
+                    self.select_object_type(self.program_vis.active_item.item.object)
 
                 # if program item already contains polygon - let's display it
                 if self.program_vis.active_item.is_pick_polygon_set():
@@ -480,6 +482,7 @@ class UICoreRos(UICore):
             return False
         # TODO handle un-selected
 
+        rospy.logdebug("attempt to select object id: " + id)
         obj = self.get_object(id)
 
         # TODO test typu operace
@@ -487,16 +490,18 @@ class UICoreRos(UICore):
         if self.program_vis.active_item.item.spec == ProgIt.MANIP_TYPE:
 
             # this type of object is already set
-            if obj.object_type == self.program_vis.active_item.item.object:
+            if obj.object_type.name == self.program_vis.active_item.item.object:
+                rospy.logdebug("object type " + obj.object_type.name + " already selected")
                 return
             else:
                 # TODO remove previously inserted polygon, do not insert new place
+                rospy.logdebug("selecting new object type: " + obj.object_type.name)
                 pass
 
             poly_points = []
 
             self.program_vis.set_object(obj.object_type.name)
-            self.select_object_type(obj.object_type)
+            self.select_object_type(obj.object_type.name)
 
             for obj in self.get_scene_items_by_type(ObjectItem):
                 poly_points.append(obj.get_pos())

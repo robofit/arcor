@@ -506,7 +506,7 @@ class ArtBrain:
         goal.place_pose = place
         goal.place_pose.header.stamp = rospy.Time.now()
         # TODO: how to deal with this?
-        goal.place_pose.pose.position.z = -0.1  # + obj.bbox.dimensions[2]/2
+        goal.place_pose.pose.position.z = 0.1  # + obj.bbox.dimensions[2]/2
         self.pp_client.send_goal(goal)
         self.pp_client.wait_for_result()
         if self.pp_client.get_result().result == 0:

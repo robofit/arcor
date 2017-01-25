@@ -39,9 +39,9 @@ class Projector(QtGui.QWidget):
             rospy.loginfo('Loaded calibration from param.')
             self.h_matrix = np.matrix(ast.literal_eval(self.h_matrix))
 
-        self.rpm = rospy.get_param('~rpm', 1280)
-        self.scene_size = rospy.get_param("~scene_size", [1.2, 0.64])
-        self.scene_origin = rospy.get_param("~scene_origin", [0, 0])
+        self.rpm = rospy.get_param('rpm')
+        self.scene_size = rospy.get_param("scene_size")
+        self.scene_origin = rospy.get_param("scene_origin")
 
         rospy.loginfo("Projector '" + self.proj_id + "', on screen " + str(self.screen))
 
@@ -67,13 +67,27 @@ class Projector(QtGui.QWidget):
         # self.pix_label.setScaledContents(True)
         self.pix_label.resize(self.size())
 
-        self.server = rospy.get_param("~scene_server", "127.0.0.1")
-        self.port = rospy.get_param("~scene_server_port", 1234)
+        self.server = rospy.get_param("scene_server")
+        self.port = rospy.get_param("scene_server_port")
         self.tcpSocket = QtNetwork.QTcpSocket(self)
         self.blockSize = 0
         self.tcpSocket.readyRead.connect(self.getScene)
-        # self.tcpSocket.error.connect(self.displayError)
+        self.tcpSocket.error.connect(self.on_error)
         self.tcpSocket.connectToHost(self.server, self.port)
+
+        self.connect()
+
+        self.calibrated_pub = rospy.Publisher("~calibrated", Bool, queue_size=1, latch=True)
+        self.calibrated_pub.publish(self.is_calibrated())
+
+        self.srv_calibrate = rospy.Service("~calibrate", Empty, self.calibrate_srv_cb)
+        self.corners_pub = rospy.Publisher("~corners", PoseArray, queue_size=10, latch=True)
+
+        QtCore.QObject.connect(self, QtCore.SIGNAL('show_chessboard'), self.show_chessboard_evt)
+
+        self.showFullScreen()
+
+    def connect(self):
 
         r = rospy.Rate(1.0 / 5)
 
@@ -87,15 +101,9 @@ class Projector(QtGui.QWidget):
 
         rospy.loginfo('Connected to scene server.')
 
-        self.calibrated_pub = rospy.Publisher("~calibrated", Bool, queue_size=1, latch=True)
-        self.calibrated_pub.publish(self.is_calibrated())
+    def on_error(self):
 
-        self.srv_calibrate = rospy.Service("~calibrate", Empty, self.calibrate_srv_cb)
-        self.corners_pub = rospy.Publisher("~corners", PoseArray, queue_size=10, latch=True)
-
-        QtCore.QObject.connect(self, QtCore.SIGNAL('show_chessboard'), self.show_chessboard_evt)
-
-        self.showFullScreen()
+        QtCore.QTimer.singleShot(0, self.connect)
 
     def getScene(self):
 
@@ -132,6 +140,7 @@ class Projector(QtGui.QWidget):
                 return
 
             img = pix.convertToFormat(QtGui.QImage.Format_ARGB32)
+            img = img.mirrored()
             v = qimage2ndarray.rgb_view(img)
 
             # TODO gpu

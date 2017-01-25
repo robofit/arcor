@@ -29,12 +29,13 @@ class TouchPointItem(Item):
 
             rospy.logdebug("releasing pointed item: " + self.pointed_item.__class__.__name__)
             self.pointed_item.set_hover(False, self)
-            self.cursor_release()
+            self.pointed_item.cursor_release()
             self.pointed_item = None
 
     def set_poss(self,  x,  y):
 
-        self.setPos(*self.m2pix(x, y))
+        self.last_update = rospy.Time.now()
+        self.set_pos(x, y)
 
         if self.pointed_item is None:
 
@@ -54,12 +55,10 @@ class TouchPointItem(Item):
                     it.set_hover(True, self)
                     self.pointed_item = it
                     self.pointed_item.cursor_press()
-                    self.pointed_item.cursor_release()
 
                     if self.pointed_item.fixed:
 
-                        self.pointed_item = None
-                        continue
+                        self.pointed_item.cursor_release()
 
                     else:
 
@@ -72,8 +71,17 @@ class TouchPointItem(Item):
 
         else:
 
-            self.pointed_item.set_pos(x+self.offset[0], y+self.offset[1])
-            self.pointed_item.item_moved()
+            if self.pointed_item.fixed:
+
+                if not self.collidesWithItem(self.pointed_item):
+
+                    self.pointed_item.set_hover(False, self)
+                    self.pointed_item = None
+
+            else:
+
+                self.pointed_item.set_pos(x+self.offset[0], y+self.offset[1])
+                self.pointed_item.item_moved()
 
         self.update()
 
@@ -141,6 +149,7 @@ class TouchTableItem(Item):
         if id not in self.touch_points:
             return
 
+        rospy.logdebug("deleting touch point, id: " + str(id))
         self.touch_points[id].end_of_touch()
         self.scene().removeItem(self.touch_points[id])
         del self.touch_points[id]
@@ -168,6 +177,7 @@ class TouchTableItem(Item):
 
             else:
 
+                rospy.logdebug("update of touch, id: " + str(msg.id))
                 self.touch_points[msg.id].set_poss(msg.point.point.x,  msg.point.point.y)
 
         # TODO make a timer for deleting outdated touches
@@ -180,6 +190,7 @@ class TouchTableItem(Item):
 
         for k in to_delete:
 
+            rospy.logdebug("deleting outdated touch, id: " + str(k))
             self.delete_id(k)
 
         # enable / disable given items

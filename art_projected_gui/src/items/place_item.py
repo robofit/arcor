@@ -34,7 +34,12 @@ class PlaceItem(ObjectItem):
             self.point = PointItem(scene, rpm, 0, 0, self,  self.point_changed)  # TODO option to pass pixels?
             self.point.setPos(self.boundingRect().topLeft())
 
+        self.setZValue(50)
+
     def update_text(self):
+
+        if self.desc is None:
+            return
 
         desc = []
         desc.append(self.caption)

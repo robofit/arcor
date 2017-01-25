@@ -78,7 +78,7 @@ class ArCodeDetector:
             # print self.objects_cache[aid]['bb']
             obj_in.pose.position.z = float(self.objects_cache[aid]['bb'].dimensions[2]/2)
             self.show_rviz_bb(obj_in, arcode.id, self.objects_cache[aid]['bb'])
-            obj_in.pose.position.z *= -1.0
+            # obj_in.pose.position.z *= -1.0
 
             instances.header.stamp = arcode.header.stamp
             instances.header.frame_id = arcode.header.frame_id
