@@ -7,6 +7,7 @@ import rospy
 from geometry_msgs.msg import Transform, PointStamped
 from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
 
+
 class ArtRobotCalibration(object):
 
     def __init__(self, robot_id, markers_topic, robot_frame, world_frame):
@@ -20,7 +21,7 @@ class ArtRobotCalibration(object):
         self.world_frame = world_frame
 
         self.markers_sub = rospy.Subscriber(self.markers_topic, AlvarMarkers, queue_size=1)
-        self.head_look_at_pub = rospy.Publisher('/art/pr2/look_at', queue_size=1)
+        self.head_look_at_pub = rospy.Publisher('/art/pr2/look_at',  PointStamped,  queue_size=1)
 
         self.robot_state = 0
         self.robot_looking_for_id = 10
@@ -35,8 +36,12 @@ class ArtRobotCalibration(object):
                                                                          self.positions[2],
                                                                          self.positions[3])
 
+        if point is None or m is None:
+            return 
+            
         self.transformation.rotation = transformations.quaternion_from_matrix(m)
         self.transformation.translation = point
+        self.calibrated = True
 
     def get_transform(self):
         if not self.calibrated:

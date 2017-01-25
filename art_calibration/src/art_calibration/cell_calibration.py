@@ -21,9 +21,11 @@ class ArtCellCalibration(object):
         self.world_frame = world_frame
         self.transformation = Transform()
 
-        self.markers_sub = rospy.Subscriber(self.markers_topic, AlvarMarkers, queue_size=1)
+        self.markers_sub = rospy.Subscriber(self.markers_topic, AlvarMarkers, self.markers_cb,  queue_size=1)
+        rospy.loginfo("Cell: " + str(self.cell_id) + " ready")
 
     def calibrate(self):
+        rospy.loginfo("Trying to calibrate")
         for p in self.positions:
             if p is None:
                 return False
@@ -31,13 +33,19 @@ class ArtCellCalibration(object):
                                                                          self.positions[1],
                                                                          self.positions[2],
                                                                          self.positions[3])
+     
+        if point is None or m is None:
+            return 
 
         self.transformation.rotation = transformations.quaternion_from_matrix(m)
         self.transformation.translation = point
+        self.calibrated = True
 
     def get_transform(self):
         if not self.calibrated:
+            
             return None
+        
         return self.transformation
 
     def markers_cb(self, markers):
@@ -47,9 +55,10 @@ class ArtCellCalibration(object):
         for i in xrange(4):
             if self.positions[i] is not None:
                 continue
-            p = ArtCalibrationHelper().get_marker_position_by_id(markers, i + 10)
+            p = ArtCalibrationHelper.get_marker_position_by_id(markers, i + 10)
             if p is not None:
                 self.positions[i] = p
+                rospy.loginfo("Cell: " + str(self.cell_id) + " gets marker id " + str(i + 10))
             else:
                 all_markers = False
         if all_markers:

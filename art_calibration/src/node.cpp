@@ -126,12 +126,15 @@ private:
 
         tf::Matrix3x3 m(pp1013.getX(), pp1011.getX(), n.getX(), pp1013.getY(), pp1011.getY(), n.getY(), pp1013.getZ(), pp1011.getZ(), n.getZ());
 
-        ROS_INFO_STREAM(pp1013);
-        ROS_INFO_STREAM(pp1011);
-        ROS_INFO_STREAM(n);
-        return;
+
 
         tf::Transform tr = tf::Transform(m, position10);
+
+
+        ROS_INFO_STREAM(tr.inverse().getOrigin().x() << " " << tr.inverse().getOrigin().y() << " " << tr.inverse().getOrigin().z());
+        ROS_INFO_STREAM(tr.inverse().getRotation().x() << " " << tr.inverse().getRotation().y() << " " << tr.inverse().getRotation().z() << " " << tr.inverse().getRotation().w());
+
+
 
         tr_table_ =  tf::StampedTransform(tr.inverse(), ros::Time::now(), world_frame_, table_frame_);
 
@@ -478,43 +481,8 @@ int main (int argc, char** argv)
   // Initialize ROS
   ros::init (argc, argv, "art_calibration_test");
 
-    tf::Vector3 position10,
-                    position11,
-                    position12,
-                    position13;
-     position10.setX(0);
-     position10.setY(0);
-     position10.setZ(0);
 
-     position11.setX(0);
-     position11.setY(1);
-     position11.setZ(0);
-
-     position12.setX(1);
-     position12.setY(1);
-     position12.setZ(0);
-
-     position13.setX(1);
-     position13.setY(0);
-     position13.setZ(0);
-
-
-
-    tf::Vector3 pp1011 = position11 - position10;
-        tf::Vector3 pp1013 = position13 - position10;
-
-        pp1011.normalize();
-        pp1013.normalize();
-
-        tf::Vector3 n = pp1013.cross(pp1011);
-
-
-        tf::Matrix3x3 m(pp1013.getX(), pp1011.getX(), n.getX(), pp1013.getY(), pp1011.getY(), n.getY(), pp1013.getZ(), pp1011.getZ(), n.getZ());
-
-        ROS_INFO_STREAM(pp1013.x() << " " << pp1011.x() << " " << n.x());
-        ROS_INFO_STREAM(pp1013.y() << " " << pp1011.y() << " " << n.y());
-        ROS_INFO_STREAM(pp1013.z() << " " << pp1011.z() << " " << n.z());
-  //ArtCalibration calibration;
+  ArtCalibration calibration;
 
   // Spin
   ros::spin();
