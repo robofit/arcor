@@ -130,6 +130,14 @@ class ProgramHelper():
         block_idx = self.cache[block_id]["idx"]
         return self.prog.blocks[block_idx]
 
+    def get_block_ids(self):
+
+        return self.cache.keys()
+
+    def get_items_ids(self, block_id):
+
+        return self.cache[block_id]["items"].keys()
+
     def get_first_block_id(self):
 
         if len(self.cache) == 0:
