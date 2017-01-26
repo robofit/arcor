@@ -47,12 +47,12 @@ class ArtCalibrationHelper(object):
                        [pp03[2], pp01[2], n[2],  0], 
                        [0, 0, 0, 1]])
                        
-        '''translation_matrix = transformations.translation_matrix(p0)
+        translation_matrix = transformations.translation_matrix(p0)
         matrix = translation_matrix * m
         
         inverted_matrix = transformations.inverse_matrix(matrix)
-        '''
-        return p0, m
+        
+        return p0, inverted_matrix
 
     @staticmethod
     def get_marker_position_by_id(markers, marker_id):

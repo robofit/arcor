@@ -12,7 +12,7 @@ from std_msgs.msg import Bool
 class ArtCalibration(object):
 
     def __init__(self):
-        self.robot_calibration = ArtRobotCalibration('pr2', '/pr2/markers',
+        self.robot_calibration = ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
                                                      '/odom_combined', '/marker')
         self.cells = [ArtCellCalibration('table', '/table/ar_pose_marker',
                                          '/kinect2_link', '/marker')]

@@ -10,22 +10,24 @@ from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
 
 class ArtRobotCalibration(object):
 
-    def __init__(self, robot_id, markers_topic, robot_frame, world_frame):
+    def __init__(self, robot_id, markers_topic, world_frame,  robot_frame):
         self.cell_id = robot_id
         self.markers_topic = markers_topic
         self.calibrated = None
-        self.positions = [None, None, None, None]
+        self.positions = [np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f')]
         self.broadcaster = TransformBroadcaster()
 
         self.robot_frame = robot_frame
         self.world_frame = world_frame
 
-        self.markers_sub = rospy.Subscriber(self.markers_topic, AlvarMarkers, queue_size=1)
+        self.markers_sub = rospy.Subscriber(self.markers_topic, AlvarMarkers, self.markers_cb,  queue_size=1)
         self.head_look_at_pub = rospy.Publisher('/art/pr2/look_at',  PointStamped,  queue_size=1)
 
         self.robot_state = 0
         self.robot_looking_for_id = 10
         self.count = 0
+        
+        self.transformation = Transform()
 
     def calibrate(self):
         for p in self.positions:
@@ -40,7 +42,7 @@ class ArtRobotCalibration(object):
             return 
             
         self.transformation.rotation = transformations.quaternion_from_matrix(m)
-        self.transformation.translation = point
+        self.transformation.translation = transformations.translation_from_matrix(m)
         self.calibrated = True
 
     def get_transform(self):
@@ -51,7 +53,7 @@ class ArtRobotCalibration(object):
     def markers_cb(self, markers):
         if self.calibrated:
             return
-
+        rospy.loginfo("asdf")
         point = PointStamped()
         point.header.frame_id = "/base_link"
         point.point.x = 0.3
@@ -60,19 +62,24 @@ class ArtRobotCalibration(object):
             point.point.y = -0.5
             self.head_look_at_pub.publish(point)
             rospy.sleep(5)
+            self.robot_state = 1
         elif self.robot_state == 1 and self.robot_looking_for_id == 12:
             point.point.y = 0.4
             self.head_look_at_pub.publish(point)
             rospy.sleep(5)
+            self.robot_state = 2
         elif self.robot_state == 2 and self.robot_looking_for_id > 20:
             self.calibrate()
 
+
+       
         # look for markers
 
         if self.robot_looking_for_id < 20:
-            p = ArtCalibrationHelper().get_marker_position_by_id(markers, self.robot_looking_for_id)
+            p = ArtCalibrationHelper.get_marker_position_by_id(markers, self.robot_looking_for_id)
             if p is not None:
                 self.positions[self.robot_looking_for_id-10] += p
+                
                 self.count += 1
                 if self.count >= 10:
                     self.positions[self.robot_looking_for_id - 10] /= self.count

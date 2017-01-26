@@ -11,7 +11,7 @@ from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
 
 class ArtCellCalibration(object):
 
-    def __init__(self, cell_id, markers_topic, cell_frame, world_frame):
+    def __init__(self, cell_id, markers_topic, world_frame,  cell_frame):
         self.cell_id = cell_id
         self.markers_topic = markers_topic
         self.calibrated = None
@@ -38,7 +38,7 @@ class ArtCellCalibration(object):
             return 
 
         self.transformation.rotation = transformations.quaternion_from_matrix(m)
-        self.transformation.translation = point
+        self.transformation.translation = transformations.translation_from_matrix(m)
         self.calibrated = True
 
     def get_transform(self):
