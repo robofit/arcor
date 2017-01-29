@@ -14,8 +14,8 @@ def main(args):
     rospy.init_node('art_db_service_tester', anonymous=True)
 
     p = Program()
-    p.id = 0
-    p.name = "Basic pick&place"
+    p.header.id = 0
+    p.header.name = "Basic pick&place"
 
     pb = ProgramBlock()
     pb.id = 1  # can't be zero
@@ -98,9 +98,9 @@ def main(args):
     ot = ObjectType()
     ot.name = "profile_20_60"
     ot.bbox.type = SolidPrimitive.BOX
-    ot.bbox.dimensions.append(0.1)
-    ot.bbox.dimensions.append(0.1)
-    ot.bbox.dimensions.append(0.1)
+    ot.bbox.dimensions.append(0.05)
+    ot.bbox.dimensions.append(0.05)
+    ot.bbox.dimensions.append(0.16)
 
     try:
         store_object_srv = rospy.ServiceProxy('/art/db/object_type/store', storeObjectType)

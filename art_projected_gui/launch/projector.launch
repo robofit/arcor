@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="projector_id" default="test"/>
+    <arg name="screen_number" default="1"/>
+    
+    <group ns="/art/interface/projected_gui">
+    
+        <include file="$(find art_projected_gui)/launch/common_params.launch" />
+
+        <node pkg="art_projected_gui" name="$(arg projector_id)" type="projector_node.py" output="screen">
+
+            <param name="projector_id" value="$(arg projector_id)"/>
+            <param name="screen_number" value="$(arg screen_number)"/>
+            
+        </node>
+    
+    </group>
+
+</launch>

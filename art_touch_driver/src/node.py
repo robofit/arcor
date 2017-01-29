@@ -50,7 +50,7 @@ class ArtTouchDriver:
 
         self.ns = '/art/interface/touchtable/'
 
-        self.touch_pub = rospy.Publisher(self.ns + "touch", Touch, queue_size=100)  # make sure that all messages will be sent
+        self.touch_pub = rospy.Publisher(self.ns + "touch", Touch, queue_size=100,  tcp_nodelay=True)  # make sure that all messages will be sent
         self.calibrated_pub = rospy.Publisher(self.ns + 'calibrated', Bool, queue_size=1, latch=True)
         self.calibrating_pub = rospy.Publisher(self.ns + 'calibrating', Bool, queue_size=1, latch=True)
         self.touch_det_pub = rospy.Publisher(self.ns + 'touch_detected', Empty, queue_size=10)
@@ -126,7 +126,6 @@ class ArtTouchDriver:
     def process(self):
         # print 1 if self.device._eventq else 0
         event = self.device.read()
-        print event
         while True:
             if event.evtype == 3 and event.code == 47 and event.value >= 0:
                 # MT_SLOT
@@ -153,12 +152,10 @@ class ArtTouchDriver:
             elif event.evtype == 3 and event.code == 53:
                 # x position
                 self.slot.x = event.value
-                print("x")
 
             elif event.evtype == 3 and event.code == 54:
                 # y position
                 self.slot.y = event.value
-                print("y")
 
             elif event.evtype == 0:
 
@@ -233,6 +230,6 @@ if __name__ == '__main__':
 
         while not rospy.is_shutdown():
             node.process()
-            rate.sleep()
+            # rate.sleep()
     except rospy.ROSInterruptException:
         pass

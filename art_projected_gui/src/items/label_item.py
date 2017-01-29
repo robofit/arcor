@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
-from PyQt4 import QtGui, QtCore
+from PyQt4 import QtGui, QtCore,  QtSvg
 from item import Item
 import rospy
 from collections import deque
+from art_msgs.srv import NotifyUserRequest
+import rospkg
 
 
 class LabelItem(Item):
@@ -19,15 +21,32 @@ class LabelItem(Item):
         self.msgs = deque()
         self.current_msg = None
 
+        rospack = rospkg.RosPack()
+        self.icons_path = rospack.get_path('art_projected_gui') + '/icons/'
+
+        self.icons = {}
+        self.icons[NotifyUserRequest.INFO] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_dialog-information.svg',  self)
+        self.icons[NotifyUserRequest.WARN] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_dialog-warning.svg',  self)
+        self.icons[NotifyUserRequest.ERROR] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_emblem-important.svg',  self)
+        self.icons[NotifyUserRequest.YES_NO_QUESTION] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_dialog-question.svg',  self)
+
+        s = self.m2pix(self.h)
+        for k, v in self.icons.iteritems():
+
+            v.setScale(s/v.boundingRect().height())
+            v.setPos(0, 0)
+            v.setVisible(False)
+
         self.still_msgs = []
         self.temp_msgs = []
 
         self.timer = rospy.Timer(rospy.Duration(0.1), self.timer_cb)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
+        self.setZValue(200)
 
-    def add_msg(self, msg, min_duration=rospy.Duration(3), temp=False):
+    def add_msg(self, msg, message_type,  min_duration=rospy.Duration(3), temp=False):
 
-        self.msgs.append({"msg": msg, "min_duration": min_duration, "shown_at": None, "temp": temp})
+        self.msgs.append({"msg": msg, "min_duration": min_duration, "shown_at": None, "temp": temp,  "type": message_type})
         self.check_for_msgs()
 
     def boundingRect(self):
@@ -104,13 +123,25 @@ class LabelItem(Item):
             return
 
         if msg["shown_at"] is None:
+
             msg["shown_at"] = rospy.Time.now()
 
-        # TODO animate text as it is shown / disappears
+        for k, v in self.icons.iteritems():
+
+            if k == msg["type"]:
+                v.setVisible(True)
+            else:
+                v.setVisible(False)
+
         painter.setClipRect(option.exposedRect)
         painter.setBrush(QtCore.Qt.white)
         painter.setPen(QtCore.Qt.white)
 
-        # TODO font size
-        painter.setFont(QtGui.QFont('Arial', self.get_font_size(1.5)))
-        painter.drawText(0, 0, self.m2pix(self.w), self.m2pix(self.h), 0, msg["msg"])
+        # TODO fix for multiline messages
+        font = QtGui.QFont('Arial', self.get_font_size(1.5))
+        painter.setFont(font)
+        metrics = QtGui.QFontMetrics(font)
+        h = self.m2pix(self.h)
+        left_padding = h+self.m2pix(0.02)
+
+        painter.drawText(left_padding, (h-metrics.height())/2, self.m2pix(self.w)-left_padding, h, QtCore.Qt.AlignLeft, msg["msg"])

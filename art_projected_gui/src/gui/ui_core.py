@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
-from PyQt4 import QtGui, QtCore
-from items import ObjectItem,  PlaceItem,  LabelItem,  ProgramItem,  PolygonItem, SquareItem
+from PyQt4 import QtGui, QtCore, QtNetwork
+from items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem, SquareItem
 import rospy
+from helpers import conversions
+from art_msgs.srv import NotifyUserRequest
 
 
 class customGraphicsView(QtGui.QGraphicsView):
@@ -38,7 +40,7 @@ class UICore(QtCore.QObject):
         view (QGraphicsView): To show content of the scene in debug window.
     """
 
-    def __init__(self, x, y, width, height, rpm):
+    def __init__(self, x, y, width, height, rpm,  scene_server_port):
         """
         Args:
             x (float): x coordinate of the scene's origin (in world coordinate system, meters).
@@ -55,6 +57,7 @@ class UICore(QtCore.QObject):
         self.width = width
         self.height = height
         self.rpm = rpm
+        self.port = scene_server_port
 
         w = self.width * self.rpm
         h = self.height / self.width * w
@@ -65,8 +68,8 @@ class UICore(QtCore.QObject):
 
         self.scene_items = []
 
-        self.bottom_label = LabelItem(self.scene, self.rpm, 0.1, self.height - 0.05, self.width - 0.2, 0.1)
-        self.program_vis = ProgramItem(self.scene, self.rpm, 0.2, 0.2)
+        self.bottom_label = LabelItem(self.scene, self.rpm, 0.2, 0.05, self.width - 0.4, 0.05)
+        self.program_vis = ProgramItem(self.scene, self.rpm, 0.2, self.height-0.2)
 
         self.scene_items.append(self.bottom_label)
         self.scene_items.append(self.program_vis)
@@ -76,7 +79,94 @@ class UICore(QtCore.QObject):
         self.view.setViewportUpdateMode(QtGui.QGraphicsView.SmartViewportUpdate)
         self.view.setStyleSheet("QGraphicsView { border-style: none; }")
 
-    def notif(self, msg, min_duration=3.0, temp=False):
+        QtCore.QObject.connect(self, QtCore.SIGNAL('send_scene'), self.send_to_clients_evt)
+
+        self.tcpServer = QtNetwork.QTcpServer(self)
+        if not self.tcpServer.listen(port=self.port):
+
+            rospy.logerr('Failed to start scene TCP server on port ' + str(self.port))
+
+        self.tcpServer.newConnection.connect(self.new_connection)
+        self.connections = []
+
+        self.last_scene_update = None
+        self.scene.changed.connect(self.scene_changed)
+
+    def new_connection(self):
+
+        rospy.loginfo('Some projector node just connected.')
+        self.connections.append(self.tcpServer.nextPendingConnection())
+        self.connections[-1].setSocketOption(QtNetwork.QAbstractSocket.LowDelayOption, 1)
+        self.emit(QtCore.SIGNAL('send_scene'), self.connections[-1])
+        # TODO deal with disconnected clients!
+        # self.connections[-1].disconnected.connect(clientConnection.deleteLater)
+
+    def send_to_clients_evt(self, client=None):
+
+        # if all connections are sending scene image, there is no need to render the new one
+        if client is None:
+
+            for con in self.connections:
+
+                if con.bytesToWrite() == 0:
+                    break
+
+            else:
+                return
+
+        # TODO try to use Format_RGB16 - BMP is anyway converted to 32bits (send raw data instead)
+        pix = QtGui.QImage(self.scene.width(), self.scene.height(), QtGui.QImage.Format_ARGB32_Premultiplied)
+        painter = QtGui.QPainter(pix)
+        self.scene.render(painter)
+        painter.end()
+
+        block = QtCore.QByteArray()
+        out = QtCore.QDataStream(block, QtCore.QIODevice.WriteOnly)
+        out.setVersion(QtCore.QDataStream.Qt_4_0)
+        out.writeUInt32(0)
+
+        img = QtCore.QByteArray()
+        buffer = QtCore.QBuffer(img)
+        buffer.open(QtCore.QIODevice.WriteOnly)
+        pix.save(buffer, "BMP")
+        out << QtCore.qCompress(img, 1)  # this seem to be much faster than using PNG compression
+
+        out.device().seek(0)
+        out.writeUInt32(block.size() - 4)
+
+        # print block.size()
+
+        if client is None:
+
+            for con in self.connections:
+
+                if con.bytesToWrite() > 0:
+                    return
+                con.write(block)
+
+        else:
+
+            client.write(block)
+
+    def scene_changed(self, rects):
+
+        if len(rects) == 0:
+            return
+        # TODO Publish only changes? How to accumulate them (to be able to send it only at certain fps)?
+
+        now = rospy.Time.now()
+        if self.last_scene_update is None:
+            self.last_scene_update = now
+        else:
+            if now - self.last_scene_update < rospy.Duration(1.0 / 20):
+                return
+
+        # print 1.0/(now - self.last_scene_update).to_sec()
+        self.last_scene_update = now
+
+        self.emit(QtCore.SIGNAL('send_scene'))
+
+    def notif(self, msg, min_duration=3.0, temp=False, message_type=NotifyUserRequest.INFO):
         """Display message (notification) to the user.
 
         Args:
@@ -85,28 +175,28 @@ class UICore(QtCore.QObject):
             temp (:obj:`bool`, optional): temporal message disappears after min_duration and last non-temporal message is displayed instead.
         """
 
-        self.bottom_label.add_msg(msg, rospy.Duration(min_duration), temp)
+        self.bottom_label.add_msg(msg, message_type,  rospy.Duration(min_duration), temp)
 
     def debug_view(self):
         """Show window with scene - for debugging purposes."""
 
         self.view.show()
 
-    def get_scene_items_by_type(self, type):
+    def get_scene_items_by_type(self, itype):
         """Generator to filter content of scene_items array."""
 
         for el in self.scene_items:
-            if isinstance(el, type):
+            if type(el) is itype:  # TODO option for 'isinstance' ??
                 yield el
 
-    def remove_scene_items_by_type(self, type):
+    def remove_scene_items_by_type(self, itype):
         """Removes items of the given type from scene (from scene_items and scene)."""
 
         its = []
 
         for it in self.scene_items:
 
-            if not isinstance(it, type):
+            if type(it) is not itype:
                 continue
             its.append(it)
 
@@ -115,7 +205,7 @@ class UICore(QtCore.QObject):
             self.scene.removeItem(it)
             self.scene_items.remove(it)
 
-    def add_object(self, object_id, object_type, x, y, sel_cb=None):
+    def add_object(self, object_id, object_type, x, y, yaw,  sel_cb=None):
         """Adds object to the scene.
 
         Args:
@@ -125,7 +215,7 @@ class UICore(QtCore.QObject):
             sel_cb (method): Callback which gets called one the object is selected.
         """
 
-        self.scene_items.append(ObjectItem(self.scene, self.rpm, object_id, object_type, x, y, sel_cb))
+        self.scene_items.append(ObjectItem(self.scene, self.rpm, object_id, object_type, x, y, yaw,  sel_cb))
 
     def remove_object(self, object_id):
         """Removes ObjectItem with given object_id from the scene."""
@@ -150,9 +240,6 @@ class UICore(QtCore.QObject):
     def select_object(self, obj_id, unselect_others=True):
         """Sets ObjectItem with given obj_id as selected. By default, all other items are unselected."""
 
-        if obj_id == "":
-            return
-
         for it in self.get_scene_items_by_type(ObjectItem):
 
             if it.object_id == obj_id:
@@ -165,15 +252,12 @@ class UICore(QtCore.QObject):
 
                 it.set_selected(False)
 
-    def select_object_type(self, obj_type, unselect_others=True):
+    def select_object_type(self, obj_type_name, unselect_others=True):
         """Sets all ObjectItems with geiven object_type and selected. By default, all objects of other types are unselected."""
-
-        if obj_type == "":
-            return
 
         for it in self.get_scene_items_by_type(ObjectItem):
 
-            if it.object_type == obj_type:
+            if it.object_type.name == obj_type_name:
                 it.set_selected(True)
             elif unselect_others:
                 it.set_selected(False)
@@ -188,9 +272,23 @@ class UICore(QtCore.QObject):
 
         return None
 
-    def add_place(self, caption, x, y, place_cb=None, fixed=False):
+    def add_place(self, caption,  pose_stamped, object_type,  object_id=None,  place_cb=None, fixed=False):
 
-        self.scene_items.append(PlaceItem(self.scene, self.rpm, caption, x, y, place_pose_changed=place_cb, fixed=fixed))
+        # TODO check frame_id in pose_stamped and transform if needed
+        self.scene_items.append(
+            PlaceItem(
+                self.scene,
+                self.rpm,
+                caption,
+                pose_stamped.pose.position.x,
+                pose_stamped.pose.position.y,
+                object_type,
+                object_id,
+                place_pose_changed=place_cb,
+                fixed=fixed,
+                yaw=conversions.quaternion2yaw(pose_stamped.pose.orientation)
+                )
+            )
 
     def add_polygon(self, caption, obj_coords=[], poly_points=[], polygon_changed=None, fixed=False):
 

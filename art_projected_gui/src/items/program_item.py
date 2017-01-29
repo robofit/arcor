@@ -5,6 +5,7 @@ from item import Item
 from art_msgs.msg import ProgramItem as ProgIt
 from geometry_msgs.msg import Point32
 from button_item import ButtonItem
+from helpers import conversions
 
 translate = QtCore.QCoreApplication.translate
 
@@ -50,8 +51,6 @@ class ProgramItemItem(Item):
             self.item_selected_cb(self)
 
     def boundingRect(self):
-        # w = self.m2pix(self.w)
-        # h = self.m2pix(self.h)
 
         return QtCore.QRectF(0, 0, self.w, self.h)
 
@@ -105,7 +104,7 @@ class ProgramItemItem(Item):
 
     def get_place_pose(self):
 
-        return (self.item.place_pose.pose.position.x, self.item.place_pose.pose.position.y)
+        return self.item.place_pose
 
     def is_object_set(self):
 
@@ -230,8 +229,9 @@ class ProgramItem(Item):
             self.active_item.setPos(30, self.active_item.y())
             self.active_item.active_item = False
 
-        it.active_item = True
+        self.active_item = None
         self.active_item = it
+        self.active_item.active_item = True
         self.active_item.update()
 
         self.active_item.setPos(10, self.active_item.y())
@@ -352,7 +352,6 @@ class ProgramItem(Item):
 
         # TODO consides state
         if self.is_prog_learned():
-            print "enabling start button"
             self.btn.set_enabled(True)
 
     def set_object(self, obj):
@@ -361,10 +360,12 @@ class ProgramItem(Item):
         self.program_updated()
         self.update_size()
 
-    def set_place_pose(self, x, y):
+    def set_place_pose(self, x, y,  yaw):
 
         self.active_item.item.place_pose.pose.position.x = x
         self.active_item.item.place_pose.pose.position.y = y
+        self.active_item.item.place_pose.pose.orientation = conversions.yaw2quaternion(yaw)
+
         self.program_updated()
         self.update_size()
 
@@ -409,7 +410,7 @@ class ProgramItem(Item):
         painter.setFont(font)
         painter.setPen(QtCore.Qt.white)
 
-        painter.drawText(0, -10, translate("ProgramItem", "Program") + " ID=" + str(self.prog.id))
+        painter.drawText(0, -10, translate("ProgramItem", "Program") + " ID=" + str(self.prog.header.id))
 
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.NoPen)

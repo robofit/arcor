@@ -2,55 +2,9 @@
 
 from PyQt4 import QtGui, QtCore
 from item import Item
-
-
-class PolygonPointItem(Item):
-
-    def __init__(self, scene, rpm, x, y, parent, fixed=False):
-
-        self.outline_diameter = 0.025
-
-        super(PolygonPointItem, self).__init__(scene, rpm, x, y, parent)
-        self.fixed = fixed
-
-    def boundingRect(self):
-
-        es = self.m2pix(self.outline_diameter * 1.8)
-
-        return QtCore.QRectF(-es / 2, -es / 2, es, es)
-
-    def shape(self):
-
-        path = QtGui.QPainterPath()
-        es = self.m2pix(self.outline_diameter)
-        path.addEllipse(QtCore.QPoint(0, 0), es / 2, es / 2)
-        return path
-
-    def item_moved(self):
-        # toto sa vola ked sa hybe s okrajovym bodom polygonu
-        self.parentItem().point_changed()
-
-    def cursor_release(self):
-        # toto sa vola ked dohybeme s okrajovym bodom a pustime ho
-        self.parentItem().point_changed(True)
-
-    def paint(self, painter, option, widget):
-        # toto sa vola vzdy ked ukazem kurzorom na okrajovy bod polygonu
-        painter.setClipRect(option.exposedRect)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-
-        es = self.m2pix(self.outline_diameter)
-
-        if self.hover:
-            # TODO coordinates
-            painter.setBrush(QtCore.Qt.gray)
-            painter.setPen(QtCore.Qt.gray)
-            painter.drawEllipse(QtCore.QPoint(0, 0), es / 2 * 1.8, es / 2 * 1.8)
-
-        painter.setBrush(QtCore.Qt.cyan)
-        painter.setPen(QtCore.Qt.cyan)
-
-        painter.drawEllipse(QtCore.QPoint(0, 0), es / 2, es / 2)
+from point_item import PointItem
+from desc_item import DescItem
+from math import fabs,  atan2
 
 
 class PolygonItem(Item):
@@ -60,101 +14,123 @@ class PolygonItem(Item):
         self.caption = caption
         self.polygon_changed = polygon_changed
 
-        super(PolygonItem, self).__init__(scene, rpm, 0, 0)
+        self.poly = QtGui.QPolygon()
+        self.desc = None
+
+        super(PolygonItem, self).__init__(scene, rpm, 0.5, 0.5)  # TODO what should be here?
         self.fixed = fixed
+        self.convex = True
+
+        self.pts = []
 
         if len(obj_coords) > 0:
 
-            self.min = [obj_coords[0][0], obj_coords[0][1]]
-            self.max = [obj_coords[0][0], obj_coords[0][1]]
+            min = [obj_coords[0][0], obj_coords[0][1]]
+            max = [obj_coords[0][0], obj_coords[0][1]]
 
             for pt in obj_coords:
 
                 pt = [pt[0], pt[1]]
 
-                if pt[0] < self.min[0]:
-                    self.min[0] = pt[0]
-                if pt[1] < self.min[1]:
-                    self.min[1] = pt[1]
-                if pt[0] > self.max[0]:
-                    self.max[0] = pt[0]
-                if pt[1] > self.max[1]:
-                    self.max[1] = pt[1]
+                if pt[0] < min[0]:
+                    min[0] = pt[0]
+                if pt[1] < min[1]:
+                    min[1] = pt[1]
+                if pt[0] > max[0]:
+                    max[0] = pt[0]
+                if pt[1] > max[1]:
+                    max[1] = pt[1]
 
             pad = 0.1
 
-            self.min[0] -= pad
-            self.min[1] -= pad
-            self.max[0] += pad
-            self.max[1] += pad
+            min[0] -= pad
+            min[1] -= pad
+            max[0] += pad
+            max[1] += pad
 
-            self.pts = []
-
-            self.pts.append(PolygonPointItem(scene, rpm, self.min[0], self.min[1], self))   # top-left corner
-            self.pts.append(PolygonPointItem(scene, rpm, self.max[0], self.min[1], self))   # top-right corner
-            self.pts.append(PolygonPointItem(scene, rpm, self.max[0], self.max[1], self))   # bottom-right corner
-            self.pts.append(PolygonPointItem(scene, rpm, self.min[0], self.max[1], self))   # bottom-left corner
+            self.pts.append(PointItem(scene, rpm, min[0], min[1], self,  self.point_changed))
+            self.pts.append(PointItem(scene, rpm, max[0], min[1], self, self.point_changed))
+            self.pts.append(PointItem(scene, rpm, max[0], max[1], self, self.point_changed))
+            self.pts.append(PointItem(scene, rpm, min[0], max[1], self, self.point_changed))
 
             if self.polygon_changed is not None:
                 self.polygon_changed(self.get_poly_points())
 
         elif len(poly_points) > 0:
 
-            self.min = [poly_points[0][0], poly_points[0][1]]
-            self.max = [poly_points[0][0], poly_points[0][1]]
-
             for pt in poly_points:
 
-                pt = [pt[0], pt[1]]
-
-                if pt[0] < self.min[0]:
-                    self.min[0] = pt[0]
-                if pt[1] < self.min[1]:
-                    self.min[1] = pt[1]
-                if pt[0] > self.max[0]:
-                    self.max[0] = pt[0]
-                if pt[1] > self.max[1]:
-                    self.max[1] = pt[1]
-
-            self.pts = []
-
-            for pt in poly_points:
-
-                self.pts.append(PolygonPointItem(scene, rpm, pt[0], pt[1], self, fixed))
+                self.pts.append(PointItem(scene, rpm, pt[0], pt[1], self, self.point_changed, fixed))
 
         else:
 
             pass  # TODO chyba
 
-        self.update()
-
-    def point_changed(self, finished=False):
-
-        self.prepareGeometryChange()
-
-        # update of bounding rect
-        self.min[0] = self.pix2m(self.pts[0].x())
-        self.min[1] = self.pix2m(self.pts[0].y())
-        self.max[0] = self.pix2m(self.pts[0].x())
-        self.max[1] = self.pix2m(self.pts[0].y())
-
         for pt in self.pts:
+                self.poly.append(pt.pos().toPoint())
 
-            p = (self.pix2m(pt.x()), self.pix2m(pt.y()))
-
-            if p[0] < self.min[0]:
-                self.min[0] = p[0]
-            if p[1] < self.min[1]:
-                self.min[1] = p[1]
-
-            if p[0] > self.max[0]:
-                self.max[0] = p[0]
-            if p[1] > self.max[1]:
-                self.max[1] = p[1]
+        self.desc = DescItem(scene, rpm, 0,  0, self)
+        self.desc.setFlag(QtGui.QGraphicsItem.ItemIgnoresTransformations)
+        self.__update_desc_pos()
+        self.__update_text()
 
         self.update()
 
-        if finished and self.polygon_changed is not None:
+    def __update_desc_pos(self):
+
+        if self.desc is not None:
+
+            p = self.poly.boundingRect().bottomLeft() + QtCore.QPointF(0,  self.m2pix(0.02))
+            self.desc.setPos(p)
+
+    def __update_text(self):
+
+        if self.desc is None:
+            return
+
+        desc = []
+        desc.append(self.caption)
+        # TODO number of objects in polygon?
+        self.desc.set_content(desc)
+
+    def point_changed(self, pt, finished):
+
+        self.poly.setPoint(self.pts.index(pt),  pt.pos().toPoint())
+
+        ps = self.poly.size()
+
+        # TODO what to do with shuffled points? should be fixed...
+        for i in range(2,  ps+2):
+
+            line1 = QtCore.QLineF(self.poly.point(i-2),  self.poly.point((i-1) % ps))
+            line2 = QtCore.QLineF(self.poly.point((i-1) % ps),  self.poly.point(i % ps))
+
+            a1 = line1.angle()
+            a2 = line2.angle()
+
+            d = a2-a1
+
+            if d < 0:
+                d = 360 + d
+
+            if d < 315 and d > 180:
+
+                self.convex = False
+                break
+        else:
+            self.convex = True
+
+        self.__update_desc_pos()
+        self.update()
+
+        if finished and self.convex and self.polygon_changed is not None:
+            self.polygon_changed(self.get_poly_points())
+
+    def cursor_release(self):
+
+        # TODO call base class method
+
+        if self.convex and self.polygon_changed is not None:
             self.polygon_changed(self.get_poly_points())
 
     def get_poly_points(self):
@@ -166,12 +142,16 @@ class PolygonItem(Item):
             pts.append(pt.get_pos())
 
         return pts
-    # TODO impl.
-    # def shape(self):
+
+    def shape(self):
+
+        path = QtGui.QPainterPath()
+        path.addPolygon(QtGui.QPolygonF(self.poly))
+        return path
 
     def boundingRect(self):
 
-        return QtCore.QRectF(self.m2pix(self.min[0]) - 2.5, self.m2pix(self.min[1]) - 2.5, self.m2pix(self.max[0] - self.min[0]) + 5, self.m2pix(self.max[1] - self.min[1]) + 5)
+        return QtCore.QRectF(self.poly.boundingRect())
 
     def paint(self, painter, option, widget):
         # TODO detekovat ze je polygon "divny" (prekrouceny) a zcervenat
@@ -180,24 +160,20 @@ class PolygonItem(Item):
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
+        # painter.setPen(QtCore.Qt.white)
+        # painter.drawRect(self.boundingRect())
+
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.DotLine)
         pen.setWidth(5)
-        pen.setBrush(QtCore.Qt.white)
+
+        if self.convex:
+            pen.setBrush(QtCore.Qt.white)
+        else:
+            pen.setBrush(QtCore.Qt.red)
+
         pen.setCapStyle(QtCore.Qt.RoundCap)
         pen.setJoinStyle(QtCore.Qt.RoundJoin)
-
         painter.setPen(pen)
 
-        poly = QtGui.QPolygon()
-
-        for i in range(0, len(self.pts)):
-
-            poly.append(self.pts[i].pos().toPoint())
-
-        painter.drawPolygon(poly)
-
-        # TODO nazev polygonu -> kam kreslit? Polopruhledne / sede pres cely polygon?
-        # painter.setFont(QtGui.QFont('Arial', 12));
-        # painter.setPen(QtCore.Qt.white)
-        # painter.drawText(QtCore.QPoint(self.pts[0].x(), self.pts[0].y()), self.caption)
+        painter.drawPolygon(self.poly)

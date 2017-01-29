@@ -148,6 +148,8 @@ class ArtBrain:
 
             for point in instruction.pick_polygon.polygon.points:  # TODO check frame_id and transform to table frame?
                 pick_polygon.append([point.x,  point.y])
+            pick_polygon.append([0,  0])
+
             if len(pick_polygon) > 0:
                 pol = mplPath.Path(np.array(pick_polygon), closed=True)
 
@@ -239,7 +241,7 @@ class ArtBrain:
     def manip_pick_place(self, instruction):
 
         print "manip_pick_place"
-
+        print self.objects
         obj_id = self.get_pick_obj_id(instruction)
         pose = self.get_place_pose(instruction)
 
@@ -374,7 +376,7 @@ class ArtBrain:
         # self.state = self.SYSTEM_STARTING_PROGRAM_SERVER
 
     def state_calibrating(self):
-        self.calibrate_all(self.calibrate_table, self.calibrate_pr2)
+        # self.calibrate_all(self.calibrate_table, self.calibrate_pr2)
         self.state = self.SYSTEM_STARTING_PROGRAM_SERVER
 
     def state_switcher(self):
@@ -395,6 +397,7 @@ class ArtBrain:
         self.state = self.SYSTEM_READY_FOR_PROGRAM_REQUESTS
 
     def state_ready_for_program_requests(self):
+        rospy.loginfo("state_ready_for_program_requests")
         if self.stop_server:
             self.state = self.SYSTEM_STOPPING_PROGRAM_SERVER
             self.stop_server = False  # TODO refuse requests to startProgram service when 'server' is not enabled?
@@ -408,16 +411,16 @@ class ArtBrain:
 
             while self.executing_program:
 
-                rospy.loginfo('Program id: ' + str(self.ph.prog.id) + ', item id: ' + str(it.id) + ', item type: ' + str(it.type))
+                rospy.loginfo('Program id: ' + str(self.ph.get_program_id()) + ', item id: ' + str(it.id) + ', item type: ' + str(it.type))
 
                 self.instruction = it.type
                 instruction_function = self.instruction_switcher()
                 result = instruction_function(it)
                 if result == self.INST_OK:
-                    (self.block_id, item_id) = self.ph.get_id_on_success()
+                    (self.block_id, item_id) = self.ph.get_id_on_success(self.block_id,  it.id)
                     it = self.ph.get_item_msg(self.block_id,  item_id)
                 elif result == self.INST_BAD_DATA or result == self.INST_FAILED:
-                    (self.block_id, item_id) = self.ph.get_id_on_failure()
+                    (self.block_id, item_id) = self.ph.get_id_on_failure(self.block_id,  it.id)
                     print "bad_data/failed"
 
                     if self.block_id == 0:
@@ -465,6 +468,7 @@ class ArtBrain:
         :type object_id: str
         :return:
         """
+
         goal = pickplaceGoal()
         goal.id = object_id
         goal.operation = goal.PICK
@@ -493,12 +497,16 @@ class ArtBrain:
         goal = pickplaceGoal()
         goal.operation = goal.PLACE
         goal.id = obj
+
+        # TODO how to decide between 180 and 90 deg?
+        goal.z_axis_angle_increment = 3.14/2  # allow object to be rotated by 90 deg around z axis
+
         goal.place_pose = PoseStamped()
 
         goal.place_pose = place
         goal.place_pose.header.stamp = rospy.Time.now()
         # TODO: how to deal with this?
-        goal.place_pose.pose.position.z = 0.06  # + obj.bbox.dimensions[2]/2
+        goal.place_pose.pose.position.z = 0.1  # + obj.bbox.dimensions[2]/2
         self.pp_client.send_goal(goal)
         self.pp_client.wait_for_result()
         if self.pp_client.get_result().result == 0:

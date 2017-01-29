@@ -2,11 +2,12 @@
 
 import unittest
 from gui.ui_core import UICore
-from items import ObjectItem
+from items import ObjectItem,  PlaceItem
 import os.path
 import sys
 from PyQt4.QtGui import QApplication
 from PyQt4.QtTest import QTest
+from art_msgs.msg import ObjectType
 
 sys.path = [os.path.abspath(os.path.dirname(__file__))] + sys.path
 app = QApplication(sys.argv)
@@ -66,6 +67,23 @@ class TestUICore(unittest.TestCase):
         self.assertEquals(len(list(self.ui_core.get_scene_items_by_type(ObjectItem))),  0, "test_remove_object")
 
         self.assertEquals(self.ui_core.remove_object("id1"),  False,  "test_remove_object")
+
+    def test_get_by_type(self):
+
+        self.ui_core.add_object("id1",  "type1",  0.5,  0.5)
+        self.ui_core.add_place("caption",  0, 0, ObjectType())
+
+        self.assertEquals(len(self.get_scene_items_by_type(ObjectItem)),  1,  "test_get_by_type")
+        self.assertEquals(len(self.get_scene_items_by_type(PlaceItem)),  1,  "test_get_by_type")
+
+    def test_clear_places(self):
+
+        self.ui_core.add_object("id1",  "type1",  0.5,  0.5)
+        self.ui_core.add_place("caption",  0, 0, ObjectType())
+        self.ui_core.clear_places()
+
+        self.assertEquals(len(self.get_scene_items_by_type(ObjectItem)),  1,  "test_clear_places")
+        self.assertEquals(len(self.get_scene_items_by_type(PlaceItem)),  0,  "test_clear_places")
 
 
 if __name__ == '__main__':

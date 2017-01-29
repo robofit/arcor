@@ -5,37 +5,49 @@ Visualization of place on the table
 """
 
 from PyQt4 import QtGui, QtCore
-from item import Item
 from object_item import ObjectItem
-from desc_item import DescItem
+from posestamped_cursor_item import PoseStampedCursorItem
+from touch_table_item import TouchTableItem
+from point_item import PointItem
+
+translate = QtCore.QCoreApplication.translate
 
 
-class PlaceItem(Item):
+class PlaceItem(ObjectItem):
 
-    def __init__(self, scene, rpm, caption, x, y, place_pose_changed=None, outline_diameter=0.1, selected=False, fixed=False):
+    """The class to visualize place pose for a given object / object type.
 
-        self.outline_diameter = outline_diameter
-        self.caption = caption
+    """
+
+    def __init__(self, scene, rpm,  caption,  x, y, object_type,  object_id=None,  yaw=0,  place_pose_changed=None,  selected=False, fixed=False):
+
         self.in_collision = False
+        self.caption = caption
 
-        super(PlaceItem, self).__init__(scene, rpm, x, y)
+        super(PlaceItem, self).__init__(scene, rpm, object_id, object_type,  x, y,  yaw)
 
-        self.desc = DescItem(scene, rpm, -self.outline_diameter * 1.3 / 2.0, self.outline_diameter * 1.3 / 2 + 0.01, self)
         self.update_text()
-
         self.fixed = fixed
-
         self.place_pose_changed = place_pose_changed
+        if not self.fixed:
+            self.set_color(QtCore.Qt.white)
+            self.point = PointItem(scene, rpm, 0, 0, self,  self.point_changed)  # TODO option to pass pixels?
+            self.point.setPos(self.boundingRect().topLeft())
 
-    def hover_changed(self):
-
-        self.update_text()
-        self.update()
+        self.setZValue(50)
 
     def update_text(self):
 
+        if self.desc is None:
+            return
+
         desc = []
         desc.append(self.caption)
+
+        if self.object_id is not None:
+            desc.append(translate("ObjectItem", "ID: ") + str(self.object_id))
+        else:
+            desc.append(translate("ObjectItem", "TYPE: ") + self.object_type.name)
 
         if self.hover:
 
@@ -45,48 +57,44 @@ class PlaceItem(Item):
 
     def cursor_release(self):
 
+        # TODO call base class method
+
         if self.place_pose_changed is not None:
-            self.place_pose_changed(self.get_pos())
+            self.place_pose_changed(self.get_pos(),  self.rotation())
 
-    def boundingRect(self):
+    def cursor_press(self):
 
-        es = self.m2pix(self.outline_diameter * 1.3)
-        return QtCore.QRectF(-es / 2, -es / 2, es, es + 40)
+        pass
 
-    def shape(self):
+    def point_changed(self, pt,  finished=False):
 
-        path = QtGui.QPainterPath()
-        es = self.m2pix(self.outline_diameter)
-        path.addEllipse(QtCore.QPoint(0, 0), es / 2, es / 2)
-        return path
+        from math import atan2, pi
+
+        # follow angle between "free" point and object center, after release put object back on topLeft corner
+        angle = atan2(self.point.scenePos().y()-self.scenePos().y(),  self.point.scenePos().x()-self.scenePos().x())/(2*pi)*360+135
+        self.setRotation(angle)
+        self.point.setRotation(-angle)
+
+        self._update_desc_pos()
+
+        if finished:
+
+            self.point.setPos(self.boundingRect().topLeft())
+
+            if self.place_pose_changed is not None:
+                self.place_pose_changed(self.get_pos(),  self.rotation())
 
     def item_moved(self):
 
-        # TODO testovat kolize jen s PlaceItem?
         for it in self.collidingItems():
-            if isinstance(it, PlaceItem) or isinstance(it, ObjectItem):
+
+            if isinstance(it, PoseStampedCursorItem) or isinstance(it,  TouchTableItem):
+                continue
+
+            if isinstance(it, ObjectItem):
                 self.in_collision = True
+                self.set_color(QtCore.Qt.red)
                 break
         else:
             self.in_collision = False
-
-    def paint(self, painter, option, widget):
-
-        painter.setClipRect(option.exposedRect)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-
-        es = self.m2pix(self.outline_diameter)
-
-        if self.hover and not self.fixed:
-            painter.setBrush(QtCore.Qt.gray)
-            painter.setPen(QtCore.Qt.gray)
-            painter.drawEllipse(QtCore.QPoint(0, 0), es / 2 * 1.3, es / 2 * 1.3)
-
-        if self.fixed:
-            painter.setBrush(QtCore.Qt.gray)
-        elif not self.in_collision:
-            painter.setBrush(QtCore.Qt.cyan)
-        else:
-            painter.setBrush(QtCore.Qt.red)
-
-        painter.drawEllipse(QtCore.QPoint(0, 0), es / 2, es / 2)
+            self.set_color(QtCore.Qt.white)

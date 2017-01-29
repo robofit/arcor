@@ -29,16 +29,20 @@ class TouchPointItem(Item):
 
             rospy.logdebug("releasing pointed item: " + self.pointed_item.__class__.__name__)
             self.pointed_item.set_hover(False, self)
-            self.cursor_release()
+            self.pointed_item.cursor_release()
             self.pointed_item = None
 
     def set_poss(self,  x,  y):
 
-        self.setPos(self.m2pix(x), self.m2pix(y))
+        self.last_update = rospy.Time.now()
+        self.set_pos(x, y)
 
         if self.pointed_item is None:
 
             for it in self.scene().items():
+
+                if not isinstance(it,  Item):  # TODO skip item not derived from Item
+                    continue
 
                 # TODO what types to skip?
                 if isinstance(it,  TouchTableItem) or isinstance(it,  TouchPointItem) or isinstance(it,  DescItem):
@@ -51,12 +55,10 @@ class TouchPointItem(Item):
                     it.set_hover(True, self)
                     self.pointed_item = it
                     self.pointed_item.cursor_press()
-                    self.pointed_item.cursor_release()
 
                     if self.pointed_item.fixed:
 
-                        self.pointed_item = None
-                        continue
+                        self.pointed_item.cursor_release()
 
                     else:
 
@@ -69,8 +71,17 @@ class TouchPointItem(Item):
 
         else:
 
-            self.pointed_item.set_pos(x+self.offset[0], y+self.offset[1])
-            self.pointed_item.item_moved()
+            if self.pointed_item.fixed:
+
+                if not self.collidesWithItem(self.pointed_item):
+
+                    self.pointed_item.set_hover(False, self)
+                    self.pointed_item = None
+
+            else:
+
+                self.pointed_item.set_pos(x+self.offset[0], y+self.offset[1])
+                self.pointed_item.item_moved()
 
         self.update()
 
@@ -116,7 +127,6 @@ class TouchTableItem(Item):
 
         super(TouchTableItem, self).__init__(scene, rpm, 0.0, 0.0)
 
-        self.scene = scene
         self.rpm = rpm
         self.touch_points = {}
 
@@ -128,7 +138,7 @@ class TouchTableItem(Item):
 
     def boundingRect(self):
 
-        return QtCore.QRectF(0, 0, self.scene.width(), self.scene.height())  # TODO is this ok?
+        return QtCore.QRectF(0, 0, self.scene().width(), self.scene().height())  # TODO is this ok?
 
     def paint(self, painter, option, widget):
 
@@ -139,8 +149,9 @@ class TouchTableItem(Item):
         if id not in self.touch_points:
             return
 
+        rospy.logdebug("deleting touch point, id: " + str(id))
         self.touch_points[id].end_of_touch()
-        self.scene.removeItem(self.touch_points[id])
+        self.scene().removeItem(self.touch_points[id])
         del self.touch_points[id]
 
     def touch_cb(self,  msg):
@@ -155,7 +166,7 @@ class TouchTableItem(Item):
 
             # TODO check frame_id
             rospy.logdebug("new touch point, id: " + str(msg.id))
-            self.touch_points[msg.id] = TouchPointItem(self.scene,  self.rpm,  msg.point.point.x,  msg.point.point.y,  self)
+            self.touch_points[msg.id] = TouchPointItem(self.scene(),  self.rpm,  msg.point.point.x,  msg.point.point.y,  self)
 
         else:
 
@@ -166,6 +177,7 @@ class TouchTableItem(Item):
 
             else:
 
+                rospy.logdebug("update of touch, id: " + str(msg.id))
                 self.touch_points[msg.id].set_poss(msg.point.point.x,  msg.point.point.y)
 
         # TODO make a timer for deleting outdated touches
@@ -178,6 +190,7 @@ class TouchTableItem(Item):
 
         for k in to_delete:
 
+            rospy.logdebug("deleting outdated touch, id: " + str(k))
             self.delete_id(k)
 
         # enable / disable given items

@@ -120,7 +120,7 @@ class ProgramHelper():
         if self.prog is None:
             return None
 
-        return self.prog.id
+        return self.prog.header.id
 
     def get_block_msg(self,  block_id):
 
@@ -129,6 +129,14 @@ class ProgramHelper():
 
         block_idx = self.cache[block_id]["idx"]
         return self.prog.blocks[block_idx]
+
+    def get_block_ids(self):
+
+        return self.cache.keys()
+
+    def get_items_ids(self, block_id):
+
+        return self.cache[block_id]["items"].keys()
 
     def get_first_block_id(self):
 
