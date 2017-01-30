@@ -6,13 +6,14 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   mongodb_store
   roslint
+  art_utils
 )
 
 set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
 roslint_python()
 roslint_add_test()
 
-catkin_package(CATKIN_DEPENDS art_msgs)
+catkin_package(CATKIN_DEPENDS art_msgs art_utils)
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
@@ -23,6 +24,5 @@ if (CATKIN_ENABLE_TESTING)
   find_package(rostest)
   find_package(roslaunch)
   roslaunch_add_file_check(launch)
-  # temporarily disabled
-  #add_rostest(tests/art_db.test DEPENDENCIES ${art_msgs_EXPORTED_TARGETS})
+  add_rostest(tests/art_db.test DEPENDENCIES ${art_msgs_EXPORTED_TARGETS})
 endif()

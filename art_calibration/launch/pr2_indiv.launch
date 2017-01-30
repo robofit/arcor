@@ -2,12 +2,12 @@
 	<arg name="marker_size" default="11.85" />
 	<arg name="max_new_marker_error" default="0.08" />
 	<arg name="max_track_error" default="0.2" />
-        
+
 	<arg name="cam_image_topic" default="/kinect_head/depth_registered/points" />
 	<arg name="cam_info_topic" default="/kinect_head/depth_registered/camera_info" />
-               
+
 	<arg name="output_frame" default="/odom_combined" />
-	<arg name="bundle_files" default="$(find art_brain)/bundles/truthTableLeg_pr2.xml"  />
+	<arg name="bundle_files" default="$(find art_calibration)/bundles/truthTableLeg_pr2.xml"  />
 
 	<arg name="med_filt_size" default="10" />
         <node ns="pr2" name="ar_track_alvar_bundle_pr2" pkg="ar_track_alvar" type="individualMarkers" respawn="false" output="screen" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame) $(arg med_filt_size) 5 " />
