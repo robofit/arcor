@@ -65,6 +65,7 @@ class ArtBrainMachine(object):
     user_status_sub = None
     user_activity_sub = None
     table_calibrated_sub = None
+    table_calibrating_sub = None
     system_calibrated_sub = None
     srv_program_start = None
     srv_program_stop = None
@@ -89,6 +90,7 @@ class ArtBrainMachine(object):
     stop_server = False
     recalibrate = False
     table_calibrated = False
+    table_calibrating = False
     cells_calibrated = False
     system_calibrated = False
 
@@ -186,6 +188,8 @@ class ArtBrainMachine(object):
             "/art/user/activity", UserActivity, self.user_activity_cb)
         self.table_calibrated_sub = rospy.Subscriber("/art/interface/touchtable/calibrated", Bool,
                                                      self.table_calibrated_cb)
+        self.table_calibrating_sub = rospy.Subscriber("/art/interface/touchtable/calibrating", Bool,
+                                                      self.table_calibrating_cb)
         self.system_calibrated_sub = rospy.Subscriber("/system_calibrated", Bool,
                                                       self.system_calibrated_cb)
 
@@ -220,17 +224,24 @@ class ArtBrainMachine(object):
             rospy.loginfo(
                 'Waiting for /art/interface/touchtable/calibrate service')
             rospy.wait_for_service('/art/interface/touchtable/calibrate')
+            rospy.loginfo(
+                'Get /art/interface/touchtable/calibrate service')
             self.srv_calibrate_table = rospy.ServiceProxy(
                 '/art/interface/touchtable/calibrate', Empty)
             attempt = 1
-            # while not self.table_calibrated:
-            rospy.loginfo("Trying to calibrate table, attempt " + str(attempt))
-            self.srv_calibrate_table.call()
-            attempt += 1
             rospy.sleep(1)
+            while not self.table_calibrated:
+                rospy.loginfo("Trying to calibrate table, attempt " + str(attempt))
+                self.srv_calibrate_table.call()
+                rospy.sleep(1)
+                attempt += 1
+                while not self.table_calibrated and self.table_calibrating:
+                    rospy.sleep(1)
 
         r = rospy.Rate(1)
         while not self.is_everything_calibrated():
+            if rospy.is_shutdown():
+                return
             rospy.loginfo("Waiting for calibration")
             r.sleep()
         self.init_done()
@@ -582,6 +593,9 @@ class ArtBrainMachine(object):
     def table_calibrated_cb(self, req):
         self.table_calibrated = req.data
 
+    def table_calibrating_cb(self, req):
+        self.table_calibrating = req.data
+
     def system_calibrated_cb(self,  req):
         self.system_calibrated = req.data
 
@@ -592,7 +606,7 @@ if __name__ == '__main__':
     try:
         node = ArtBrainMachine()
 
-        rate = rospy.Rate(30)
+        rate = rospy.Rate(100)
 
         while not rospy.is_shutdown():
             # node.process()
