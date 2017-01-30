@@ -17,7 +17,7 @@ import random
 from art_utils import InterfaceStateManager,  ArtApiHelper,  ProgramHelper
 
 from transitions import Machine
-#from transitions.extensions import GraphMachine as Machine
+# from transitions.extensions import GraphMachine as Machine
 from transitions import State
 
 import logging
@@ -27,23 +27,32 @@ from art_brain.brain_utils import ArtBrainUtils
 
 
 # TODO:
-# Upravit kalibraci stolu (zkontrolovat jestli se kalibrace spustila a kdyz ne, spustit ji znovu)
+# Upravit kalibraci stolu (zkontrolovat jestli se kalibrace spustila a
+# kdyz ne, spustit ji znovu)
 
 class ArtBrainMachine(object):
-    
-    states = [State(name='pre_init', on_enter=[],  on_exit=[]), 
+
+    states = [State(name='pre_init', on_enter=[],  on_exit=[]),
               State(name='init', on_enter=['state_init_ros'],  on_exit=[]),
-              State(name='waiting_for_action', on_enter=['state_waiting_for_action'], on_exit=[]),
-              State(name='program_init', on_enter=['state_program_init'],  on_exit=[]),
-              State(name='program_run', on_enter=['state_program_run'],  on_exit=[]),
-              State(name='get_ready', on_enter=['state_get_ready'],  on_exit=[]),
+              State(name='waiting_for_action', on_enter=[
+                    'state_waiting_for_action'], on_exit=[]),
+              State(name='program_init', on_enter=[
+                    'state_program_init'],  on_exit=[]),
+              State(name='program_run', on_enter=[
+                    'state_program_run'],  on_exit=[]),
+              State(name='get_ready', on_enter=[
+                    'state_get_ready'],  on_exit=[]),
               State(name='pick', on_enter=['state_pick'],  on_exit=[]),
               State(name='place', on_enter=['state_place'],  on_exit=[]),
-              State(name='pick_place',   on_enter=['state_pick_place'],  on_exit=[]),
+              State(name='pick_place',   on_enter=[
+                    'state_pick_place'],  on_exit=[]),
               State(name='wait', on_enter=['state_wait'],  on_exit=[]),
-              State(name='program_error', on_enter=['state_program_error'],  on_exit=[]),
-              State(name='program_finished', on_enter=['state_program_finished'],  on_exit=[]),
-              State(name='program_load_instruction', on_enter=['state_program_load_instruction'],  on_exit=[]),
+              State(name='program_error', on_enter=[
+                    'state_program_error'],  on_exit=[]),
+              State(name='program_finished', on_enter=[
+                    'state_program_finished'],  on_exit=[]),
+              State(name='program_load_instruction', on_enter=[
+                    'state_program_load_instruction'],  on_exit=[]),
               State(name='teaching_init', on_enter=['state_teaching_init'],  on_exit=[])]
 
     # ROS Connections
@@ -90,52 +99,66 @@ class ArtBrainMachine(object):
 
         self.machine = Machine(model=self,  states=ArtBrainMachine.states, initial='pre_init',
                                auto_transitions=False, send_event=True, queued=True)
-    
+
         # *** transitions ***
-        
+
         self.machine.add_transition('init',  'pre_init',  'init')
-        self.machine.add_transition('init_done',  'init',  'waiting_for_action', conditions='is_everything_calibrated')
+        self.machine.add_transition(
+            'init_done',  'init',  'waiting_for_action', conditions='is_everything_calibrated')
 
         # program
-        self.machine.add_transition('program_start',  'waiting_for_action',  'program_init')
-        self.machine.add_transition('program_init_done',  'program_init',  'program_run')
+        self.machine.add_transition(
+            'program_start',  'waiting_for_action',  'program_init')
+        self.machine.add_transition(
+            'program_init_done',  'program_init',  'program_run')
         self.machine.add_transition('error',  'program_init',  'program_error')
         self.machine.add_transition('error',  'program_run',  'program_error')
-        self.machine.add_transition('program_error_handled', 'program_error',  'waiting_for_action')
-        self.machine.add_transition('done', 'program_load_instruction',  'program_run')
-        self.machine.add_transition('error', 'program_load_instruction',  'program_error')
-        self.machine.add_transition('finished', 'program_load_instruction',  'program_finished')
-        self.machine.add_transition('done', 'program_finished',  'waiting_for_action')
+        self.machine.add_transition(
+            'program_error_handled', 'program_error',  'waiting_for_action')
+        self.machine.add_transition(
+            'done', 'program_load_instruction',  'program_run')
+        self.machine.add_transition(
+            'error', 'program_load_instruction',  'program_error')
+        self.machine.add_transition(
+            'finished', 'program_load_instruction',  'program_finished')
+        self.machine.add_transition(
+            'done', 'program_finished',  'waiting_for_action')
 
         # get ready instruction
         self.machine.add_transition('get_ready', 'program_run', 'get_ready')
-        self.machine.add_transition('done', 'get_ready', 'program_load_instruction')
+        self.machine.add_transition(
+            'done', 'get_ready', 'program_load_instruction')
         self.machine.add_transition('error', 'get_ready', 'program_error')
-                
+
         # pick instruction
         self.machine.add_transition('pick',  'program_run',  'pick')
-        self.machine.add_transition('done',  'pick',  'program_load_instruction')
+        self.machine.add_transition(
+            'done',  'pick',  'program_load_instruction')
         self.machine.add_transition('error',  'pick',  'program_error')
-        
+
         # place instruction
         self.machine.add_transition('place',  'program_run',  'place')
-        self.machine.add_transition('done',  'place',  'program_load_instruction')
+        self.machine.add_transition(
+            'done',  'place',  'program_load_instruction')
         self.machine.add_transition('error',  'place',  'program_error')
-        
+
         # pick_place instruction
-        self.machine.add_transition('pick_place',  'program_run',  'pick_place')
-        self.machine.add_transition('done',  'pick_place',  'program_load_instruction')
+        self.machine.add_transition(
+            'pick_place',  'program_run',  'pick_place')
+        self.machine.add_transition(
+            'done',  'pick_place',  'program_load_instruction')
         self.machine.add_transition('error',  'pick_place',  'program_error')
-        
+
         # wait instruction
         self.machine.add_transition('wait',  'program_run',  'wait')
-        self.machine.add_transition('done',  'wait',  'program_load_instruction')
+        self.machine.add_transition(
+            'done',  'wait',  'program_load_instruction')
         self.machine.add_transition('error',  'wait',  'program_error')
-        
+
         # self.machine.graph.draw('my_state_diagram.png', prog='dot')
 
         logger.setLevel(logging.DEBUG)
-        
+
         self.init()
 
     # ***************************************************************************************
@@ -145,47 +168,62 @@ class ArtBrainMachine(object):
     def state_init_ros(self,  event):
         rospy.loginfo('Waiting for other nodes to come up...')
 
-        self.show_marker_service = rospy.get_param('show_marker_service', '/art/interface/projected_gui/show_marker')
-        self.hide_marker_service = rospy.get_param('hide_marker_service', '/art/interface/projected_gui/hide_marker')
-        self.table_localize_action = rospy.get_param('table_localize_action', '/umf_localizer_node_table/localize')
-        self.pr2_localize_action = rospy.get_param('pr2_localize_action', '/umf_localizer_node/localize')
+        self.show_marker_service = rospy.get_param(
+            'show_marker_service', '/art/interface/projected_gui/show_marker')
+        self.hide_marker_service = rospy.get_param(
+            'hide_marker_service', '/art/interface/projected_gui/hide_marker')
+        self.table_localize_action = rospy.get_param(
+            'table_localize_action', '/umf_localizer_node_table/localize')
+        self.pr2_localize_action = rospy.get_param(
+            'pr2_localize_action', '/umf_localizer_node/localize')
 
         self.calibrate_pr2 = rospy.get_param('calibrate_pr2', False)
         self.calibrate_table = rospy.get_param('calibrate_table', False)
 
-        self.user_status_sub = rospy.Subscriber("/art/user/status", UserStatus, self.user_status_cb)
-        self.user_activity_sub = rospy.Subscriber("/art/user/activity", UserActivity, self.user_activity_cb)
+        self.user_status_sub = rospy.Subscriber(
+            "/art/user/status", UserStatus, self.user_status_cb)
+        self.user_activity_sub = rospy.Subscriber(
+            "/art/user/activity", UserActivity, self.user_activity_cb)
         self.table_calibrated_sub = rospy.Subscriber("/art/interface/touchtable/calibrated", Bool,
                                                      self.table_calibrated_cb)
         self.system_calibrated_sub = rospy.Subscriber("/system_calibrated", Bool,
-                                                     self.system_calibrated_cb)
+                                                      self.system_calibrated_cb)
 
-        self.srv_program_start = rospy.Service('/art/brain/program/start', startProgram, self.program_start_cb)
-        self.srv_program_stop = rospy.Service('/art/brain/program/stop', Empty, self.program_stop_cb)
+        self.srv_program_start = rospy.Service(
+            '/art/brain/program/start', startProgram, self.program_start_cb)
+        self.srv_program_stop = rospy.Service(
+            '/art/brain/program/stop', Empty, self.program_stop_cb)
 
         # self.srv_program_pause = rospy.Service(/art/brain/program/pause', Empty, self.program_pause_cb)
-        # self.srv_program_resume = rospy.Service(/art/brain/program/resume', Empty, self.program_resume_cb)
+        # self.srv_program_resume = rospy.Service(/art/brain/program/resume',
+        # Empty, self.program_resume_cb)
 
-        self.state_manager = InterfaceStateManager(InterfaceState.BRAIN_ID)  # TODO callback?
+        self.state_manager = InterfaceStateManager(
+            InterfaceState.BRAIN_ID)  # TODO callback?
         self.art = ArtApiHelper(brain=True)
         self.ph = ProgramHelper()
 
-        self.objects_sub = rospy.Subscriber("/art/object_detector/object_filtered", InstancesArray, self.objects_cb)
+        self.objects_sub = rospy.Subscriber(
+            "/art/object_detector/object_filtered", InstancesArray, self.objects_cb)
 
         # TODO use this topic instead of system_state in InterfaceState (duplication) ??
         # TODO move (pub/sub) to InterfaceStateManager?
-        self.state_publisher = rospy.Publisher("/art/brain/system_state", SystemState, queue_size=1)
+        self.state_publisher = rospy.Publisher(
+            "/art/brain/system_state", SystemState, queue_size=1)
 
-        self.pp_client = actionlib.SimpleActionClient('/art/pr2/left_arm/pp', pickplaceAction)
+        self.pp_client = actionlib.SimpleActionClient(
+            '/art/pr2/left_arm/pp', pickplaceAction)
 
         self.art.wait_for_api()
 
         if not self.table_calibrated:
-            rospy.loginfo('Waiting for /art/interface/touchtable/calibrate service')
+            rospy.loginfo(
+                'Waiting for /art/interface/touchtable/calibrate service')
             rospy.wait_for_service('/art/interface/touchtable/calibrate')
-            self.srv_calibrate_table = rospy.ServiceProxy('/art/interface/touchtable/calibrate', Empty)
+            self.srv_calibrate_table = rospy.ServiceProxy(
+                '/art/interface/touchtable/calibrate', Empty)
             attempt = 1
-            #while not self.table_calibrated:
+            # while not self.table_calibrated:
             rospy.loginfo("Trying to calibrate table, attempt " + str(attempt))
             self.srv_calibrate_table.call()
             attempt += 1
@@ -210,7 +248,8 @@ class ArtBrainMachine(object):
 
         self.executing_program = True
 
-        self.state_manager.set_system_state(InterfaceState.STATE_PROGRAM_RUNNING)
+        self.state_manager.set_system_state(
+            InterfaceState.STATE_PROGRAM_RUNNING)
         self.program_init_done()
 
     def state_program_load_instruction(self, event):
@@ -245,7 +284,7 @@ class ArtBrainMachine(object):
         if not self.executing_program:
             self.failure()
             return
-        
+
     def state_pick(self, event):
         """
 
@@ -277,7 +316,8 @@ class ArtBrainMachine(object):
         """
         rospy.loginfo('state_place')
         pose = ArtBrainUtils.get_place_pose(self.instruction)
-        self.state_manager.update_program_item(self.ph.get_program_id(), self.block_id, self.instruction)
+        self.state_manager.update_program_item(
+            self.ph.get_program_id(), self.block_id, self.instruction)
         # TODO place pose
 
         if pose is None:
@@ -291,7 +331,7 @@ class ArtBrainMachine(object):
             else:
                 self.done(success=False)
                 return
-        
+
     def state_pick_place(self, event):
         rospy.loginfo('state_pickplace')
         obj_id = ArtBrainUtils.get_pick_obj_id(self.instruction, self.objects)
@@ -299,14 +339,15 @@ class ArtBrainMachine(object):
 
         self.state_manager.update_program_item(self.ph.get_program_id(), self.block_id, self.instruction,
                                                {"SELECTED_OBJECT_ID": obj_id})
-        # TODO also update p.i. with selected place pose when not given (place polygon)
+        # TODO also update p.i. with selected place pose when not given (place
+        # polygon)
 
         if obj_id is None or pose is None:
             rospy.logerr('could not get obj_id or pose')
 
             self.done(success=False)
             return
-            
+
         if self.pick_place_object(obj_id, pose):
             self.done(success=True)
             return
@@ -329,7 +370,8 @@ class ArtBrainMachine(object):
 
         rospy.loginfo('state_wait')
 
-        self.state_manager.update_program_item(self.ph.get_program_id(), self.block_id, self.instruction)
+        self.state_manager.update_program_item(
+            self.ph.get_program_id(), self.block_id, self.instruction)
 
         rate = rospy.Rate(10)
 
@@ -347,7 +389,8 @@ class ArtBrainMachine(object):
 
     def state_get_ready(self, event):
         rospy.loginfo('state_get_ready')
-        self.state_manager.update_program_item(self.ph.get_program_id(), self.block_id, self.instruction)
+        self.state_manager.update_program_item(
+            self.ph.get_program_id(), self.block_id, self.instruction)
         # TODO: call some service to set PR2 to ready position
         self.done(success=True)
 
@@ -355,9 +398,11 @@ class ArtBrainMachine(object):
         rospy.loginfo('state_program_load_instruction')
         success = event.kwargs.get('success', False)
         if success:
-            (self.block_id, item_id) = self.ph.get_id_on_success(self.block_id, self.instruction.id)
+            (self.block_id, item_id) = self.ph.get_id_on_success(
+                self.block_id, self.instruction.id)
         else:
-            (self.block_id, item_id) = self.ph.get_id_on_failure(self.block_id, self.instruction.id)
+            (self.block_id, item_id) = self.ph.get_id_on_failure(
+                self.block_id, self.instruction.id)
 
         if self.block_id == 0:
             self.finished()
@@ -373,7 +418,8 @@ class ArtBrainMachine(object):
 
     def state_program_finished(self, event):
         rospy.loginfo('state_program_finished')
-        self.state_manager.set_system_state(InterfaceState.STATE_PROGRAM_FINISHED)
+        self.state_manager.set_system_state(
+            InterfaceState.STATE_PROGRAM_FINISHED)
         self.state_manager.send()
         self.executing_program = False
         self.done()
@@ -385,7 +431,6 @@ class ArtBrainMachine(object):
 
     def state_waiting_for_action(self, event):
         rospy.loginfo('state_waiting_for_action')
-
 
     def teaching_init(self, event):
         pass
@@ -431,7 +476,8 @@ class ArtBrainMachine(object):
         goal.id = obj
 
         # TODO how to decide between 180 and 90 deg?
-        goal.z_axis_angle_increment = 3.14 / 2  # allow object to be rotated by 90 deg around z axis
+        # allow object to be rotated by 90 deg around z axis
+        goal.z_axis_angle_increment = 3.14 / 2
 
         goal.place_pose = PoseStamped()
 
@@ -446,15 +492,16 @@ class ArtBrainMachine(object):
             return True
         else:
             return False
-            
+
     def pick_place_object(self,  obj_id,  place):
         goal = pickplaceGoal()
         goal.id = obj_id
         goal.operation = goal.PICK_AND_PLACE
         goal.keep_orientation = False
         rospy.loginfo("Picking object with ID: " + str(obj_id))
-        
-        goal.z_axis_angle_increment = 3.14 / 2  # allow object to be rotated by 90 deg around z axis
+
+        # allow object to be rotated by 90 deg around z axis
+        goal.z_axis_angle_increment = 3.14 / 2
 
         goal.place_pose = PoseStamped()
 
@@ -462,7 +509,7 @@ class ArtBrainMachine(object):
         goal.place_pose.header.stamp = rospy.Time.now()
         # TODO: how to deal with this?
         goal.place_pose.pose.position.z = 0.1  # + obj.bbox.dimensions[2]/2
-        
+
         self.pp_client.send_goal(goal)
         self.pp_client.wait_for_result()
         rospy.loginfo("Placing object with ID: " + str(obj_id))
@@ -478,8 +525,8 @@ class ArtBrainMachine(object):
     def is_table_calibrated(self):
         return self.table_calibrated
 
-    def is_everything_calibrated(self,  event = None):
-        
+    def is_everything_calibrated(self,  event=None):
+
         return self.table_calibrated and self.system_calibrated
 
     # ***************************************************************************************
@@ -534,17 +581,17 @@ class ArtBrainMachine(object):
 
     def table_calibrated_cb(self, req):
         self.table_calibrated = req.data
-        
+
     def system_calibrated_cb(self,  req):
         self.system_calibrated = req.data
-       
+
 
 if __name__ == '__main__':
     rospy.init_node('new_art_brain', log_level=rospy.INFO)
-  
+
     try:
         node = ArtBrainMachine()
-        
+
         rate = rospy.Rate(30)
 
         while not rospy.is_shutdown():

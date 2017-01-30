@@ -14,7 +14,8 @@ class ArtBrainUtils(object):
             pick_polygon = []
             pol = None
 
-            for point in instruction.pick_polygon.polygon.points:  # TODO check frame_id and transform to table frame?
+            # TODO check frame_id and transform to table frame?
+            for point in instruction.pick_polygon.polygon.points:
                 pick_polygon.append([point.x,  point.y])
             pick_polygon.append([0,  0])
 
@@ -30,7 +31,8 @@ class ArtBrainUtils(object):
 
                 if pol is None:
 
-                    # if no pick polygon is specified - let's take the first object of that type
+                    # if no pick polygon is specified - let's take the first
+                    # object of that type
                     if obj.object_type == instruction.object:
                         obj_id = obj.object_id
                         break
@@ -61,10 +63,8 @@ class ArtBrainUtils(object):
         elif instruction.spec == instruction.MANIP_TYPE:
             # pose = None
             pose = instruction.place_pose
-            # TODO: how to get free position inside polygon? some perception node?
+            # TODO: how to get free position inside polygon? some perception
+            # node?
         else:
             return None
         return pose
-
-
-
