@@ -255,7 +255,12 @@ class UICoreRos(UICore):
 
                 obj = self.get_object(obj_id)
                 self.notif(translate("UICoreRos", "Going to manipulate with object ID=") + obj_id)
-                self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  it.place_pose, obj.object_type, obj_id,  fixed=True)
+
+                if obj is not None:
+                    self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  it.place_pose, obj.object_type, obj_id,  fixed=True)
+                else:
+                    # TODO what to do if brain wants to manipulate with non-existent object?
+                    pass
 
     def interface_state_cb(self, our_state, state, flags):
 
