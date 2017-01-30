@@ -126,7 +126,15 @@ private:
 
         tf::Matrix3x3 m(pp1013.getX(), pp1011.getX(), n.getX(), pp1013.getY(), pp1011.getY(), n.getY(), pp1013.getZ(), pp1011.getZ(), n.getZ());
 
+
+
         tf::Transform tr = tf::Transform(m, position10);
+
+
+        ROS_INFO_STREAM(tr.inverse().getOrigin().x() << " " << tr.inverse().getOrigin().y() << " " << tr.inverse().getOrigin().z());
+        ROS_INFO_STREAM(tr.inverse().getRotation().x() << " " << tr.inverse().getRotation().y() << " " << tr.inverse().getRotation().z() << " " << tr.inverse().getRotation().w());
+
+
 
         tr_table_ =  tf::StampedTransform(tr.inverse(), ros::Time::now(), world_frame_, table_frame_);
 
