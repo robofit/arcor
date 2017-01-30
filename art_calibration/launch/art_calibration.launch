@@ -1,10 +1,8 @@
 <launch>
-	
-	
-	<include file="$(find art_calibration)/launch/pr2_indiv.launch" />
-        <include file="$(find art_calibration)/launch/table_indiv_no_kinect.launch" />
-	
-	<node name="art_calibration_testpr2" pkg="art_calibration" type="art_calibration_node" respawn="false" output="screen">
-	</node>
-	
+
+    <include file="$(find art_calibration)/launch/pr2_indiv.launch" />
+    <include file="$(find art_calibration)/launch/table_indiv_no_kinect.launch" />
+
+    <node name="art_calibration_testpr2" pkg="art_calibration" type="art_calibration_node" respawn="false" output="screen"/>
+
 </launch>
