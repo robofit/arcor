@@ -8,4 +8,5 @@ from program_item import ProgramItem
 from touch_points_item import TouchPointsItem
 from touch_table_item import TouchTableItem
 from desc_item import DescItem
+from program_list_item import ProgramListItem
 from item import Item

@@ -13,10 +13,9 @@ class ButtonItem(Item):
 
         self.background_color = background_color
         self.scale = scale
-        self.w = 180 * scale  # TODO spocitat podle rpm
-        self.h = 40 * scale
         self.clicked = clicked
         self.caption = caption
+        self.width = None
 
         super(ButtonItem, self).__init__(scene, rpm, x, y, parent)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
@@ -24,12 +23,26 @@ class ButtonItem(Item):
 
     def boundingRect(self):
 
-        return QtCore.QRectF(0, 0, self.w, self.h)
+        font = QtGui.QFont('Arial', self.get_font_size(self.scale))
+        metrics = QtGui.QFontMetrics(font)
+
+        if self.width is not None:
+            w = self.width
+        else:
+            w = metrics.width(self.caption) + 20 * self.scale
+        h = metrics.height() + 20 * self.scale
+
+        return QtCore.QRectF(-1.5, -1.5, w+3,  h+3)
 
     def cursor_click(self):
 
         if self.clicked is not None and self.isEnabled():
             self.clicked()
+
+    def set_width(self,  w=None):
+
+        self.width = w
+        self.update()
 
     def set_caption(self, txt):
 
@@ -42,12 +55,13 @@ class ButtonItem(Item):
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
         pen = QtGui.QPen()
+        pen.setWidth(3)
         if not self.hover:
             pen.setStyle(QtCore.Qt.NoPen)
         pen.setColor(QtCore.Qt.white)
         painter.setPen(pen)
 
-        rect = QtCore.QRectF(5 * self.scale, 0.0, self.w, 40.0 * self.scale)
+        rect = QtCore.QRectF(1.5, 1.5, self.boundingRect().width()-1.5, self.boundingRect().height()-1.5)
 
         font = QtGui.QFont('Arial', self.get_font_size(self.scale))
         painter.setFont(font)
@@ -56,13 +70,11 @@ class ButtonItem(Item):
             painter.setBrush(QtCore.Qt.gray)
         else:
             painter.setBrush(self.background_color)
-        metrics = QtGui.QFontMetrics(font)
-        txt = self.caption
-        rect.setWidth(metrics.width(txt) + 20 * self.scale)
 
         painter.drawRoundedRect(rect, 10.0 * self.scale, 10.0 * self.scale)
 
         pen.setStyle(QtCore.Qt.SolidLine)
         painter.setPen(pen)
 
-        painter.drawText(rect, QtCore.Qt.AlignCenter, txt)
+        text_rect = QtCore.QRectF(5 * self.scale+1.5, +1.5, self.boundingRect().width()-5 * self.scale-1.5, self.boundingRect().height()-1.5)
+        painter.drawText(text_rect, QtCore.Qt.AlignCenter, self.caption)
