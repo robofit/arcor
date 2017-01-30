@@ -20,7 +20,7 @@ roslint_add_test()
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES art_touch_driver
-#  CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs std_srvs
+  CATKIN_DEPENDS geometry_msgs rospy std_msgs std_srvs
 #  DEPENDS system_lib
 )
 

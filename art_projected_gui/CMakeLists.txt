@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_geometry
   rospy
   std_msgs
+  roslaunch
 )
 
 catkin_python_setup()
@@ -26,7 +27,6 @@ include_directories(
 )
 
 if (CATKIN_ENABLE_TESTING)
-  find_package(catkin REQUIRED COMPONENTS roslaunch)
   roslaunch_add_file_check(launch)
   catkin_add_nosetests(tests)
 endif()

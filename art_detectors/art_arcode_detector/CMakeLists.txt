@@ -9,10 +9,14 @@ find_package(catkin REQUIRED COMPONENTS
   art_msgs
   rospy
   std_msgs
+  roslaunch
+)
+
+catkin_package(
+  CATKIN_DEPENDS art_msgs std_msgs
 )
 
 if (CATKIN_ENABLE_TESTING)
-  find_package(catkin REQUIRED COMPONENTS roslaunch)
   roslaunch_add_file_check(launch)
 endif()
 

@@ -11,32 +11,22 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   ar_track_alvar
   tf
+  roslaunch
 )
 
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES art_cluster_detector
-#  CATKIN_DEPENDS art_msgs geometry_msgs roscpp rospy sensor_msgs std_msgs
+  CATKIN_DEPENDS art_msgs geometry_msgs sensor_msgs std_msgs
 #  DEPENDS system_lib
 )
 
 # catkin_python_setup()
 
-include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-## Declare a C++ executable
- add_executable(art_calibration_node src/node.cpp)
- add_dependencies(art_calibration_node art_msgs_generate_messages_cpp)
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(art_calibration_node
-  ${catkin_LIBRARIES}
-)
-
 if (CATKIN_ENABLE_TESTING)
-  find_package(catkin REQUIRED COMPONENTS roslaunch)
   roslaunch_add_file_check(launch)
 endif()
