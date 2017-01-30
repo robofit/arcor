@@ -7,6 +7,8 @@ find_package(catkin REQUIRED COMPONENTS
   mongodb_store
   roslint
   art_utils
+  roslaunch
+  rostest
 )
 
 set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
@@ -20,9 +22,6 @@ include_directories(
 )
 
 if (CATKIN_ENABLE_TESTING)
-  find_package(art_msgs)
-  find_package(rostest)
-  find_package(roslaunch)
   roslaunch_add_file_check(launch)
   add_rostest(tests/art_db.test DEPENDENCIES ${art_msgs_EXPORTED_TARGETS})
 endif()
