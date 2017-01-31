@@ -26,6 +26,7 @@ class FSM(Machine):
         self.add_transition('tr_program_selected', 'program_selection', 'running', unless='is_template')
         self.add_transition('tr_program_learned', 'learning', 'running', after="cb_running")
         self.add_transition('tr_running', '*', 'running', after="cb_running")
+        self.add_transition('tr_program_finished', 'running', 'program_selection', after='cb_program_selection')
 
     def is_template(self):
 

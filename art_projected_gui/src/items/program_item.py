@@ -9,7 +9,7 @@ from helpers import conversions
 
 translate = QtCore.QCoreApplication.translate
 
-
+# TODO make it based on ButtonItem
 class ProgramItemItem(Item):
 
     def __init__(self, scene, rpm, x, y, item, parent, item_selected_cb=None):

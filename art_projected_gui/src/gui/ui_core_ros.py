@@ -6,7 +6,7 @@ import rospy
 from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt
 from fsm import FSM
 from transitions import MachineError
-from items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem
+from items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem,  ProgramItem
 from helpers import ProjectorHelper,  conversions
 from art_utils import InterfaceStateManager,  ArtApiHelper
 from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse,  NotifyUser,  NotifyUserResponse
@@ -51,9 +51,6 @@ class UICoreRos(UICore):
 
         self.user_status = None
 
-        self.program_vis.active_item_switched = self.active_item_switched
-        self.program_vis.program_state_changed = self.program_state_changed
-
         self.fsm = FSM()
 
         # TODO do this automatically??
@@ -65,6 +62,8 @@ class UICoreRos(UICore):
         self.fsm.cb_learning = self.cb_learning
         self.fsm.cb_running = self.cb_running
         self.fsm.is_template = self.is_template
+
+        self.program_vis = None
 
         self.state_manager = InterfaceStateManager("PROJECTED UI", cb=self.interface_state_cb)
 
@@ -194,7 +193,13 @@ class UICoreRos(UICore):
 
     def interface_state_evt(self, our_state, state, flags):
 
-        if state.system_state == InterfaceState.STATE_LEARNING:
+        if state.system_state == InterfaceState.STATE_PROGRAM_FINISHED:
+
+            self.clear_all()
+            self.notif(translate("UICoreRos", "The program is done."), temp=True)
+            self.fsm.tr_program_finished()
+
+        elif state.system_state == InterfaceState.STATE_LEARNING:
 
             # TODO !!
             pass
@@ -450,9 +455,17 @@ class UICoreRos(UICore):
 
         if program is not None:
 
+            pos = self.program_list.get_pos()
             self.remove_scene_items_by_type(ProgramListItem)
+            self.program_list = None
+
+            self.program_vis = ProgramItem(self.scene, self.rpm, pos[0], pos[1])
+            self.program_vis.active_item_switched = self.active_item_switched
+            self.program_vis.program_state_changed = self.program_state_changed
+            self.scene_items.append(self.program_vis)
             self.program_vis.set_prog(program, template)
             self.active_item_switched()
+
             self.fsm.tr_program_selected()
         else:
             self.notif(translate("UICoreRos", "Loading of requested program failed"), temp=template)
@@ -461,8 +474,16 @@ class UICoreRos(UICore):
 
         self.notif(translate("UICoreRos", "Please select a program"))
 
+        if self.program_vis is not None:
+            pos = self.program_vis.get_pos()
+        else:
+            pos = (0.2, self.height-0.3)
+
+        self.remove_scene_items_by_type(ProgramItem)
+        self.program_vis = None
         self.remove_scene_items_by_type(ProgramListItem)
-        self.program_list = ProgramListItem(self.scene, self.rpm, 0.2, self.height-0.3,  self.art.get_program_headers(),  self.program_selected_cb)
+
+        self.program_list = ProgramListItem(self.scene, self.rpm, pos[0], pos[1], self.art.get_program_headers(),  self.program_selected_cb)
         self.scene_items.append(self.program_list)
 
     def object_cb(self, msg):
