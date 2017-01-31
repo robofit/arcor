@@ -48,16 +48,20 @@ class Item(QtGui.QGraphicsItem):
     # world coordinates to scene coords - y has to be inverted
     def set_pos(self, x, y, parent_coords=False,  yaw=None):
 
-        pt = self.m2pix(x,  y)
+        (px,  py) = self.m2pix(x,  y)
+
+        # limit pos to the scene size
+        px = max(0, min(px, self.scene().width()))
+        py = max(0, min(py, self.scene().height()))
 
         # we usually want to work with scene/world coordinates
         if self.parentItem() and not parent_coords:
 
-            self.setPos(self.parentItem().mapFromScene(pt[0], pt[1]))
+            self.setPos(self.parentItem().mapFromScene(px,  py))
 
         else:
 
-            self.setPos(pt[0], pt[1])
+            self.setPos(px,  py)
 
         if yaw is not None:
             self.setRotation(-yaw)

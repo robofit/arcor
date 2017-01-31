@@ -123,6 +123,11 @@ class PoseStampedCursorItem(Item):
 
                 if self.pointed_item is None and self.collidesWithItem(it):
 
+                    parent = it.parentItem()
+                    if it.fixed and parent is not None and isinstance(parent, Item) and not parent.fixed:
+
+                        it = it.parentItem()
+
                     it.set_hover(True, self)
 
                     if mouse and not click:

@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import rospy
-from art_msgs.srv import getProgram, storeProgram, startProgram, getObjectType
+from art_msgs.srv import getProgram, storeProgram, startProgram, getObjectType,  getProgramHeaders
+
+# TODO make brain version a new class (based on ArtApiHelper)
 
 
 class ArtApiHelper():
@@ -11,6 +13,7 @@ class ArtApiHelper():
         # DB API
         self.get_prog_srv = rospy.ServiceProxy('/art/db/program/get', getProgram)
         self.store_prog_srv = rospy.ServiceProxy('/art/db/program/store', storeProgram)
+        self.get_program_headers_srv = rospy.ServiceProxy('/art/db/program_headers/get', getProgramHeaders)
         self.get_obj_type_srv = rospy.ServiceProxy('/art/db/object_type/get', getObjectType)
 
         # Brain API
@@ -22,6 +25,7 @@ class ArtApiHelper():
 
         self.get_prog_srv.wait_for_service()
         self.store_prog_srv.wait_for_service()
+        self.get_program_headers_srv.wait_for_service()
         self.get_obj_type_srv.wait_for_service()
 
         if not self.brain:
@@ -41,6 +45,16 @@ class ArtApiHelper():
             return None
         else:
             return resp.program
+
+    def get_program_headers(self,  ids=[]):
+
+        try:
+            resp = self.get_program_headers_srv(ids)
+        except rospy.ServiceException, e:
+            print "Service call failed: %s" % e
+            return None
+
+        return resp.headers
 
     def store_program(self, prog):
 

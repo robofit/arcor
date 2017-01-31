@@ -6,7 +6,7 @@ import rospy
 from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt
 from fsm import FSM
 from transitions import MachineError
-from items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem
+from items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem
 from helpers import ProjectorHelper,  conversions
 from art_utils import InterfaceStateManager,  ArtApiHelper
 from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse,  NotifyUser,  NotifyUserResponse
@@ -72,10 +72,10 @@ class UICoreRos(UICore):
         for cur in cursors:
             self.scene_items.append(PoseStampedCursorItem(self.scene, self.rpm, cur))
 
-        self.scene_items.append(TouchTableItem(self.scene,  self.rpm, '/art/interface/touchtable/touch', self.get_scene_items_by_type(PoseStampedCursorItem)))
+        self.scene_items.append(TouchTableItem(self.scene,  self.rpm, '/art/interface/touchtable/touch', list(self.get_scene_items_by_type(PoseStampedCursorItem))))
 
         self.scene_items.append(ButtonItem(self.scene, self.rpm, 0, 0, "STOP", None, self.stop_btn_clicked, 2.0, QtCore.Qt.red))
-        self.scene_items[-1].setPos(self.scene.width() - self.scene_items[-1].w, self.scene.height() - self.scene_items[-1].h - 60)
+        self.scene_items[-1].setPos(self.scene.width() - self.scene_items[-1].boundingRect().width() - 40, self.scene.height() - self.scene_items[-1].boundingRect().height() - 60)
         self.scene_items[-1].set_enabled(True)
 
         self.projectors = []
@@ -255,7 +255,12 @@ class UICoreRos(UICore):
 
                 obj = self.get_object(obj_id)
                 self.notif(translate("UICoreRos", "Going to manipulate with object ID=") + obj_id)
-                self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  it.place_pose, obj.object_type, obj_id,  fixed=True)
+
+                if obj is not None:
+                    self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  it.place_pose, obj.object_type, obj_id,  fixed=True)
+                else:
+                    # TODO what to do if brain wants to manipulate with non-existent object?
+                    pass
 
     def interface_state_cb(self, our_state, state, flags):
 
@@ -375,10 +380,6 @@ class UICoreRos(UICore):
         # TODO block_id
         self.state_manager.update_program_item(self.program_vis.prog.header.id, self.program_vis.prog.blocks[0].id,  self.program_vis.active_item.item)
 
-    def is_template(self):
-
-        return True
-
     def cb_running(self):
 
         pass
@@ -432,20 +433,37 @@ class UICoreRos(UICore):
 
         self.notif(translate("UICoreRos", "Please do a calibration pose"))
 
+    def is_template(self):
+
+        return True  # TODO implement this
+
+    def program_selected_cb(self,  prog_id,  run=False,  template=False):
+
+        # TODO fix situation when program (template=False) contains "unknown" object
+
+        if run:
+
+            # TODO run program
+            pass
+
+        program = self.art.load_program(prog_id)  # TODO option to load program as template?
+
+        if program is not None:
+
+            self.remove_scene_items_by_type(ProgramListItem)
+            self.program_vis.set_prog(program, template)
+            self.active_item_switched()
+            self.fsm.tr_program_selected()
+        else:
+            self.notif(translate("UICoreRos", "Loading of requested program failed"), temp=template)
+
     def cb_program_selection(self):
 
         self.notif(translate("UICoreRos", "Please select a program"))
 
-        # TODO display list of programs -> let user select -> then load it
-        program = self.art.load_program(0)
-
-        if program is not None:
-
-            self.program_vis.set_prog(program, self.is_template())
-            self.active_item_switched()
-            self.fsm.tr_program_selected()
-        else:
-            self.notif(translate("UICoreRos", "Loading of requested program failed"), temp=True)
+        self.remove_scene_items_by_type(ProgramListItem)
+        self.program_list = ProgramListItem(self.scene, self.rpm, 0.2, self.height-0.3,  self.art.get_program_headers(),  self.program_selected_cb)
+        self.scene_items.append(self.program_list)
 
     def object_cb(self, msg):
 
