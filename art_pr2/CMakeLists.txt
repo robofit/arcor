@@ -3,6 +3,7 @@ project(art_pr2)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  pr2_moveit_config
 )
 
 catkin_package(
