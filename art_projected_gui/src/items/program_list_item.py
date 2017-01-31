@@ -6,6 +6,7 @@ from button_item import ButtonItem
 
 translate = QtCore.QCoreApplication.translate
 
+
 class ProgramHeaderItem(Item):
 
     def __init__(self, scene, rpm, x, y, w, parent, program_header):
@@ -26,7 +27,6 @@ class ProgramHeaderItem(Item):
     def set_header(self, ph):
 
         self.program_header = ph
-        self.text = "ID: " + str(self.program_header.id) + "\nName: " + self.program_header.name + "\n" + self.program_header.description
         self.update()
 
     def boundingRect(self):
@@ -40,9 +40,17 @@ class ProgramHeaderItem(Item):
 
         font = QtGui.QFont('Arial', self.get_font_size())
         painter.setFont(font)
-        painter.setPen(QtCore.Qt.white)
+        painter.setPen(QtCore.Qt.gray)
+
+        self.text = "ID: " + str(self.program_header.id) + "\nName: " + self.program_header.name
+
+        if self.isEnabled():
+
+            painter.setPen(QtCore.Qt.white)
+            self.text += "\n" + self.program_header.description
 
         painter.drawText(self.boundingRect(), QtCore.Qt.AlignLeft, self.text)
+
 
 class ProgramListItem(Item):
 
@@ -59,6 +67,7 @@ class ProgramListItem(Item):
         self.w = self.m2pix(0.2)
         self.h = self.m2pix(0.25)
 
+        self.fixed = False
         self.setZValue(100)
 
         self.up_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Up"), self, self.up_btn_cb)
@@ -67,11 +76,16 @@ class ProgramListItem(Item):
         self.edit_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Edit"), self, self.edit_btn_cb)
         self.template_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Template"), self, self.template_btn_cb)
 
+        # TODO fix function and enable buttons
+        self.run_btn.set_enabled(False)
+        self.edit_btn.set_enabled(False)
+
         self.set_current_idx(0)
+        # TODO display e.g. three items where one will be Enabled -> selected
         self.ph = ProgramHeaderItem(self.scene(),  self.rpm,  0, 0,  self.w, self, self.get_current_header())
 
-        sp = self.m2pix(0.005)
-        h = sp
+        sp = self.m2pix(0.01)
+        h = 2*sp
         self.up_btn.setPos(sp,  h)
         self.up_btn.set_width(self.w - 2*sp)
         h += self.up_btn.boundingRect().height()
@@ -83,11 +97,12 @@ class ProgramListItem(Item):
         self.down_btn.set_width(self.w - 2*sp)
         h += self.down_btn.boundingRect().height()
         h += 2*sp
+        isp = (self.boundingRect().width() - (2*sp + self.run_btn.boundingRect().width() + self.edit_btn.boundingRect().width() + self.template_btn.boundingRect().width()))/2
         self.run_btn.setPos(sp,  h)
-        self.edit_btn.setPos(self.run_btn.x() + self.run_btn.boundingRect().width() + sp,  h)
-        self.template_btn.setPos(self.edit_btn.x() + self.edit_btn.boundingRect().width() + sp,  h)
+        self.edit_btn.setPos(self.run_btn.x() + self.run_btn.boundingRect().width() + isp,  h)
+        self.template_btn.setPos(self.edit_btn.x() + self.edit_btn.boundingRect().width() + isp,  h)
         h += self.run_btn.boundingRect().height()
-        h += sp
+        h += 2*sp
 
         self.h = h
         self.update()
@@ -100,7 +115,7 @@ class ProgramListItem(Item):
 
         self.current_program_idx = idx
 
-        if (idx==0):
+        if (idx == 0):
             self.up_btn.set_enabled(False)
         else:
             self.up_btn.set_enabled(True)
@@ -116,7 +131,6 @@ class ProgramListItem(Item):
             self.set_current_idx(self.current_program_idx - 1)
             self.ph.set_header(self.get_current_header())
             self.ph.update()
-
 
     def down_btn_cb(self):
 
@@ -155,4 +169,5 @@ class ProgramListItem(Item):
 
         painter.setBrush(QtCore.Qt.gray)
         painter.setOpacity(0.5)
-        painter.drawRect(0, 0, self.w, self.h)
+        # painter.drawRect(0, 0, self.w, self.h)
+        painter.drawRoundedRect(QtCore.QRect(0, 0, self.w, self.h), 5.0, 5.0)

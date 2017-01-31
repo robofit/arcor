@@ -439,6 +439,8 @@ class UICoreRos(UICore):
 
     def program_selected_cb(self,  prog_id,  run=False,  template=False):
 
+        # TODO fix situation when program (template=False) contains "unknown" object
+
         if run:
 
             # TODO run program
