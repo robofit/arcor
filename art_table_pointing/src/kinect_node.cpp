@@ -133,6 +133,7 @@ bool ArtTablePointingKinect::pointingAtTable(tf::Vector3 point, tf::StampedTrans
     if (elbow.getOrigin().z() < hand.getOrigin().z()) {
         return false;
     }
+    //std::cout << "x " << point.x() << " y " << point.y() << std::endl;
     return !(point.x() < x_offset_ || point.x() > table_width_ + x_offset_ ||
              point.y() < y_offset_ || point.y() > table_height_ + y_offset_ );
 }
@@ -183,19 +184,19 @@ void ArtTablePointingKinect::process(std::string user_id) {
     pose.pose.orientation.w = 1;
     pose.header.stamp = ros::Time::now();
     pose.header.frame_id = table_frame_;
-
+   
     // we want to set activity based on distance between closer hand and middle of the table
     // TODO what about using distance to object (the closest one) instead of middle of the table?
-    tf::Vector3 middle_of_the_table(-0.75, -0.4, 0.0); // TODO +/- ??
+    tf::Vector3 middle_of_the_table(0.75, 0.2, 0.0); // TODO +/- ??
     float min_dist = std::min(transform_hand_left.getOrigin().distance(middle_of_the_table), transform_hand_right.getOrigin().distance(middle_of_the_table));
 
-    //std::cout << "min_dist: " << min_dist << std::endl;
+    std::cout << "min_dist: " << min_dist << std::endl;
 
     // TODO make thresholds configurable
-    if (min_dist < 0.5) setActivity(art_msgs::UserActivity::WORKING);
-    else if (min_dist > 0.7 && min_dist < 1.2) setActivity(art_msgs::UserActivity::READY);
-    else if (min_dist > 1.4) setActivity(art_msgs::UserActivity::AWAY);
-
+    if (min_dist < 0.3) setActivity(art_msgs::UserActivity::WORKING);
+    else if (min_dist >= 0.4 && min_dist <= 0.7) setActivity(art_msgs::UserActivity::READY);
+    else if (min_dist > 0.8) setActivity(art_msgs::UserActivity::AWAY);
+   
     if (pointingAtTable(point_right, transform_elbow_right, transform_hand_right)) {
         pose.pose.position.x = point_right.x();
         pose.pose.position.y = point_right.y();
@@ -223,7 +224,7 @@ int main(int argc, char **argv) {
     art_table_pointing_kinect::ArtTablePointingKinect node;
 
     ros::NodeHandle nh;
-    ros::Rate r(60);
+    ros::Rate r(20);
     while (nh.ok()) {
         if (node.user_id > 0) {
             node.process(std::to_string(node.user_id));
