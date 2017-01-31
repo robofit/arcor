@@ -4,12 +4,14 @@ import unittest
 from gui.ui_core import UICore
 from items import ObjectItem,  PlaceItem
 import sys
+import os
 from PyQt4.QtGui import QApplication
 from art_msgs.msg import ObjectType
 import rospy
 from shape_msgs.msg import SolidPrimitive
 from geometry_msgs.msg import PoseStamped
 
+sys.path = [os.path.abspath(os.path.dirname(__file__))] + sys.path
 app = QApplication(sys.argv)
 
 
