@@ -446,7 +446,7 @@ class UICoreRos(UICore):
             # TODO run program
             pass
 
-        program = self.art.load_program(prog_id) # TODO option to load program as template?
+        program = self.art.load_program(prog_id)  # TODO option to load program as template?
 
         if program is not None:
 
