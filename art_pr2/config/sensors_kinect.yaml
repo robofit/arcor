@@ -1,13 +1,4 @@
 sensors:
-  - sensor_plugin: occupancy_map_monitor/PointCloudOctomapUpdater
-    point_cloud_topic: /head_mount_kinect/depth_registered/points
-    max_range: 5.0
-    point_subsample: 1
-    padding_offset: 0.1
-    padding_scale: 1.0
-    filtered_cloud_topic: filtered_cloud
-    
-sensors:
   - sensor_plugin: occupancy_map_monitor/DepthImageOctomapUpdater
     image_topic: /head_mount_kinect/depth_registered/image_raw
     queue_size: 1
