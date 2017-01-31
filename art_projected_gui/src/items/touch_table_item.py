@@ -50,6 +50,11 @@ class TouchPointItem(Item):
 
                 if self.collidesWithItem(it):
 
+                    parent = it.parentItem()
+                    if it.fixed and parent is not None and isinstance(parent, Item) and not parent.fixed:
+
+                        it = it.parentItem()
+
                     rospy.logdebug("new pointed item: " + it.__class__.__name__)
 
                     it.set_hover(True, self)
