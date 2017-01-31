@@ -3,7 +3,8 @@
 import rospy
 from art_msgs.srv import getProgram, storeProgram, startProgram, getObjectType,  getProgramHeaders
 
-#TODOmake brain version a new class (based on ArtApiHelper)
+# TODO make brain version a new class (based on ArtApiHelper)
+
 
 class ArtApiHelper():
 
