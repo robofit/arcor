@@ -26,5 +26,6 @@
 
   <test_depend>roslaunch</test_depend>
   <test_depend>rosunit</test_depend>
+  <test_depend>python-nose</test_depend>
 
 </package>

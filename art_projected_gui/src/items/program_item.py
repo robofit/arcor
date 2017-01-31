@@ -9,6 +9,7 @@ from helpers import conversions
 
 translate = QtCore.QCoreApplication.translate
 
+
 # TODO make it based on ButtonItem
 class ProgramItemItem(Item):
 

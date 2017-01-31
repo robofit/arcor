@@ -3,9 +3,7 @@
 import unittest
 from art_utils import ProgramHelper
 from art_msgs.msg import Program,  ProgramBlock,  ProgramItem
-import os.path, sys
 
-sys.path = [os.path.abspath(os.path.dirname(__file__))] + sys.path
 
 class TestProgramHelper(unittest.TestCase):
 
@@ -16,8 +14,8 @@ class TestProgramHelper(unittest.TestCase):
         self.prog = Program()
         self.ph = ProgramHelper()
 
-        self.prog.id = 666
-        self.prog.name = "Basic pick&place"
+        self.prog.header.id = 666
+        self.prog.header.name = "Basic pick&place"
 
         pb = ProgramBlock()
         pb.id = 1  # can't be zero
@@ -176,6 +174,13 @@ class TestProgramHelper(unittest.TestCase):
 
         prog_id = self.ph.get_program_id()
         self.assertEquals(prog_id, 666, "get_program_id - id")
+
+    def test_template(self):
+
+        self.ph.load(self.prog)
+        self.assertEquals(self.ph.program_learned(), True, "test_template")
+        self.ph.load(self.prog, True)
+        self.assertEquals(self.ph.program_learned(), False, "test_template")
 
 if __name__ == '__main__':
     import rosunit

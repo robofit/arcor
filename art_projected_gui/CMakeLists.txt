@@ -28,5 +28,5 @@ include_directories(
 
 if (CATKIN_ENABLE_TESTING)
   roslaunch_add_file_check(launch)
-  catkin_add_nosetests(tests)
+  catkin_add_nosetests(tests/test_ui_core.py)
 endif()

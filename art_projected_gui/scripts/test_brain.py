@@ -2,7 +2,7 @@
 
 import sys
 import rospy
-from art_msgs.srv import getProgram,  startProgram,  startProgramResponse
+from art_msgs.srv import startProgram,  startProgramResponse
 from art_msgs.msg import InterfaceState,  ProgramItem
 from art_utils import InterfaceStateManager,  ProgramHelper, ArtApiHelper
 
@@ -12,6 +12,7 @@ state_manager = None
 ph = None
 art = None
 iters = 0
+
 
 def timer_callback(event):
 
@@ -44,6 +45,7 @@ def timer_callback(event):
     if current_item == ph.get_first_item_id():
 
         iters += 1
+
 
 def start_program(req):
 

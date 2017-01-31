@@ -3,13 +3,13 @@
 import unittest
 from gui.ui_core import UICore
 from items import ObjectItem,  PlaceItem
-import os.path
 import sys
 from PyQt4.QtGui import QApplication
-from PyQt4.QtTest import QTest
 from art_msgs.msg import ObjectType
+import rospy
+from shape_msgs.msg import SolidPrimitive
+from geometry_msgs.msg import PoseStamped
 
-sys.path = [os.path.abspath(os.path.dirname(__file__))] + sys.path
 app = QApplication(sys.argv)
 
 
@@ -17,13 +17,27 @@ class TestUICore(unittest.TestCase):
 
     def setUp(self):
 
-        self.ui_core = UICore(0,  0,  2, 1, 1000)
+        rospy.init_node('test_node')
+        self.ui_core = UICore(0,  0,  2, 1, 1000, 1234)
+
+        self.type1 = ObjectType()
+        self.type1.name = "type1"
+        self.type1.bbox.type = SolidPrimitive.BOX
+        self.type1.bbox.dimensions = [0.1,  0.1, 0.1]
+
+        self.type2 = ObjectType()
+        self.type2.name = "type2"
+        self.type2.bbox.type = SolidPrimitive.BOX
+        self.type2.bbox.dimensions = [0.1,  0.1, 0.1]
+
+        self.ps = PoseStamped()
+        self.ps.pose.orientation.w = 1.0
 
     def test_select_object_type(self):
 
-        self.ui_core.add_object("id1",  "type1",  0.5,  0.5)
-        self.ui_core.add_object("id2",  "type2",  0.5,  0.5)
-        self.ui_core.add_object("id3",  "type2",  0.5,  0.5)
+        self.ui_core.add_object("id1",  self.type1,  0.5,  0.5, 0.0)
+        self.ui_core.add_object("id2",  self.type2,  0.5,  0.5, 0.0)
+        self.ui_core.add_object("id3",  self.type2,  0.5,  0.5, 0.0)
 
         self.ui_core.select_object_type("type1")
 
@@ -45,8 +59,8 @@ class TestUICore(unittest.TestCase):
 
     def test_get_object(self):
 
-        self.ui_core.add_object("id1",  "type1",  0.5,  0.5)
-        self.ui_core.add_object("id2",  "type1",  0.5,  0.5)
+        self.ui_core.add_object("id1",  self.type1,  0.5,  0.5, 0.0)
+        self.ui_core.add_object("id2",  self.type1,  0.5,  0.5, 0.0)
 
         self.assertIsNotNone(self.ui_core.get_object("id1"), "test_get_object")
         self.assertEquals(self.ui_core.get_object("id1").object_id,  "id1", "test_get_object")
@@ -55,8 +69,8 @@ class TestUICore(unittest.TestCase):
 
     def test_remove_object(self):
 
-        self.ui_core.add_object("id1",  "type1",  0.5,  0.5)
-        self.ui_core.add_object("id2",  "type1",  0.5,  0.5)
+        self.ui_core.add_object("id1",  self.type1,  0.5,  0.5, 0.0)
+        self.ui_core.add_object("id2",  self.type1,  0.5,  0.5, 0.0)
 
         self.assertEquals(len(list(self.ui_core.get_scene_items_by_type(ObjectItem))),  2, "test_remove_object")
 
@@ -70,20 +84,20 @@ class TestUICore(unittest.TestCase):
 
     def test_get_by_type(self):
 
-        self.ui_core.add_object("id1",  "type1",  0.5,  0.5)
-        self.ui_core.add_place("caption",  0, 0, ObjectType())
+        self.ui_core.add_object("id1",  self.type1,  0.5,  0.5, 0.0)
+        self.ui_core.add_place("caption", self.ps, self.type1)
 
-        self.assertEquals(len(self.get_scene_items_by_type(ObjectItem)),  1,  "test_get_by_type")
-        self.assertEquals(len(self.get_scene_items_by_type(PlaceItem)),  1,  "test_get_by_type")
+        self.assertEquals(len(list(self.ui_core.get_scene_items_by_type(ObjectItem))),  1,  "test_get_by_type")
+        self.assertEquals(len(list(self.ui_core.get_scene_items_by_type(PlaceItem))),  1,  "test_get_by_type")
 
     def test_clear_places(self):
 
-        self.ui_core.add_object("id1",  "type1",  0.5,  0.5)
-        self.ui_core.add_place("caption",  0, 0, ObjectType())
+        self.ui_core.add_object("id1",  self.type1,  0.5,  0.5, 0.0)
+        self.ui_core.add_place("caption", self.ps, self.type1)
         self.ui_core.clear_places()
 
-        self.assertEquals(len(self.get_scene_items_by_type(ObjectItem)),  1,  "test_clear_places")
-        self.assertEquals(len(self.get_scene_items_by_type(PlaceItem)),  0,  "test_clear_places")
+        self.assertEquals(len(list(self.ui_core.get_scene_items_by_type(ObjectItem))),  1,  "test_clear_places")
+        self.assertEquals(len(list(self.ui_core.get_scene_items_by_type(PlaceItem))),  0,  "test_clear_places")
 
 
 if __name__ == '__main__':
