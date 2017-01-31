@@ -197,7 +197,10 @@ class UICoreRos(UICore):
 
             self.clear_all()
             self.notif(translate("UICoreRos", "The program is done."), temp=True)
-            self.fsm.tr_program_finished()
+            try:
+                self.fsm.tr_program_finished()
+            except MachineError:
+                pass
 
         elif state.system_state == InterfaceState.STATE_LEARNING:
 
@@ -277,15 +280,31 @@ class UICoreRos(UICore):
         if state == 'RUNNING':
 
             prog = self.program_vis.get_prog()
-            prog.header.id = 1
 
-            if not self.art.store_program(prog):
-                # TODO what to do?
-                self.notif(translate("UICoreRos", "Failed to store program"), temp=True)
+            # if it is template - save it with new id
+            if self.is_template():
 
-            else:
+                headers = self.art.get_program_headers()
+                ids = []
 
-                self.notif(translate("UICoreRos", "Program stored. Starting..."), temp=True)
+                for h in headers:
+                    ids.append(h.id)
+
+                # is there a better way how to find not used ID for program?
+                for i in range(0, 2**16-1):
+                    if i not in ids:
+                        prog.header.id = i
+                        break
+                else:
+                    rospy.logerr("Failed to find available program ID")
+
+                if not self.art.store_program(prog):
+
+                    self.notif(translate("UICoreRos", "Failed to store program"), temp=True)
+                    # TODO what to do?
+                    return
+
+            self.notif(translate("UICoreRos", "Starting. Program stored with ID=" + str(prog.header.id)), temp=True)
 
             # clear all and wait for state update from brain
             self.clear_all()
@@ -474,16 +493,18 @@ class UICoreRos(UICore):
 
         self.notif(translate("UICoreRos", "Please select a program"))
 
+        prog_id = None
         if self.program_vis is not None:
             pos = self.program_vis.get_pos()
+            prog_id = self.program_vis.prog.header.id
         else:
-            pos = (0.2, self.height-0.3)
+            pos = (0.2, self.height-0.2)
 
         self.remove_scene_items_by_type(ProgramItem)
         self.program_vis = None
         self.remove_scene_items_by_type(ProgramListItem)
 
-        self.program_list = ProgramListItem(self.scene, self.rpm, pos[0], pos[1], self.art.get_program_headers(),  self.program_selected_cb)
+        self.program_list = ProgramListItem(self.scene, self.rpm, pos[0], pos[1], self.art.get_program_headers(),  prog_id, self.program_selected_cb)
         self.scene_items.append(self.program_list)
 
     def object_cb(self, msg):
