@@ -18,7 +18,8 @@ class FakeObjectTracker:
     def publish_objects(self):
         obj = ObjInstance()
         obj.object_id = "profile_20_60"
-        obj.object_type = "profile"
+        obj.object_type = "profile_20_60"
+
         obj.pose = Pose()
         obj.pose.position.x = 1
         obj.pose.position.y = 1
@@ -30,6 +31,7 @@ class FakeObjectTracker:
         objs = InstancesArray()
         objs.instances.append(obj)
         objs.header = Header()
+        objs.header.frame_id = "marker"
         self.object_publisher.publish(objs)
 
 if __name__ == '__main__':

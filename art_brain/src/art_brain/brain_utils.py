@@ -1,6 +1,8 @@
 import matplotlib.path as mplPath
 import numpy as np
 import rospy
+import actionlib
+from art_msgs.msg import pickplaceAction
 
 
 class ArtBrainUtils(object):
@@ -68,3 +70,15 @@ class ArtBrainUtils(object):
         else:
             return None
         return pose
+
+
+class ArtGripper(object):
+
+    GRIPPER_LEFT = 0
+    GRIPPER_RIGHT = 1
+    GRIPPER_BOTH = 2
+
+    def __init__(self, name, pp_client_name):
+        self.name = name
+        self.pp_client = actionlib.SimpleActionClient(pp_client_name, pickplaceAction)
+        self.holding_object = None
