@@ -3,6 +3,7 @@
 
 import rospy
 import time
+import copy
 
 import actionlib
 from art_msgs.msg import LocalizeAgainstUMFAction, LocalizeAgainstUMFGoal, LocalizeAgainstUMFResult
@@ -11,7 +12,10 @@ from art_msgs.msg import UserStatus,  UserActivity, InterfaceState
 from art_msgs.srv import startProgram,  startProgramResponse,  getProgram
 from geometry_msgs.msg import PoseStamped, Pose
 from std_msgs.msg import String, Bool
-from art_msgs.msg import pickplaceAction, pickplaceGoal, SystemState, ObjInstance, InstancesArray, ProgramItem
+from art_msgs.msg import pickplaceAction, pickplaceGoal, SystemState, ObjInstance, InstancesArray, ProgramItem, \
+    ObjectType
+from shape_msgs.msg import SolidPrimitive
+from art_msgs.srv import getObjectType
 import matplotlib.path as mplPath
 import numpy as np
 import random
@@ -34,7 +38,7 @@ from art_brain.brain_utils import ArtBrainUtils, ArtGripper
 # manequin mod pro gravitation feeder
 # při pick object zkontrolovat pick_pose a pripadně použít
 # používat obě ramena robota -> done, otestovat na stole
-# při place zkontrolovat place pose (jestli tam není jiný objekt)
+# při place zkontrolovat place pose (jestli tam není jiný objekt) -> done, otestovat na stole
 # při pick zkontrolovat jestli objekt existuje
 # při nepovedené operaci se zeptat usera jestli má zopakovat instrukci, pokračovat nebo skončit
 
@@ -79,7 +83,8 @@ class ArtBrainMachine(object):
     srv_program_stop = None
     srv_program_pause = None
     srv_program_resume = None
-    srv_calibrate_table = None
+    calibrate_table_srv_client = None
+    get_obj_type_srv_client = None
     state_manager = None
     art = None
     ph = None
@@ -250,19 +255,22 @@ class ArtBrainMachine(object):
 
         self.art.wait_for_api()
 
+        self.get_obj_type_srv_client = rospy.ServiceProxy(
+            '/art/db/object_type/get', getObjectType)
+
         if not self.table_calibrated:
             rospy.loginfo(
                 'Waiting for /art/interface/touchtable/calibrate service')
             rospy.wait_for_service('/art/interface/touchtable/calibrate')
             rospy.loginfo(
                 'Get /art/interface/touchtable/calibrate service')
-            self.srv_calibrate_table = rospy.ServiceProxy(
+            self.calibrate_table_srv_client = rospy.ServiceProxy(
                 '/art/interface/touchtable/calibrate', Empty)
             attempt = 1
             rospy.sleep(1)
             while not self.table_calibrated:
                 rospy.loginfo("Trying to calibrate table, attempt " + str(attempt))
-                self.srv_calibrate_table.call()
+                self.calibrate_table_srv_client.call()
                 rospy.sleep(1)
                 attempt += 1
                 while not self.table_calibrated and self.table_calibrating:
@@ -334,17 +342,17 @@ class ArtBrainMachine(object):
         """
         rospy.loginfo('state_pick')
 
-        obj_id = ArtBrainUtils.get_pick_obj_id(self.instruction, self.objects)
+        obj = ArtBrainUtils.get_pick_obj(self.instruction, self.objects)
         self.state_manager.update_program_item(self.ph.get_program_id(), self.block_id, self.instruction,
-                                               {"SELECTED_OBJECT_ID": obj_id})
+                                               {"SELECTED_OBJECT_ID": obj.object_id})
 
-        if obj_id is None:
-            rospy.logerr("Obj_id not specified")
+        if obj is None or obj.object_id is None:
+            rospy.logerr("Object not specified")
             self.done(success=False)
 
             return
 
-        gripper = self.get_gripper(obj_id)
+        gripper = self.get_gripper(obj)
         if gripper.pp_client is None:
             rospy.logerr("No pick place client!")
             self.done(success=False)
@@ -359,8 +367,8 @@ class ArtBrainMachine(object):
                 rospy.logerr("Robot is holding objects in both grippers!")
                 self.done(success=False)
                 return
-        if self.pick_object(obj_id, gripper.pp_client):
-            gripper.holding_object = obj_id
+        if self.pick_object(obj, gripper.pp_client):
+            gripper.holding_object = obj
             self.done(success=True)
 
         else:
@@ -377,13 +385,13 @@ class ArtBrainMachine(object):
         self.state_manager.update_program_item(
             self.ph.get_program_id(), self.block_id, self.instruction)
         # TODO place pose
-        obj_id = self.instruction.object
+        obj = copy.deepcopy(self.instruction.object)
 
         if pose is None:
             self.done(success=False)
             return
         else:
-            gripper = self.get_gripper_holding_object(obj_id)
+            gripper = self.get_gripper_holding_object(obj)
             if gripper.holding_object is None:
                 rospy.logerr("Robot is not holding selected object")
 
@@ -392,7 +400,7 @@ class ArtBrainMachine(object):
                 self.done(success=False)
                 return
 
-            if self.place_object(self.holding_object_left, pose, gripper.pp_client):
+            if self.place_object(gripper.holding_object, pose, gripper.pp_client):
                 gripper.holding_object = None
                 self.done(success=True)
                 return
@@ -402,20 +410,20 @@ class ArtBrainMachine(object):
 
     def state_pick_place(self, event):
         rospy.loginfo('state_pickplace')
-        obj_id = ArtBrainUtils.get_pick_obj_id(self.instruction, self.objects)
+        obj = ArtBrainUtils.get_pick_obj(self.instruction, self.objects)
         pose = ArtBrainUtils.get_place_pose(self.instruction)
 
         self.state_manager.update_program_item(self.ph.get_program_id(), self.block_id, self.instruction,
-                                               {"SELECTED_OBJECT_ID": obj_id})
+                                               {"SELECTED_OBJECT_ID": obj.object_id})
         # TODO also update p.i. with selected place pose when not given (place
         # polygon)
 
-        if obj_id is None or pose is None:
+        if obj is None or obj.object_id is None or pose is None:
             rospy.logerr('could not get obj_id or pose')
 
             self.done(success=False)
             return
-        gripper = self.get_gripper(obj_id)
+        gripper = self.get_gripper(obj)
         if gripper.pp_client is None:
             rospy.logerr("No pick place client!")
             self.done(success=False)
@@ -430,7 +438,7 @@ class ArtBrainMachine(object):
                 rospy.logerr("Robot is holding objects in both grippers!")
                 self.done(success=False)
                 return
-        if self.pick_place_object(obj_id, pose, gripper.pp_client):
+        if self.pick_place_object(obj, pose, gripper.pp_client):
             self.done(success=True)
             return
 
@@ -514,18 +522,13 @@ class ArtBrainMachine(object):
     #                                     MANIPULATION
     # ***************************************************************************************
 
-    def pick_object(self, object_id, pp_client):
-        """
-
-        :type object_id: str
-        :return:
-        """
+    def pick_object(self, obj, pp_client):
 
         goal = pickplaceGoal()
-        goal.id = object_id
+        goal.id = obj.object_id
         goal.operation = goal.PICK
         goal.keep_orientation = False
-        rospy.loginfo("Picking object with ID: " + str(object_id))
+        rospy.loginfo("Picking object with ID: " + str(obj.object_id))
         pp_client.send_goal(goal)
         pp_client.wait_for_result()
         # TODO: make some error msg etc
@@ -543,8 +546,9 @@ class ArtBrainMachine(object):
 
         goal = pickplaceGoal()
         goal.operation = goal.PLACE
-        goal.id = obj
-
+        goal.id = obj.object_id
+        if not self.check_place_pose(place, obj):
+            return False
         # TODO how to decide between 180 and 90 deg?
         # allow object to be rotated by 90 deg around z axis
         goal.z_axis_angle_increment = 3.14 / 2
@@ -556,20 +560,23 @@ class ArtBrainMachine(object):
         goal.place_pose.header.frame_id = self.objects.header.frame_id
         # TODO: how to deal with this?
         goal.place_pose.pose.position.z = 0.1  # + obj.bbox.dimensions[2]/2
+        rospy.loginfo("Place pose: " + str(goal.place_pose))
         pp_client.send_goal(goal)
         pp_client.wait_for_result()
-        rospy.loginfo("Placing object with ID: " + str(obj))
+        rospy.loginfo("Placing object with ID: " + str(obj.object_id))
         if pp_client.get_result().result == 0:
             return True
         else:
             return False
 
-    def pick_place_object(self,  obj_id,  place, pp_client):
+    def pick_place_object(self,  obj,  place, pp_client):
         goal = pickplaceGoal()
-        goal.id = obj_id
+        goal.id = obj.object_id
+        if not self.check_place_pose(place, obj):
+            return False
         goal.operation = goal.PICK_AND_PLACE
         goal.keep_orientation = False
-        rospy.loginfo("Picking and placing object with ID: " + str(obj_id))
+        rospy.loginfo("Picking and placing object with ID: " + str(obj.object_id))
 
         # allow object to be rotated by 90 deg around z axis
         goal.z_axis_angle_increment = 3.14 / 2
@@ -580,7 +587,7 @@ class ArtBrainMachine(object):
         goal.place_pose.header.stamp = rospy.Time.now()
         # TODO: how to deal with this?
         goal.place_pose.pose.position.z = 0.1  # + obj.bbox.dimensions[2]/2
-
+        rospy.loginfo("Place pose: " + str(goal.place_pose))
         pp_client.send_goal(goal)
         pp_client.wait_for_result()
         if pp_client.get_result().result == 0:
@@ -599,7 +606,7 @@ class ArtBrainMachine(object):
 
         return self.table_calibrated and self.system_calibrated
 
-    def get_gripper(self, obj_id):
+    def get_gripper(self, obj):
         if not self.gripper_usage == ArtGripper.GRIPPER_BOTH:
             if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
                 return self.left_gripper
@@ -608,10 +615,10 @@ class ArtBrainMachine(object):
 
         if self.tf_listener.frameExists("/base_link") and self.tf_listener.frameExists(self.objects.header.frame_id):
 
-            for obj in self.objects.instances:
-                if obj.object_id == obj_id:
+            for o in self.objects.instances:
+                if o.object_id == obj.object_id:
                     obj_pose = PoseStamped()
-                    obj_pose.pose = obj.pose
+                    obj_pose.pose = o.pose
                     obj_pose.header = self.objects.header
                     obj_pose = self.tf_listener.transformPose('/base_link', obj_pose)
                     if obj_pose.pose.position.y < 0:
@@ -620,16 +627,33 @@ class ArtBrainMachine(object):
                         return self.left_gripper
         return self.left_gripper
 
-    def get_gripper_holding_object(self, obj_id):
-        if self.left_gripper is not None and self.left_gripper.holding_object == obj_id:
+    def get_gripper_holding_object(self, obj):
+        if self.left_gripper is not None and self.left_gripper.holding_object is obj:
             return self.left_gripper
-        elif self.right_gripper is not None and self.right_gripper.holding_object == obj_id:
+        elif self.right_gripper is not None and self.right_gripper.holding_object is obj:
             return self.right_gripper
         else:
             return None
 
+    def check_place_pose(self, place_pose, obj):
+        w1 = self.get_object_max_width(obj)
+        if w1 is None:
+            return False
+        for o in self.objects.instances:
+            if o.object_id == obj.object_id:
+                continue
+            w2 = self.get_object_max_width(o)
+            if w2 is None:
+                # TODO: how to deal with this
+                return False
+            d = ArtBrainUtils.distance_2d(place_pose.pose, o.pose)
+            if d < (w1 + w2):
+                rospy.logerr('Another object too close to desired place pose')
+                return False
+        return True
+
     # ***************************************************************************************
-    #                                     ROS CALLBACKS
+    #                                     ROS COMMUNICATION
     # ***************************************************************************************
 
     def program_start_cb(self,  req):
@@ -686,6 +710,24 @@ class ArtBrainMachine(object):
 
     def system_calibrated_cb(self,  req):
         self.system_calibrated = req.data
+
+    def get_object_max_width(self, obj):
+        if obj is None:
+            rospy.logerr('No object is specified')
+            return None
+        try:
+            obj_type = self.get_obj_type_srv_client.call(obj.object_type)
+            if not obj_type.success:
+                rospy.logerr('No object with id ' + str(obj.object_id) + ' found')
+                return None
+            if obj_type.object_type.bbox.type != SolidPrimitive.BOX:
+                rospy.logerr('Sorry, only BOX type objects are supported at the moment')
+            x = obj_type.object_type.bbox.dimensions[SolidPrimitive.BOX_X]
+            y = obj_type.object_type.bbox.dimensions[SolidPrimitive.BOX_Y]
+            return np.hypot(x/2, y/2)
+        except rospy.ServiceException, e:
+            rospy.logerr('Service call failed: ' + str(e))
+            return None
 
 
 if __name__ == '__main__':

@@ -3,14 +3,18 @@ import numpy as np
 import rospy
 import actionlib
 from art_msgs.msg import pickplaceAction
+import copy
 
 
 class ArtBrainUtils(object):
 
     @staticmethod
-    def get_pick_obj_id(instruction, objects):
+    def get_pick_obj(instruction, objects):
+        obj_ret = None
         if instruction.spec == instruction.MANIP_ID:
-            obj_id = instruction.object
+            for obj in objects:
+                if obj.object_id == instruction.object:
+                    obj_ret = obj
         elif instruction.spec == instruction.MANIP_TYPE:
 
             pick_polygon = []
@@ -27,8 +31,6 @@ class ArtBrainUtils(object):
             # shuffle the array to not get the same object each time
             # random.shuffle(self.objects.instances)
 
-            print objects.instances
-
             for obj in objects.instances:
 
                 if pol is None:
@@ -36,15 +38,15 @@ class ArtBrainUtils(object):
                     # if no pick polygon is specified - let's take the first
                     # object of that type
                     if obj.object_type == instruction.object:
-                        obj_id = obj.object_id
+                        obj_ret = copy.deepcopy(obj)
                         break
 
                 else:
 
                     # test if some object is in polygon and take the first one
                     if pol.contains_point([obj.pose.position.x,  obj.pose.position.y]):
-                        obj_id = obj.object_id
-                        print('Selected object: ' + obj_id)
+                        obj_ret = copy.deepcopy(obj)
+                        print('Selected object: ' + obj.object_id)
                         break
 
             else:
@@ -55,7 +57,7 @@ class ArtBrainUtils(object):
         else:
             print "strange instruction.spec: " + str(instruction.spec)
             return None
-        return obj_id
+        return obj_ret
 
     @staticmethod
     def get_place_pose(instruction):
@@ -70,6 +72,12 @@ class ArtBrainUtils(object):
         else:
             return None
         return pose
+
+    @staticmethod
+    def distance_2d(pose1, pose2):
+        a = np.array((pose1.position.x, pose1.position.y))
+        b = np.array((pose2.position.x, pose2.position.y))
+        return np.linalg.norm(a-b)
 
 
 class ArtGripper(object):
