@@ -111,7 +111,7 @@ before_script:
 script:
   - cd ~/catkin_ws
   - catkin_lint src/ar-table-itable/
-  - catkin_make_isolated
+  - catkin_make_isolated --install
   - catkin_make_isolated --make-args test
 
 after_failure:
