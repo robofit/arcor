@@ -6,6 +6,7 @@ import rostest
 from art_utils import ProgramHelper
 from art_msgs.msg import Program,  ProgramBlock,  ProgramItem
 import sys
+from copy import deepcopy
 
 
 class TestProgramHelper(unittest.TestCase):
@@ -89,27 +90,30 @@ class TestProgramHelper(unittest.TestCase):
 
     def test_invalid_block_id(self):
 
-        self.prog.blocks[0].id = 0
-
-        res = self.ph.load(self.prog)
+        prog = deepcopy(self.prog)
+        prog.blocks[0].id = 0
+        res = self.ph.load(prog)
         self.assertEquals(res, False, "invalid block id")
 
     def test_invalid_item_id(self):
 
-        self.prog.blocks[0].items[0].id = 0
-        res = self.ph.load(self.prog)
+        prog = deepcopy(self.prog)
+        prog.blocks[0].items[0].id = 0
+        res = self.ph.load(prog)
         self.assertEquals(res, False, "invalid item id")
 
     def test_invalid_item_on_success(self):
 
-        self.prog.blocks[0].items[1].on_success = 1234
-        res = self.ph.load(self.prog)
+        prog = deepcopy(self.prog)
+        prog.blocks[0].items[1].on_success = 1234
+        res = self.ph.load(prog)
         self.assertEquals(res, False, "invalid item on_success")
 
     def test_invalid_item_on_failure(self):
 
-        self.prog.blocks[0].items[1].on_failure = 1234
-        res = self.ph.load(self.prog)
+        prog = deepcopy(self.prog)
+        prog.blocks[0].items[1].on_failure = 1234
+        res = self.ph.load(prog)
         self.assertEquals(res, False, "invalid item on_failure")
 
     def test_valid_program(self):
