@@ -77,8 +77,8 @@ class ProgramListItem(Item):
         self.template_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Template"), self, self.template_btn_cb)
 
         # TODO fix function and enable buttons
-        self.run_btn.set_enabled(False)
-        self.edit_btn.set_enabled(False)
+        # self.run_btn.set_enabled(False)
+        # self.edit_btn.set_enabled(False)
 
         if selected_program_id is None:
 
