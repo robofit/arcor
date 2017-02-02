@@ -2,7 +2,7 @@
 
 import rospy
 from art_msgs.msg import Program,  ProgramItem
-from geometry_msgs.msg import PoseStamped, PolygonStamped
+from geometry_msgs.msg import Pose, Polygon
 
 
 class ProgramHelper():
@@ -16,8 +16,8 @@ class ProgramHelper():
 
     def __init__(self):
 
-        self.cache = {}
-        self.prog = None
+        self._cache = {}
+        self._prog = None
 
     def load(self, prog,  template=False):
 
@@ -109,81 +109,87 @@ class ProgramHelper():
                 if template:
 
                     item.object = ""
-                    item.pick_pose = PoseStamped()
-                    item.pick_polygon = PolygonStamped()
-                    item.place_pose = PoseStamped()
-                    item.place_polygon = PolygonStamped()
 
-        self.prog = prog
-        self.cache = cache
+                    # for stamped types we want to keep header (frame_id)
+                    item.pick_pose.pose = Pose()
+                    item.pick_polygon.polygon = Polygon()
+                    item.place_pose.pose = Pose()
+                    item.place_polygon.polygon = Polygon()
+
+        self._prog = prog
+        self._cache = cache
         return True
+
+    def get_program(self):
+
+        return self._prog
 
     def get_program_id(self):
 
-        if self.prog is None:
+        if self._prog is None:
             return None
 
-        return self.prog.header.id
+        return self._prog.header.id
 
     def get_block_msg(self,  block_id):
 
-        if block_id not in self.cache:
+        if block_id not in self._cache:
             return None
 
-        block_idx = self.cache[block_id]["idx"]
-        return self.prog.blocks[block_idx]
+        block_idx = self._cache[block_id]["idx"]
+        return self._prog.blocks[block_idx]
 
     def get_block_ids(self):
 
-        return self.cache.keys()
+        return self._cache.keys()
 
     def get_items_ids(self, block_id):
 
-        return self.cache[block_id]["items"].keys()
+        return self._cache[block_id]["items"].keys()
 
     def get_first_block_id(self):
 
-        if len(self.cache) == 0:
+        if len(self._cache) == 0:
             return None
 
-        return min(self.cache,  key=self.cache.get)
+        return min(self._cache,  key=self._cache.get)
 
     def get_first_item_id(self):
 
-        if len(self.cache) == 0:
+        if len(self._cache) == 0:
             return None
 
         block_id = self.get_first_block_id()
-        items = self.cache[block_id]["items"]
+        items = self._cache[block_id]["items"]
         item_id = min(items,  key=items.get)
         return (block_id,  item_id)
 
     def get_item_msg(self,  block_id,  item_id):
 
-        if block_id not in self.cache or item_id not in self.cache[block_id]["items"]:
+        if block_id not in self._cache or item_id not in self._cache[block_id]["items"]:
             return None
 
-        block_idx = self.cache[block_id]["idx"]
-        item_idx = self.cache[block_id]["items"][item_id]["idx"]
-        return self.prog.blocks[block_idx].items[item_idx]
+        block_idx = self._cache[block_id]["idx"]
+        item_idx = self._cache[block_id]["items"][item_id]["idx"]
+        return self._prog.blocks[block_idx].items[item_idx]
 
     def _get_item_on(self,  block_id,  item_id,  what):
 
-        if block_id not in self.cache or item_id not in self.cache[block_id]["items"]:
+        if block_id not in self._cache or item_id not in self._cache[block_id]["items"]:
             return None
 
-        item_id_on = self.cache[block_id]["items"][item_id][what]
+        item_id_on = self._cache[block_id]["items"][item_id][what]
 
         # TODO make constant in msg for it
         if item_id_on == 0:
 
-            next_block_id = self.cache[block_id][what]
+            next_block_id = self._cache[block_id][what]
 
             if next_block_id == 0:
 
                 return (0,  0)  # end of program
 
-            items_dict = self.cache[next_block_id]["items"]
+            items_dict = self._cache[next_block_id]["items"]
             next_item_id = min(items_dict,  key=items_dict.get)
 
             return (next_block_id, next_item_id)
@@ -212,12 +218,12 @@ class ProgramHelper():
     def is_place_pose_set(self, block_id, item_id):
 
         msg = self.get_item_msg(block_id, item_id)
-        return msg.place_pose.pose.position.x != 0 and msg.place_pose.pose.position.y != 0
+        return msg.place_pose.pose != Pose()
 
     def is_pick_pose_set(self, block_id, item_id):
 
         msg = self.get_item_msg(block_id, item_id)
-        return msg.pick_pose.pose.position.x != 0 and msg.pick_pose.pose.position.y != 0
+        return msg.pick_pose.pose != Pose()
 
     def is_object_set(self, block_id, item_id):
 
@@ -227,12 +233,12 @@ class ProgramHelper():
     def is_pick_polygon_set(self, block_id, item_id):
 
         msg = self.get_item_msg(block_id, item_id)
-        return len(msg.pick_polygon.polygon.points) > 0
+        return msg.pick_polygon.polygon != Polygon()
 
     def is_place_polygon_set(self, block_id, item_id):
 
         msg = self.get_item_msg(block_id, item_id)
-        return len(msg.place_polygon.polygon.points) > 0
+        return msg.place_polygon.polygon != Polygon()
 
     def program_learned(self):
 
