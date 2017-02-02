@@ -107,6 +107,12 @@ before_script:
   - sudo apt-get install -y mongodb-clients mongodb-server -o Dpkg::Options::="--force-confdef" # default actions
   - rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
 
+# install other package dependencies using script
+  - cd ~/catkin_ws/src/ar-table-itable
+  - chmod +x install_dependencies.sh
+  - ./install_dependencies.sh
+  
+
 # Compile and test.
 script:
   - cd ~/catkin_ws
