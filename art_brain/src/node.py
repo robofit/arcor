@@ -224,6 +224,9 @@ class ArtBrainMachine(object):
 
         self.state_manager = InterfaceStateManager(
             InterfaceState.BRAIN_ID)  # TODO callback?
+        self.state_manager.set_system_state(
+            InterfaceState.STATE_INITIALIZING)
+
         self.art = ArtApiHelper(brain=True)
         self.ph = ProgramHelper()
 
@@ -526,6 +529,7 @@ class ArtBrainMachine(object):
 
     def state_waiting_for_action(self, event):
         rospy.loginfo('state_waiting_for_action')
+        self.state_manager.set_system_state(InterfaceState.STATE_IDLE)
 
     def teaching_init(self, event):
         pass
