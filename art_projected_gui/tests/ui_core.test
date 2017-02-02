@@ -1,0 +1,3 @@
+<launch>
+  <test test-name="test_ui_core" pkg="art_projected_gui" type="test_ui_core.py" />
+</launch>

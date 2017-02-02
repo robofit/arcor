@@ -93,6 +93,12 @@ install:
 # Install all dependencies, using wstool and rosdep.
 # wstool looks for a ROSINSTALL_FILE defined in the environment variables.
 before_script:
+
+  # for nodes requiring x server (art_projected_gui)
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
+
   # source dependencies: install using wstool.
   - cd ~/catkin_ws/src
   - wstool init

@@ -2,53 +2,70 @@
 
 import sys
 import rospy
-from art_msgs.srv import getProgram,  startProgram,  startProgramResponse
+from art_msgs.srv import startProgram,  startProgramResponse
 from art_msgs.msg import InterfaceState,  ProgramItem
-from art_utils import InterfaceStateManager
+from art_utils import InterfaceStateManager,  ProgramHelper, ArtApiHelper
+
 prog_timer = None
-program = None
-current_item = 0  # idx of item
+current_item = (0,  0)  # block_id, item_id
 state_manager = None
+ph = None
+art = None
+iters = 0
 
 
 def timer_callback(event):
 
     global current_item
-    global program
     global state_manager
+    global ph
+    global prog_timer
+    global iters
+
+    if current_item == (0, 0):
+
+        prog_timer.shutdown()
+        state_manager.set_system_state(InterfaceState.STATE_PROGRAM_FINISHED)
+        state_manager.send()
+        rospy.loginfo("Program finished")
+        return
 
     flags = {}
-    if program.blocks[0].items[current_item].type == ProgramItem.MANIP_PICK_PLACE:
+    it = ph.get_item_msg(*current_item)
+    if it.type == ProgramItem.MANIP_PICK_PLACE:
         flags["SELECTED_OBJECT_ID"] = "my_object"
 
-    state_manager.update_program_item(program.header.id,  program.blocks[0].id,  program.blocks[0].items[current_item],  flags)
+    state_manager.update_program_item(ph.prog.header.id,  current_item[0],  ph.get_item_msg(*current_item),  flags)
 
-    # TODO go through blocks/items according to their ids
-    current_item += 1
+    if iters < 1:
+        current_item = ph.get_id_on_success(*current_item)
+    else:
+        current_item = ph.get_id_on_failure(*current_item)
 
-    if current_item == len(program.blocks[0].items):
+    if current_item == ph.get_first_item_id():
 
-        current_item = 0
+        iters += 1
 
 
 def start_program(req):
 
     global prog_timer
-    global program
     global current_item
     global state_manager
+    global ph
+    global art
+    global iters
 
-    prog_srv = rospy.ServiceProxy('/art/db/program/get', getProgram)
+    program = art.load_program(req.program_id)
 
-    try:
-        resp = prog_srv(req.program_id)
-        program = resp.program
-    except rospy.ServiceException, e:
-        print "Service call failed: " + str(e)
-        program = None
+    if program is None:
         return startProgramResponse(success=False)
 
-    current_item = 0
+    if not ph.load(program):
+        return startProgramResponse(success=False)
+
+    current_item = ph.get_first_item_id()
+    iters = 0
 
     state_manager.set_system_state(InterfaceState.STATE_PROGRAM_RUNNING)
     prog_timer = rospy.Timer(rospy.Duration(4), timer_callback)
@@ -70,13 +87,18 @@ def callback(old_state,  new_state,  flags):
 def main(args):
 
     global state_manager
+    global ph
+    global art
 
     rospy.init_node('test_brain')
 
     state_manager = InterfaceStateManager(InterfaceState.BRAIN_ID,  callback)
+    ph = ProgramHelper()
 
     rospy.Service('/art/brain/program/start',  startProgram, start_program)
     # rospy.Service('/art/brain/program/stop',  stopProgram, stop_program)
+
+    art = ArtApiHelper()
 
     rospy.spin()
 

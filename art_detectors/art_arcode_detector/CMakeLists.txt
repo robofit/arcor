@@ -20,3 +20,8 @@ if (CATKIN_ENABLE_TESTING)
   roslaunch_add_file_check(launch)
 endif()
 
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
+
+catkin_install_python(PROGRAMS src/detector.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
