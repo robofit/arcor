@@ -6,18 +6,19 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   rospy
   roslint
+  rostest
 )
 
 catkin_python_setup()
 
 set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
-roslint_python(src/art_utils/art_api_helper.py src/art_utils/interface_state_manager.py src/art_utils/program_helper.py)
+roslint_python()
 roslint_add_test()
 
 catkin_package(CATKIN_DEPENDS art_msgs geometry_msgs)
 
 if (CATKIN_ENABLE_TESTING)
-  catkin_add_nosetests(test)
+    add_rostest(tests/program_helper.test)
 endif()
 
 include_directories(

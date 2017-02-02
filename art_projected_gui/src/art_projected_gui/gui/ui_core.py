@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 from PyQt4 import QtGui, QtCore, QtNetwork
-from items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem
+from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem
 import rospy
-from helpers import conversions
+from art_projected_gui.helpers import conversions
 from art_msgs.srv import NotifyUserRequest
 
 
@@ -69,10 +69,8 @@ class UICore(QtCore.QObject):
         self.scene_items = []
 
         self.bottom_label = LabelItem(self.scene, self.rpm, 0.2, 0.05, self.width - 0.4, 0.05)
-        self.program_vis = ProgramItem(self.scene, self.rpm, 0.2, self.height-0.2)
 
         self.scene_items.append(self.bottom_label)
-        self.scene_items.append(self.program_vis)
 
         self.view = customGraphicsView(self.scene)
         self.view.setRenderHint(QtGui.QPainter.Antialiasing)

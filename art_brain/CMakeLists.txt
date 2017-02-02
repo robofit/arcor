@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   roslint
   roslaunch
+  art_db
 )
 
 set(ROSLINT_PYTHON_OPTS "--max-line-length=250")

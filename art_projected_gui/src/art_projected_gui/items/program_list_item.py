@@ -54,7 +54,7 @@ class ProgramHeaderItem(Item):
 
 class ProgramListItem(Item):
 
-    def __init__(self, scene, rpm, x, y, program_headers,  program_selected_cb=None):
+    def __init__(self, scene, rpm, x, y, program_headers, selected_program_id=None, program_selected_cb=None):
 
         self.w = 100
         self.h = 100
@@ -80,7 +80,23 @@ class ProgramListItem(Item):
         self.run_btn.set_enabled(False)
         self.edit_btn.set_enabled(False)
 
-        self.set_current_idx(0)
+        if selected_program_id is None:
+
+            self.set_current_idx(0)
+
+        else:
+
+            for i in range(0, len(self.program_headers)):
+
+                if selected_program_id == self.program_headers[i].id:
+
+                    self.set_current_idx(i)
+                    break
+
+            else:
+
+                self.set_current_idx(0)
+
         # TODO display e.g. three items where one will be Enabled -> selected
         self.ph = ProgramHeaderItem(self.scene(),  self.rpm,  0, 0,  self.w, self, self.get_current_header())
 
