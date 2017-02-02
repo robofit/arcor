@@ -39,7 +39,6 @@ from art_brain.brain_utils import ArtBrainUtils, ArtGripper
 # při pick object zkontrolovat pick_pose a pripadně použít
 # používat obě ramena robota -> done, otestovat na stole
 # při place zkontrolovat place pose (jestli tam není jiný objekt) -> done, otestovat na stole
-# při pick zkontrolovat jestli objekt existuje
 # při nepovedené operaci se zeptat usera jestli má zopakovat instrukci, pokračovat nebo skončit
 
 class ArtBrainMachine(object):
@@ -346,17 +345,24 @@ class ArtBrainMachine(object):
         self.state_manager.update_program_item(self.ph.get_program_id(), self.block_id, self.instruction,
                                                {"SELECTED_OBJECT_ID": obj.object_id})
 
-        if obj is None or obj.object_id is None:
+        picking_from_feeder = False
+        if self.ph.is_pick_pose_set(self.block_id, self.instruction.id):
+            picking_from_feeder = True
+
+        if picking_from_feeder is False and obj is None or obj.object_id is None:
             rospy.logerr("Object not specified")
             self.done(success=False)
 
             return
-
-        gripper = self.get_gripper(obj)
+        if picking_from_feeder:
+            gripper = self.get_gripper(pick_pose=self.instruction.pick_pose)
+        else:
+            gripper = self.get_gripper(obj=obj)
         if gripper.pp_client is None:
             rospy.logerr("No pick place client!")
             self.done(success=False)
             return
+
         if gripper.holding_object is not None:
             rospy.logwarn("Robot is holding object in selected gripper, let's try another gripper")
             if gripper is self.left_gripper:
@@ -367,7 +373,7 @@ class ArtBrainMachine(object):
                 rospy.logerr("Robot is holding objects in both grippers!")
                 self.done(success=False)
                 return
-        if self.pick_object(obj, gripper.pp_client):
+        if self.pick_object(obj, gripper.pp_client, self.instruction.pick_pose):
             gripper.holding_object = obj
             self.done(success=True)
 
@@ -417,13 +423,19 @@ class ArtBrainMachine(object):
                                                {"SELECTED_OBJECT_ID": obj.object_id})
         # TODO also update p.i. with selected place pose when not given (place
         # polygon)
+        picking_from_feeder = False
+        if self.ph.is_pick_pose_set(self.block_id, self.instruction.id):
+            picking_from_feeder = True
 
-        if obj is None or obj.object_id is None or pose is None:
+        if picking_from_feeder is False and obj is None or obj.object_id is None or pose is None:
             rospy.logerr('could not get obj_id or pose')
 
             self.done(success=False)
             return
-        gripper = self.get_gripper(obj)
+        if picking_from_feeder:
+            gripper = self.get_gripper(pick_pose=self.instruction.pick_pose)
+        else:
+            gripper = self.get_gripper(obj=obj)
         if gripper.pp_client is None:
             rospy.logerr("No pick place client!")
             self.done(success=False)
@@ -522,7 +534,7 @@ class ArtBrainMachine(object):
     #                                     MANIPULATION
     # ***************************************************************************************
 
-    def pick_object(self, obj, pp_client):
+    def pick_object(self, obj, pp_client, pick_pose=None):
 
         goal = pickplaceGoal()
         goal.id = obj.object_id
@@ -569,7 +581,7 @@ class ArtBrainMachine(object):
         else:
             return False
 
-    def pick_place_object(self,  obj,  place, pp_client):
+    def pick_place_object(self,  obj,  place, pp_client, pick_pose=None):
         goal = pickplaceGoal()
         goal.id = obj.object_id
         if not self.check_place_pose(place, obj):
@@ -606,7 +618,8 @@ class ArtBrainMachine(object):
 
         return self.table_calibrated and self.system_calibrated
 
-    def get_gripper(self, obj):
+    def get_gripper(self, obj=None, pick_pose=None):
+
         if not self.gripper_usage == ArtGripper.GRIPPER_BOTH:
             if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
                 return self.left_gripper
@@ -614,17 +627,23 @@ class ArtBrainMachine(object):
                 return self.right_gripper
 
         if self.tf_listener.frameExists("/base_link") and self.tf_listener.frameExists(self.objects.header.frame_id):
-
-            for o in self.objects.instances:
-                if o.object_id == obj.object_id:
-                    obj_pose = PoseStamped()
-                    obj_pose.pose = o.pose
-                    obj_pose.header = self.objects.header
-                    obj_pose = self.tf_listener.transformPose('/base_link', obj_pose)
-                    if obj_pose.pose.position.y < 0:
-                        return self.right_gripper
-                    else:
-                        return self.left_gripper
+            if pick_pose is not None:
+                transformed_pose = self.tf_listener.transformPose('/base_link', pick_pose)
+                if transformed_pose.pose.position.y < 0:
+                    return self.right_gripper
+                else:
+                    return self.left_gripper
+            elif obj is not None:
+                for o in self.objects.instances:
+                    if o.object_id == obj.object_id:
+                        obj_pose = PoseStamped()
+                        obj_pose.pose = o.pose
+                        obj_pose.header = self.objects.header
+                        obj_pose = self.tf_listener.transformPose('/base_link', obj_pose)
+                        if obj_pose.pose.position.y < 0:
+                            return self.right_gripper
+                        else:
+                            return self.left_gripper
         return self.left_gripper
 
     def get_gripper_holding_object(self, obj):
