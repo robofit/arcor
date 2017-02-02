@@ -2,6 +2,7 @@
 
 import rospy
 from art_msgs.msg import Program,  ProgramItem
+from geometry_msgs.msg import PoseStamped, PolygonStamped
 
 
 class ProgramHelper():
@@ -18,7 +19,7 @@ class ProgramHelper():
         self.cache = {}
         self.prog = None
 
-    def load(self, prog):
+    def load(self, prog,  template=False):
 
         if not isinstance(prog,  Program):
             rospy.logerr("Invalid argument. Should be Program message.")
@@ -103,13 +104,15 @@ class ProgramHelper():
                     rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has invalid on_failure: " + str(vv["on_failure"]))
                     return False
 
-                # TODO make more checks of the item itself (instruction type vs. filled data)
                 item = prog.blocks[v["idx"]].items[vv["idx"]]
 
-                if item.type in [ProgramItem.MANIP_PICK,  ProgramItem.MANIP_PICK_PLACE] and item.object == "":
+                if template:
 
-                    rospy.logerr("Item id: " + str(kk) + " has no object set for p&p.")
-                    return False
+                    item.object = ""
+                    item.pick_pose = PoseStamped()
+                    item.pick_polygon = PolygonStamped()
+                    item.place_pose = PoseStamped()
+                    item.place_polygon = PolygonStamped()
 
         self.prog = prog
         self.cache = cache
@@ -196,3 +199,82 @@ class ProgramHelper():
     def get_id_on_failure(self,  block_id,  item_id):
 
         return self._get_item_on(block_id,  item_id,  "on_failure")
+
+    def get_item_type(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+        return msg.type
+
+    def item_requires_learning(self, block_id, item_id):
+
+        return self.get_item_type(block_id,  item_id) in [ProgramItem.MANIP_PICK, ProgramItem.MANIP_PLACE, ProgramItem.MANIP_PICK_PLACE]
+
+    def is_place_pose_set(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+        return msg.place_pose.pose.position.x != 0 and msg.place_pose.pose.position.y != 0
+
+    def is_pick_pose_set(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+        return msg.pick_pose.pose.position.x != 0 and msg.pick_pose.pose.position.y != 0
+
+    def is_object_set(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+        return msg.object != ""
+
+    def is_pick_polygon_set(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+        return len(msg.pick_polygon.polygon.points) > 0
+
+    def is_place_polygon_set(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+        return len(msg.place_polygon.polygon.points) > 0
+
+    def program_learned(self):
+
+        blocks = self.get_block_ids()
+
+        for block_id in blocks:
+
+            items = self.get_items_ids(block_id)
+
+            for item_id in items:
+
+                if self.item_learned(block_id, item_id) is False:
+                    return False
+
+        return True
+
+    def item_learned(self, block_id, item_id):
+
+        if not self.item_requires_learning(block_id,  item_id):
+            return None
+
+        msg = self.get_item_msg(block_id, item_id)
+
+        # TODO other types
+        if msg.type == ProgramItem.MANIP_PICK_PLACE:
+
+            if not self.is_object_set(block_id, item_id):  # there has to be id or type
+                return False
+
+            if self.is_place_pose_set(block_id, item_id) or self.is_place_polygon_set(block_id, item_id):
+                return True
+            else:
+                return False
+
+            if msg.spec == ProgramItem.MANIP_ID:
+                return True
+
+            elif msg.spec == ProgramItem.MANIP_TYPE:
+
+                if self.is_pick_polygon_set(block_id, item_id) or self.is_pick_pose_set(block_id, item_id):
+                    return True
+                else:
+                    return False
+
+        raise NotImplementedError("Not yet supported item type.")

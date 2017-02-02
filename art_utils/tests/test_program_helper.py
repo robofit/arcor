@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
+import rospy
 import unittest
+import rostest
 from art_utils import ProgramHelper
 from art_msgs.msg import Program,  ProgramBlock,  ProgramItem
-import os.path, sys
+import sys
+from copy import deepcopy
 
-sys.path = [os.path.abspath(os.path.dirname(__file__))] + sys.path
 
 class TestProgramHelper(unittest.TestCase):
 
@@ -16,8 +18,8 @@ class TestProgramHelper(unittest.TestCase):
         self.prog = Program()
         self.ph = ProgramHelper()
 
-        self.prog.id = 666
-        self.prog.name = "Basic pick&place"
+        self.prog.header.id = 666
+        self.prog.header.name = "Basic pick&place"
 
         pb = ProgramBlock()
         pb.id = 1  # can't be zero
@@ -88,27 +90,30 @@ class TestProgramHelper(unittest.TestCase):
 
     def test_invalid_block_id(self):
 
-        self.prog.blocks[0].id = 0
-
-        res = self.ph.load(self.prog)
+        prog = deepcopy(self.prog)
+        prog.blocks[0].id = 0
+        res = self.ph.load(prog)
         self.assertEquals(res, False, "invalid block id")
 
     def test_invalid_item_id(self):
 
-        self.prog.blocks[0].items[0].id = 0
-        res = self.ph.load(self.prog)
+        prog = deepcopy(self.prog)
+        prog.blocks[0].items[0].id = 0
+        res = self.ph.load(prog)
         self.assertEquals(res, False, "invalid item id")
 
     def test_invalid_item_on_success(self):
 
-        self.prog.blocks[0].items[1].on_success = 1234
-        res = self.ph.load(self.prog)
+        prog = deepcopy(self.prog)
+        prog.blocks[0].items[1].on_success = 1234
+        res = self.ph.load(prog)
         self.assertEquals(res, False, "invalid item on_success")
 
     def test_invalid_item_on_failure(self):
 
-        self.prog.blocks[0].items[1].on_failure = 1234
-        res = self.ph.load(self.prog)
+        prog = deepcopy(self.prog)
+        prog.blocks[0].items[1].on_failure = 1234
+        res = self.ph.load(prog)
         self.assertEquals(res, False, "invalid item on_failure")
 
     def test_valid_program(self):
@@ -177,6 +182,14 @@ class TestProgramHelper(unittest.TestCase):
         prog_id = self.ph.get_program_id()
         self.assertEquals(prog_id, 666, "get_program_id - id")
 
+    def test_template(self):
+
+        self.ph.load(self.prog)
+        self.assertEquals(self.ph.program_learned(), True, "test_template")
+        self.ph.load(self.prog, True)
+        self.assertEquals(self.ph.program_learned(), False, "test_template")
+
 if __name__ == '__main__':
-    import rosunit
-    rosunit.unitrun("art_utils", 'program_helper', TestProgramHelper)
+
+    rospy.init_node('test_node')
+    rostest.run('art_utils', 'test_program_helper', TestProgramHelper, sys.argv)

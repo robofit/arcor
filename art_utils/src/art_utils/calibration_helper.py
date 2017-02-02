@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-from tf import transformations, TransformBroadcaster
+from tf import transformations
 
 
 class ArtCalibrationHelper(object):
@@ -44,14 +44,14 @@ class ArtCalibrationHelper(object):
         n = np.cross(pp03, pp01)
         m = np.matrix([[pp03[0], pp01[0], n[0],  0],
                        [pp03[1], pp01[1], n[1],  0],
-                       [pp03[2], pp01[2], n[2],  0], 
+                       [pp03[2], pp01[2], n[2],  0],
                        [0, 0, 0, 1]])
-                       
+
         translation_matrix = transformations.translation_matrix(p0)
         matrix = translation_matrix * m
-        
+
         inverted_matrix = transformations.inverse_matrix(matrix)
-        
+
         return p0, inverted_matrix
 
     @staticmethod
@@ -62,13 +62,13 @@ class ArtCalibrationHelper(object):
                 pos[0] = marker.pose.pose.position.x
                 pos[1] = marker.pose.pose.position.y
                 pos[2] = marker.pose.pose.position.z
-                
+
                 return pos
         return None
 
     @staticmethod
     def normalize_vector(v):
-        norm=np.linalg.norm(v)
-        if norm <= 0.0000001: 
-           return None
+        norm = np.linalg.norm(v)
+        if norm <= 0.0000001:
+            return None
         return v/norm

@@ -4,7 +4,7 @@ import sys
 import signal
 import rospy
 from PyQt4 import QtGui, QtCore
-from gui import Projector
+from art_projected_gui.gui import Projector
 
 
 def sigint_handler(*args):
