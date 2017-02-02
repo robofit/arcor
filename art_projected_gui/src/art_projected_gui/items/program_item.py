@@ -5,7 +5,7 @@ from item import Item
 from art_msgs.msg import ProgramItem as ProgIt
 from geometry_msgs.msg import Point32
 from button_item import ButtonItem
-from helpers import conversions
+from art_projected_gui.helpers import conversions
 
 translate = QtCore.QCoreApplication.translate
 

@@ -16,6 +16,12 @@
   <build_depend>std_msgs</build_depend>
 
   <build_depend>art_msgs</build_depend>
+  <build_depend>art_calibration</build_depend>
+  <build_depend>art_db</build_depend>
+  <build_depend>art_projected_gui</build_depend>
+  <build_depend>art_arcode_detector</build_depend>
+  <build_depend>art_simple_tracker</build_depend>
+  <build_depend>ar_track_alvar</build_depend>
 
   <run_depend>geometry_msgs</run_depend>
   <run_depend>roscpp</run_depend>

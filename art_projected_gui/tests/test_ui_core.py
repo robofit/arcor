@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 
 import unittest
-from gui.ui_core import UICore
-from items import ObjectItem,  PlaceItem
+import rostest
 import sys
-import os
+from art_projected_gui.gui import UICore
+from art_projected_gui.items import ObjectItem,  PlaceItem
 from PyQt4.QtGui import QApplication
 from art_msgs.msg import ObjectType
 import rospy
 from shape_msgs.msg import SolidPrimitive
 from geometry_msgs.msg import PoseStamped
 
-sys.path = [os.path.abspath(os.path.dirname(__file__))] + sys.path
 app = QApplication(sys.argv)
 
 
@@ -19,7 +18,6 @@ class TestUICore(unittest.TestCase):
 
     def setUp(self):
 
-        rospy.init_node('test_node')
         self.ui_core = UICore(0,  0,  2, 1, 1000, 1234)
 
         self.type1 = ObjectType()
@@ -103,5 +101,6 @@ class TestUICore(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    import rosunit
-    rosunit.unitrun("art_projected_gui", 'test_ui_core', TestUICore)
+
+    rospy.init_node('test_node')
+    rostest.run('art_projected_gui', 'test_ui_core', TestUICore, sys.argv)

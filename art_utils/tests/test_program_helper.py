@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
+import rospy
 import unittest
+import rostest
 from art_utils import ProgramHelper
 from art_msgs.msg import Program,  ProgramBlock,  ProgramItem
+import sys
 
 
 class TestProgramHelper(unittest.TestCase):
@@ -183,5 +186,6 @@ class TestProgramHelper(unittest.TestCase):
         self.assertEquals(self.ph.program_learned(), False, "test_template")
 
 if __name__ == '__main__':
-    import rosunit
-    rosunit.unitrun("art_utils", 'program_helper', TestProgramHelper)
+
+    rospy.init_node('test_node')
+    rostest.run('art_utils', 'test_program_helper', TestProgramHelper, sys.argv)

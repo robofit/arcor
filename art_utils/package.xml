@@ -16,7 +16,6 @@
   <run_depend>art_msgs</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>rospy</run_depend>
-  <test_depend>rosunit</test_depend>
-  <test_depend>python-nose</test_depend>
+  <test_depend>rostest</test_depend>
 
 </package>

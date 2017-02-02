@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-from ui_core import UICore
+from art_projected_gui.gui import UICore
 from PyQt4 import QtCore, QtGui
 import rospy
 from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt
 from fsm import FSM
 from transitions import MachineError
-from items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem,  ProgramItem
-from helpers import ProjectorHelper,  conversions
+from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem,  ProgramItem
+from art_projected_gui.helpers import ProjectorHelper,  conversions
 from art_utils import InterfaceStateManager,  ArtApiHelper
 from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse,  NotifyUser,  NotifyUserResponse
 from std_msgs.msg import Empty

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 from PyQt4 import QtGui, QtCore, QtNetwork
-from items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem
+from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem
 import rospy
-from helpers import conversions
+from art_projected_gui.helpers import conversions
 from art_msgs.srv import NotifyUserRequest
 
 

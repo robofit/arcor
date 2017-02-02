@@ -6,6 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   rospy
   roslint
+  rostest
 )
 
 catkin_python_setup()
@@ -17,7 +18,7 @@ roslint_add_test()
 catkin_package(CATKIN_DEPENDS art_msgs geometry_msgs)
 
 if (CATKIN_ENABLE_TESTING)
-  catkin_add_nosetests(test/program_helper.py)
+    add_rostest(tests/program_helper.test)
 endif()
 
 include_directories(
