@@ -42,7 +42,7 @@ class ListItem(Item):
         self.up_btn.setPos(0,  0)
         self.down_btn.setPos(0, self.h - self.down_btn.boundingRect().height())
 
-        self.set_current_idx(min(1, len(self.items)))
+        self.set_current_idx(min(1, len(self.items)-1))
 
         self.update()
 
@@ -74,9 +74,9 @@ class ListItem(Item):
 
     def set_current_idx(self,  idx):
 
-        self.middle_item_idx = max(idx, min(1, len(self.items)))
+        self.middle_item_idx = max(idx, min(1, len(self.items)-1))
 
-        if self.middle_item_idx == min(1, len(self.items)):
+        if self.middle_item_idx == min(1, len(self.items)-1):
             self.up_btn.set_enabled(False)
         else:
             self.up_btn.set_enabled(True)

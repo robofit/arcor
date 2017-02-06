@@ -211,8 +211,11 @@ class UICoreRos(UICore):
             if self.program_vis.prog is None or self.program_vis.prog.header.id != state.program_id:
 
                 program = self.art.load_program(state.program_id)
+                self.ph.load(program)
                 if program is not None:
-                    self.program_vis.set_prog(program, False)
+                    # self.program_vis.set_prog(program, False)
+                    # TODO nova instance program_vis ?
+                    pass
                 else:
                     pass  # TODO error
 
@@ -319,7 +322,9 @@ class UICoreRos(UICore):
         # callback from ProgramItem
     def active_item_switched(self):
 
-        rospy.logdebug("Program ID:" + str(self.program_vis.prog.header.id) + ", active item ID: " + str(self.program_vis.active_item.item.id))
+        # TODO nastavit pres self.ph
+
+        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: " + str(self.program_vis.active_item.item.id))
 
         self.clear_all()
         # TODO block_id
@@ -480,12 +485,11 @@ class UICoreRos(UICore):
         self.remove_scene_items_by_type(ProgramListItem)
         self.program_list = None
 
-        self.program_vis = ProgramItem(self.scene, self.rpm, pos[0], pos[1])
+        self.program_vis = ProgramItem(self.scene, self.rpm, pos[0], pos[1], self.ph)
         self.program_vis.active_item_switched = self.active_item_switched
         self.program_vis.program_state_changed = self.program_state_changed
         self.scene_items.append(self.program_vis)
-        self.program_vis.set_prog(self.ph.get_program(), template)
-        self.active_item_switched()
+        # self.active_item_switched()
 
         if run:
 

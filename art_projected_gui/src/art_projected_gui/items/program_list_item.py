@@ -114,5 +114,4 @@ class ProgramListItem(Item):
 
         painter.setBrush(QtCore.Qt.gray)
         painter.setOpacity(0.5)
-        # painter.drawRect(0, 0, self.w, self.h)
         painter.drawRoundedRect(QtCore.QRect(0, 0, self.w, self.h), 5.0, 5.0)
