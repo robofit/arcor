@@ -174,6 +174,10 @@ class ProgramHelper():
         item_idx = self._cache[block_id]["items"][item_id]["idx"]
         return self._prog.blocks[block_idx].items[item_idx]
 
+    def _get_block_on(self,  block_id, what):
+
+        return self._cache[block_id][what]
+
     def _get_item_on(self,  block_id,  item_id,  what):
 
         if block_id not in self._cache or item_id not in self._cache[block_id]["items"]:
@@ -184,7 +188,7 @@ class ProgramHelper():
         # TODO make constant in msg for it
         if item_id_on == 0:
 
-            next_block_id = self._cache[block_id][what]
+            next_block_id = self. _get_block_on(block_id, what)
 
             if next_block_id == 0:
 
@@ -206,6 +210,14 @@ class ProgramHelper():
     def get_id_on_failure(self,  block_id,  item_id):
 
         return self._get_item_on(block_id,  item_id,  "on_failure")
+
+    def get_block_on_success(self,  block_id):
+
+        return self._get_block_on(block_id, "on_success")
+
+    def get_block_on_failure(self,  block_id):
+
+        return self._get_block_on(block_id, "on_failure")
 
     def get_item_type(self, block_id, item_id):
 
@@ -247,12 +259,19 @@ class ProgramHelper():
 
         for block_id in blocks:
 
-            items = self.get_items_ids(block_id)
+            if not self.block_learned(block_id):
+                return False
 
-            for item_id in items:
+        return True
 
-                if self.item_learned(block_id, item_id) is False:
-                    return False
+    def block_learned(self, block_id):
+
+        items = self.get_items_ids(block_id)
+
+        for item_id in items:
+
+            if self.item_learned(block_id, item_id) is False:
+                return False
 
         return True
 
