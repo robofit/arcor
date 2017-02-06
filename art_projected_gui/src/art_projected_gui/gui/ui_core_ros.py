@@ -188,7 +188,7 @@ class UICoreRos(UICore):
 
         self.projectors.append(ProjectorHelper(proj_id))
 
-    def stop_btn_clicked(self):
+    def stop_btn_clicked(self, btn):
 
         # TODO
         self.notif(translate("UICoreRos", "Emergency stop pressed"), temp=True)
