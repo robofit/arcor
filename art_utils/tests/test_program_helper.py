@@ -7,6 +7,7 @@ from art_utils import ProgramHelper
 from art_msgs.msg import Program,  ProgramBlock,  ProgramItem
 import sys
 from copy import deepcopy
+from geometry_msgs.msg import Point32, Pose
 
 
 class TestProgramHelper(unittest.TestCase):
@@ -47,12 +48,15 @@ class TestProgramHelper(unittest.TestCase):
         p2.id = 3
         p2.on_success = 4
         p2.on_failure = 0
-        p2.type = ProgramItem.MANIP_PICK_PLACE
+        p2.type = ProgramItem.MANIP_PICK_PLACE_FROM_FEEDER
         p2.spec = ProgramItem.MANIP_TYPE
         p2.object = "profile"
         p2.place_pose.header.frame_id = "marker"
         p2.place_pose.pose.position.x = 0.75
         p2.place_pose.pose.position.y = 0.5
+        p2.pick_pose.header.frame_id = "marker"
+        p2.pick_pose.pose.position.x = 0.75
+        p2.pick_pose.pose.position.y = 0.5
         pb.items.append(p2)
 
         p3 = ProgramItem()
@@ -74,6 +78,7 @@ class TestProgramHelper(unittest.TestCase):
         p4.place_pose.header.frame_id = "marker"
         p4.place_pose.pose.position.x = 0.25
         p4.place_pose.pose.position.y = 0.5
+        p4.pick_polygon.polygon.points.append(Point32(0, 0, 0))
         pb.items.append(p4)
 
     def test_empty_program(self):

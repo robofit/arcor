@@ -226,7 +226,7 @@ class ProgramHelper():
 
     def item_requires_learning(self, block_id, item_id):
 
-        return self.get_item_type(block_id,  item_id) in [ProgramItem.MANIP_PICK, ProgramItem.MANIP_PLACE, ProgramItem.MANIP_PICK_PLACE]
+        return self.get_item_type(block_id,  item_id) in [ProgramItem.MANIP_PICK, ProgramItem.MANIP_PLACE, ProgramItem.MANIP_PICK_PLACE, ProgramItem.MANIP_PICK_PLACE_FROM_FEEDER]
 
     def is_place_pose_set(self, block_id, item_id):
 
@@ -288,19 +288,31 @@ class ProgramHelper():
             if not self.is_object_set(block_id, item_id):  # there has to be id or type
                 return False
 
-            if self.is_place_pose_set(block_id, item_id) or self.is_place_polygon_set(block_id, item_id):
-                return True
-            else:
+            if not (self.is_place_pose_set(block_id, item_id) or self.is_place_polygon_set(block_id, item_id)):
                 return False
 
-            if msg.spec == ProgramItem.MANIP_ID:
-                return True
+            if msg.spec == ProgramItem.MANIP_TYPE:
 
-            elif msg.spec == ProgramItem.MANIP_TYPE:
-
-                if self.is_pick_polygon_set(block_id, item_id) or self.is_pick_pose_set(block_id, item_id):
-                    return True
-                else:
+                if not (self.is_pick_polygon_set(block_id, item_id) or self.is_pick_pose_set(block_id, item_id)):
                     return False
+
+            return True
+
+        elif msg.type == ProgramItem.MANIP_PICK_PLACE_FROM_FEEDER:
+
+            if msg.spec != ProgramItem.MANIP_TYPE:  # TODO do this type of check on program load!
+
+                raise ValueError("MANIP_PICK_PLACE_FROM_FEEDER has to use MANIP_TYPE")
+
+            if not self.is_object_set(block_id, item_id):  # there has to be id or type
+                return False
+
+            if not (self.is_place_pose_set(block_id, item_id) or self.is_place_polygon_set(block_id, item_id)):
+                return False
+
+            if not self.is_pick_pose_set(block_id, item_id):
+                return False
+
+            return True
 
         raise NotImplementedError("Not yet supported item type.")
