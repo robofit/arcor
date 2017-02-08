@@ -46,6 +46,10 @@ def get_type_string(item):
         elif item.spec == ProgramItem.WAIT_UNTIL_USER_FINISHES:
             return "Wait until user finishes"
 
+    elif item.type == ProgramItem.MANIP_PICK_PLACE_FROM_FEEDER:
+
+        return "P&p type (from feeder): " + item.object
+
 
 def main(args):
 
