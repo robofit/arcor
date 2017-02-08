@@ -276,127 +276,79 @@ class UICoreRos(UICore):
 
         self.emit(QtCore.SIGNAL('interface_state'), our_state, state, flags)
 
-    # callback from ProgramItem (button press)
-    def program_state_changed(self, state):
+    def active_item_switched(self, block_id, item_id):
 
-        if state == 'RUNNING':
+        # TODO call prep. action
 
-            prog = self.program_vis.get_prog()
-
-            # if it is template - save it with new id
-            if self.is_template():
-
-                self.template = False
-
-                headers = self.art.get_program_headers()
-                ids = []
-
-                for h in headers:
-                    ids.append(h.id)
-
-                # is there a better way how to find not used ID for program?
-                for i in range(0, 2**16-1):
-                    if i not in ids:
-                        prog.header.id = i
-                        break
-                else:
-                    rospy.logerr("Failed to find available program ID")
-
-            if not self.art.store_program(prog):
-
-                self.notif(translate("UICoreRos", "Failed to store program"), temp=True)
-                # TODO what to do?
-                return
-
-            self.notif(translate("UICoreRos", "Starting. Program stored with ID=" + str(prog.header.id)), temp=True)
-
-            # clear all and wait for state update from brain
-            self.clear_all()
-            self.fsm.tr_program_learned()
-
-            self.art.start_program(prog.header.id)
-
-        # TODO pause / stop -> fsm
-        # elif state == ''
-
-        # callback from ProgramItem
-    def active_item_switched(self):
-
-        # TODO nastavit pres self.ph
-
-        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: " + str(self.program_vis.active_item.item.id))
+        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: " + str((block_id, item_id)))
 
         self.clear_all()
-        # TODO block_id
-        self.state_manager.update_program_item(self.program_vis.prog.header.id, self.program_vis.prog.blocks[0].id,  self.program_vis.active_item.item)
 
-        if self.program_vis.active_item.item.type in [ProgIt.MANIP_PICK, ProgIt.MANIP_PLACE, ProgIt.MANIP_PICK_PLACE]:
+        if item_id is None:
+            # TODO hlaska
+            return
 
-            if self.program_vis.active_item.item_learned():
+        self.state_manager.update_program_item(self.ph.get_program_id(), block_id,  self.ph.get_item_msg(block_id, item_id))
 
-                self.notif(translate("UICoreRos", "This program item seems to be done"))
+        if not self.ph.item_requires_learning(block_id, item_id):
 
-            else:
+            return
 
-                # TODO vypsat jaky je to task?
+        msg = self.ph.get_item_msg(block_id, item_id)
+
+        if self.ph.item_learned(block_id, item_id):
+
+            self.notif(translate("UICoreRos", "This program item seems to be done"))
+
+        else:
+
+            if msg.type in [ProgIt.MANIP_PICK, ProgIt.MANIP_PLACE, ProgIt.MANIP_PICK_PLACE]:
+
                 self.notif(translate("UICoreRos", "Program current manipulation task"))
 
-            # TODO loop across program item ids - not indices!!
-            idx = self.program_vis.items.index(self.program_vis.active_item)
-            if idx > 0:
-                for i in range(idx - 1, -1, -1):
 
-                    it = self.program_vis.items[i]
+        if msg.type in [ProgIt.MANIP_PICK, ProgIt.MANIP_PLACE, ProgIt.MANIP_PICK_PLACE]:
 
-                    if it.item.type in [ProgIt.MANIP_PLACE, ProgIt.MANIP_PICK_PLACE] and it.is_place_pose_set():
+            if msg.spec == ProgIt.MANIP_TYPE:
 
-                        if it.item.spec == ProgIt.MANIP_ID:
-                            obj = self.get_object(it.item.id)
-                            if obj is not None:
-                                self.add_place(translate("UICoreRos", "OBJECT FROM STEP") + " " + str(it.item.id), it.item.place_pose, obj.object_type,  it.item.object, fixed=True)
-                        elif it.item.spec == ProgIt.MANIP_TYPE:
-
-                            object_type = self.art.get_object_type(it.item.object)
-                            if object_type is not None:
-                                self.add_place(translate("UICoreRos", "OBJECT FROM STEP") + " " + str(it.item.id), it.item.place_pose, object_type, fixed=True)
-
-                        break
-
-            if self.program_vis.active_item.item.spec == ProgIt.MANIP_TYPE:
-
-                if not self.program_vis.active_item.is_object_set():
+                if not self.ph.is_object_set(block_id, item_id):
 
                     self.notif(translate("UICoreRos", "Select object type to be picked up"), temp=True)
 
                 else:
 
-                    self.select_object_type(self.program_vis.active_item.item.object)
+                    self.select_object_type(msg.object)
 
                 # if program item already contains polygon - let's display it
-                if self.program_vis.active_item.is_pick_polygon_set():
+                if self.ph.is_pick_polygon_set(block_id, item_id):
 
-                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=self.program_vis.active_item.get_pick_polygon_points(), polygon_changed=self.polygon_changed)
+                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=conversions.get_pick_polygon_points(msg), polygon_changed=self.polygon_changed)
+
+                elif self.ph.is_pick_pose_set(block_id, item_id):
+
+                    # TODO jak zobrazit???
+                    pass
 
             else:
 
                 self.notif(translate("UICoreRos", "Select object to be picked up"), temp=True)
-                self.select_object(self.program_vis.active_item.item.object)
+                self.select_object(msg.object)
 
-            if self.program_vis.active_item.is_object_set():
+            if self.ph.is_object_set(block_id, item_id):
 
                 # TODO kdy misto place pose pouzi place polygon? umoznit zmenit pose na polygon a opacne?
-                if self.program_vis.active_item.item.spec == ProgIt.MANIP_TYPE:
-                    object_type = self.art.get_object_type(self.program_vis.active_item.item.object)
+                if msg.spec == ProgIt.MANIP_TYPE:
+                    object_type = self.art.get_object_type(msg.object)
                     object_id = None
                 else:
-                    obj = self.get_object(self.program_vis.active_item.item.object)
+                    obj = self.get_object(msg.object)
                     object_type = obj.object_type
                     object_id = obj.object_id
 
-                if self.program_vis.active_item.is_place_pose_set():
+                if self.ph.is_place_pose_set(block_id, item_id):
 
                     if object_type is not None:
-                        self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), self.program_vis.active_item.get_place_pose(), object_type,  object_id, place_cb=self.place_pose_changed)
+                        self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), msg.place_pose, object_type,  object_id, place_cb=self.place_pose_changed)
                 else:
                     self.notif(translate("UICoreRos", "Set where to place picked object"))
                     self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  self.get_def_pose(), object_type,  object_id, place_cb=self.place_pose_changed)
@@ -472,6 +424,36 @@ class UICoreRos(UICore):
 
         return self.template
 
+    def learning_done_cb(self):
+
+        prog = self.ph.get_program()
+
+        # if it is template - save it with new id
+        if self.is_template():
+
+            self.template = False
+
+            headers = self.art.get_program_headers()
+            ids = []
+
+            for h in headers:
+                ids.append(h.id)
+
+            # is there a better way how to find not used ID for program?
+            for i in range(0, 2**16-1):
+                if i not in ids:
+                    prog.header.id = i
+                    break
+            else:
+                rospy.logerr("Failed to find available program ID")
+
+        if not self.art.store_program(prog):
+
+            self.notif(translate("UICoreRos", "Failed to store program"), temp=True)
+            # TODO what to do?
+
+        self.fsm.tr_program_learned()
+
     def program_selected_cb(self,  prog_id,  run=False,  template=False):
 
         self.template = template
@@ -485,11 +467,10 @@ class UICoreRos(UICore):
         self.remove_scene_items_by_type(ProgramListItem)
         self.program_list = None
 
-        self.program_vis = ProgramItem(self.scene, self.rpm, pos[0], pos[1], self.ph)
-        self.program_vis.active_item_switched = self.active_item_switched
-        self.program_vis.program_state_changed = self.program_state_changed
+        self.program_vis = ProgramItem(self.scene, self.rpm, pos[0], pos[1], self.ph, done_cb=self.learning_done_cb, item_switched_cb=self.active_item_switched)
+        # self.program_vis.active_item_switched = self.active_item_switched
+        # self.program_vis.program_state_changed = self.program_state_changed
         self.scene_items.append(self.program_vis)
-        # self.active_item_switched()
 
         if run:
 
@@ -509,7 +490,7 @@ class UICoreRos(UICore):
         prog_id = None
         if self.program_vis is not None:
             pos = self.program_vis.get_pos()
-            prog_id = self.program_vis.prog.header.id
+            prog_id = self.ph.get_program_id()
         else:
             pos = (0.2, self.height-0.2)
 

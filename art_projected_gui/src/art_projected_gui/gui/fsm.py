@@ -24,7 +24,7 @@ class FSM(Machine):
         self.add_transition('tr_user_calibrated', 'waiting_for_user_calibration', 'program_selection', after='cb_program_selection')
         self.add_transition('tr_program_edit', 'program_selection', 'learning', after="cb_learning")
         self.add_transition('tr_program_selected', 'program_selection', 'running', after="cb_running")
-        self.add_transition('tr_program_learned', 'learning', 'running', after="cb_running")
+        self.add_transition('tr_program_learned', 'learning', 'program_selection', after='cb_program_selection')
         self.add_transition('tr_running', '*', 'running', after="cb_running")
         self.add_transition('tr_program_finished', 'running', 'program_selection', after='cb_program_selection')
 

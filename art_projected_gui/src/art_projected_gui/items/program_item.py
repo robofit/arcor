@@ -13,10 +13,13 @@ translate = QtCore.QCoreApplication.translate
 
 class ProgramItem(Item):
 
-    def __init__(self, scene, rpm, x, y, program_helper, active_item_switched=None):
+    def __init__(self, scene, rpm, x, y, program_helper, done_cb=None, item_switched_cb=None):
 
         self.w = 100
         self.h = 100
+
+        self.done_cb = done_cb
+        self.item_switched_cb = item_switched_cb
 
         super(ProgramItem, self).__init__(scene, rpm, x, y)
 
@@ -29,7 +32,7 @@ class ProgramItem(Item):
         # block "view"
         self.block_finished_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Done"), self, self.block_finished_btn_cb)
         self.block_edit_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Edit"), self, self.block_edit_btn_cb)
-        self.block_on_failure_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "On failure"), self, self.block_on_failure_btn)
+        self.block_on_failure_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "On fail"), self, self.block_on_failure_btn)
 
         bdata = []
 
@@ -57,14 +60,11 @@ class ProgramItem(Item):
 
         y = 50
         self.blocks_list.setPos(self.sp, y)
-        y += self.blocks_list.boundingRect().height() + self.sp
+        y += self.blocks_list._height() + self.sp
 
-        isp = (self.boundingRect().width() - (2*self.sp + self.block_finished_btn.boundingRect().width() + self.block_edit_btn.boundingRect().width() + self.block_on_failure_btn.boundingRect().width()))/2
+        self. _place_childs_horizontally(y, self.sp, [self.block_finished_btn, self.block_edit_btn, self.block_on_failure_btn])
 
-        self.block_finished_btn.setPos(self.sp, y)
-        self.block_edit_btn.setPos(self.block_finished_btn.x() + self.block_finished_btn.boundingRect().width() + isp, y)
-        self.block_on_failure_btn.setPos(self.block_edit_btn.x() + self.block_edit_btn.boundingRect().width() + isp, y)
-        y += self.block_finished_btn.boundingRect().height() + self.sp
+        y += self.block_finished_btn._height() + self.sp
 
         self.block_edit_btn.set_enabled(False)
         self.block_on_failure_btn.set_enabled(False)
@@ -73,33 +73,171 @@ class ProgramItem(Item):
         self.update()
 
         # items "view"
-        self.item_finished_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Finished"), self, self.item_finished_btn_cb)
-        self.item_on_failure_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Go to failure"), self, self.item_on_failure_btn_cb)
+        self.item_finished_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Done"), self, self.item_finished_btn_cb)
+        self.item_run_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Run"), self, self.item_finished_btn_cb)
+        self.item_on_failure_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "On fail"), self, self.item_on_failure_btn_cb)
+        self.item_switch_type_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "---"), self, self.item_switch_type_btn_cb)
+        self.items_list = None
 
         self.item_finished_btn.set_enabled(False, True)
+        self.item_run_btn.set_enabled(False, True)
         self.item_on_failure_btn.set_enabled(False, True)
+        self.item_switch_type_btn.set_enabled(False, True)
 
-        self.active_item_switched = active_item_switched
         self.fixed = False
 
         self.setZValue(100)
 
+    def get_text_for_item(self, item):
+
+        pose_str = "x=" + str(round(item.place_pose.pose.position.x, 2)) + ", y=" + str(round(item.place_pose.pose.position.y, 2))
+        obj = item.object
+
+        if item.place_pose.pose.position.x == 0 and item.place_pose.pose.position.y == 0:
+            pose_str = "x=??, y=??"
+
+        if obj == "":
+
+            obj = "??"
+
+        if item.type == ProgIt.GET_READY:
+            return QtCore.QCoreApplication.translate("ProgramItem", "get ready")
+        elif item.type == ProgIt.MANIP_PICK:
+
+            if item.spec == ProgIt.MANIP_ID:
+                return QtCore.QCoreApplication.translate("ProgramItem", "pick object ID=")
+            elif item.spec == ProgIt.MANIP_TYPE:
+                return QtCore.QCoreApplication.translate("ProgramItem", "pick object type=")
+
+        elif item.type == ProgIt.MANIP_PLACE:
+
+            # TODO pose / polygon
+            return QtCore.QCoreApplication.translate("ProgramItem", "place object at ") + pose_str
+
+        elif item.type == ProgIt.MANIP_PICK_PLACE:
+
+            if item.spec == ProgIt.MANIP_ID:
+                return QtCore.QCoreApplication.translate("ProgramItem", "pick object") + "'" + obj + "'\n" + QtCore.QCoreApplication.translate("ProgramItem", "place to ") + pose_str
+            elif item.spec == ProgIt.MANIP_TYPE:
+                return QtCore.QCoreApplication.translate("ProgramItem", "pick object type") + "'" + obj + "'\n" + QtCore.QCoreApplication.translate("ProgramItem", "place to ") + pose_str
+
+        elif item.type == ProgIt.WAIT:
+
+            if item.spec == ProgIt.WAIT_FOR_USER:
+                return QtCore.QCoreApplication.translate("ProgramItem", "wait for user")
+            elif item.spec == ProgIt.WAIT_UNTIL_USER_FINISHES:
+                return QtCore.QCoreApplication.translate("ProgramItem", "wait until user finishes")
+
     def block_edit_btn_cb(self, btn):
 
-        pass
+        block_id = self.blocks_map[self.blocks_list.selected_item_idx]
+
+        self.block_finished_btn.set_enabled(False, True)
+        self.block_edit_btn.set_enabled(False, True)
+        self.block_on_failure_btn.set_enabled(False, True)
+        self.blocks_list.set_enabled(False, True)
+
+        idata = []
+        self.items_map = {} # map from indexes (key) to item_id (value)
+
+        item_id = self.ph.get_first_item_id(block_id)
+
+        while item_id[0] == block_id:
+
+            imsg = self.ph.get_item_msg(*item_id)
+
+            idata.append("Instruction ID: " + str(item_id[1]) + "\n" + self.get_text_for_item(imsg))
+            self.items_map[len(idata)-1] = item_id[1]
+
+            item_id = self.ph.get_id_on_success(*item_id)
+
+            # blok je zacykleny
+            if item_id[1] in self.items_map.values():
+                break
+
+        self.items_list = ListItem(self.scene(), self.rpm, self.m2pix(0.01), 0, 0.18, idata, self.item_selected_cb, parent=self)
+        # TODO disablovat/odlisit itemy co nepotrebuji naucit ?? item_requires_learning
+
+        y = 50
+        self.items_list.setPos(self.sp, y)
+        y += self.items_list._height() + self.sp
+
+        self. _place_childs_horizontally(y, self.sp, [self.item_finished_btn, self.item_run_btn, self.item_on_failure_btn])
+
+        y += self.item_finished_btn._height() + self.sp
+
+        self. _place_childs_horizontally(y, self.sp, [self.item_switch_type_btn])
+
+        y +=  self.item_switch_type_btn._height() + 3*self.sp
+
+        self.h = y
+        self.update()
+
+        # TODO nastavit tlacitka do spravneho stavu
+        self.item_finished_btn.set_enabled(True, True)
+        self.item_run_btn.set_enabled(True, True)
+        self.item_on_failure_btn.set_enabled(True, True)
+        self.item_switch_type_btn.set_enabled(True, True)
+
+    def get_selected_block_id(self):
+
+        if self.blocks_list.selected_item_idx is None:
+            return None
+
+        return self.blocks_map[self.blocks_list.selected_item_idx]
 
     def block_selected_cb(self):
 
         if self.blocks_list.selected_item_idx is not None:
 
-            if self.ph.get_block_on_failure(self.blocks_map[self.blocks_list.selected_item_idx]) != 0:
+            block_id = self.blocks_map[self.blocks_list.selected_item_idx]
+
+            if self.ph.get_block_on_failure(block_id) != 0:
                 self.block_on_failure_btn.set_enabled(True)
+            else:
+                self.block_on_failure_btn.set_enabled(False)
+
             self.block_edit_btn.set_enabled(True)
+
+            if self.item_switched_cb is not None:
+
+                self.item_switched_cb(block_id, None)
 
         else:
 
             self.block_edit_btn.set_enabled(False)
             self.block_on_failure_btn.set_enabled(False)
+
+    def item_selected_cb(self):
+
+        block_id = self.blocks_map[self.blocks_list.selected_item_idx]
+
+        if  self.items_list.selected_item_idx is not None:
+
+            item_id = self.items_map[self.items_list.selected_item_idx]
+
+            of = self.ph.get_id_on_failure(block_id, item_id)
+
+            if of[0] == block_id and of[1] != 0:
+                self.item_on_failure_btn.set_enabled(True)
+            else:
+                self.item_on_failure_btn.set_enabled(False)
+
+            if self.ph.item_requires_learning(block_id, item_id) and self.ph.item_learned(block_id, item_id):
+                self.item_run_btn.set_enabled(True)
+            else:
+                self.item_run_btn.set_enabled(False)
+
+            # TODO en/dis self.item_switch_type_btn
+
+            if self.item_switched_cb is not None:
+
+                self.item_switched_cb(block_id, item_id)
+
+        else:
+
+            self.item_run_btn.set_enabled(False)
+            self.item_on_failure_btn.set_enabled(False)
 
     def block_on_failure_btn(self, btn):
 
@@ -107,14 +245,37 @@ class ProgramItem(Item):
 
     def block_finished_btn_cb(self, btn):
 
-        # TODO skocit na vyber programu - spoustet vzdycky odtud
-        pass
+        if self.done_cb is not None:
+
+            self.done_cb()
 
     def item_finished_btn_cb(self, btn):
 
-        pass
+        # TODO nastavit tlacitka do spravneho stavu
+        self.block_finished_btn.set_enabled(True, True)
+        self.block_edit_btn.set_enabled(True, True)
+        self.block_on_failure_btn.set_enabled(True, True)
+        self.blocks_list.set_enabled(True, True)
+
+        self.item_finished_btn.set_enabled(False, True)
+        self.item_run_btn.set_enabled(False, True)
+        self.item_on_failure_btn.set_enabled(False, True)
+        self.item_switch_type_btn.set_enabled(False, True)
+
+        self.scene().removeItem(self.items_list)
+        self.items_list = None
+
+        block_id = self.blocks_map[self.blocks_list.selected_item_idx]
+
+        if self.item_switched_cb is not None:
+
+                self.item_switched_cb(block_id, None)
 
     def item_on_failure_btn_cb(self, btn):
+
+        pass
+
+    def item_switch_type_btn_cb(self, btn):
 
         pass
 
@@ -129,10 +290,29 @@ class ProgramItem(Item):
 
         font = QtGui.QFont('Arial', 14)
         painter.setFont(font)
+
         painter.setPen(QtCore.Qt.white)
 
-        painter.drawText(self.sp, 2*self.sp, translate("ProgramItem", "Program") + " ID: " + str(self.ph.get_program_id()))
-        # TODO zobrazit jestli uz je nauceny nebo ne
+        # TODO zmerit velikost textu / pouzit label
+
+        if self.items_list is not None:
+
+            block_id = self.blocks_map[self.blocks_list.selected_item_idx]
+
+            if not self.ph.block_learned(block_id):
+
+                painter.setPen(QtCore.Qt.red)
+
+            painter.drawText(self.sp, 2*self.sp, translate("ProgramItem", "Block") + " ID: " + str(block_id))
+        else:
+
+            if not self.ph.program_learned():
+
+                painter.setPen(QtCore.Qt.red)
+
+            painter.drawText(self.sp, 2*self.sp, translate("ProgramItem", "Program") + " ID: " + str(self.ph.get_program_id()))
+
+
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)

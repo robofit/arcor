@@ -26,3 +26,14 @@ def quaternion2yaw(q):
 
         euler = tf.transformations.euler_from_quaternion(quaternion)
         return euler[2]/(2*pi)*360
+
+
+def get_pick_polygon_points(self, msg):
+
+    poly_points = []
+
+    for pt in msg.pick_polygon.polygon.points:
+
+        poly_points.append((pt.x, pt.y))
+
+    return poly_points

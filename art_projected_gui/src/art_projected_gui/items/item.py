@@ -81,6 +81,37 @@ class Item(QtGui.QGraphicsItem):
         # TODO fixed width format
         return "[X: " + str(round(x, 3)).ljust(5, '0') + ", Y: " + str(round(y, 3)).ljust(5, '0') + "]"
 
+    def _width(self):
+
+        return self.boundingRect().width()
+
+    def _height(self):
+
+        return self.boundingRect().height()
+
+    def _place_childs_horizontally(self, y, padding, items):
+
+        # TODO test if items are childs of this item?
+
+        if len(items) == 1:  # if there is one item - center it
+
+            items[0].setPos((self._width()-items[0]._width())/2, y)
+
+        elif len(items) > 1: # more than one - place them with equal space between them (with padding on left and right)
+
+            total_width = 0
+
+            for it in items:
+                total_width += it._width()
+
+            inner_space = (self._width() - 2*padding - total_width) / len(items)-1
+
+            items[0].setPos(padding, y)
+
+            for idx in range(1, len(items)):
+
+                items[idx].setPos(items[idx-1].x() + items[idx-1]._width() + inner_space, y)
+
     def set_enabled(self, state,  also_set_visibility=False):
 
         self.setEnabled(state)

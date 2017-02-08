@@ -119,6 +119,9 @@ class PoseStampedCursorItem(Item):
                 if not isinstance(it,  Item):  # TODO skip item not derived from Item
                     continue
 
+                if not it.isVisible():
+                    continue
+
                 if isinstance(it, PoseStampedCursorItem) or isinstance(it, TouchTableItem) or isinstance(it, DescItem):
                     continue  # TODO make some common class for cursors
 

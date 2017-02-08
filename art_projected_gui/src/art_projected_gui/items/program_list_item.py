@@ -54,13 +54,12 @@ class ProgramListItem(Item):
         sp = self.m2pix(0.01)
         h = 3*sp
         self.list.setPos(sp,  h)
-        h += self.list.boundingRect().height()
+        h += self.list._height()
         h += 2*sp
-        isp = (self.boundingRect().width() - (2*sp + self.run_btn.boundingRect().width() + self.edit_btn.boundingRect().width() + self.template_btn.boundingRect().width()))/2
-        self.run_btn.setPos(sp,  h)
-        self.edit_btn.setPos(self.run_btn.x() + self.run_btn.boundingRect().width() + isp,  h)
-        self.template_btn.setPos(self.edit_btn.x() + self.edit_btn.boundingRect().width() + isp,  h)
-        h += self.run_btn.boundingRect().height()
+
+        self. _place_childs_horizontally(h, sp, [self.run_btn, self.edit_btn, self.template_btn])
+
+        h += self.run_btn._height()
         h += 3*sp
 
         self.h = h
