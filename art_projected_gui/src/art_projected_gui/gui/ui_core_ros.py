@@ -8,7 +8,7 @@ from fsm import FSM
 from transitions import MachineError
 from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem,  ProgramItem
 from art_projected_gui.helpers import ProjectorHelper,  conversions
-from art_utils import InterfaceStateManager,  ArtApiHelper
+from art_utils import InterfaceStateManager,  ArtApiHelper, ProgramHelper
 from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse,  NotifyUser,  NotifyUserResponse
 from std_msgs.msg import Empty
 from geometry_msgs.msg import PoseStamped
@@ -64,8 +64,10 @@ class UICoreRos(UICore):
         self.fsm.is_template = self.is_template
 
         self.program_vis = None
+        self.template = False  # TODO this should be stored in program_vis?
 
         self.state_manager = InterfaceStateManager("PROJECTED UI", cb=self.interface_state_cb)
+        self.ph = ProgramHelper()
 
         cursors = rospy.get_param("~cursors", [])
         for cur in cursors:
@@ -186,7 +188,7 @@ class UICoreRos(UICore):
 
         self.projectors.append(ProjectorHelper(proj_id))
 
-    def stop_btn_clicked(self):
+    def stop_btn_clicked(self, btn):
 
         # TODO
         self.notif(translate("UICoreRos", "Emergency stop pressed"), temp=True)
@@ -197,10 +199,7 @@ class UICoreRos(UICore):
 
             self.clear_all()
             self.notif(translate("UICoreRos", "The program is done."), temp=True)
-            try:
-                self.fsm.tr_program_finished()
-            except MachineError:
-                pass
+            self.fsm.tr_program_finished()
 
         elif state.system_state == InterfaceState.STATE_LEARNING:
 
@@ -284,6 +283,8 @@ class UICoreRos(UICore):
             # if it is template - save it with new id
             if self.is_template():
 
+                self.template = False
+
                 headers = self.art.get_program_headers()
                 ids = []
 
@@ -298,11 +299,11 @@ class UICoreRos(UICore):
                 else:
                     rospy.logerr("Failed to find available program ID")
 
-                if not self.art.store_program(prog):
+            if not self.art.store_program(prog):
 
-                    self.notif(translate("UICoreRos", "Failed to store program"), temp=True)
-                    # TODO what to do?
-                    return
+                self.notif(translate("UICoreRos", "Failed to store program"), temp=True)
+                # TODO what to do?
+                return
 
             self.notif(translate("UICoreRos", "Starting. Program stored with ID=" + str(prog.header.id)), temp=True)
 
@@ -346,9 +347,13 @@ class UICoreRos(UICore):
 
                         if it.item.spec == ProgIt.MANIP_ID:
                             obj = self.get_object(it.item.id)
-                            self.add_place(translate("UICoreRos", "OBJECT FROM STEP") + " " + str(it.item.id), it.item.place_pose, obj.object_type,  it.item.object, fixed=True)
+                            if obj is not None:
+                                self.add_place(translate("UICoreRos", "OBJECT FROM STEP") + " " + str(it.item.id), it.item.place_pose, obj.object_type,  it.item.object, fixed=True)
                         elif it.item.spec == ProgIt.MANIP_TYPE:
-                            self.add_place(translate("UICoreRos", "OBJECT FROM STEP") + " " + str(it.item.id), it.item.place_pose, self.art.get_object_type(it.item.object), fixed=True)
+
+                            object_type = self.art.get_object_type(it.item.object)
+                            if object_type is not None:
+                                self.add_place(translate("UICoreRos", "OBJECT FROM STEP") + " " + str(it.item.id), it.item.place_pose, object_type, fixed=True)
 
                         break
 
@@ -385,7 +390,8 @@ class UICoreRos(UICore):
 
                 if self.program_vis.active_item.is_place_pose_set():
 
-                    self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), self.program_vis.active_item.get_place_pose(), object_type,  object_id, place_cb=self.place_pose_changed)
+                    if object_type is not None:
+                        self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), self.program_vis.active_item.get_place_pose(), object_type,  object_id, place_cb=self.place_pose_changed)
                 else:
                     self.notif(translate("UICoreRos", "Set where to place picked object"))
                     self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  self.get_def_pose(), object_type,  object_id, place_cb=self.place_pose_changed)
@@ -459,35 +465,38 @@ class UICoreRos(UICore):
 
     def is_template(self):
 
-        return True  # TODO implement this
+        return self.template
 
     def program_selected_cb(self,  prog_id,  run=False,  template=False):
 
-        # TODO fix situation when program (template=False) contains "unknown" object
+        self.template = template
+
+        if not self.ph.load(self.art.load_program(prog_id), template):
+
+            self.notif(translate("UICoreRos", "Failed to load program from database."), temp=True)
+            return
+
+        pos = self.program_list.get_pos()
+        self.remove_scene_items_by_type(ProgramListItem)
+        self.program_list = None
+
+        self.program_vis = ProgramItem(self.scene, self.rpm, pos[0], pos[1])
+        self.program_vis.active_item_switched = self.active_item_switched
+        self.program_vis.program_state_changed = self.program_state_changed
+        self.scene_items.append(self.program_vis)
+        self.program_vis.set_prog(self.ph.get_program(), template)
+        self.active_item_switched()
 
         if run:
 
-            # TODO run program
-            pass
-
-        program = self.art.load_program(prog_id)  # TODO option to load program as template?
-
-        if program is not None:
-
-            pos = self.program_list.get_pos()
-            self.remove_scene_items_by_type(ProgramListItem)
-            self.program_list = None
-
-            self.program_vis = ProgramItem(self.scene, self.rpm, pos[0], pos[1])
-            self.program_vis.active_item_switched = self.active_item_switched
-            self.program_vis.program_state_changed = self.program_state_changed
-            self.scene_items.append(self.program_vis)
-            self.program_vis.set_prog(program, template)
-            self.active_item_switched()
-
+            self.notif(translate("UICoreRos", "Starting program ID=" + str(prog_id)), temp=True)
+            self.clear_all()
             self.fsm.tr_program_selected()
+            self.art.start_program(prog_id)
+
         else:
-            self.notif(translate("UICoreRos", "Loading of requested program failed"), temp=template)
+
+            self.fsm.tr_program_edit()
 
     def cb_program_selection(self):
 
