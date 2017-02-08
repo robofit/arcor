@@ -25,7 +25,8 @@ class ButtonItem(Item):
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
         self.setZValue(100)
 
-        self.set_caption(caption, width)
+        self.set_caption(caption)
+        self.set_width(width)
 
         if image_path is not None:
 
@@ -72,10 +73,16 @@ class ButtonItem(Item):
 
         self.update()
 
+    def set_background_color(self, color = QtCore.Qt.green):
+
+        self.background_color = color
+        self.update()
+
     def set_caption(self, caption, width=None):
 
         self.caption = caption
-        self.set_width(width)
+        if width is not None:
+            self.set_width(width)
         self.update()
 
     def paint(self, painter, option, widget):

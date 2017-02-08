@@ -88,11 +88,11 @@ class ListItem(Item):
 
         for it in self.items:
 
-            it.set_enabled(False, True)
+            it.setVisible(False)
 
         # selected item is always vertically centered
         self.items[self.middle_item_idx].setPos(0, (self.h-self.items[self.middle_item_idx].boundingRect().height())/2)
-        self.items[self.middle_item_idx].set_enabled(True, True)
+        self.items[self.middle_item_idx].setVisible(True)
 
         # how much vert. space is used
         vspace = self.items[self.middle_item_idx].boundingRect().height()
@@ -107,7 +107,7 @@ class ListItem(Item):
                 break
 
             self.items[idx].setPos(0, y)
-            self.items[idx].set_enabled(True, True)
+            self.items[idx].setVisible(True)
             vspace += self.sp + h
 
         # fill space below selected item
@@ -120,7 +120,7 @@ class ListItem(Item):
                 break
 
             self.items[idx].setPos(0, y)
-            self.items[idx].set_enabled(True, True)
+            self.items[idx].setVisible(True)
             vspace += self.sp + h
 
     def up_btn_cb(self, btn):

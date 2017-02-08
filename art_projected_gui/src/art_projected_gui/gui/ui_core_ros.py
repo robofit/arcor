@@ -364,8 +364,7 @@ class UICoreRos(UICore):
     def place_pose_changed(self, pos,  yaw):
 
         self.program_vis.set_place_pose(pos[0], pos[1],  yaw)
-        # TODO block_id
-        self.state_manager.update_program_item(self.program_vis.prog.header.id, self.program_vis.prog.blocks[0].id,  self.program_vis.active_item.item)
+        self.state_manager.update_program_item(self.ph.get_program_id(), self.program_vis.block_id, self.program_vis.get_current_item())
 
     def cb_running(self):
 
@@ -527,8 +526,7 @@ class UICoreRos(UICore):
     def polygon_changed(self, pts):
 
         self.program_vis.set_polygon(pts)
-        # TODO block_id
-        self.state_manager.update_program_item(self.program_vis.prog.header.id, self.program_vis.prog.blocks[0].id, self.program_vis.active_item.item)
+        self.state_manager.update_program_item(self.ph.get_program_id(), self.program_vis.block_id, self.program_vis.get_current_item())
 
     def object_selected(self, id, selected):
 
@@ -541,10 +539,12 @@ class UICoreRos(UICore):
 
         # TODO test typu operace
 
-        if self.program_vis.active_item.item.spec == ProgIt.MANIP_TYPE:
+        msg = self.program_vis.get_current_item()
+
+        if msg.spec == ProgIt.MANIP_TYPE:
 
             # this type of object is already set
-            if obj.object_type.name == self.program_vis.active_item.item.object:
+            if obj.object_type.name == msg.object:
                 rospy.logdebug("object type " + obj.object_type.name + " already selected")
                 return
             else:
@@ -566,13 +566,13 @@ class UICoreRos(UICore):
             self.notif(translate("UICoreRos", "Set where to place picked object"), temp=True)
             self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), self.get_def_pose(), obj.object_type, place_cb=self.place_pose_changed)
 
-        elif self.program_vis.active_item.item.spec == ProgIt.MANIP_ID:
+        elif msg.spec == ProgIt.MANIP_ID:
 
             # TODO
             pass
 
         # TODO block_id
-        self.state_manager.update_program_item(self.program_vis.prog.header.id, self.program_vis.prog.blocks[0].id, self.program_vis.active_item.item)
+        self.state_manager.update_program_item(self.ph.get_program_id(), self.program_vis.block_id, self.program_vis.get_current_item())
         return True
 
     def user_status_cb(self, msg):

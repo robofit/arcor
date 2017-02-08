@@ -29,6 +29,9 @@ class ProgramItem(Item):
 
         self.ph = program_helper
 
+        self.block_id = None
+        self.item_id = None
+
         # block "view"
         self.block_finished_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Done"), self, self.block_finished_btn_cb)
         self.block_edit_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Edit"), self, self.block_edit_btn_cb)
@@ -57,6 +60,10 @@ class ProgramItem(Item):
 
         # TODO blokum co nejsou naucene dat jinou barvu nez zelenou
         self.blocks_list = ListItem(self.scene(), self.rpm, self.m2pix(0.01), 0, 0.18, bdata, self.block_selected_cb, parent=self)
+
+        for k, v in self.blocks_map.iteritems():
+
+            self._update_block(v)
 
         y = 50
         self.blocks_list.setPos(self.sp, y)
@@ -88,7 +95,9 @@ class ProgramItem(Item):
 
         self.setZValue(100)
 
-    def get_text_for_item(self, item):
+    def get_text_for_item(self, item):  # TODO rewrite this
+
+        text = QtCore.QCoreApplication.translate("ProgramItem", "Instruction") + " ID: " + str(item.id) + "\n"
 
         pose_str = "x=" + str(round(item.place_pose.pose.position.x, 2)) + ", y=" + str(round(item.place_pose.pose.position.y, 2))
         obj = item.object
@@ -101,36 +110,38 @@ class ProgramItem(Item):
             obj = "??"
 
         if item.type == ProgIt.GET_READY:
-            return QtCore.QCoreApplication.translate("ProgramItem", "get ready")
+            return text + QtCore.QCoreApplication.translate("ProgramItem", "get ready")
         elif item.type == ProgIt.MANIP_PICK:
 
             if item.spec == ProgIt.MANIP_ID:
-                return QtCore.QCoreApplication.translate("ProgramItem", "pick object ID=")
+                return text + QtCore.QCoreApplication.translate("ProgramItem", "pick object ID=")
             elif item.spec == ProgIt.MANIP_TYPE:
-                return QtCore.QCoreApplication.translate("ProgramItem", "pick object type=")
+                return text + QtCore.QCoreApplication.translate("ProgramItem", "pick object type=")
 
         elif item.type == ProgIt.MANIP_PLACE:
 
             # TODO pose / polygon
-            return QtCore.QCoreApplication.translate("ProgramItem", "place object at ") + pose_str
+            return text + QtCore.QCoreApplication.translate("ProgramItem", "place object at ") + pose_str
 
         elif item.type == ProgIt.MANIP_PICK_PLACE:
 
             if item.spec == ProgIt.MANIP_ID:
-                return QtCore.QCoreApplication.translate("ProgramItem", "pick object") + "'" + obj + "'\n" + QtCore.QCoreApplication.translate("ProgramItem", "place to ") + pose_str
+                return text + QtCore.QCoreApplication.translate("ProgramItem", "pick object") + "'" + obj + "'\n" + QtCore.QCoreApplication.translate("ProgramItem", "place to ") + pose_str
             elif item.spec == ProgIt.MANIP_TYPE:
-                return QtCore.QCoreApplication.translate("ProgramItem", "pick object type") + "'" + obj + "'\n" + QtCore.QCoreApplication.translate("ProgramItem", "place to ") + pose_str
+                return text + QtCore.QCoreApplication.translate("ProgramItem", "pick object type") + "'" + obj + "'\n" + QtCore.QCoreApplication.translate("ProgramItem", "place to ") + pose_str
+
+        elif item.type == ProgIt.MANIP_PICK_PLACE_FROM_FEEDER:
+
+            return text + QtCore.QCoreApplication.translate("ProgramItem", "pick object type") + "'" + obj + " from feeder'\n" + QtCore.QCoreApplication.translate("ProgramItem", "place to ") + pose_str
 
         elif item.type == ProgIt.WAIT:
 
             if item.spec == ProgIt.WAIT_FOR_USER:
-                return QtCore.QCoreApplication.translate("ProgramItem", "wait for user")
+                return text + QtCore.QCoreApplication.translate("ProgramItem", "wait for user")
             elif item.spec == ProgIt.WAIT_UNTIL_USER_FINISHES:
-                return QtCore.QCoreApplication.translate("ProgramItem", "wait until user finishes")
+                return text + QtCore.QCoreApplication.translate("ProgramItem", "wait until user finishes")
 
     def block_edit_btn_cb(self, btn):
-
-        block_id = self.blocks_map[self.blocks_list.selected_item_idx]
 
         self.block_finished_btn.set_enabled(False, True)
         self.block_edit_btn.set_enabled(False, True)
@@ -140,13 +151,13 @@ class ProgramItem(Item):
         idata = []
         self.items_map = {} # map from indexes (key) to item_id (value)
 
-        item_id = self.ph.get_first_item_id(block_id)
+        item_id = self.ph.get_first_item_id(self.block_id)
 
-        while item_id[0] == block_id:
+        while item_id[0] == self.block_id:
 
             imsg = self.ph.get_item_msg(*item_id)
 
-            idata.append("Instruction ID: " + str(item_id[1]) + "\n" + self.get_text_for_item(imsg))
+            idata.append(self.get_text_for_item(imsg))
             self.items_map[len(idata)-1] = item_id[1]
 
             item_id = self.ph.get_id_on_success(*item_id)
@@ -156,7 +167,13 @@ class ProgramItem(Item):
                 break
 
         self.items_list = ListItem(self.scene(), self.rpm, self.m2pix(0.01), 0, 0.18, idata, self.item_selected_cb, parent=self)
-        # TODO disablovat/odlisit itemy co nepotrebuji naucit ?? item_requires_learning
+
+        for k, v in self.items_map.iteritems():
+
+            if self.ph.item_requires_learning(self.block_id, v):
+                self._update_item(self.block_id, v)
+            else:
+                self.items_list.items[k].set_enabled(False)  # TODO opravit - list si to nastavuje sam....
 
         y = 50
         self.items_list.setPos(self.sp, y)
@@ -179,20 +196,13 @@ class ProgramItem(Item):
         self.item_on_failure_btn.set_enabled(True, True)
         self.item_switch_type_btn.set_enabled(True, True)
 
-    def get_selected_block_id(self):
-
-        if self.blocks_list.selected_item_idx is None:
-            return None
-
-        return self.blocks_map[self.blocks_list.selected_item_idx]
-
     def block_selected_cb(self):
 
         if self.blocks_list.selected_item_idx is not None:
 
-            block_id = self.blocks_map[self.blocks_list.selected_item_idx]
+            self.block_id = self.blocks_map[self.blocks_list.selected_item_idx]
 
-            if self.ph.get_block_on_failure(block_id) != 0:
+            if self.ph.get_block_on_failure(self.block_id) != 0:
                 self.block_on_failure_btn.set_enabled(True)
             else:
                 self.block_on_failure_btn.set_enabled(False)
@@ -201,29 +211,29 @@ class ProgramItem(Item):
 
             if self.item_switched_cb is not None:
 
-                self.item_switched_cb(block_id, None)
+                self.item_switched_cb(self.block_id, None)
 
         else:
 
+            self.block_id = None
+            self.item_id = None
             self.block_edit_btn.set_enabled(False)
             self.block_on_failure_btn.set_enabled(False)
 
     def item_selected_cb(self):
 
-        block_id = self.blocks_map[self.blocks_list.selected_item_idx]
-
         if  self.items_list.selected_item_idx is not None:
 
-            item_id = self.items_map[self.items_list.selected_item_idx]
+            self.item_id = self.items_map[self.items_list.selected_item_idx]
 
-            of = self.ph.get_id_on_failure(block_id, item_id)
+            of = self.ph.get_id_on_failure(self.block_id, self.item_id)
 
-            if of[0] == block_id and of[1] != 0:
+            if of[0] == self.block_id and of[1] != 0:
                 self.item_on_failure_btn.set_enabled(True)
             else:
                 self.item_on_failure_btn.set_enabled(False)
 
-            if self.ph.item_requires_learning(block_id, item_id) and self.ph.item_learned(block_id, item_id):
+            if self.ph.item_requires_learning(self.block_id, self.item_id) and self.ph.item_learned(self.block_id, self.item_id):
                 self.item_run_btn.set_enabled(True)
             else:
                 self.item_run_btn.set_enabled(False)
@@ -232,10 +242,11 @@ class ProgramItem(Item):
 
             if self.item_switched_cb is not None:
 
-                self.item_switched_cb(block_id, item_id)
+                self.item_switched_cb(self.block_id, self.item_id)
 
         else:
 
+            self.item_id = None
             self.item_run_btn.set_enabled(False)
             self.item_on_failure_btn.set_enabled(False)
 
@@ -264,12 +275,11 @@ class ProgramItem(Item):
 
         self.scene().removeItem(self.items_list)
         self.items_list = None
-
-        block_id = self.blocks_map[self.blocks_list.selected_item_idx]
+        self.item_id = None
 
         if self.item_switched_cb is not None:
 
-                self.item_switched_cb(block_id, None)
+                self.item_switched_cb(self.block_id, self.item_id)
 
     def item_on_failure_btn_cb(self, btn):
 
@@ -283,6 +293,85 @@ class ProgramItem(Item):
 
         return QtCore.QRectF(0, 0, self.w, self.h)
 
+    def set_place_pose(self, x, y,  yaw):
+
+        msg = self.get_current_item()
+
+        msg.place_pose.pose.position.x = x
+        msg.place_pose.pose.position.y = y
+        msg.place_pose.pose.orientation = conversions.yaw2quaternion(yaw)
+
+        self._update_item()
+
+    def set_object(self, obj):
+
+        msg = self.get_current_item()
+        msg.object = obj
+
+        self._update_item()
+
+    def set_polygon(self, pts):
+
+        msg = self.get_current_item()
+
+        del msg.pick_polygon.polygon.points[:]
+
+        for pt in pts:
+
+            msg.pick_polygon.polygon.points.append(Point32(pt[0], pt[1], 0))
+
+        self._update_item()
+
+    def _update_block(self, block_id):
+
+        idx = 0
+
+        for k, v in self.blocks_map.iteritems():
+            if v == block_id:
+                idx = k
+                break
+        else:
+            print "error"
+            return
+
+        if self.ph.block_learned(block_id):
+            self.blocks_list.items[idx].set_background_color()
+        else:
+            self.blocks_list.items[idx].set_background_color(QtCore.Qt.red)
+
+    def _update_item(self, block_id=None, item_id=None):
+
+        if block_id is None and item_id is None:
+            block_id = self.block_id
+            item_id = self.item_id
+
+        idx = 0
+
+        for k, v in self.items_map.iteritems():
+            if v == item_id:
+                idx = k
+                break
+        else:
+            print "error"
+            return
+
+        if self.ph.item_learned(block_id, item_id):
+            self.items_list.items[idx].set_background_color()
+        else:
+            self.items_list.items[idx].set_background_color(QtCore.Qt.red)
+
+        self.items_list.items[idx].set_caption(self.get_text_for_item(self.ph.get_item_msg(block_id, item_id)))
+
+        self._update_block(block_id)
+
+    def get_current_item(self):
+
+        if (self.block_id is not None and self.item_id is not None):
+
+            return self.ph.get_item_msg(self.block_id, self.item_id)
+
+        return None
+
     def paint(self, painter, option, widget):
 
         painter.setClipRect(option.exposedRect)
@@ -295,15 +384,13 @@ class ProgramItem(Item):
 
         # TODO zmerit velikost textu / pouzit label
 
-        if self.items_list is not None:
+        if self.block_id is not None:
 
-            block_id = self.blocks_map[self.blocks_list.selected_item_idx]
-
-            if not self.ph.block_learned(block_id):
+            if not self.ph.block_learned(self.block_id):
 
                 painter.setPen(QtCore.Qt.red)
 
-            painter.drawText(self.sp, 2*self.sp, translate("ProgramItem", "Block") + " ID: " + str(block_id))
+            painter.drawText(self.sp, 2*self.sp, translate("ProgramItem", "Block") + " ID: " + str(self.block_id))
         else:
 
             if not self.ph.program_learned():

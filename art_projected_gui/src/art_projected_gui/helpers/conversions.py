@@ -28,7 +28,7 @@ def quaternion2yaw(q):
         return euler[2]/(2*pi)*360
 
 
-def get_pick_polygon_points(self, msg):
+def get_pick_polygon_points(msg):
 
     poly_points = []
 
