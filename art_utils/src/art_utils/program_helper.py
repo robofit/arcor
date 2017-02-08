@@ -154,12 +154,13 @@ class ProgramHelper():
 
         return min(self._cache,  key=self._cache.get)
 
-    def get_first_item_id(self):
+    def get_first_item_id(self, block_id=None):
 
         if len(self._cache) == 0:
             return None
 
-        block_id = self.get_first_block_id()
+        if block_id is None:
+            block_id = self.get_first_block_id()
         items = self._cache[block_id]["items"]
         item_id = min(items,  key=items.get)
         return (block_id,  item_id)
