@@ -2,7 +2,7 @@
 
 from PyQt4 import QtGui, QtCore
 from item import Item
-from art_msgs.msg import ProgramItem as ProgIt
+from art_msgs.msg import ProgramItem as ProgIt,  LearningRequestGoal
 from geometry_msgs.msg import Point32
 from button_item import ButtonItem
 from art_projected_gui.helpers import conversions
@@ -13,13 +13,14 @@ translate = QtCore.QCoreApplication.translate
 
 class ProgramItem(Item):
 
-    def __init__(self, scene, rpm, x, y, program_helper, done_cb=None, item_switched_cb=None):
+    def __init__(self, scene, rpm, x, y, program_helper, done_cb=None, item_switched_cb=None,  learning_request_cb=None):
 
         self.w = 100
         self.h = 100
 
         self.done_cb = done_cb
         self.item_switched_cb = item_switched_cb
+        self.learning_request_cb = learning_request_cb
 
         super(ProgramItem, self).__init__(scene, rpm, x, y)
 
@@ -80,18 +81,24 @@ class ProgramItem(Item):
         self.update()
 
         # items "view"
-        self.item_finished_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Done"), self, self.item_finished_btn_cb)
-        self.item_run_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Run"), self, self.item_finished_btn_cb)
+        self.item_edit_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Edit"), self, self.item_edit_btn_cb)
+        self.item_run_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Run"), self, self.item_run_btn_cb)
         self.item_on_failure_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "On fail"), self, self.item_on_failure_btn_cb)
-        self.item_switch_type_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "---"), self, self.item_switch_type_btn_cb)
+
+        self.item_finished_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Back to blocks"), self, self.item_finished_btn_cb)
+
         self.items_list = None
 
         self.item_finished_btn.set_enabled(False, True)
         self.item_run_btn.set_enabled(False, True)
         self.item_on_failure_btn.set_enabled(False, True)
-        self.item_switch_type_btn.set_enabled(False, True)
+        self.item_edit_btn.set_enabled(False, True)
 
         self.fixed = False
+
+        self.editing_item = False
+        self.edit_request = False
+        self.run_request = False
 
         self.setZValue(100)
 
@@ -179,22 +186,24 @@ class ProgramItem(Item):
         self.items_list.setPos(self.sp, y)
         y += self.items_list._height() + self.sp
 
-        self. _place_childs_horizontally(y, self.sp, [self.item_finished_btn, self.item_run_btn, self.item_on_failure_btn])
+        self. _place_childs_horizontally(y, self.sp, [self.item_edit_btn, self.item_run_btn, self.item_on_failure_btn])
 
         y += self.item_finished_btn._height() + self.sp
 
-        self. _place_childs_horizontally(y, self.sp, [self.item_switch_type_btn])
+        self. _place_childs_horizontally(y, self.sp, [self.item_finished_btn])
 
-        y +=  self.item_switch_type_btn._height() + 3*self.sp
+        y +=  self.item_finished_btn._height() + 3*self.sp
 
         self.h = y
         self.update()
 
-        # TODO nastavit tlacitka do spravneho stavu
         self.item_finished_btn.set_enabled(True, True)
         self.item_run_btn.set_enabled(True, True)
+        self.item_run_btn.set_enabled(False)
         self.item_on_failure_btn.set_enabled(True, True)
-        self.item_switch_type_btn.set_enabled(True, True)
+        self.item_on_failure_btn.set_enabled(False)
+        self.item_edit_btn.set_enabled(True, True)
+        self.item_edit_btn.set_enabled(False)
 
     def block_selected_cb(self):
 
@@ -220,25 +229,35 @@ class ProgramItem(Item):
             self.block_edit_btn.set_enabled(False)
             self.block_on_failure_btn.set_enabled(False)
 
-    def item_selected_cb(self):
+    def _handle_item_btns(self):
 
-        if  self.items_list.selected_item_idx is not None:
+        of = self.ph.get_id_on_failure(self.block_id, self.item_id)
 
-            self.item_id = self.items_map[self.items_list.selected_item_idx]
+        if of[0] == self.block_id and of[1] != 0:
+            self.item_on_failure_btn.set_enabled(True)
+        else:
+            self.item_on_failure_btn.set_enabled(False)
 
-            of = self.ph.get_id_on_failure(self.block_id, self.item_id)
-
-            if of[0] == self.block_id and of[1] != 0:
-                self.item_on_failure_btn.set_enabled(True)
-            else:
-                self.item_on_failure_btn.set_enabled(False)
+        if not self.editing_item:
 
             if self.ph.item_requires_learning(self.block_id, self.item_id) and self.ph.item_learned(self.block_id, self.item_id):
                 self.item_run_btn.set_enabled(True)
             else:
                 self.item_run_btn.set_enabled(False)
 
-            # TODO en/dis self.item_switch_type_btn
+            self.item_edit_btn.set_enabled(self.ph.item_requires_learning(self.block_id, self.item_id))
+
+        else:
+
+            self.item_run_btn.set_enabled(False)
+
+    def item_selected_cb(self):
+
+        if  self.items_list.selected_item_idx is not None:
+
+            self.item_id = self.items_map[self.items_list.selected_item_idx]
+
+            self._handle_item_btns()
 
             if self.item_switched_cb is not None:
 
@@ -249,6 +268,7 @@ class ProgramItem(Item):
             self.item_id = None
             self.item_run_btn.set_enabled(False)
             self.item_on_failure_btn.set_enabled(False)
+            self.item_edit_btn.set_enabled(False)
 
     def block_on_failure_btn(self, btn):
 
@@ -262,6 +282,8 @@ class ProgramItem(Item):
 
     def item_finished_btn_cb(self, btn):
 
+        # go back to blocks view
+
         # TODO nastavit tlacitka do spravneho stavu
         self.block_finished_btn.set_enabled(True, True)
         self.block_edit_btn.set_enabled(True, True)
@@ -271,7 +293,7 @@ class ProgramItem(Item):
         self.item_finished_btn.set_enabled(False, True)
         self.item_run_btn.set_enabled(False, True)
         self.item_on_failure_btn.set_enabled(False, True)
-        self.item_switch_type_btn.set_enabled(False, True)
+        self.item_edit_btn.set_enabled(False, True)
 
         self.scene().removeItem(self.items_list)
         self.items_list = None
@@ -285,9 +307,60 @@ class ProgramItem(Item):
 
         pass
 
-    def item_switch_type_btn_cb(self, btn):
+    def item_run_btn_cb(self, btn):
 
-        pass
+        self.run_request = True
+        self.set_enabled(False)
+        self.learning_request_cb(LearningRequestGoal.EXECUTE_ITEM)
+
+    def item_edit_btn_cb(self, btn):
+
+        self.edit_request = True
+
+        # TODO call action / disable all, wait for result (callback), enable editing
+        if not self.editing_item:
+
+            self.learning_request_cb(LearningRequestGoal.GET_READY)
+
+        else:
+
+            self.learning_request_cb(LearningRequestGoal.DONE)
+
+        self.set_enabled(False)
+
+    def learning_request_result(self, success):
+
+        self.set_enabled(True)
+
+        # TODO no success, no editing
+
+        if self.edit_request:
+
+            self.edit_request = False
+
+            if not self.editing_item:
+
+                self.editing_item = True
+                self.item_edit_btn.set_caption("Done")
+                self.item_finished_btn.set_enabled(False)
+                self.items_list.set_enabled(False)
+
+            else:
+
+                self.editing_item = False
+                self.item_edit_btn.set_caption("Edit")
+                self.item_finished_btn.set_enabled(True)
+                self.items_list.set_enabled(True)
+
+            self._handle_item_btns()
+
+            if self.item_switched_cb is not None:
+
+                    self.item_switched_cb(self.block_id, self.item_id, not self.editing_item)
+
+        elif self.run_request:
+
+            self.run_request = False
 
     def boundingRect(self):
 

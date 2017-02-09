@@ -52,7 +52,7 @@ class ProgramListItem(Item):
                     break
 
         sp = self.m2pix(0.01)
-        h = 3*sp
+        h = 5*sp
         self.list.setPos(sp,  h)
         h += self.list._height()
         h += 2*sp
@@ -106,6 +106,14 @@ class ProgramListItem(Item):
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        font = QtGui.QFont('Arial', 14)
+        painter.setFont(font)
+
+        painter.setPen(QtCore.Qt.white)
+
+        sp = self.m2pix(0.01)
+        painter.drawText(sp, 2*sp, translate("ProgramListItem", "Program list"))
 
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.NoPen)

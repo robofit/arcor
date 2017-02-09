@@ -51,8 +51,8 @@ class Item(QtGui.QGraphicsItem):
         (px,  py) = self.m2pix(x,  y)
 
         # limit pos to the scene size
-        px = max(0, min(px, self.scene().width()))
-        py = max(0, min(py, self.scene().height()))
+        px = max(-self._width()/2, min(px, self.scene().width()-self._width()/2))
+        py = max(-self._height()/2, min(py, self.scene().height()-self._height()/2))
 
         # we usually want to work with scene/world coordinates
         if self.parentItem() and not parent_coords:

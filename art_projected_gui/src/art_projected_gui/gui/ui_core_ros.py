@@ -3,7 +3,7 @@
 from art_projected_gui.gui import UICore
 from PyQt4 import QtCore, QtGui
 import rospy
-from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt
+from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt,  LearningRequestAction, LearningRequestGoal
 from fsm import FSM
 from transitions import MachineError
 from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem,  ProgramItem
@@ -12,6 +12,7 @@ from art_utils import InterfaceStateManager,  ArtApiHelper, ProgramHelper
 from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse,  NotifyUser,  NotifyUserResponse
 from std_msgs.msg import Empty
 from geometry_msgs.msg import PoseStamped
+import actionlib
 
 translate = QtCore.QCoreApplication.translate
 
@@ -84,6 +85,9 @@ class UICoreRos(UICore):
         projs = rospy.get_param("~projectors", [])
         for proj in projs:
             self.add_projector(proj)
+
+        self.learning_action_cl = actionlib.SimpleActionClient('/art/brain/learning_request', LearningRequestAction)
+        self.learning_action_cl.wait_for_server()
 
         self.art = ArtApiHelper()
 
@@ -276,7 +280,7 @@ class UICoreRos(UICore):
 
         self.emit(QtCore.SIGNAL('interface_state'), our_state, state, flags)
 
-    def active_item_switched(self, block_id, item_id):
+    def active_item_switched(self, block_id, item_id, read_only=True):
 
         # TODO call prep. action
 
@@ -322,7 +326,7 @@ class UICoreRos(UICore):
                 # if program item already contains polygon - let's display it
                 if self.ph.is_pick_polygon_set(block_id, item_id):
 
-                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=conversions.get_pick_polygon_points(msg), polygon_changed=self.polygon_changed)
+                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=conversions.get_pick_polygon_points(msg), polygon_changed=self.polygon_changed, fixed=read_only)
 
                 elif self.ph.is_pick_pose_set(block_id, item_id):
 
@@ -348,10 +352,10 @@ class UICoreRos(UICore):
                 if self.ph.is_place_pose_set(block_id, item_id):
 
                     if object_type is not None:
-                        self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), msg.place_pose, object_type,  object_id, place_cb=self.place_pose_changed)
+                        self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), msg.place_pose, object_type,  object_id, place_cb=self.place_pose_changed, fixed=read_only)
                 else:
                     self.notif(translate("UICoreRos", "Set where to place picked object"))
-                    self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  self.get_def_pose(), object_type,  object_id, place_cb=self.place_pose_changed)
+                    self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  self.get_def_pose(), object_type,  object_id, place_cb=self.place_pose_changed, fixed=read_only)
 
     def get_def_pose(self):
 
@@ -451,6 +455,8 @@ class UICoreRos(UICore):
             self.notif(translate("UICoreRos", "Failed to store program"), temp=True)
             # TODO what to do?
 
+        self.notif(translate("UICoreRos", "Program stored with ID=") + str(prog.header.id), temp=True)
+
         self.fsm.tr_program_learned()
 
     def program_selected_cb(self,  prog_id,  run=False,  template=False):
@@ -466,7 +472,7 @@ class UICoreRos(UICore):
         self.remove_scene_items_by_type(ProgramListItem)
         self.program_list = None
 
-        self.program_vis = ProgramItem(self.scene, self.rpm, pos[0], pos[1], self.ph, done_cb=self.learning_done_cb, item_switched_cb=self.active_item_switched)
+        self.program_vis = ProgramItem(self.scene, self.rpm, pos[0], pos[1], self.ph, done_cb=self.learning_done_cb, item_switched_cb=self.active_item_switched, learning_request_cb=self.learning_request_cb)
         # self.program_vis.active_item_switched = self.active_item_switched
         # self.program_vis.program_state_changed = self.program_state_changed
         self.scene_items.append(self.program_vis)
@@ -481,6 +487,29 @@ class UICoreRos(UICore):
         else:
 
             self.fsm.tr_program_edit()
+
+    def learning_request_cb(self, req):
+
+        if req == LearningRequestGoal.GET_READY:
+            self.notif(translate("UICoreRos", "Robot is getting ready for learning"))
+        elif req == LearningRequestGoal.DONE:
+            self.notif(translate("UICoreRos", "Robot is getting into default state"))
+        elif req == LearningRequestGoal.EXECUTE_ITEM:
+            self.notif(translate("UICoreRos", "Robot is executing current program instruction"))
+
+        g = LearningRequestGoal()
+        g.request = req
+
+        self.learning_action_cl.send_goal(g, done_cb=self.learning_request_done_cb, feedback_cb=self.learning_request_feedback_cb)
+
+    def learning_request_feedback_cb(self, fb):
+
+        rospy.logdebug('learning request progress: ' + str(fb.progress))
+
+    def learning_request_done_cb(self, status, result):
+
+        # TODO some notif
+        self.program_vis.learning_request_result(result.success)
 
     def cb_program_selection(self):
 
@@ -532,14 +561,14 @@ class UICoreRos(UICore):
 
         if self.fsm.state != 'learning':
             return False
-        # TODO handle un-selected
 
         rospy.logdebug("attempt to select object id: " + id)
         obj = self.get_object(id)
 
-        # TODO test typu operace
-
         msg = self.program_vis.get_current_item()
+
+        if msg is None:
+            return False
 
         if msg.spec == ProgIt.MANIP_TYPE:
 
