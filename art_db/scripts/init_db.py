@@ -43,10 +43,12 @@ def main(args):
     p2.id = 3
     p2.on_success = 4
     p2.on_failure = 0
-    p2.type = ProgramItem.MANIP_PICK_PLACE
+    p2.type = ProgramItem.MANIP_PICK_PLACE_FROM_FEEDER
     p2.spec = ProgramItem.MANIP_TYPE
     p2.object = "profile"
-    # TODO p2.pick_polygon
+    p2.pick_pose.header.frame_id = "marker"
+    p2.pick_pose.pose.position.x = 0.75
+    p2.pick_pose.pose.position.y = 0.5
     p2.place_pose.header.frame_id = "marker"
     p2.place_pose.pose.position.x = 0.75
     p2.place_pose.pose.position.y = 0.5
