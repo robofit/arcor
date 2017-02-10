@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 from PyQt4 import QtGui, QtCore, QtNetwork
-from items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem, SquareItem
+from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem, SquareItem
 import rospy
-from helpers import conversions
+from art_projected_gui.helpers import conversions
 from art_msgs.srv import NotifyUserRequest
 
 
@@ -69,10 +69,11 @@ class UICore(QtCore.QObject):
         self.scene_items = []
 
         self.bottom_label = LabelItem(self.scene, self.rpm, 0.2, 0.05, self.width - 0.4, 0.05)
-        self.program_vis = ProgramItem(self.scene, self.rpm, 0.2, self.height-0.2)
 
         self.scene_items.append(self.bottom_label)
-        self.scene_items.append(self.program_vis)
+
+        self.selected_object_ids = []
+        self.selected_object_types = []
 
         self.view = customGraphicsView(self.scene)
         self.view.setRenderHint(QtGui.QPainter.Antialiasing)
@@ -215,7 +216,12 @@ class UICore(QtCore.QObject):
             sel_cb (method): Callback which gets called one the object is selected.
         """
 
-        self.scene_items.append(ObjectItem(self.scene, self.rpm, object_id, object_type, x, y, yaw,  sel_cb))
+        obj = ObjectItem(self.scene, self.rpm, object_id, object_type, x, y, yaw,  sel_cb)
+        self.scene_items.append(obj)
+
+        if object_id in self.selected_object_ids or object_type.name in self.selected_object_types:
+
+            obj.set_selected(True)
 
     def remove_object(self, object_id):
         """Removes ObjectItem with given object_id from the scene."""
@@ -240,6 +246,12 @@ class UICore(QtCore.QObject):
     def select_object(self, obj_id, unselect_others=True):
         """Sets ObjectItem with given obj_id as selected. By default, all other items are unselected."""
 
+        if unselect_others:
+            self.selected_object_ids = []
+
+        if obj_id not in self.selected_object_ids:
+            self.selected_object_ids.append(obj_id)
+
         for it in self.get_scene_items_by_type(ObjectItem):
 
             if it.object_id == obj_id:
@@ -254,6 +266,12 @@ class UICore(QtCore.QObject):
 
     def select_object_type(self, obj_type_name, unselect_others=True):
         """Sets all ObjectItems with geiven object_type and selected. By default, all objects of other types are unselected."""
+
+        if unselect_others:
+            self.selected_object_types = []
+
+        if obj_type_name not in self.selected_object_types:
+            self.selected_object_types.append(obj_type_name)
 
         for it in self.get_scene_items_by_type(ObjectItem):
 
@@ -303,6 +321,9 @@ class UICore(QtCore.QObject):
         self.remove_scene_items_by_type(PlaceItem)
 
     def clear_all(self):
+
+        self.selected_object_ids = []
+        self.selected_object_types = []
 
         for it in self.get_scene_items_by_type(ObjectItem):
 

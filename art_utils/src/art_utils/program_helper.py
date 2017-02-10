@@ -2,6 +2,7 @@
 
 import rospy
 from art_msgs.msg import Program,  ProgramItem
+from geometry_msgs.msg import Pose, Polygon
 
 
 class ProgramHelper():
@@ -15,10 +16,10 @@ class ProgramHelper():
 
     def __init__(self):
 
-        self.cache = {}
-        self.prog = None
+        self._cache = {}
+        self._prog = None
 
-    def load(self, prog):
+    def load(self, prog,  template=False):
 
         if not isinstance(prog,  Program):
             rospy.logerr("Invalid argument. Should be Program message.")
@@ -103,84 +104,97 @@ class ProgramHelper():
                     rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has invalid on_failure: " + str(vv["on_failure"]))
                     return False
 
-                # TODO make more checks of the item itself (instruction type vs. filled data)
                 item = prog.blocks[v["idx"]].items[vv["idx"]]
 
-                if item.type in [ProgramItem.MANIP_PICK,  ProgramItem.MANIP_PICK_PLACE] and item.object == "":
+                if template:
 
-                    rospy.logerr("Item id: " + str(kk) + " has no object set for p&p.")
-                    return False
+                    item.object = ""
 
-        self.prog = prog
-        self.cache = cache
+                    # for stamped types we want to keep header (frame_id)
+                    item.pick_pose.pose = Pose()
+                    item.pick_polygon.polygon = Polygon()
+                    item.place_pose.pose = Pose()
+                    item.place_polygon.polygon = Polygon()
+
+        self._prog = prog
+        self._cache = cache
         return True
+
+    def get_program(self):
+
+        return self._prog
 
     def get_program_id(self):
 
-        if self.prog is None:
+        if self._prog is None:
             return None
 
-        return self.prog.header.id
+        return self._prog.header.id
 
     def get_block_msg(self,  block_id):
 
-        if block_id not in self.cache:
+        if block_id not in self._cache:
             return None
 
-        block_idx = self.cache[block_id]["idx"]
-        return self.prog.blocks[block_idx]
+        block_idx = self._cache[block_id]["idx"]
+        return self._prog.blocks[block_idx]
 
     def get_block_ids(self):
 
-        return self.cache.keys()
+        return self._cache.keys()
 
     def get_items_ids(self, block_id):
 
-        return self.cache[block_id]["items"].keys()
+        return self._cache[block_id]["items"].keys()
 
     def get_first_block_id(self):
 
-        if len(self.cache) == 0:
+        if len(self._cache) == 0:
             return None
 
-        return min(self.cache,  key=self.cache.get)
+        return min(self._cache,  key=self._cache.get)
 
-    def get_first_item_id(self):
+    def get_first_item_id(self, block_id=None):
 
-        if len(self.cache) == 0:
+        if len(self._cache) == 0:
             return None
 
-        block_id = self.get_first_block_id()
-        items = self.cache[block_id]["items"]
+        if block_id is None:
+            block_id = self.get_first_block_id()
+        items = self._cache[block_id]["items"]
         item_id = min(items,  key=items.get)
         return (block_id,  item_id)
 
     def get_item_msg(self,  block_id,  item_id):
 
-        if block_id not in self.cache or item_id not in self.cache[block_id]["items"]:
+        if block_id not in self._cache or item_id not in self._cache[block_id]["items"]:
             return None
 
-        block_idx = self.cache[block_id]["idx"]
-        item_idx = self.cache[block_id]["items"][item_id]["idx"]
-        return self.prog.blocks[block_idx].items[item_idx]
+        block_idx = self._cache[block_id]["idx"]
+        item_idx = self._cache[block_id]["items"][item_id]["idx"]
+        return self._prog.blocks[block_idx].items[item_idx]
+
+    def _get_block_on(self,  block_id, what):
+
+        return self._cache[block_id][what]
 
     def _get_item_on(self,  block_id,  item_id,  what):
 
-        if block_id not in self.cache or item_id not in self.cache[block_id]["items"]:
+        if block_id not in self._cache or item_id not in self._cache[block_id]["items"]:
             return None
 
-        item_id_on = self.cache[block_id]["items"][item_id][what]
+        item_id_on = self._cache[block_id]["items"][item_id][what]
 
         # TODO make constant in msg for it
         if item_id_on == 0:
 
-            next_block_id = self.cache[block_id][what]
+            next_block_id = self. _get_block_on(block_id, what)
 
             if next_block_id == 0:
 
                 return (0,  0)  # end of program
 
-            items_dict = self.cache[next_block_id]["items"]
+            items_dict = self._cache[next_block_id]["items"]
             next_item_id = min(items_dict,  key=items_dict.get)
 
             return (next_block_id, next_item_id)
@@ -196,3 +210,109 @@ class ProgramHelper():
     def get_id_on_failure(self,  block_id,  item_id):
 
         return self._get_item_on(block_id,  item_id,  "on_failure")
+
+    def get_block_on_success(self,  block_id):
+
+        return self._get_block_on(block_id, "on_success")
+
+    def get_block_on_failure(self,  block_id):
+
+        return self._get_block_on(block_id, "on_failure")
+
+    def get_item_type(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+        return msg.type
+
+    def item_requires_learning(self, block_id, item_id):
+
+        return self.get_item_type(block_id,  item_id) in [ProgramItem.MANIP_PICK, ProgramItem.MANIP_PLACE, ProgramItem.MANIP_PICK_PLACE, ProgramItem.MANIP_PICK_PLACE_FROM_FEEDER]
+
+    def is_place_pose_set(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+        return msg.place_pose.pose != Pose()
+
+    def is_pick_pose_set(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+        return msg.pick_pose.pose != Pose()
+
+    def is_object_set(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+        return msg.object != ""
+
+    def is_pick_polygon_set(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+        return msg.pick_polygon.polygon != Polygon()
+
+    def is_place_polygon_set(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+        return msg.place_polygon.polygon != Polygon()
+
+    def program_learned(self):
+
+        blocks = self.get_block_ids()
+
+        for block_id in blocks:
+
+            if not self.block_learned(block_id):
+                return False
+
+        return True
+
+    def block_learned(self, block_id):
+
+        items = self.get_items_ids(block_id)
+
+        for item_id in items:
+
+            if self.item_learned(block_id, item_id) is False:
+                return False
+
+        return True
+
+    def item_learned(self, block_id, item_id):
+
+        if not self.item_requires_learning(block_id,  item_id):
+            return None
+
+        msg = self.get_item_msg(block_id, item_id)
+
+        # TODO other types
+        if msg.type == ProgramItem.MANIP_PICK_PLACE:
+
+            if not self.is_object_set(block_id, item_id):  # there has to be id or type
+                return False
+
+            if not (self.is_place_pose_set(block_id, item_id) or self.is_place_polygon_set(block_id, item_id)):
+                return False
+
+            if msg.spec == ProgramItem.MANIP_TYPE:
+
+                if not (self.is_pick_polygon_set(block_id, item_id) or self.is_pick_pose_set(block_id, item_id)):
+                    return False
+
+            return True
+
+        elif msg.type == ProgramItem.MANIP_PICK_PLACE_FROM_FEEDER:
+
+            if msg.spec != ProgramItem.MANIP_TYPE:  # TODO do this type of check on program load!
+
+                raise ValueError("MANIP_PICK_PLACE_FROM_FEEDER has to use MANIP_TYPE")
+
+            if not self.is_object_set(block_id, item_id):  # there has to be id or type
+                return False
+
+            if not (self.is_place_pose_set(block_id, item_id) or self.is_place_polygon_set(block_id, item_id)):
+                return False
+
+            if not self.is_pick_pose_set(block_id, item_id):
+                return False
+
+            return True
+
+        raise NotImplementedError("Not yet supported item type.")

@@ -5,9 +5,10 @@ find_package(catkin REQUIRED COMPONENTS
   art_msgs
   rospy
   roslint
+  roslaunch
 )
 
-catkin_package()
+catkin_package(CATKIN_DEPENDS art_msgs)
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
@@ -18,6 +19,11 @@ roslint_python()
 roslint_add_test()
 
 if (CATKIN_ENABLE_TESTING)
-  find_package(catkin REQUIRED COMPONENTS roslaunch)
   roslaunch_add_file_check(launch)
 endif()
+
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
+
+catkin_install_python(PROGRAMS src/tracker.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

@@ -6,7 +6,7 @@ import rospy
 from PyQt4 import QtGui, QtCore
 import rospkg
 
-from gui import UICoreRos
+from art_projected_gui.gui import UICoreRos
 
 
 def sigint_handler(*args):

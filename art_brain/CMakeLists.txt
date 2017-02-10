@@ -9,19 +9,20 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   roslint
+  roslaunch
+  art_db
 )
 
 set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
 roslint_python()
 roslint_add_test()
 
-catkin_package()
+catkin_package(CATKIN_DEPENDS art_msgs std_msgs geometry_msgs)
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
 if (CATKIN_ENABLE_TESTING)
-  find_package(catkin REQUIRED COMPONENTS roslaunch)
   roslaunch_add_file_check(launch)
 endif()

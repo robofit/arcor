@@ -6,6 +6,8 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from touch_table_item import TouchTableItem
 from desc_item import DescItem
+from button_item import ButtonItem
+from program_item import ProgramItemItem
 
 # TODO optional filtering (kalman?)
 # TODO option to select when hovered for some time (instead of 'click')
@@ -122,6 +124,11 @@ class PoseStampedCursorItem(Item):
                     continue  # TODO make some common class for cursors
 
                 if self.pointed_item is None and self.collidesWithItem(it):
+
+                    parent = it.parentItem()
+                    if not isinstance(it,  ButtonItem) and not isinstance(it,  ProgramItemItem) and it.fixed and parent is not None and isinstance(parent, Item) and not parent.fixed:
+
+                        it = it.parentItem()
 
                     it.set_hover(True, self)
 

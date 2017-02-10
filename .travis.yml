@@ -70,7 +70,7 @@ before_install:
   - sudo sh -c "echo \"deb http://packages.ros.org/ros/ubuntu $ROS_CI_DESKTOP main\" > /etc/apt/sources.list.d/ros-latest.list"
   - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
   - sudo apt-get update -qq
-  - sudo apt-get install -y python-catkin-pkg python-rosdep python-wstool ros-$ROS_DISTRO-catkin
+  - sudo apt-get install -y python-catkin-pkg python-rosdep python-wstool ros-$ROS_DISTRO-catkin python-catkin-lint
   - source /opt/ros/$ROS_DISTRO/setup.bash
   # Prepare rosdep to install dependencies.
   - sudo rosdep init
@@ -93,6 +93,12 @@ install:
 # Install all dependencies, using wstool and rosdep.
 # wstool looks for a ROSINSTALL_FILE defined in the environment variables.
 before_script:
+
+  # for nodes requiring x server (art_projected_gui)
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
+
   # source dependencies: install using wstool.
   - cd ~/catkin_ws/src
   - wstool init
@@ -107,15 +113,20 @@ before_script:
   - sudo apt-get install -y mongodb-clients mongodb-server -o Dpkg::Options::="--force-confdef" # default actions
   - rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
 
-# Compile and test. If the CATKIN_OPTIONS file exists, use it as an argument to
-# catkin_make.
+# install other package dependencies using script
+  - cd ~/catkin_ws/src/ar-table-itable
+  - chmod +x install_dependencies.sh
+  - ./install_dependencies.sh
+  
+
+# Compile and test.
 script:
   - cd ~/catkin_ws
-  - catkin_make $( [ -f $CATKIN_OPTIONS ] && cat $CATKIN_OPTIONS )
-  # Testing: Use both run_tests (to see the output) and test (to error out).
-  - catkin_make run_tests  # This always returns 0, but looks pretty.
-  - catkin_make test  # This will return non-zero if a test fails.
+  - catkin_lint src/ar-table-itable/
+  - catkin_make_isolated --install
+  - catkin_make_isolated --make-args test
 
 after_failure:
   - cd ~/catkin_ws
-  - find build/test_results/ -type f -follow -exec cat {} \;
+  - find build_isolated/ -iwholename "*/test_results/*.xml" -exec cat {} \;
+  - find build_isolated/ -iwholename "*/Testing/Temporary/LastTest.log" -exec cat {} \;

@@ -5,6 +5,8 @@ from item import Item
 import rospy
 from art_msgs.msg import Touch
 from desc_item import DescItem
+from button_item import ButtonItem
+from program_item import ProgramItemItem
 
 
 class TouchPointItem(Item):
@@ -49,6 +51,11 @@ class TouchPointItem(Item):
                     continue
 
                 if self.collidesWithItem(it):
+
+                    parent = it.parentItem()
+                    if not isinstance(it,  ButtonItem) and not isinstance(it,  ProgramItemItem) and it.fixed and parent is not None and isinstance(parent, Item) and not parent.fixed:
+
+                        it = it.parentItem()
 
                     rospy.logdebug("new pointed item: " + it.__class__.__name__)
 
