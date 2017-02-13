@@ -21,15 +21,16 @@ uint16 PICK_FROM_FEEDER=101 # pose, object (type)
 uint16 PICK_OBJECT_ID=102 # object (ID)
 
 # manipulation - place
-uint16 PLACE_TO_POSE=200 # pose, object (type)
+uint16 PLACE_TO_POSE=200 # pose, object from ProgramItem.id == ref_id
 
 # -----------------------------------------------------
 # OPERATION PARAMETERS
 # -----------------------------------------------------
 
-string[] object
+string[] object # id or type
 geometry_msgs/PoseStamped[] pose
 geometry_msgs/PolygonStamped[] polygon
+uint16[] ref_id # reference to another instruction
 
 # -----------------------------------------------------
 # OTHER STUFF
