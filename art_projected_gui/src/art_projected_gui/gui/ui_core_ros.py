@@ -240,38 +240,50 @@ class UICoreRos(UICore):
 
                 self.notif(translate("UICoreRos", "Robot is getting ready"))
 
-            elif it.type == ProgIt.WAIT:
+            elif it.type == ProgIt.WAIT_FOR_USER:
 
-                if it.spec == ProgIt.WAIT_FOR_USER:
-                    self.notif(translate("UICoreRos", "Waiting for user"))
-                elif it.spec == ProgIt.WAIT_UNTIL_USER_FINISHES:
+                self.notif(translate("UICoreRos", "Waiting for user"))
+
+            elif it.type == ProgIt.WAIT_UNTIL_USER_FINISHES:
+
                     self.notif(translate("UICoreRos", "Waiting for user to finish"))
 
-            # TODO MANIP_PICK, MANIP_PLACE
-            elif it.type == ProgIt.MANIP_PICK_PLACE:
+            elif it.type == ProgIt.PICK_FROM_POLYGON:
 
-                obj_id = it.object
+                try:
+                    obj_id = flags["SELECTED_OBJECT_ID"]
+                except KeyError:
+                    rospy.logerr("PICK_FROM_POLYGON: SELECTED_OBJECT_ID flag not set")
+                    return
 
-                if it.spec == ProgIt.MANIP_ID:
-
-                    self.select_object(it.object)
-
-                elif it.spec == ProgIt.MANIP_TYPE:
-
-                    try:
-                        obj_id = flags["SELECTED_OBJECT_ID"]
-                    except KeyError:
-                        rospy.logerr("MANIP_PICK_PLACE/MANIP_TYPE: SELECTED_OBJECT_ID flag not set")
-                        return
-
-                    self.select_object(obj_id)
-                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=self.program_vis.active_item.get_pick_polygon_points(),  fixed=True)
+                self.select_object(obj_id)
+                self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=self.program_vis.active_item.get_pick_polygon_points(),  fixed=True)
 
                 obj = self.get_object(obj_id)
                 self.notif(translate("UICoreRos", "Going to manipulate with object ID=") + obj_id)
 
+            elif it.type == ProgIt.PICK_FROM_FEEDER:
+
+                # TODO PICK_FROM_FEEDER
+                pass
+
+            elif it.type == ProgIt.PICK_OBJECT_ID:
+
+                # TODO PICK_OBJECT_ID
+                pass
+
+            elif it.type == ProgIt.PLACE_TO_POSE:
+
+                try:
+                    obj_id = flags["SELECTED_OBJECT_ID"]
+                except KeyError:
+                    rospy.logerr("PLACE_TO_POSE: SELECTED_OBJECT_ID flag not set")
+                    return
+
+                obj = self.get_object(obj_id)
+
                 if obj is not None:
-                    self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  it.place_pose, obj.object_type, obj_id,  fixed=True)
+                    self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  it.pose[0], obj.object_type, obj_id,  fixed=True)
                 else:
                     # TODO what to do if brain wants to manipulate with non-existent object?
                     pass
@@ -281,8 +293,6 @@ class UICoreRos(UICore):
         self.emit(QtCore.SIGNAL('interface_state'), our_state, state, flags)
 
     def active_item_switched(self, block_id, item_id, read_only=True):
-
-        # TODO call prep. action
 
         rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: " + str((block_id, item_id)))
 
@@ -306,56 +316,71 @@ class UICoreRos(UICore):
 
         else:
 
-            if msg.type in [ProgIt.MANIP_PICK, ProgIt.MANIP_PLACE, ProgIt.MANIP_PICK_PLACE]:
+            if msg.type in [ProgIt.PICK_FROM_POLYGON, ProgIt.PICK_FROM_FEEDER, ProgIt.PICK_OBJECT_ID, ProgIt.PLACE_TO_POSE]:
 
                 self.notif(translate("UICoreRos", "Program current manipulation task"))
 
+        if msg.type == ProgIt.PICK_FROM_POLYGON:
 
-        if msg.type in [ProgIt.MANIP_PICK, ProgIt.MANIP_PLACE, ProgIt.MANIP_PICK_PLACE]:
-
-            if msg.spec == ProgIt.MANIP_TYPE:
-
-                if not self.ph.is_object_set(block_id, item_id):
+            if not self.ph.is_object_set(block_id, item_id):
 
                     self.notif(translate("UICoreRos", "Select object type to be picked up"), temp=True)
 
-                else:
+            else:
 
-                    self.select_object_type(msg.object)
+                self.select_object_type(msg.object[0])
 
-                # if program item already contains polygon - let's display it
-                if self.ph.is_pick_polygon_set(block_id, item_id):
+            if self.ph.is_polygon_set(block_id, item_id):
 
                     self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=conversions.get_pick_polygon_points(msg), polygon_changed=self.polygon_changed, fixed=read_only)
 
-                elif self.ph.is_pick_pose_set(block_id, item_id):
+        elif msg.type == ProgIt.PICK_FROM_FEEDER:
 
-                    # TODO jak zobrazit???
-                    pass
+            if self.ph.is_object_set(block_id, item_id):
+                self.select_object_type(msg.object[0])
+            else:
+                self.notif(translate("UICoreRos", "Select object type to be picked up"), temp=True)
+
+            # TODO show pick pose somehow (arrow??)
+
+        elif msg.type == ProgIt.PICK_OBJECT_ID:
+            if self.ph.is_object_set(block_id, item_id):
+                self.select_object(msg.object[0])
+            else:
+                self.notif(translate("UICoreRos", "Select object to be picked up"), temp=True)
+
+        elif msg.type == ProgIt.PLACE_TO_POSE:
+
+            if not self.ph.is_object_set(block_id, msg.ref_id[0]):
+
+                self.notif(translate("UICoreRos", "Select object to be picked up in ID=") + str(msg.ref_id[0]))
 
             else:
 
-                self.notif(translate("UICoreRos", "Select object to be picked up"), temp=True)
-                self.select_object(msg.object)
+                ref_msg = self.ph.get_item_msg(block_id, msg.ref_id[0])  # TODO what to do with more than 1 reference?
 
-            if self.ph.is_object_set(block_id, item_id):
+                if ref_msg.type == ProgIt.PICK_OBJECT_ID:
 
-                # TODO kdy misto place pose pouzi place polygon? umoznit zmenit pose na polygon a opacne?
-                if msg.spec == ProgIt.MANIP_TYPE:
-                    object_type = self.art.get_object_type(msg.object)
-                    object_id = None
-                else:
-                    obj = self.get_object(msg.object)
+                    obj = self.get_object(ref_msg.object[0])
                     object_type = obj.object_type
                     object_id = obj.object_id
+                    self.select_object(ref_msg.object[0])
 
-                if self.ph.is_place_pose_set(block_id, item_id):
-
-                    if object_type is not None:
-                        self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), msg.place_pose, object_type,  object_id, place_cb=self.place_pose_changed, fixed=read_only)
                 else:
-                    self.notif(translate("UICoreRos", "Set where to place picked object"))
-                    self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  self.get_def_pose(), object_type,  object_id, place_cb=self.place_pose_changed, fixed=read_only)
+
+                    object_type = self.art.get_object_type(ref_msg.object[0])
+                    object_id = None
+                    self.select_object_type(ref_msg.object[0])
+
+                if self.ph.is_object_set(block_id, msg.ref_id[0]):
+
+                    if self.ph.is_pose_set(block_id, item_id):
+
+                            if object_type is not None:
+                                self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), msg.pose[0], object_type,  object_id, place_cb=self.place_pose_changed, fixed=read_only)
+                    else:
+                        self.notif(translate("UICoreRos", "Set where to place picked object"))
+                        self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  self.get_def_pose(), object_type,  object_id, place_cb=self.place_pose_changed, fixed=read_only)
 
     def get_def_pose(self):
 
@@ -367,8 +392,10 @@ class UICoreRos(UICore):
 
     def place_pose_changed(self, pos,  yaw):
 
-        self.program_vis.set_place_pose(pos[0], pos[1],  yaw)
-        self.state_manager.update_program_item(self.ph.get_program_id(), self.program_vis.block_id, self.program_vis.get_current_item())
+        if self.program_vis.editing_item:
+
+            self.program_vis.set_place_pose(pos[0], pos[1],  yaw)
+            self.state_manager.update_program_item(self.ph.get_program_id(), self.program_vis.block_id, self.program_vis.get_current_item())
 
     def cb_running(self):
 
@@ -562,6 +589,10 @@ class UICoreRos(UICore):
         if self.fsm.state != 'learning':
             return False
 
+        if not self.program_vis.editing_item:
+            rospy.logdebug("not in edit mode")
+            return False
+
         rospy.logdebug("attempt to select object id: " + id)
         obj = self.get_object(id)
 
@@ -570,16 +601,23 @@ class UICoreRos(UICore):
         if msg is None:
             return False
 
-        if msg.spec == ProgIt.MANIP_TYPE:
+        if msg.type in [ProgIt.PICK_FROM_FEEDER, ProgIt.PICK_FROM_POLYGON]:
 
             # this type of object is already set
-            if obj.object_type.name == msg.object:
+            if len(msg.object) > 0 and obj.object_type.name == msg.object[0]:
                 rospy.logdebug("object type " + obj.object_type.name + " already selected")
                 return
             else:
                 # TODO remove previously inserted polygon, do not insert new place
                 rospy.logdebug("selecting new object type: " + obj.object_type.name)
                 pass
+
+        if msg.type == ProgIt.PICK_FROM_FEEDER:
+
+            self.program_vis.set_object(obj.object_type.name)
+            self.select_object_type(obj.object_type.name)
+
+        elif msg.type == ProgIt.PICK_FROM_POLYGON:
 
             poly_points = []
 
@@ -592,15 +630,6 @@ class UICoreRos(UICore):
             self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points, polygon_changed=self.polygon_changed)
             self.notif(translate("UICoreRos", "Check and adjust pick polygon"), temp=True)
 
-            self.notif(translate("UICoreRos", "Set where to place picked object"), temp=True)
-            self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), self.get_def_pose(), obj.object_type, place_cb=self.place_pose_changed)
-
-        elif msg.spec == ProgIt.MANIP_ID:
-
-            # TODO
-            pass
-
-        # TODO block_id
         self.state_manager.update_program_item(self.ph.get_program_id(), self.program_vis.block_id, self.program_vis.get_current_item())
         return True
 

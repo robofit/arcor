@@ -32,7 +32,7 @@ def get_pick_polygon_points(msg):
 
     poly_points = []
 
-    for pt in msg.pick_polygon.polygon.points:
+    for pt in msg.polygon[0].polygon.points:
 
         poly_points.append((pt.x, pt.y))
 

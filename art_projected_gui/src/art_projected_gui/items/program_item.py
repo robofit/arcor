@@ -40,7 +40,7 @@ class ProgramItem(Item):
 
         bdata = []
 
-        self.blocks_map = {} # map from indexes (key) to block_id (value)
+        self.blocks_map = {}  # map from indexes (key) to block_id (value)
 
         block_id = self.ph.get_first_block_id()
 
@@ -102,51 +102,91 @@ class ProgramItem(Item):
 
         self.setZValue(100)
 
-    def get_text_for_item(self, item):  # TODO rewrite this
+    def get_text_for_item(self, block_id, item_id):  # TODO rewrite this
 
-        text = QtCore.QCoreApplication.translate("ProgramItem", "Instruction") + " ID: " + str(item.id) + "\n"
+        item = self.ph.get_item_msg(block_id, item_id)
 
-        pose_str = "x=" + str(round(item.place_pose.pose.position.x, 2)) + ", y=" + str(round(item.place_pose.pose.position.y, 2))
-        obj = item.object
-
-        if item.place_pose.pose.position.x == 0 and item.place_pose.pose.position.y == 0:
-            pose_str = "x=??, y=??"
-
-        if obj == "":
-
-            obj = "??"
+        text = "(" + str(item.id) + ") "
 
         if item.type == ProgIt.GET_READY:
-            return text + QtCore.QCoreApplication.translate("ProgramItem", "get ready")
-        elif item.type == ProgIt.MANIP_PICK:
 
-            if item.spec == ProgIt.MANIP_ID:
-                return text + QtCore.QCoreApplication.translate("ProgramItem", "pick object ID=")
-            elif item.spec == ProgIt.MANIP_TYPE:
-                return text + QtCore.QCoreApplication.translate("ProgramItem", "pick object type=")
+            text += QtCore.QCoreApplication.translate("ProgramItem", "GET_READY")
 
-        elif item.type == ProgIt.MANIP_PLACE:
+        elif item.type == ProgIt.WAIT_FOR_USER:
 
-            # TODO pose / polygon
-            return text + QtCore.QCoreApplication.translate("ProgramItem", "place object at ") + pose_str
+            text += QtCore.QCoreApplication.translate("ProgramItem", "WAIT_FOR_USER")
 
-        elif item.type == ProgIt.MANIP_PICK_PLACE:
+        elif item.type == ProgIt.WAIT_UNTIL_USER_FINISHES:
 
-            if item.spec == ProgIt.MANIP_ID:
-                return text + QtCore.QCoreApplication.translate("ProgramItem", "pick object") + "'" + obj + "'\n" + QtCore.QCoreApplication.translate("ProgramItem", "place to ") + pose_str
-            elif item.spec == ProgIt.MANIP_TYPE:
-                return text + QtCore.QCoreApplication.translate("ProgramItem", "pick object type") + "'" + obj + "'\n" + QtCore.QCoreApplication.translate("ProgramItem", "place to ") + pose_str
+            text += QtCore.QCoreApplication.translate("ProgramItem", "WAIT_UNTIL_USER_FINISHES")
 
-        elif item.type == ProgIt.MANIP_PICK_PLACE_FROM_FEEDER:
+        elif item.type == ProgIt.PICK_FROM_POLYGON:
 
-            return text + QtCore.QCoreApplication.translate("ProgramItem", "pick object type") + "'" + obj + " from feeder'\n" + QtCore.QCoreApplication.translate("ProgramItem", "place to ") + pose_str
+            text += QtCore.QCoreApplication.translate("ProgramItem", "PICK_FROM_POLYGON")
 
-        elif item.type == ProgIt.WAIT:
+            if self.ph.is_object_set(block_id,  item_id):
 
-            if item.spec == ProgIt.WAIT_FOR_USER:
-                return text + QtCore.QCoreApplication.translate("ProgramItem", "wait for user")
-            elif item.spec == ProgIt.WAIT_UNTIL_USER_FINISHES:
-                return text + QtCore.QCoreApplication.translate("ProgramItem", "wait until user finishes")
+                text += "\n" + "object type=" + item.object[0]
+
+            else:
+
+                text += "\n" + "object type=??"
+
+        elif item.type == ProgIt.PICK_FROM_FEEDER:
+
+            text += QtCore.QCoreApplication.translate("ProgramItem", "PICK_FROM_FEEDER")
+
+            if self.ph.is_pose_set(block_id, item_id):
+
+                text += "\n" + "x=" + str(round(item.pose[0].pose.position.x, 2)) + ", y=" + str(round(item.pose[0].pose.position.y, 2)) + ", z=" + str(round(item.pose[0].pose.position.z, 2))
+
+            else:
+
+                text += "\n" + "x=??, y=??, z=??"
+
+            if self.ph.is_object_set(block_id,  item_id):
+
+                text += "\n" + "object type=" + item.object[0]
+
+            else:
+
+                text += "\n" + "object type=??"
+
+        elif item.type == ProgIt.PICK_OBJECT_ID:
+
+            text += QtCore.QCoreApplication.translate("ProgramItem", "PICK_OBJECT_ID")
+
+            if self.ph.is_object_set(block_id,  item_id):
+
+                text += "\n" + "object ID=" + item.object[0]
+
+            else:
+
+                text += "\n" + "object ID=??"
+
+        elif item.type == ProgIt.PLACE_TO_POSE:
+
+            text += QtCore.QCoreApplication.translate("ProgramItem", "PLACE_TO_POSE")
+
+            if self.ph.is_object_set(block_id,  item.ref_id[0]):
+
+                ref_item = self.ph.get_item_msg(block_id, item.ref_id[0])
+
+                text += "\n" + "object from (" + str(item.ref_id[0]) + ")=" + ref_item.object[0]
+
+            else:
+
+                text += "\n" + "object from (" + str(item.ref_id[0]) + ")=??"
+
+            if self.ph.is_pose_set(block_id, item_id):
+
+                text += "\n" + "x=" + str(round(item.pose[0].pose.position.x, 2)) + ", y=" + str(round(item.pose[0].pose.position.y, 2))
+
+            else:
+
+                text += "\n" + "x=??, y=??"
+
+        return text
 
     def block_edit_btn_cb(self, btn):
 
@@ -156,15 +196,13 @@ class ProgramItem(Item):
         self.blocks_list.set_enabled(False, True)
 
         idata = []
-        self.items_map = {} # map from indexes (key) to item_id (value)
+        self.items_map = {}  # map from indexes (key) to item_id (value)
 
         item_id = self.ph.get_first_item_id(self.block_id)
 
         while item_id[0] == self.block_id:
 
-            imsg = self.ph.get_item_msg(*item_id)
-
-            idata.append(self.get_text_for_item(imsg))
+            idata.append(self.get_text_for_item(*item_id))
             self.items_map[len(idata)-1] = item_id[1]
 
             item_id = self.ph.get_id_on_success(*item_id)
@@ -192,7 +230,7 @@ class ProgramItem(Item):
 
         self. _place_childs_horizontally(y, self.sp, [self.item_finished_btn])
 
-        y +=  self.item_finished_btn._height() + 3*self.sp
+        y += self.item_finished_btn._height() + 3*self.sp
 
         self.h = y
         self.update()
@@ -253,7 +291,7 @@ class ProgramItem(Item):
 
     def item_selected_cb(self):
 
-        if  self.items_list.selected_item_idx is not None:
+        if self.items_list.selected_item_idx is not None:
 
             self.item_id = self.items_map[self.items_list.selected_item_idx]
 
@@ -370,16 +408,16 @@ class ProgramItem(Item):
 
         msg = self.get_current_item()
 
-        msg.place_pose.pose.position.x = x
-        msg.place_pose.pose.position.y = y
-        msg.place_pose.pose.orientation = conversions.yaw2quaternion(yaw)
+        msg.pose[0].pose.position.x = x
+        msg.pose[0].pose.position.y = y
+        msg.pose[0].pose.orientation = conversions.yaw2quaternion(yaw)
 
         self._update_item()
 
     def set_object(self, obj):
 
         msg = self.get_current_item()
-        msg.object = obj
+        msg.object = [obj]
 
         self._update_item()
 
@@ -387,11 +425,11 @@ class ProgramItem(Item):
 
         msg = self.get_current_item()
 
-        del msg.pick_polygon.polygon.points[:]
+        del msg.polygon[0].polygon.points[:]
 
         for pt in pts:
 
-            msg.pick_polygon.polygon.points.append(Point32(pt[0], pt[1], 0))
+            msg.polygon[0].polygon.points.append(Point32(pt[0], pt[1], 0))
 
         self._update_item()
 
@@ -433,7 +471,7 @@ class ProgramItem(Item):
         else:
             self.items_list.items[idx].set_background_color(QtCore.Qt.red)
 
-        self.items_list.items[idx].set_caption(self.get_text_for_item(self.ph.get_item_msg(block_id, item_id)))
+        self.items_list.items[idx].set_caption(self.get_text_for_item(block_id, item_id))
 
         self._update_block(block_id)
 
@@ -471,8 +509,6 @@ class ProgramItem(Item):
                 painter.setPen(QtCore.Qt.red)
 
             painter.drawText(self.sp, 2*self.sp, translate("ProgramItem", "Program") + " ID: " + str(self.ph.get_program_id()))
-
-
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)

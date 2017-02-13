@@ -34,7 +34,7 @@ def timer_callback(event):
 
     flags = {}
     it = ph.get_item_msg(*current_item)
-    if it.type == ProgramItem.MANIP_PICK_PLACE:
+    if it.type == ProgramItem.PICK_FROM_POLYGON:
         flags["SELECTED_OBJECT_ID"] = "my_object"
 
     state_manager.update_program_item(ph.get_program().header.id,  current_item[0],  ph.get_item_msg(*current_item),  flags)
