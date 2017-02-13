@@ -45,7 +45,7 @@ def main(args):
     p.on_success = 4
     p.on_failure = 0
     p.type = ProgramItem.PICK_FROM_FEEDER
-    p.object.append("profile")
+    p.object.append("profile_20_60")
     pf = PoseStamped()
     pf.header.frame_id = "marker"
     pf.pose.position.x = 0.75
@@ -72,7 +72,7 @@ def main(args):
     p.on_success = 6
     p.on_failure = 0
     p.type = ProgramItem.PICK_FROM_FEEDER
-    p.object.append("profile")
+    p.object.append("profile_20_60")
     pf = PoseStamped()
     pf.header.frame_id = "marker"
     pf.pose.position.x = 0.75
@@ -99,7 +99,7 @@ def main(args):
     p.on_success = 9
     p.on_failure = 0
     p.type = ProgramItem.PICK_FROM_POLYGON
-    p.object.append("profile")
+    p.object.append("profile_20_60")
     pp = PolygonStamped()
     pp.header.frame_id = "marker"
     pp.polygon.points.append(Point32(0.4, 0.1, 0))
