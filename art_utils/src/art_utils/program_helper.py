@@ -106,15 +106,28 @@ class ProgramHelper():
 
                 item = prog.blocks[v["idx"]].items[vv["idx"]]
 
+                for ref in item.ref_id:
+
+                    if ref not in cache[k]["items"]:
+
+                        rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has invalid ref_id: " + str(ref))
+                        return False
+
+                if item.type in [ProgramItem.PLACE_TO_POSE] and len(item.ref_id) == 0:
+
+                    rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has NO ref_id!")
+                    return False
+
                 if template:
 
-                    item.object = ""
+                    item.object = []
 
                     # for stamped types we want to keep header (frame_id)
-                    item.pick_pose.pose = Pose()
-                    item.pick_polygon.polygon = Polygon()
-                    item.place_pose.pose = Pose()
-                    item.place_polygon.polygon = Polygon()
+                    for polygon in item.polygon:
+                        polygon.polygon = Polygon()
+
+                    for pose in item.pose:
+                        pose.pose = Pose()
 
         self._prog = prog
         self._cache = cache
@@ -226,32 +239,61 @@ class ProgramHelper():
 
     def item_requires_learning(self, block_id, item_id):
 
-        return self.get_item_type(block_id,  item_id) in [ProgramItem.MANIP_PICK, ProgramItem.MANIP_PLACE, ProgramItem.MANIP_PICK_PLACE, ProgramItem.MANIP_PICK_PLACE_FROM_FEEDER]
+        return self.get_item_type(block_id,  item_id) in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID, ProgramItem.PLACE_TO_POSE]
 
-    def is_place_pose_set(self, block_id, item_id):
-
-        msg = self.get_item_msg(block_id, item_id)
-        return msg.place_pose.pose != Pose()
-
-    def is_pick_pose_set(self, block_id, item_id):
+    def is_pose_set(self, block_id, item_id):
 
         msg = self.get_item_msg(block_id, item_id)
-        return msg.pick_pose.pose != Pose()
+
+        if msg.type not in [ProgramItem.PICK_FROM_FEEDER, ProgramItem.PLACE_TO_POSE]:
+
+            raise ValueError("Instruction type " + str(msg.type) + " does not use 'pose'.")
+
+        if len(msg.pose) == 0:
+
+            raise ValueError("Array 'pose' is empty.")
+
+        for pose in msg.pose:
+            if pose.pose == Pose():
+                return False
+
+        return True
 
     def is_object_set(self, block_id, item_id):
 
         msg = self.get_item_msg(block_id, item_id)
-        return msg.object != ""
 
-    def is_pick_polygon_set(self, block_id, item_id):
+        if msg.type not in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID, ProgramItem.PLACE_TO_POSE]:
+
+            raise ValueError("Instruction type " + str(msg.type) + " does not use 'object'.")
+
+        if len(msg.object) == 0:
+
+            return False
+
+        for object in msg.object:
+            if object == "":
+                return False
+
+        return True
+
+    def is_polygon_set(self, block_id, item_id):
 
         msg = self.get_item_msg(block_id, item_id)
-        return msg.pick_polygon.polygon != Polygon()
 
-    def is_place_polygon_set(self, block_id, item_id):
+        if msg.type not in [ProgramItem.PICK_FROM_POLYGON]:
 
-        msg = self.get_item_msg(block_id, item_id)
-        return msg.place_polygon.polygon != Polygon()
+            raise ValueError("Instruction type " + str(msg.type) + " does not use 'polygon'.")
+
+        if len(msg.polygon) == 0:
+
+            raise ValueError("Array 'polygon' is empty.")
+
+        for p in msg.polygon:
+            if p.polygon == Polygon():
+                return False
+
+        return True
 
     def program_learned(self):
 
@@ -282,37 +324,32 @@ class ProgramHelper():
 
         msg = self.get_item_msg(block_id, item_id)
 
-        # TODO other types
-        if msg.type == ProgramItem.MANIP_PICK_PLACE:
+        if msg.type == ProgramItem.PICK_FROM_POLYGON:
 
-            if not self.is_object_set(block_id, item_id):  # there has to be id or type
+            if not (self.is_object_set(block_id, item_id) and self.is_polygon_set(block_id, item_id)):
                 return False
+            else:
+                return True
 
-            if not (self.is_place_pose_set(block_id, item_id) or self.is_place_polygon_set(block_id, item_id)):
+        elif msg.type in [ProgramItem.PICK_FROM_FEEDER]:
+
+            if not (self.is_object_set(block_id, item_id) and self.is_pose_set(block_id, item_id)):
                 return False
+            else:
+                return True
 
-            if msg.spec == ProgramItem.MANIP_TYPE:
+        elif msg.type in [ProgramItem.PLACE_TO_POSE]:
 
-                if not (self.is_pick_polygon_set(block_id, item_id) or self.is_pick_pose_set(block_id, item_id)):
-                    return False
-
-            return True
-
-        elif msg.type == ProgramItem.MANIP_PICK_PLACE_FROM_FEEDER:
-
-            if msg.spec != ProgramItem.MANIP_TYPE:  # TODO do this type of check on program load!
-
-                raise ValueError("MANIP_PICK_PLACE_FROM_FEEDER has to use MANIP_TYPE")
-
-            if not self.is_object_set(block_id, item_id):  # there has to be id or type
+            if not self.is_pose_set(block_id, item_id):
                 return False
+            else:
+                return True
 
-            if not (self.is_place_pose_set(block_id, item_id) or self.is_place_polygon_set(block_id, item_id)):
+        elif msg.type == ProgramItem.PICK_OBJECT_ID:
+
+            if not (self.is_object_set(block_id, item_id)):
                 return False
-
-            if not self.is_pick_pose_set(block_id, item_id):
-                return False
-
-            return True
+            else:
+                return True
 
         raise NotImplementedError("Not yet supported item type.")

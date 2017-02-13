@@ -7,7 +7,7 @@ from art_utils import ProgramHelper
 from art_msgs.msg import Program,  ProgramBlock,  ProgramItem
 import sys
 from copy import deepcopy
-from geometry_msgs.msg import Point32, Pose
+from geometry_msgs.msg import Point32, PoseStamped, PolygonStamped
 
 
 class TestProgramHelper(unittest.TestCase):
@@ -29,57 +29,101 @@ class TestProgramHelper(unittest.TestCase):
         pb.on_failure = 0
         self.prog.blocks.append(pb)
 
-        p0 = ProgramItem()
-        p0.id = 1
-        p0.on_success = 2
-        p0.on_failure = 0
-        p0.type = ProgramItem.GET_READY
-        pb.items.append(p0)
+        p = ProgramItem()
+        p.id = 1
+        p.on_success = 2
+        p.on_failure = 0
+        p.type = ProgramItem.GET_READY
+        pb.items.append(deepcopy(p))
 
-        p1 = ProgramItem()
-        p1.id = 2
-        p1.on_success = 3
-        p1.on_failure = 0
-        p1.type = ProgramItem.WAIT
-        p1.spec = ProgramItem.WAIT_FOR_USER
-        pb.items.append(p1)
+        p = ProgramItem()
+        p.id = 2
+        p.on_success = 3
+        p.on_failure = 0
+        p.type = ProgramItem.WAIT_FOR_USER
+        pb.items.append(deepcopy(p))
 
-        p2 = ProgramItem()
-        p2.id = 3
-        p2.on_success = 4
-        p2.on_failure = 0
-        p2.type = ProgramItem.MANIP_PICK_PLACE_FROM_FEEDER
-        p2.spec = ProgramItem.MANIP_TYPE
-        p2.object = "profile"
-        p2.place_pose.header.frame_id = "marker"
-        p2.place_pose.pose.position.x = 0.75
-        p2.place_pose.pose.position.y = 0.5
-        p2.pick_pose.header.frame_id = "marker"
-        p2.pick_pose.pose.position.x = 0.75
-        p2.pick_pose.pose.position.y = 0.5
-        pb.items.append(p2)
+        p = ProgramItem()
+        p.id = 3
+        p.on_success = 4
+        p.on_failure = 0
+        p.type = ProgramItem.PICK_FROM_FEEDER
+        p.object.append("profile")
+        pf = PoseStamped()
+        pf.header.frame_id = "marker"
+        pf.pose.position.x = 0.75
+        pf.pose.position.y = 0.5
+        p.pose.append(pf)
+        pb.items.append(deepcopy(p))
 
-        p3 = ProgramItem()
-        p3.id = 4
-        p3.on_success = 5
-        p3.on_failure = 0
-        p3.type = ProgramItem.WAIT
-        p3.spec = ProgramItem.WAIT_UNTIL_USER_FINISHES
-        pb.items.append(p3)
+        p = ProgramItem()
+        p.id = 4
+        p.on_success = 5
+        p.on_failure = 0
+        p.type = ProgramItem.PLACE_TO_POSE
+        p.ref_id.append(3)
+        p.ref_id.append(5)
+        pp = PoseStamped()
+        pp.header.frame_id = "marker"
+        pp.pose.position.x = 0.75
+        pp.pose.position.y = 0.5
+        p.pose.append(pp)
+        pb.items.append(deepcopy(p))
 
-        p4 = ProgramItem()
-        p4.id = 5
-        p4.on_success = 0
-        p4.on_failure = 0
-        p4.type = ProgramItem.MANIP_PICK_PLACE
-        p4.spec = ProgramItem.MANIP_TYPE
-        p4.object = "profile"
-        p4.pick_pose = p2.place_pose
-        p4.place_pose.header.frame_id = "marker"
-        p4.place_pose.pose.position.x = 0.25
-        p4.place_pose.pose.position.y = 0.5
-        p4.pick_polygon.polygon.points.append(Point32(0, 0, 0))
-        pb.items.append(p4)
+        p = ProgramItem()
+        p.id = 5
+        p.on_success = 6
+        p.on_failure = 0
+        p.type = ProgramItem.PICK_FROM_FEEDER
+        p.object.append("profile")
+        pf = PoseStamped()
+        pf.header.frame_id = "marker"
+        pf.pose.position.x = 0.75
+        pf.pose.position.y = 0.5
+        p.pose.append(pf)
+        pb.items.append(deepcopy(p))
+
+        p = ProgramItem()
+        p.id = 6
+        p.on_success = 7
+        p.on_failure = 0
+        p.type = ProgramItem.GET_READY
+        pb.items.append(deepcopy(p))
+
+        p = ProgramItem()
+        p.id = 7
+        p.on_success = 8
+        p.on_failure = 0
+        p.type = ProgramItem.WAIT_UNTIL_USER_FINISHES
+        pb.items.append(deepcopy(p))
+
+        p = ProgramItem()
+        p.id = 8
+        p.on_success = 9
+        p.on_failure = 0
+        p.type = ProgramItem.PICK_FROM_POLYGON
+        p.object.append("profile")
+        pp = PolygonStamped()
+        pp.header.frame_id = "marker"
+        pp.polygon.points.append(Point32(0.4, 0.1, 0))
+        pp.polygon.points.append(Point32(1.0, 0.1, 0))
+        pp.polygon.points.append(Point32(1.0, 0.6, 0))
+        pp.polygon.points.append(Point32(0.4, 0.6, 0))
+        p.polygon.append(pp)
+        pb.items.append(deepcopy(p))
+
+        p = ProgramItem()
+        p.id = 9
+        p.on_success = 4
+        p.on_failure = 0
+        p.type = ProgramItem.PLACE_TO_POSE
+        p.ref_id.append(8)
+        pp = PoseStamped()
+        pp.header.frame_id = "marker"
+        pp.pose.position.x = 0.75
+        pp.pose.position.y = 0.5
+        p.pose.append(pp)
+        pb.items.append(deepcopy(p))
 
     def test_empty_program(self):
 
@@ -193,6 +237,13 @@ class TestProgramHelper(unittest.TestCase):
         self.assertEquals(self.ph.program_learned(), True, "test_template")
         self.ph.load(self.prog, True)
         self.assertEquals(self.ph.program_learned(), False, "test_template")
+
+    def test_invalid_ref_id(self):
+
+        prog = deepcopy(self.prog)
+        prog.blocks[0].items[0].ref_id.append(6587)
+        res = self.ph.load(prog)
+        self.assertEquals(res, False, "test_invalid_ref_id")
 
 if __name__ == '__main__':
 
