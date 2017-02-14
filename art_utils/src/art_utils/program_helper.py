@@ -139,15 +139,9 @@ class ProgramHelper():
 
     def get_program_id(self):
 
-        if self._prog is None:
-            return None
-
         return self._prog.header.id
 
     def get_block_msg(self,  block_id):
-
-        if block_id not in self._cache:
-            return None
 
         block_idx = self._cache[block_id]["idx"]
         return self._prog.blocks[block_idx]
@@ -162,15 +156,9 @@ class ProgramHelper():
 
     def get_first_block_id(self):
 
-        if len(self._cache) == 0:
-            return None
-
         return min(self._cache,  key=self._cache.get)
 
     def get_first_item_id(self, block_id=None):
-
-        if len(self._cache) == 0:
-            return None
 
         if block_id is None:
             block_id = self.get_first_block_id()
@@ -179,9 +167,6 @@ class ProgramHelper():
         return (block_id,  item_id)
 
     def get_item_msg(self,  block_id,  item_id):
-
-        if block_id not in self._cache or item_id not in self._cache[block_id]["items"]:
-            return None
 
         block_idx = self._cache[block_id]["idx"]
         item_idx = self._cache[block_id]["items"][item_id]["idx"]
@@ -192,9 +177,6 @@ class ProgramHelper():
         return self._cache[block_id][what]
 
     def _get_item_on(self,  block_id,  item_id,  what):
-
-        if block_id not in self._cache or item_id not in self._cache[block_id]["items"]:
-            return None
 
         item_id_on = self._cache[block_id]["items"][item_id][what]
 
@@ -207,14 +189,11 @@ class ProgramHelper():
 
                 return (0,  0)  # end of program
 
-            items_dict = self._cache[next_block_id]["items"]
-            next_item_id = min(items_dict,  key=items_dict.get)
-
-            return (next_block_id, next_item_id)
+            return self.get_first_item_id(next_block_id)
 
         else:
 
-            return (block_id,  item_id_on)
+            return (block_id, item_id_on)
 
     def get_id_on_success(self,  block_id,  item_id):
 
