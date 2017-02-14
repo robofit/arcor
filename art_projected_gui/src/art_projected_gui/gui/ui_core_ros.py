@@ -212,29 +212,18 @@ class UICoreRos(UICore):
 
         elif state.system_state == InterfaceState.STATE_PROGRAM_RUNNING:
 
-            if self.program_vis.prog is None or self.program_vis.prog.header.id != state.program_id:
-
-                program = self.art.load_program(state.program_id)
-                self.ph.load(program)
-                if program is not None:
-                    # self.program_vis.set_prog(program, False)
-                    # TODO nova instance program_vis ?
-                    pass
-                else:
-                    pass  # TODO error
+            self.clear_all()
 
             if self.fsm.state != 'running':
 
-                self.clear_all()
-                self.program_vis.set_running()
                 self.fsm.tr_running()
 
-            # TODO updatovat program_vis itemem ze zpravy - pokud se lisi (timestamp) ??
-            self.program_vis.set_active(inst_id=state.program_current_item.id)
-            it = state.program_current_item
+                # TODO handle this - display ProgramItem (if it's not already displayed), load proper program (if not loaded) etc.
 
-            if our_state.program_current_item.id != state.program_current_item:
-                self.clear_all()
+                return
+
+            self.program_vis.set_active(state.block_id, state.program_current_item.id)
+            it = state.program_current_item
 
             if it.type == ProgIt.GET_READY:
 
@@ -257,7 +246,7 @@ class UICoreRos(UICore):
                     return
 
                 self.select_object(obj_id)
-                self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=self.program_vis.active_item.get_pick_polygon_points(),  fixed=True)
+                self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=conversions.get_pick_polygon_points(it),  fixed=True)
 
                 obj = self.get_object(obj_id)
                 self.notif(translate("UICoreRos", "Going to manipulate with object ID=") + obj_id)
@@ -500,12 +489,11 @@ class UICoreRos(UICore):
         self.program_list = None
 
         self.program_vis = ProgramItem(self.scene, self.rpm, pos[0], pos[1], self.ph, done_cb=self.learning_done_cb, item_switched_cb=self.active_item_switched, learning_request_cb=self.learning_request_cb)
-        # self.program_vis.active_item_switched = self.active_item_switched
-        # self.program_vis.program_state_changed = self.program_state_changed
         self.scene_items.append(self.program_vis)
 
         if run:
 
+            self.program_vis.set_readonly(True)
             self.notif(translate("UICoreRos", "Starting program ID=" + str(prog_id)), temp=True)
             self.clear_all()
             self.fsm.tr_program_selected()
@@ -553,7 +541,20 @@ class UICoreRos(UICore):
         self.program_vis = None
         self.remove_scene_items_by_type(ProgramListItem)
 
-        self.program_list = ProgramListItem(self.scene, self.rpm, pos[0], pos[1], self.art.get_program_headers(),  prog_id, self.program_selected_cb)
+        headers = self.art.get_program_headers()
+
+        d = {}
+
+        for header in headers:
+
+            ph = ProgramHelper()
+            d[header.id] = None
+
+            if ph.load(self.art.load_program(header.id)):
+
+                d[header.id] = ph.program_learned()
+
+        self.program_list = ProgramListItem(self.scene, self.rpm, pos[0], pos[1], headers,  d, prog_id, self.program_selected_cb)
         self.scene_items.append(self.program_list)
 
     def object_cb(self, msg):
@@ -581,8 +582,10 @@ class UICoreRos(UICore):
 
     def polygon_changed(self, pts):
 
-        self.program_vis.set_polygon(pts)
-        self.state_manager.update_program_item(self.ph.get_program_id(), self.program_vis.block_id, self.program_vis.get_current_item())
+        if self.program_vis.editing_item:
+
+            self.program_vis.set_polygon(pts)
+            self.state_manager.update_program_item(self.ph.get_program_id(), self.program_vis.block_id, self.program_vis.get_current_item())
 
     def object_selected(self, id, selected):
 

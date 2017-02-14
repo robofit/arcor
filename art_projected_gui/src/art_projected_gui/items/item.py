@@ -3,7 +3,6 @@
 from PyQt4 import QtGui, QtCore
 import rospy
 
-
 # spolecny predek vseho ve scene
 class Item(QtGui.QGraphicsItem):
 

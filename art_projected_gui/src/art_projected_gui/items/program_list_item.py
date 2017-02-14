@@ -10,29 +10,40 @@ translate = QtCore.QCoreApplication.translate
 
 class ProgramListItem(Item):
 
-    def __init__(self, scene, rpm, x, y, program_headers, selected_program_id=None, program_selected_cb=None):
+    def __init__(self, scene, rpm, x, y, program_headers, learned_dict, selected_program_id=None, program_selected_cb=None):
 
         self.w = 100
         self.h = 100
 
         self.program_headers = program_headers
+        self.learned_dict = learned_dict
         self.program_selected_cb = program_selected_cb
 
         super(ProgramListItem, self).__init__(scene, rpm, x, y)
 
-        self.w = self.m2pix(0.2)
+        self.w = self.m2pix(0.25)
         self.h = self.m2pix(0.25)
 
         self.fixed = False
         self.setZValue(100)
 
         data = []
+        self.map_from_idx_to_program_id = {}
+        self.map_from_program_id_to_idx = {}
 
         for ph in self.program_headers:
 
             data.append("ID: " + str(ph.id) + "\nName: " + ph.name)
+            idx = len(data)-1
+            self.map_from_idx_to_program_id[idx] = ph.id
+            self.map_from_program_id_to_idx[ph.id] = idx
 
-        self.list = ListItem(self.scene(), self.rpm, self.m2pix(0.01), 0, 0.18, data, self.item_selected_cb, parent=self)
+        self.list = ListItem(self.scene(), self.rpm, self.m2pix(0.01), 0, 0.23, data, self.item_selected_cb, parent=self)
+
+        for idx in range(0, len(data)):
+
+            if not self.learned_dict[self.map_from_idx_to_program_id[idx]]:
+                self.list.items[idx].set_background_color(QtCore.Qt.red)
 
         self.run_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Run"), self, self.run_btn_cb)
         self.edit_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Edit"), self, self.edit_btn_cb)
@@ -44,12 +55,7 @@ class ProgramListItem(Item):
 
         if selected_program_id is not None:
 
-            for i in range(0, len(self.program_headers)):
-
-                if selected_program_id == self.program_headers[i].id:
-
-                    self.list.set_current_idx(i)
-                    break
+            self.list.set_current_idx(self.map_from_program_id_to_idx[selected_program_id])
 
         sp = self.m2pix(0.01)
         h = 5*sp
@@ -75,7 +81,9 @@ class ProgramListItem(Item):
 
         else:
 
-            self.run_btn.set_enabled(True)
+            pid = self.map_from_idx_to_program_id[self.list.selected_item_idx]
+            self.run_btn.setEnabled(self.learned_dict[pid])
+
             self.edit_btn.set_enabled(True)
             self.template_btn.set_enabled(True)
 
