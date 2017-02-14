@@ -78,6 +78,10 @@ class ListItem(Item):
 
     def set_current_idx(self,  idx, select = False):
 
+        if select:
+
+            self.selected_item_idx = idx
+
         self.middle_item_idx = max(idx, min(1, len(self.items)-1))
 
         if self.isEnabled():

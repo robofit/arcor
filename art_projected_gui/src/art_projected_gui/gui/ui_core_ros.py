@@ -554,6 +554,7 @@ class UICoreRos(UICore):
 
                 d[header.id] = ph.program_learned()
 
+        # rospy.loginfo(str(d))
         self.program_list = ProgramListItem(self.scene, self.rpm, pos[0], pos[1], headers,  d, prog_id, self.program_selected_cb)
         self.scene_items.append(self.program_list)
 
