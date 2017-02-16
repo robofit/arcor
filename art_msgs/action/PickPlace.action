@@ -1,11 +1,15 @@
-string id # name of the object
-geometry_msgs/PoseStamped place_pose # place pose for pick_and_place operation
+string object # object id / type
+geometry_msgs/PoseStamped pose
 float32 z_axis_angle_increment # 0 -> place with exactly given orientation, i.e. 1.57 -> object can be place rotated 90deg around z-axis
 uint8 keep_orientation
 uint8 operation
-uint8 PICK=0
-uint8 PLACE=1
-uint8 PICK_AND_PLACE=2
+
+uint8 GET_READY=0
+
+uint8 PICK_OBJECT_ID=1 # object (id)
+uint8 PICK_FROM_FEEDER=2 # object (type)
+
+uint8 PLACE_TO_POSE=20
 ---
 uint8 result
 uint8 SUCCESS=0
@@ -14,6 +18,4 @@ uint8 BUSY=2 # hand already holds object
 uint8 DROPPED=3 # object was dropped
 uint8 BAD_REQUEST=4
 ---
-uint8 operation
 uint8 attempt
-
