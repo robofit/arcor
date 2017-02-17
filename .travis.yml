@@ -37,8 +37,8 @@
 
 ################################################################################
 
-# Use ubuntu precise (12.04) with sudo privileges.
-dist: precise
+# Use ubuntu trusty (14.04) with sudo privileges.
+dist: trusty
 sudo: required
 language:
   - python
@@ -56,7 +56,7 @@ virtualenv:
 # trigger a build matrix for different ROS distributions if desired.
 env:
   global:
-    - ROS_DISTRO=hydro
+    - ROS_DISTRO=indigo
     - ROS_CI_DESKTOP="`lsb_release -cs`"  # e.g. [precise|trusty|...]
     - CI_SOURCE_PATH=$(pwd)
     - ROSINSTALL_FILE=$CI_SOURCE_PATH/dependencies.rosinstall
@@ -70,7 +70,7 @@ before_install:
   - sudo sh -c "echo \"deb http://packages.ros.org/ros/ubuntu $ROS_CI_DESKTOP main\" > /etc/apt/sources.list.d/ros-latest.list"
   - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
   - sudo apt-get update -qq
-  - sudo apt-get install -y --force-yes python-catkin-pkg python-rosdep python-wstool ros-$ROS_DISTRO-catkin
+  - sudo apt-get install -y --force-yes python-catkin-pkg python-rosdep python-wstool ros-$ROS_DISTRO-catkin python-catkin-lint
   - source /opt/ros/$ROS_DISTRO/setup.bash
   # Prepare rosdep to install dependencies.
   - sudo rosdep init
@@ -107,15 +107,13 @@ before_script:
   - sudo apt-get install -y mongodb-clients mongodb-server -o Dpkg::Options::="--force-confdef" # default actions
   - rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
 
-# Compile and test. If the CATKIN_OPTIONS file exists, use it as an argument to
-# catkin_make.
 script:
   - cd ~/catkin_ws
-  - catkin_make $( [ -f $CATKIN_OPTIONS ] && cat $CATKIN_OPTIONS )
-  # Testing: Use both run_tests (to see the output) and test (to error out).
-  - catkin_make run_tests  # This always returns 0, but looks pretty.
-  - catkin_make test  # This will return non-zero if a test fails.
+  - catkin_lint src/ar-table-pr2/
+  - catkin_make_isolated
+  - catkin_make_isolated --make-args test
   
 after_failure:
   - cd ~/catkin_ws
-  - find build/test_results/ -type f -follow -exec cat {} \;
+  - find build_isolated/ -iwholename "*/test_results/*.xml" -exec cat {} \;
+  - find build_isolated/ -iwholename "*/Testing/Temporary/LastTest.log" -exec cat {} \;
