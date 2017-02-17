@@ -9,34 +9,20 @@
     <!--JOINTS: When a joint is specified, the child link of that joint (which will always exist) is automatically included-->
     <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
     <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
+   
     <group name="left_arm">
-        <joint name="l_shoulder_pan_joint" />
-        <joint name="l_shoulder_lift_joint" />
-        <joint name="l_upper_arm_roll_joint" />
-        <joint name="l_upper_arm_joint" />
-        <joint name="l_elbow_flex_joint" />
-        <joint name="l_forearm_roll_joint" />
-        <joint name="l_forearm_cam_frame_joint" />
-        <joint name="l_forearm_cam_optical_frame_joint" />
-        <joint name="l_forearm_joint" />
-        <joint name="l_wrist_flex_joint" />
-        <joint name="l_wrist_roll_joint" />
+        <chain base_link="torso_lift_link" tip_link="l_wrist_roll_link" />
     </group>
+    
     <group name="right_arm">
-        <joint name="r_shoulder_pan_joint" />
-        <joint name="r_shoulder_lift_joint" />
-        <joint name="r_upper_arm_roll_joint" />
-        <joint name="r_upper_arm_joint" />
-        <joint name="r_elbow_flex_joint" />
-        <joint name="r_forearm_roll_joint" />
-        <joint name="r_forearm_cam_frame_joint" />
-        <joint name="r_forearm_cam_optical_frame_joint" />
-        <joint name="r_forearm_joint" />
-        <joint name="r_wrist_flex_joint" />
-        <joint name="r_wrist_roll_joint" />
-        <joint name="r_force_torque_adapter_joint" />
-        <joint name="r_force_torque_joint" />
+        <chain base_link="torso_lift_link" tip_link="r_wrist_roll_link" />
     </group>
+  
+    <group name="arms">
+        <group name="left_arm" />
+        <group name="right_arm" />
+    </group>
+  
     <group name="left_gripper">
         <link name="l_gripper_palm_link" />
         <link name="l_gripper_l_finger_link" />
@@ -69,24 +55,25 @@
         <joint name="l_forearm_roll_joint" value="1.7296" />
         <joint name="l_shoulder_lift_joint" value="0.805" />
         <joint name="l_shoulder_pan_joint" value="1.3466" />
-        <joint name="l_upper_arm_roll_joint" value="0.0916" />
+        <joint name="l_upper_arm_roll_joint" value="0.0" />
         <joint name="l_wrist_flex_joint" value="-1.114" />
-        <joint name="l_wrist_roll_joint" value="-0.0353" />
+        <joint name="l_wrist_roll_joint" value="0.0" />
     </group_state>
     <group_state name="right_default" group="right_arm">
-        <joint name="r_elbow_flex_joint" value="-1.9552" />
-        <joint name="r_forearm_roll_joint" value="-1.4472" />
-        <joint name="r_shoulder_lift_joint" value="0.7216" />
-        <joint name="r_shoulder_pan_joint" value="-1.4376" />
+        <joint name="r_elbow_flex_joint" value="-2.0327" />
+        <joint name="r_forearm_roll_joint" value="-1.7296" />
+        <joint name="r_shoulder_lift_joint" value="0.805" />
+        <joint name="r_shoulder_pan_joint" value="-1.3466" />
         <joint name="r_upper_arm_roll_joint" value="0" />
-        <joint name="r_wrist_flex_joint" value="-1.1781" />
-        <joint name="r_wrist_roll_joint" value="-0.0706" />
+        <joint name="r_wrist_flex_joint" value="-1.114" />
+        <joint name="r_wrist_roll_joint" value="0.0" />
     </group_state>
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
     <end_effector name="left_eef" parent_link="l_wrist_roll_link" group="left_gripper" />
     <end_effector name="right_eef" parent_link="r_wrist_roll_link" group="right_gripper" />
     <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
     <virtual_joint name="virtual_joint" type="planar" parent_frame="odom_combined" child_link="base_footprint" />
+    
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="base_bellow_link" link2="base_footprint" reason="Never" />
     <disable_collisions link1="base_bellow_link" link2="base_link" reason="Adjacent" />
