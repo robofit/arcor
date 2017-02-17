@@ -78,6 +78,8 @@ private:
 
   ros::ServiceClient object_type_srv_;
 
+  private bool publish_collision_objects_;
+
 public:
   artPr2Grasping() : nh_("~")
   {
@@ -85,6 +87,7 @@ public:
 
     nh_.param("enable_looking", enable_looking_, false);
     nh_.param<std::string>("group_name", group_name_, "left_arm");
+    nh_.param<std::string>("publish_collision_objects", publish_collision_objects_, true);
 
     move_group_.reset(new move_group_interface::MoveGroup(group_name_));
     move_group_->setPlanningTime(30.0);
@@ -253,7 +256,7 @@ public:
       }
 
       // don't publish for grasped object
-      if (!(grasped_object_ && grasped_object_->id == msg->instances[i].object_id))
+      if (publish_collision_objects_ && !(grasped_object_ && grasped_object_->id == msg->instances[i].object_id))
       {
         publishCollisionBB(objects_[msg->instances[i].object_id].p, msg->instances[i].object_id,
                            objects_[msg->instances[i].object_id].bb);
@@ -520,7 +523,7 @@ public:
 
     lookAt(objects_[id].p.position);
 
-    publishCollisionBB(objects_[id].p, id, objects_[id].bb);
+    // publishCollisionBB(objects_[id].p, id, objects_[id].bb);
 
     geometry_msgs::PoseStamped p;
     p.header.frame_id = getPlanningFrame();

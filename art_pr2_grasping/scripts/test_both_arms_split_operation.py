@@ -19,26 +19,26 @@ def getRandomObject():
     tmp.pose.orientation.y = 0.0
     tmp.pose.orientation.z = 0.0
     tmp.pose.orientation.w = 1.0
-    
+
     tmp.bbox = SolidPrimitive()
     tmp.bbox.type = SolidPrimitive.BOX
     tmp.bbox.dimensions.append(0.05)
     tmp.bbox.dimensions.append(0.05)
     tmp.bbox.dimensions.append(0.2)
-    
+
     return tmp
 
 def main():
 
     pub = rospy.Publisher("/art_object_detector/object_filtered", InstancesArray)
-    
+
     client = actionlib.SimpleActionClient('/pr2_pick_place_left/pp', art_msgs.msg.pickplaceAction)
     client.wait_for_server()
-    
+
     arr = InstancesArray()
     arr.header.frame_id = "base_footprint"
     arr.header.stamp = rospy.Time.now()
-    
+
     obj = ObjInstance()
     obj.object_id = "my_object"
     obj.pose.position.x = random.uniform(0.4, 0.7)
@@ -48,7 +48,7 @@ def main():
     obj.pose.orientation.y = 0.0
     obj.pose.orientation.z = 0.0
     obj.pose.orientation.w = 1.0
-    
+
     obj.bbox = SolidPrimitive()
     obj.bbox.type = SolidPrimitive.BOX
     obj.bbox.dimensions.append(0.05)
@@ -58,17 +58,17 @@ def main():
     arr.instances.append(obj)
     arr.instances.append(getRandomObject())
     arr.instances.append(getRandomObject())
-    
+
     pub.publish(arr)
     rospy.sleep(2.0)
 
     goal = art_msgs.msg.pickplaceGoal()
-    
+
     goal.id = "my_object"
     goal.operation = goal.PICK_AND_PLACE
     goal.z_axis_angle_increment = (2*3.14)/360*90
     goal.keep_orientation = False
-    
+
     goal.place_pose = PoseStamped()
     goal.place_pose.header.frame_id = "base_footprint"
     goal.place_pose.header.stamp = rospy.Time.now()
