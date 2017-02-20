@@ -106,6 +106,9 @@ class SquareItem(Item):
         self.pts.append(SquarePointItem(scene, rpm, self.max[0], self.max[1], self, "TR"))  # top-right corner
         self.pts.append(SquarePointItem(scene, rpm, self.min[0], self.max[1], self, "TL"))  # top-left corner
 
+        if self.square_changed is not None:
+            self.square_changed(self.get_square_points())   # ulozenie bodov do ProgramItem zpravy
+
         self.update_bound()
 
         self.update()
@@ -230,7 +233,7 @@ class SquareItem(Item):
         self.update()
 
         if finished and self.square_changed is not None:
-                self.square_changed()
+                self.square_changed(self.get_square_points())   # ulozenie bodov do ProgramItem zpravy
 
     def get_square_points(self):
 

@@ -381,9 +381,16 @@ class ProgramItem(Item):
         self.program_updated()
         self.update_size()
 
-    def set_place_grid(self):
-        # TODO
-        pass
+    # Metoda ulozi 4 body SquareItem-u do place_grid v zprave ProgramItem
+    def set_place_grid(self, pts):
+
+        # predchadzajuce body musime zmazat, aby sme tam nemali body predchadzajucej polohy gridu
+        del self.active_item.item.place_grid.polygon.points[:]
+
+        for pt in pts:
+
+            self.active_item.item.place_grid.polygon.points.append(Point32(pt[0], pt[1], 0))
+
 
     def boundingRect(self):
 

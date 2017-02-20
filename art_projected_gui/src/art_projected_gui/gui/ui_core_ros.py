@@ -545,9 +545,9 @@ class UICoreRos(UICore):
         # TODO block_id
         self.state_manager.update_program_item(self.program_vis.prog.header.id, self.program_vis.prog.blocks[0].id, self.program_vis.active_item.item)
 
-    def square_changed(self):
+    def square_changed(self, pts):
 
-        self.program_vis.set_place_grid()
+        self.program_vis.set_place_grid(pts)    # ulozenie bodov do ProgramItem zpravy
 
     def object_selected(self, id, selected):
 
@@ -584,7 +584,7 @@ class UICoreRos(UICore):
 
             self.notif(translate("UICoreRos", "Set where to place picked object"), temp=True)
             self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), self.get_def_pose(), obj.object_type, place_cb=self.place_pose_changed)
-            self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width/2, self.height/2, 0.1, 0.075, obj.object_type, self.square_changed)
+            self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width/2, self.height/2, 0.1, 0.075, obj.object_type, square_changed=self.square_changed)
 
         elif self.program_vis.active_item.item.spec == ProgIt.MANIP_ID:
 
