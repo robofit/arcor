@@ -1,6 +1,6 @@
 // Copyright 2016 Robo@FIT
 
-#include "art_pr2_grasping/action_server.h"
+#include "art_pr2_grasping/node.h"
 
 int main(int argc, char **argv)
 {
@@ -11,9 +11,9 @@ int main(int argc, char **argv)
 
   ROS_INFO("Starting...");
 
-  art_pr2_grasping::artActionServer as;
+  art_pr2_grasping::GraspingNode node;
   ros::Duration(1).sleep();
-  if (!as.init())
+  if (!node.init())
   {
     ROS_ERROR("Init failed.");
     return 1;

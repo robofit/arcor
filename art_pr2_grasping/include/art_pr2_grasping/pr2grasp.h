@@ -5,17 +5,13 @@
 #include <vector>
 #include <algorithm>
 #include <ros/ros.h>
-#include <pr2_controllers_msgs/PointHeadAction.h>
-#include <actionlib/client/simple_action_client.h>
-#include "art_msgs/InstancesArray.h"
-#include "art_msgs/getObjectType.h"
-#include <tf/transform_listener.h>
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit_simple_grasps/simple_grasps.h>
 #include <moveit_visual_tools/visual_tools.h>
 #include <moveit_simple_grasps/grasp_data.h>
 #include <moveit_simple_grasps/grasp_filter.h>
-#include <boost/thread/recursive_mutex.hpp>
+#include "objects.h"
+#include <std_msgs/String.h>
 
 // adapted from
 // https://github.com/davetcoleman/baxter_cpp/blob/hydro-devel/baxter_pick_place/src/block_pick_place.cpp
@@ -25,26 +21,11 @@
 
 namespace art_pr2_grasping
 {
-typedef actionlib::SimpleActionClient<pr2_controllers_msgs::PointHeadAction> PointHeadClient;
-
-typedef struct
-{
-  std_msgs::Header h;
-  shape_msgs::SolidPrimitive bb;
-  geometry_msgs::Pose p;
-}
-tobj;
-
-typedef struct
-{
-  std::string id;
-  // todo some other info?
-}
-graspedObject;
 
 class artPr2Grasping
 {
 private:
+
   moveit_simple_grasps::SimpleGraspsPtr simple_grasps_;
 
   moveit_visual_tools::VisualToolsPtr visual_tools_;
@@ -57,37 +38,37 @@ private:
   moveit_simple_grasps::GraspFilterPtr grasp_filter_;
   planning_scene_monitor::PlanningSceneMonitorPtr planning_scene_monitor_;
 
-  boost::scoped_ptr<PointHeadClient> head_;
-
-  ros::NodeHandle nh_;
-
-  bool enable_looking_;
-
-  ros::Subscriber obj_sub_;
-
-  boost::recursive_mutex objects_mutex_;
-  std::map<std::string, tobj> objects_;
+  ros::Publisher grasped_object_pub_;
 
   boost::shared_ptr<tf::TransformListener> tfl_;
 
-  boost::shared_ptr<graspedObject> grasped_object_;
+  const std::string default_target_;
+  const std::string gripper_state_topic_;
 
-  std::string group_name_;
+protected:
 
-  bool manipulation_in_progress_;
+  ros::NodeHandle nh_;
 
-  ros::ServiceClient object_type_srv_;
+  const std::string group_name_;
 
-  private bool publish_collision_objects_;
+  boost::shared_ptr<Objects> objects_;
+  boost::shared_ptr<TObjectInfo> grasped_object_;
+
+  float getGripperValue() {
+
+      pr2_controllers_msgs::JointControllerStateConstPtr msg =
+              ros::topic::waitForMessage<pr2_controllers_msgs::JointControllerState>(gripper_state_topic_, ros::Duration(1));
+
+      if (msg) return msg->process_value;
+      else return 1000; // TODO NaN / exception?
+  }
+
 
 public:
-  artPr2Grasping() : nh_("~")
+  artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl, boost::shared_ptr<Objects> objects, std::string group_name, std::string default_target, std) : nh_("~"), group_name_(group_name), default_target_(default_target), gripper_state_topic_(gripper_state_topic)
   {
-    tfl_.reset(new tf::TransformListener());
-
-    nh_.param("enable_looking", enable_looking_, false);
-    nh_.param<std::string>("group_name", group_name_, "left_arm");
-    nh_.param<std::string>("publish_collision_objects", publish_collision_objects_, true);
+    tfl_ = tfl;
+    objects_ = objects;
 
     move_group_.reset(new move_group_interface::MoveGroup(group_name_));
     move_group_->setPlanningTime(30.0);
@@ -96,7 +77,7 @@ public:
     move_group_->setGoalTolerance(0.005);
     move_group_->setPlannerId("RRTConnectkConfigDefault");
 
-    ROS_INFO_STREAM("Planning frame: " << getPlanningFrame());
+    ROS_INFO_STREAM_NAMED(group_name_, "Planning frame: " << getPlanningFrame());
 
     // Load grasp generator
     if (!grasp_data_.loadRobotGraspData(nh_, group_name_))
@@ -111,12 +92,6 @@ public:
 
     visual_tools_->setMuted(false);
 
-    for (int j = 0; j < 3; j++)
-    {
-      visual_tools_->publishRemoveAllCollisionObjects();
-      ros::Duration(0.1).sleep();
-    }
-
     grasped_object_.reset();
 
     simple_grasps_.reset(new moveit_simple_grasps::SimpleGrasps(visual_tools_));
@@ -125,16 +100,10 @@ public:
     robot_state::RobotState robot_state = planning_scene_monitor_->getPlanningScene()->getCurrentState();
     grasp_filter_.reset(new moveit_simple_grasps::GraspFilter(robot_state, visual_tools_));
 
-    head_.reset(new PointHeadClient("/head_traj_controller/point_head_action", true));
-    if (!head_->waitForServer(ros::Duration(5)))
-    {
-      ROS_WARN("Point head action not available!");
-    }
+    grasped_object_pub_ = nh_.advertise<std_msgs::String>("/art/pr2/" + group_name_ + "/grasped_object", 1, true);
 
-    manipulation_in_progress_ = false;
+    grasped_object_pub_.publish(std_msgs::String(""));
 
-    object_type_srv_ = nh_.serviceClient<art_msgs::getObjectType>("/art/db/object_type/get");
-    obj_sub_ = nh_.subscribe("/art/object_detector/object_filtered", 1, &artPr2Grasping::detectedObjectsCallback, this);
   }
 
   bool transformPose(geometry_msgs::PoseStamped &ps)
@@ -147,194 +116,34 @@ public:
       }
       else
       {
-        ROS_ERROR_STREAM("Transform between" << getPlanningFrame() << "and " << ps.header.frame_id << " not "
+        ROS_ERROR_STREAM_NAMED(group_name_, "Transform between" << getPlanningFrame() << "and " << ps.header.frame_id << " not "
                                                                                                       "available!");
         return false;
       }
     }
     catch (tf::TransformException& ex)
     {
-      ROS_ERROR("%s", ex.what());
+      ROS_ERROR_NAMED(group_name_, "%s", ex.what());
       return false;
     }
 
     return true;
-  }
-
-  void detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr &msg)
-  {
-    boost::recursive_mutex::scoped_try_lock lock(objects_mutex_);
-
-    if (!lock)
-      return;  // we don't want to block message queue during pick/place
-               // execution
-
-    ROS_INFO_ONCE("InstancesArray received");
-
-    if (manipulation_in_progress_)
-      return;
-
-    // remove outdated objects
-    std::map<std::string, tobj>::iterator it;
-    std::vector<std::string> ids_to_remove;
-    for (it = objects_.begin(); it != objects_.end(); ++it)
-    {
-      bool found = false;
-
-      for (int i = 0; i < msg->instances.size(); i++)
-      {
-        if (msg->instances[i].object_id == it->first)
-        {
-          found = true;
-          break;
-        }
-      }
-
-      if (!found)
-      {
-        // don't clear grasped objects
-        if (grasped_object_ && grasped_object_->id == it->first)
-          continue;
-
-        ids_to_remove.push_back(it->first);
-      }
-    }
-
-    for (int i = 0; i < ids_to_remove.size(); i++)
-    {
-      std::map<std::string, tobj>::iterator it;
-      it = objects_.find(ids_to_remove[i]);
-      objects_.erase(it);
-
-      for (int j = 0; j < 3; j++)  // todo is it necessary?
-      {
-        visual_tools_->cleanupCO(it->first);
-        ros::Duration(0.1).sleep();
-      }
-    }
-
-    // add and publish currently detected objects
-    for (int i = 0; i < msg->instances.size(); i++)
-    {
-      geometry_msgs::PoseStamped ps;
-
-      ps.header = msg->header;
-      ps.pose = msg->instances[i].pose;
-
-      if (!transformPose(ps))
-      {
-        ROS_WARN("Failed to transform object.");
-        continue;
-      }
-
-      if (isKnownObject(msg->instances[i].object_id))
-      {
-        objects_[msg->instances[i].object_id].h = ps.header;
-        objects_[msg->instances[i].object_id].p = ps.pose;
-      }
-      else
-      {
-        tobj ob;
-        ob.h = ps.header;
-        ob.p = ps.pose;
-        // std::cout << ob.p.position.x << " " << ob.p.position.y << " " <<
-        // ob.p.position.z << " " << std::endl;
-
-        art_msgs::getObjectType srv;
-        srv.request.name = msg->instances[i].object_type;
-
-        if (object_type_srv_.call(srv))
-        {
-          ob.bb = srv.response.object_type.bbox;
-          objects_[msg->instances[i].object_id] = ob;
-        }
-        else
-        {
-          ROS_ERROR("Failed to call object_type service");
-          continue;
-        }
-      }
-
-      // don't publish for grasped object
-      if (publish_collision_objects_ && !(grasped_object_ && grasped_object_->id == msg->instances[i].object_id))
-      {
-        publishCollisionBB(objects_[msg->instances[i].object_id].p, msg->instances[i].object_id,
-                           objects_[msg->instances[i].object_id].bb);
-      }
-    }
-  }
-
-  bool isKnownObject(std::string id)
-  {
-    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
-    std::map<std::string, tobj>::iterator it = objects_.find(id);
-    return it != objects_.end();
-  }
-
-  // Points the high-def camera frame at a point in a given frame
-  void lookAt(geometry_msgs::Point pt)
-  {
-    if (!enable_looking_)
-      return;
-
-    pr2_controllers_msgs::PointHeadGoal goal;
-    geometry_msgs::PointStamped point;
-    point.header.frame_id = getPlanningFrame();
-    point.point = pt;
-    goal.target = point;
-    goal.pointing_frame = "high_def_frame";  // todo kinect?
-    goal.pointing_axis.x = 1;
-    goal.pointing_axis.y = 0;
-    goal.pointing_axis.z = 0;
-    goal.min_duration = ros::Duration(0.5);
-    goal.max_velocity = 0.5;
-    head_->sendGoal(goal);
-
-    // head_->waitForResult(ros::Duration(2));
   }
 
   bool getReady()
   {
-    geometry_msgs::PoseStamped ps;
-    ps.header.frame_id = getPlanningFrame();
-    ps.header.stamp = ros::Time::now();
-
-    // todo specify as (configurable) joint target
-    ps.pose.position.x = 0.093;
-    ps.pose.position.y = 0.7;
-    if (group_name_ == "right_arm")
-      ps.pose.position.y *= -1.0;  // todo HACK!!!
-    ps.pose.position.z = 1.0;
-    ps.pose.orientation.x = -0.001;
-    ps.pose.orientation.y = 0.320;
-    ps.pose.orientation.z = -0.001;
-    ps.pose.orientation.w = 0.947;
 
     move_group_->clearPathConstraints();
-    move_group_->setPoseTarget(ps);
+    if (!move_group_->setNamedTarget(default_target_)) {
+
+        ROS_ERROR_STREAM_NAMED(group_name_, "Unknown default target name: " << default_target_);
+        return false;
+    }
 
     if (!move_group_->move())
     {
-      ROS_WARN("Failed to get ready.");
+      ROS_WARN_NAMED(group_name_, "Failed to get ready.");
       return false;
-    }
-
-    return true;
-  }
-
-  // todo moznost zadat jako PoseStamped?
-  bool addTable(double x, double y, double angle, double width, double height, double depth, std::string name)
-  {
-    ROS_INFO("Adding table: %s", name.c_str());
-
-    visual_tools_->cleanupCO(name);
-
-    for (int j = 0; j < 3; j++)  // hmm, sometimes the table is not added
-    {
-      if (!visual_tools_->publishCollisionTable(x, y, angle, width, height, depth, name))
-        return false;
-      move_group_->setSupportSurfaceName(name);
-      ros::Duration(0.1).sleep();
     }
 
     return true;
@@ -342,11 +151,9 @@ public:
 
   bool place(const geometry_msgs::Pose &ps, double z_axis_angle_increment = 0.0, bool keep_orientation = false)
   {
-    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
-
     if (!hasGraspedObject())
     {
-      ROS_ERROR("No object to place.");
+      ROS_ERROR_NAMED(group_name_, "No object to place.");
       return false;
     }
 
@@ -361,9 +168,13 @@ public:
     pose_stamped.header.stamp = ros::Time::now();
     pose_stamped.pose = ps;
 
-    visual_tools_->publishBlock(ps, moveit_visual_tools::ORANGE, objects_[grasped_object_->id].bb.dimensions[0],
-                                objects_[grasped_object_->id].bb.dimensions[1],
-                                objects_[grasped_object_->id].bb.dimensions[2]);
+    shape_msgs::SolidPrimitive bb = grasped_object_->type.bbox;
+
+    visual_tools_->publishBlock(ps,
+                                moveit_visual_tools::ORANGE,
+                                bb.dimensions[0],
+                                bb.dimensions[1],
+                                bb.dimensions[2]);
 
     if (z_axis_angle_increment < 0)
       z_axis_angle_increment *= -1.0;  // only positive increment allowed
@@ -409,7 +220,7 @@ public:
       // assume that robot holds the object in the middle of its height
       double des_dist =
           std::max(grasp_data_.approach_retreat_desired_dist_,
-                   0.05 + 0.5 * objects_[grasped_object_->id].bb.dimensions[shape_msgs::SolidPrimitive::BOX_Z]);
+                   0.05 + 0.5 * objects_[grasped_object_->object_id].bb.dimensions[shape_msgs::SolidPrimitive::BOX_Z]);
 
       post_place_retreat.desired_distance = des_dist;  // The distance the origin of a robot link needs to travel
                                                        // -> depends on the object size
@@ -428,7 +239,7 @@ public:
 
     if (keep_orientation)
     {
-      ROS_INFO("Applying orientation constraint...");
+      ROS_INFO_NAMED(group_name_, "Applying orientation constraint...");
 
       moveit_msgs::OrientationConstraint ocm;
       ocm.link_name = move_group_->getEndEffectorLink();
@@ -448,16 +259,15 @@ public:
     // Prevent collision with table
     // move_group_->setSupportSurfaceName(SUPPORT_SURFACE3_NAME)
 
-    if (move_group_->place(grasped_object_->id, place_locations))
+    if (move_group_->place(grasped_object_->object_id, place_locations))
     {
       grasped_object_.reset();
+      grasped_object_pub_.publish(std_msgs::String(""));
       move_group_->clearPathConstraints();
-      manipulation_in_progress_ = false;
       return true;
     }
 
-    ROS_WARN("Failed to place");
-    manipulation_in_progress_ = false;
+    ROS_WARN_NAMED(group_name_, "Failed to place");
     return false;
   }
 
@@ -466,78 +276,43 @@ public:
     return move_group_->getPlanningFrame();
   }
 
-  void publishCollisionBB(geometry_msgs::Pose block_pose, std::string block_name,
-                          const shape_msgs::SolidPrimitive &shape)
-  {
-    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
-
-    moveit_msgs::CollisionObject collision_obj;
-
-    collision_obj.header.stamp = ros::Time::now();
-    collision_obj.header.frame_id = getPlanningFrame();
-    collision_obj.id = block_name;
-    collision_obj.operation = moveit_msgs::CollisionObject::ADD;  // todo param for update?
-    collision_obj.primitives.resize(1);
-    collision_obj.primitives[0] = shape;
-    collision_obj.primitive_poses.resize(1);
-    collision_obj.primitive_poses[0] = block_pose;
-
-    for (int j = 0; j < 3; j++)
-    {
-      visual_tools_->publishCollisionObjectMsg(collision_obj);
-      ros::Duration(0.1).sleep();
-    }
-
-    visual_tools_->publishBlock(objects_[block_name].p, moveit_visual_tools::BLUE,
-                                objects_[block_name].bb.dimensions[0], objects_[block_name].bb.dimensions[1],
-                                objects_[block_name].bb.dimensions[2]);
-
-    return;
-  }
-
   bool hasGraspedObject()
   {
-    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
     return grasped_object_;
   }
 
-  bool resetGraspedObject()
+  bool pick(const std::string &object_id)
   {
-    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
-    grasped_object_.reset();
-  }
-
-  bool pick(const std::string &id)
-  {
-    boost::recursive_mutex::scoped_lock lock(objects_mutex_);
 
     if (hasGraspedObject())
     {
-      ROS_ERROR("Can't grasp another object.");
+      ROS_ERROR_NAMED(group_name_, "Can't grasp another object.");
       return false;
     }
 
-    manipulation_in_progress_ = true;
+    TObjectInfo obj = objects_.getObject(object_id);
+
+    if (obj == TObjectInfo()) {
+
+        ROS_ERROR_NAMED(group_name_, "Unknown object_id: " + object_id);
+        return false;
+    }
 
     std::vector<moveit_msgs::Grasp> grasps;
-
-    lookAt(objects_[id].p.position);
-
-    // publishCollisionBB(objects_[id].p, id, objects_[id].bb);
 
     geometry_msgs::PoseStamped p;
     p.header.frame_id = getPlanningFrame();
     p.header.stamp = ros::Time::now();
-    p.pose = objects_[id].p;
+    p.pose = obj.pose.pose;
 
     // visualization only -> published by publishCollisionBB
     // visual_tools_->publishBlock(objects_[id].p, moveit_visual_tools::ORANGE,
     // objects_[id].bb.dimensions[0], objects_[id].bb.dimensions[1],
     // objects_[id].bb.dimensions[2]);
 
-    if (!simple_grasps_->generateShapeGrasps(objects_[id].bb, true, true, p, grasp_data_, grasps))
+    if (!simple_grasps_->generateShapeGrasps(obj.type.bbox, true, true, p, grasp_data_, grasps))
     {
-      ROS_ERROR("No grasps found.");
+      ROS_ERROR_NAMED(group_name_, "No grasps found.");
       manipulation_in_progress_ = false;
       return false;
     }
@@ -546,14 +321,14 @@ public:
     std::vector<trajectory_msgs::JointTrajectoryPoint> ik_solutions;  // save each grasps ik solution for visualization
     if (!grasp_filter_->filterGrasps(grasps, ik_solutions, true, grasp_data_.ee_parent_link_, group_name_))
     {
-      ROS_ERROR("Grasp filtering failed.");
+      ROS_ERROR_NAMED(group_name_, "Grasp filtering failed.");
       manipulation_in_progress_ = false;
       return false;
     }
 
     if (grasps.size() == 0)
     {
-      ROS_ERROR("No feasible grasps found.");
+      ROS_ERROR_NAMED(group_name_, "No feasible grasps found.");
       manipulation_in_progress_ = false;
       return false;
     }
@@ -566,7 +341,7 @@ public:
     }*/
 
     std::vector<std::string> allowed_touch_objects;
-    allowed_touch_objects.push_back(id);
+    allowed_touch_objects.push_back(object_id);
 
     // Add this list to all grasps
     for (std::size_t i = 0; i < grasps.size(); ++i)
@@ -574,19 +349,29 @@ public:
       grasps[i].allowed_touch_objects = allowed_touch_objects;
     }
 
-    grasped_object_.reset(new graspedObject());
-    grasped_object_->id = id;
+    grasped_object_ = boost::make_shared(obj);
+    grasped_object_->object_id = object_id;
 
-    if (move_group_->pick(id, grasps))
+    if (!move_group_->pick(object_id, grasps))
     {
-      manipulation_in_progress_ = false;
-      return true;
+        ROS_WARN_NAMED(group_name_, "Failed to pick");
+        grasped_object_.reset();
+        return false;
     }
 
-    ROS_WARN("Failed to pick");
-    grasped_object_.reset();
-    manipulation_in_progress_ = false;
-    return false;
+    float gripper = getGripperValue();
+
+    if (gripper < 0.005) {
+
+      grasped_object_.reset();
+      ROS_ERROR_NAMED(group_name_, "Gripper is closed - object missed or dropped :-(");
+      return false;
+    }
+
+    ROS_INFO_NAMEd(group_name_, "Picked the object.");
+    grasped_object_pub_.publish(std_msgs::String(object_id));
+    return true;
+
   }
 };
 
