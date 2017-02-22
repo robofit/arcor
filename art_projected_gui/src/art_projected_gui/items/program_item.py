@@ -308,7 +308,7 @@ class ProgramItem(Item):
 
         self.update()
 
-    def btn_clicked(self):
+    def btn_clicked(self, btn):
 
         if self.state == 'LEARNING':
 
