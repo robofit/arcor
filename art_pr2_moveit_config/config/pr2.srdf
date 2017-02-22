@@ -50,7 +50,7 @@
         <link name="r_gripper_tool_frame" />
     </group>
     <!--GROUP STATES: Purpose: Define a named state for a particular group, in terms of joint values. This is useful to define states like 'folded arms'-->
-    <group_state name="left_default" group="left_arm">
+    <group_state name="tuck_left_arm" group="left_arm">
         <joint name="l_elbow_flex_joint" value="-2.0327" />
         <joint name="l_forearm_roll_joint" value="1.7296" />
         <joint name="l_shoulder_lift_joint" value="0.805" />
@@ -59,7 +59,7 @@
         <joint name="l_wrist_flex_joint" value="-1.114" />
         <joint name="l_wrist_roll_joint" value="0.0" />
     </group_state>
-    <group_state name="right_default" group="right_arm">
+    <group_state name="tuck_right_arm" group="right_arm">
         <joint name="r_elbow_flex_joint" value="-2.0327" />
         <joint name="r_forearm_roll_joint" value="-1.7296" />
         <joint name="r_shoulder_lift_joint" value="0.805" />
