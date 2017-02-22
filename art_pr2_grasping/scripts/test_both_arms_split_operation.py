@@ -1,39 +1,17 @@
 #! /usr/bin/env python
-import roslib; roslib.load_manifest('art_pr2_grasping')
+
 import rospy
 import actionlib
 import art_msgs.msg
-from geometry_msgs.msg import PoseStamped
-from shape_msgs.msg import SolidPrimitive
-import random
-from art_msgs.msg import InstancesArray, ObjInstance
-
-def getRandomObject():
-
-    tmp = ObjInstance()
-    tmp.object_id = "object_" + str(random.randint(1,10000))
-    tmp.pose.position.x = random.uniform(0.5, 0.9)
-    tmp.pose.position.y = random.uniform(-0.8, 0.8)
-    tmp.pose.position.z = 0.74 + 0.1 # vyska stolu + pulka kosticky
-    tmp.pose.orientation.x = 0.0
-    tmp.pose.orientation.y = 0.0
-    tmp.pose.orientation.z = 0.0
-    tmp.pose.orientation.w = 1.0
-
-    tmp.bbox = SolidPrimitive()
-    tmp.bbox.type = SolidPrimitive.BOX
-    tmp.bbox.dimensions.append(0.05)
-    tmp.bbox.dimensions.append(0.05)
-    tmp.bbox.dimensions.append(0.2)
-
-    return tmp
+from art_msgs.msg import PickPlaceAction
 
 def main():
 
-    pub = rospy.Publisher("/art_object_detector/object_filtered", InstancesArray)
+    l_client = actionlib.SimpleActionClient('/art/pr2/left_arm/pp', PickPlaceAction)
+    l_client.wait_for_server()
 
-    client = actionlib.SimpleActionClient('/pr2_pick_place_left/pp', art_msgs.msg.pickplaceAction)
-    client.wait_for_server()
+    r_client = actionlib.SimpleActionClient('/art/pr2/left_arm/pp', PickPlaceAction)
+    r_client.wait_for_server()
 
     arr = InstancesArray()
     arr.header.frame_id = "base_footprint"
