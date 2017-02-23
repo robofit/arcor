@@ -1,0 +1,23 @@
+<launch>
+
+  <!-- simulate ART API -->
+  <node pkg="art_projected_gui" type="test_gui.py" name="test_gui" />
+  <node pkg="art_projected_gui" type="test_brain.py" name="test_brain" />
+
+  <include file="$(find art_db)/launch/art_db.launch" />
+  <node pkg="art_db" type="init_db.py" name="init_db" />
+
+  <group ns="/art/interface/projected_gui">
+
+    <include file="$(find art_projected_gui)/launch/common_params.launch" />
+
+    <test test-name="test_ui_core_ros" pkg="art_projected_gui" type="test_ui_core_ros.py" retry="2">
+
+        <rosparam param="cursors">[]</rosparam>
+        <rosparam param="projectors">[]</rosparam>
+
+    </test>
+
+  </group>
+
+</launch>

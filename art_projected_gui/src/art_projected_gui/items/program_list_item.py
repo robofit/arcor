@@ -3,169 +3,105 @@
 from PyQt4 import QtGui, QtCore
 from item import Item
 from button_item import ButtonItem
+from list_item import ListItem
 
 translate = QtCore.QCoreApplication.translate
 
 
-class ProgramHeaderItem(Item):
-
-    def __init__(self, scene, rpm, x, y, w, parent, program_header):
-
-        # TODO empty / learned?
-
-        self.w = w
-        self.h = 0
-
-        self.text = ""
-
-        super(ProgramHeaderItem, self).__init__(scene, rpm, x, y, parent)
-        self.h = self.m2pix(0.1)
-
-        self.set_header(program_header)
-        self.update()
-
-    def set_header(self, ph):
-
-        self.program_header = ph
-        self.update()
-
-    def boundingRect(self):
-
-        return QtCore.QRectF(0, 0, self.w, self.h)
-
-    def paint(self, painter, option, widget):
-
-        painter.setClipRect(option.exposedRect)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-
-        font = QtGui.QFont('Arial', self.get_font_size())
-        painter.setFont(font)
-        painter.setPen(QtCore.Qt.gray)
-
-        self.text = "ID: " + str(self.program_header.id) + "\nName: " + self.program_header.name
-
-        if self.isEnabled():
-
-            painter.setPen(QtCore.Qt.white)
-            self.text += "\n" + self.program_header.description
-
-        painter.drawText(self.boundingRect(), QtCore.Qt.AlignLeft, self.text)
-
-
 class ProgramListItem(Item):
 
-    def __init__(self, scene, rpm, x, y, program_headers, selected_program_id=None, program_selected_cb=None):
+    def __init__(self, scene, rpm, x, y, program_headers, learned_dict, selected_program_id=None, program_selected_cb=None):
 
         self.w = 100
         self.h = 100
 
         self.program_headers = program_headers
+        self.learned_dict = learned_dict
         self.program_selected_cb = program_selected_cb
 
         super(ProgramListItem, self).__init__(scene, rpm, x, y)
 
-        self.w = self.m2pix(0.2)
+        self.w = self.m2pix(0.25)
         self.h = self.m2pix(0.25)
 
         self.fixed = False
         self.setZValue(100)
 
-        self.up_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Up"), self, self.up_btn_cb)
-        self.down_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Down"), self, self.down_btn_cb)
+        data = []
+        self.map_from_idx_to_program_id = {}
+        self.map_from_program_id_to_idx = {}
+
+        for ph in self.program_headers:
+
+            data.append("ID: " + str(ph.id) + "\nName: " + ph.name)
+            idx = len(data)-1
+            self.map_from_idx_to_program_id[idx] = ph.id
+            self.map_from_program_id_to_idx[ph.id] = idx
+
+        self.list = ListItem(self.scene(), self.rpm, self.m2pix(0.01), 0, 0.23, data, self.item_selected_cb, parent=self)
+
+        for idx in range(0, len(data)):
+
+            if not self.learned_dict[self.map_from_idx_to_program_id[idx]]:
+                self.list.items[idx].set_background_color(QtCore.Qt.red)
+
         self.run_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Run"), self, self.run_btn_cb)
         self.edit_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Edit"), self, self.edit_btn_cb)
         self.template_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Template"), self, self.template_btn_cb)
 
-        # TODO fix function and enable buttons
         self.run_btn.set_enabled(False)
         self.edit_btn.set_enabled(False)
+        self.template_btn.set_enabled(False)
 
-        if selected_program_id is None:
+        if selected_program_id is not None:
 
-            self.set_current_idx(0)
-
-        else:
-
-            for i in range(0, len(self.program_headers)):
-
-                if selected_program_id == self.program_headers[i].id:
-
-                    self.set_current_idx(i)
-                    break
-
-            else:
-
-                self.set_current_idx(0)
-
-        # TODO display e.g. three items where one will be Enabled -> selected
-        self.ph = ProgramHeaderItem(self.scene(),  self.rpm,  0, 0,  self.w, self, self.get_current_header())
+            self.list.set_current_idx(self.map_from_program_id_to_idx[selected_program_id])
 
         sp = self.m2pix(0.01)
-        h = 2*sp
-        self.up_btn.setPos(sp,  h)
-        self.up_btn.set_width(self.w - 2*sp)
-        h += self.up_btn.boundingRect().height()
-        h += sp
-        self.ph.setPos(sp,  h)
-        h += self.ph.boundingRect().height()
-        h += sp
-        self.down_btn.setPos(sp,  h)
-        self.down_btn.set_width(self.w - 2*sp)
-        h += self.down_btn.boundingRect().height()
+        h = 5*sp
+        self.list.setPos(sp,  h)
+        h += self.list._height()
         h += 2*sp
-        isp = (self.boundingRect().width() - (2*sp + self.run_btn.boundingRect().width() + self.edit_btn.boundingRect().width() + self.template_btn.boundingRect().width()))/2
-        self.run_btn.setPos(sp,  h)
-        self.edit_btn.setPos(self.run_btn.x() + self.run_btn.boundingRect().width() + isp,  h)
-        self.template_btn.setPos(self.edit_btn.x() + self.edit_btn.boundingRect().width() + isp,  h)
-        h += self.run_btn.boundingRect().height()
-        h += 2*sp
+
+        self. _place_childs_horizontally(h, sp, [self.run_btn, self.edit_btn, self.template_btn])
+
+        h += self.run_btn._height()
+        h += 3*sp
 
         self.h = h
         self.update()
 
+    def item_selected_cb(self):
+
+        if self.list.selected_item_idx is None:
+
+            self.run_btn.set_enabled(False)
+            self.edit_btn.set_enabled(False)
+            self.template_btn.set_enabled(False)
+
+        else:
+
+            pid = self.map_from_idx_to_program_id[self.list.selected_item_idx]
+            self.run_btn.setEnabled(self.learned_dict[pid])
+
+            self.edit_btn.set_enabled(True)
+            self.template_btn.set_enabled(True)
+
     def get_current_header(self):
 
-        return self.program_headers[self.current_program_idx]
+        return self.program_headers[self.list.selected_item_idx]
 
-    def set_current_idx(self,  idx):
-
-        self.current_program_idx = idx
-
-        if (idx == 0):
-            self.up_btn.set_enabled(False)
-        else:
-            self.up_btn.set_enabled(True)
-
-        if (idx < len(self.program_headers)-1):
-            self.down_btn.set_enabled(True)
-        else:
-            self.down_btn.set_enabled(False)
-
-    def up_btn_cb(self):
-
-        if self.current_program_idx > 0:
-            self.set_current_idx(self.current_program_idx - 1)
-            self.ph.set_header(self.get_current_header())
-            self.ph.update()
-
-    def down_btn_cb(self):
-
-        if self.current_program_idx < len(self.program_headers) - 1:
-            self.set_current_idx(self.current_program_idx + 1)
-            self.ph.set_header(self.get_current_header())
-            self.ph.update()
-
-    def run_btn_cb(self):
+    def run_btn_cb(self, btn):
 
         if self.program_selected_cb is not None:
             self.program_selected_cb(self.get_current_header().id, run=True)
 
-    def edit_btn_cb(self):
+    def edit_btn_cb(self, btn):
 
         if self.program_selected_cb is not None:
             self.program_selected_cb(self.get_current_header().id)
 
-    def template_btn_cb(self):
+    def template_btn_cb(self, btn):
 
         if self.program_selected_cb is not None:
             self.program_selected_cb(self.get_current_header().id, template=True)
@@ -179,11 +115,18 @@ class ProgramListItem(Item):
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
+        font = QtGui.QFont('Arial', 14)
+        painter.setFont(font)
+
+        painter.setPen(QtCore.Qt.white)
+
+        sp = self.m2pix(0.01)
+        painter.drawText(sp, 2*sp, translate("ProgramListItem", "Program list"))
+
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.NoPen)
         painter.setPen(pen)
 
         painter.setBrush(QtCore.Qt.gray)
         painter.setOpacity(0.5)
-        # painter.drawRect(0, 0, self.w, self.h)
         painter.drawRoundedRect(QtCore.QRect(0, 0, self.w, self.h), 5.0, 5.0)

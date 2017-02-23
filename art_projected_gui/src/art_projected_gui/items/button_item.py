@@ -3,50 +3,86 @@
 from PyQt4 import QtGui, QtCore
 from item import Item
 
-# TODO icons
 translate = QtCore.QCoreApplication.translate
 
 
 class ButtonItem(Item):
 
-    def __init__(self, scene, rpm, x, y, caption, parent, clicked, scale=1.0, background_color=QtCore.Qt.green):
+    def __init__(self, scene, rpm, x, y, caption, parent, clicked, scale=1.0, background_color=QtCore.Qt.green, width=None, push_button=False, image_path=None):
 
         self.background_color = background_color
         self.scale = scale
         self.clicked = clicked
-        self.caption = caption
-        self.width = None
+        self.push_button = push_button
+        self.pressed = False
+
+        self.img = None
+
+        self.w = 0
+        self.h = 0
 
         super(ButtonItem, self).__init__(scene, rpm, x, y, parent)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
         self.setZValue(100)
 
+        self.set_caption(caption)
+        self.set_width(width)
+
+        if image_path is not None:
+
+            self.img = QtGui.QImage()
+            self.img.load(image_path)
+            self.img = self.img.scaled(self.boundingRect().width()*0.9, self.boundingRect().height()*0.9, QtCore.Qt.KeepAspectRatio | QtCore.Qt.SmoothTransformation)
+
     def boundingRect(self):
+
+        return QtCore.QRectF(-1.5, -1.5, self.w+3,  self.h+3)
+
+    def cursor_click(self):
+
+        if self.isEnabled():
+
+            if self.push_button:
+
+                self.pressed = not self.pressed
+
+            if self.clicked is not None:
+                self.clicked(self)
+
+    def set_pressed(self, state):
+
+        self.pressed = state
+        self.update()
+
+    def set_width(self, width):
 
         font = QtGui.QFont('Arial', self.get_font_size(self.scale))
         metrics = QtGui.QFontMetrics(font)
 
-        if self.width is not None:
-            w = self.width
+        if width is None:
+
+            self.w = metrics.width(self.caption) + 20 * self.scale
+            self.h = metrics.height() + 20 * self.scale
+
         else:
-            w = metrics.width(self.caption) + 20 * self.scale
-        h = metrics.height() + 20 * self.scale
 
-        return QtCore.QRectF(-1.5, -1.5, w+3,  h+3)
+            br = metrics.boundingRect(QtCore.QRectF(0, 0, self.m2pix(width) - (20 * self.scale),  10000).toRect(), QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self.caption)
 
-    def cursor_click(self):
+            self.w = max(br.width() + 20 * self.scale, self.m2pix(width))
+            self.h = br.height() + 20 * self.scale
 
-        if self.clicked is not None and self.isEnabled():
-            self.clicked()
-
-    def set_width(self,  w=None):
-
-        self.width = w
         self.update()
 
-    def set_caption(self, txt):
+    def set_background_color(self, color = QtCore.Qt.green):
 
-        self.caption = txt
+        self.background_color = color
+        self.update()
+
+    def set_caption(self, caption, width=None):
+
+        self.caption = caption
+        if width is not None:
+            self.set_width(width)
         self.update()
 
     def paint(self, painter, option, widget):
@@ -56,12 +92,18 @@ class ButtonItem(Item):
 
         pen = QtGui.QPen()
         pen.setWidth(3)
-        if not self.hover:
+
+        if self.hover or (self.push_button and self.pressed):
+
+            pen.setColor(QtCore.Qt.white)
+
+        else:
+
             pen.setStyle(QtCore.Qt.NoPen)
-        pen.setColor(QtCore.Qt.white)
+
         painter.setPen(pen)
 
-        rect = QtCore.QRectF(1.5, 1.5, self.boundingRect().width()-1.5, self.boundingRect().height()-1.5)
+        rect = QtCore.QRectF(0, 0, self.w, self.h)
 
         font = QtGui.QFont('Arial', self.get_font_size(self.scale))
         painter.setFont(font)
@@ -76,5 +118,18 @@ class ButtonItem(Item):
         pen.setStyle(QtCore.Qt.SolidLine)
         painter.setPen(pen)
 
-        text_rect = QtCore.QRectF(5 * self.scale+1.5, +1.5, self.boundingRect().width()-5 * self.scale-1.5, self.boundingRect().height()-1.5)
-        painter.drawText(text_rect, QtCore.Qt.AlignCenter, self.caption)
+        if self.img is not None:
+
+            painter.drawImage(QtCore.QRectF((self.w - self.img.width())/2, (self.h - self.img.height())/2, self.img.width(), self.img.height()), self.img)
+
+        else:
+
+            text_rect = QtCore.QRectF(10 * self.scale, 10 * self.scale, self.w - 20 * self.scale, self.h - 20 * self.scale)
+
+            if '\n' not in self.caption:
+
+                painter.drawText(text_rect, QtCore.Qt.AlignCenter, self.caption)
+
+            else:
+
+                painter.drawText(text_rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self.caption)
