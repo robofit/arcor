@@ -20,7 +20,7 @@ Objects::Objects(boost::shared_ptr<tf::TransformListener> tfl, std::string targe
   visual_tools_->publishRemoveAllCollisionObjects();
 }
 
-bool Objects::clear()
+void Objects::clear()
 {
   boost::recursive_mutex::scoped_lock lock(mutex_);
   visual_tools_->publishRemoveAllCollisionObjects();
