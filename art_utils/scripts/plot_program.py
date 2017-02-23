@@ -18,38 +18,28 @@ def get_type_string(item):
 
         return "Robot ready"
 
-    elif item.type == ProgramItem.MANIP_PICK:
+    elif item.type == ProgramItem.PICK_FROM_FEEDER:
 
-        if item.spec == ProgramItem.MANIP_ID:
-            return "Pick ID: " + item.object
-        elif item.spec == ProgramItem.MANIP_TYPE:
-            return "Pick type: " + item.object
+        return "PICK_FROM_FEEDER\nobject type: " + item.object[0]
 
-    elif item.type == ProgramItem.MANIP_PLACE:
+    elif item.type == ProgramItem.PICK_FROM_POLYGON:
 
-        if item.spec == ProgramItem.MANIP_ID:
-            return "Place ID: " + item.object
-        elif item.spec == ProgramItem.MANIP_TYPE:
-            return "Place type: " + item.object
+            return "PICK_FROM_POLYGON\nobject type: " + item.object[0]
 
-    elif item.type == ProgramItem.MANIP_PICK_PLACE:
+    elif item.type == ProgramItem.PICK_OBJECT_ID:
 
-        if item.spec == ProgramItem.MANIP_ID:
-            return "P&p ID: " + item.object
-        elif item.spec == ProgramItem.MANIP_TYPE:
-            return "P&p type: " + item.object
+        return "PICK_OBJECT_ID\nobject ID: " + item.object[0]
 
-    elif item.type == ProgramItem.WAIT:
+    elif item.type == ProgramItem.PLACE_TO_POSE:
 
-        if item.spec == ProgramItem.WAIT_FOR_USER:
-            return "Wait for user"
-        elif item.spec == ProgramItem.WAIT_UNTIL_USER_FINISHES:
-            return "Wait until user finishes"
+        return "PLACE_TO_POSE\nobject from ID: " + ", ".join(map(str, item.ref_id))
 
-    elif item.type == ProgramItem.MANIP_PICK_PLACE_FROM_FEEDER:
+    elif item.type == ProgramItem.WAIT_FOR_USER:
 
-        return "P&p type (from feeder): " + item.object
+        return "Wait for user"
 
+    elif item.type == ProgramItem.WAIT_UNTIL_USER_FINISHES:
+        return "Wait until user finishes"
 
 def main(args):
 
@@ -75,7 +65,7 @@ def main(args):
         print "Faulty program"
         return
 
-    A = pgv.AGraph(label="<<B>Program ID: " + str(prog.header.id) + "<br/>" + escape(prog.header.name) + "</B>>",  directed=True)
+    A = pgv.AGraph(label="<<B>Program ID: " + str(prog.header.id) + "<br/>" + escape(prog.header.name) + "</B>>",  directed=True, strict=False)
     A.graph_attr['outputorder'] = 'edgesfirst'
 
     A.add_node("start",  label="Program start")
@@ -93,14 +83,23 @@ def main(args):
             nn = get_node_name(block_id, item_id)
             item_msg = ph.get_item_msg(block_id,  item_id)
 
-            A.add_edge(nn,  get_node_name(*ph.get_id_on_success(block_id,  item_id)),  label="on_success",  color="green")
-            A.add_edge(nn,  get_node_name(*ph.get_id_on_failure(block_id,  item_id)),  label="on_failure",  color="red")
+            osn = get_node_name(*ph.get_id_on_success(block_id,  item_id))
+            ofn = get_node_name(*ph.get_id_on_failure(block_id,  item_id))
+
+            A.add_edge(nn, osn,  color="green", constraint=True)
+            A.add_edge(nn,  ofn,  color="red", constraint=True)
+
+            for ref in item_msg.ref_id:
+
+              A.add_edge(get_node_name(block_id,  ref), nn, color="gray",  style="dashed", key="ref_" + nn + "_" + get_node_name(block_id,  ref))
+
             A.get_node(nn).attr['label'] = 'Item ID: ' + str(item_id) + '\n' + get_type_string(item_msg)
             A.get_node(nn).attr['shape'] = 'box'
             A.get_node(nn).attr['style'] = 'rounded'
             ids.append(nn)
 
-        A.subgraph(nbunch=ids, name="cluster_" + str(block_id),  label="<<b>Group ID: " + str(block_id) + "<br/>" + escape(block_msg.name) + "</b>>",  color="gray")
+        sg = A.subgraph(name="cluster_" + str(block_id),  label="<<b>Group ID: " + str(block_id) + "<br/>" + escape(block_msg.name) + "</b>>",  color="gray")
+        sg.add_nodes_from(ids)
 
     A.layout(prog='dot')
     A.draw('output.pdf')

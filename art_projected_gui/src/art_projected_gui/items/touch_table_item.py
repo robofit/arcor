@@ -6,7 +6,6 @@ import rospy
 from art_msgs.msg import Touch
 from desc_item import DescItem
 from button_item import ButtonItem
-from program_item import ProgramItemItem
 
 
 class TouchPointItem(Item):
@@ -46,6 +45,9 @@ class TouchPointItem(Item):
                 if not isinstance(it,  Item):  # TODO skip item not derived from Item
                     continue
 
+                if not it.isVisible():
+                    continue
+
                 # TODO what types to skip?
                 if isinstance(it,  TouchTableItem) or isinstance(it,  TouchPointItem) or isinstance(it,  DescItem):
                     continue
@@ -53,7 +55,7 @@ class TouchPointItem(Item):
                 if self.collidesWithItem(it):
 
                     parent = it.parentItem()
-                    if not isinstance(it,  ButtonItem) and not isinstance(it,  ProgramItemItem) and it.fixed and parent is not None and isinstance(parent, Item) and not parent.fixed:
+                    if not isinstance(it,  ButtonItem) and it.fixed and parent is not None and isinstance(parent, Item) and not parent.fixed:
 
                         it = it.parentItem()
 

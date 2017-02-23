@@ -42,11 +42,15 @@ class ListItem(Item):
         self.up_btn.setPos(0,  0)
         self.down_btn.setPos(0, self.h - self.down_btn.boundingRect().height())
 
-        self.set_current_idx(min(1, len(self.items)))
+        self.set_current_idx(min(1, len(self.items)-1))
 
         self.update()
 
     def item_clicked_cb(self, btn):
+
+        if not self.isEnabled():
+
+            return
 
         if not btn.pressed:
 
@@ -72,27 +76,39 @@ class ListItem(Item):
 
         return self.middle_item_idx
 
-    def set_current_idx(self,  idx):
+    def set_current_idx(self,  idx, select = False):
 
-        self.middle_item_idx = max(idx, min(1, len(self.items)))
+        if select:
 
-        if self.middle_item_idx == min(1, len(self.items)):
-            self.up_btn.set_enabled(False)
-        else:
-            self.up_btn.set_enabled(True)
+            self.selected_item_idx = idx
 
-        if (idx < len(self.items)-2):
-            self.down_btn.set_enabled(True)
-        else:
-            self.down_btn.set_enabled(False)
+        self.middle_item_idx = max(idx, min(1, len(self.items)-1))
+
+        if self.isEnabled():
+
+            if self.middle_item_idx == min(1, len(self.items)-1):
+                self.up_btn.set_enabled(False)
+            else:
+                self.up_btn.set_enabled(True)
+
+            if (idx < len(self.items)-2):
+                self.down_btn.set_enabled(True)
+            else:
+                self.down_btn.set_enabled(False)
 
         for it in self.items:
 
-            it.set_enabled(False, True)
+            it.setVisible(False)
+
+            if select:
+                it.set_pressed(False)
 
         # selected item is always vertically centered
         self.items[self.middle_item_idx].setPos(0, (self.h-self.items[self.middle_item_idx].boundingRect().height())/2)
-        self.items[self.middle_item_idx].set_enabled(True, True)
+        self.items[self.middle_item_idx].setVisible(True)
+
+        if select:
+            self.items[self.middle_item_idx].set_pressed(True)
 
         # how much vert. space is used
         vspace = self.items[self.middle_item_idx].boundingRect().height()
@@ -107,7 +123,7 @@ class ListItem(Item):
                 break
 
             self.items[idx].setPos(0, y)
-            self.items[idx].set_enabled(True, True)
+            self.items[idx].setVisible(True)
             vspace += self.sp + h
 
         # fill space below selected item
@@ -120,7 +136,7 @@ class ListItem(Item):
                 break
 
             self.items[idx].setPos(0, y)
-            self.items[idx].set_enabled(True, True)
+            self.items[idx].setVisible(True)
             vspace += self.sp + h
 
     def up_btn_cb(self, btn):
