@@ -258,8 +258,8 @@ class UICoreRos(UICore):
 
             elif it.type == ProgIt.PICK_OBJECT_ID:
 
-                # TODO PICK_OBJECT_ID
-                pass
+                self.notif(translate("UICoreRos", "Picking object with ID=") + it.object[0])
+                self.select_object(it.object[0])
 
             elif it.type == ProgIt.PLACE_TO_POSE:
 
@@ -620,6 +620,11 @@ class UICoreRos(UICore):
 
             self.program_vis.set_object(obj.object_type.name)
             self.select_object_type(obj.object_type.name)
+
+        elif msg.type == ProgIt.PICK_OBJECT_ID:
+
+            self.program_vis.set_object(obj.object_id)
+            self.select_object(obj.object_id)
 
         elif msg.type == ProgIt.PICK_FROM_POLYGON:
 
