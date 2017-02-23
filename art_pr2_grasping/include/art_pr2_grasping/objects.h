@@ -44,6 +44,8 @@ public:
 
   void setGrasped(std::string object_id, bool grasped);
 
+  void clear();
+
 private:
   std::string objects_frame_id_;
   TObjectMap objects_;
