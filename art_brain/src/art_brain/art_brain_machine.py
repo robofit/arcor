@@ -29,20 +29,26 @@ class ArtBrainMachine(object):
               State(name='program_error', on_enter=['state_program_error'], on_exit=[]),
               State(name='program_finished', on_enter=['state_program_finished'], on_exit=[]),
               State(name='program_load_instruction', on_enter=['state_program_load_instruction'], on_exit=[]),
+
+              # learning
               State(name='learning_init', on_enter=['state_learning_init'], on_exit=[]),
               State(name='learning_run', on_enter=['state_learning_run'], on_exit=[]),
-              State(name='learning_pick', on_enter=['state_learning_pick'], on_exit=[]),
-              State(name='learning_place', on_enter=['state_learning_place'], on_exit=[]),
-              State(name='learning_pick_place', on_enter=['state_learning_pick_place'], on_exit=[]),
-              State(name='learning_pick_place_from_feeder', on_enter=['state_learning_pick_place_from_feeder'],
-                    on_exit=[]),
+
+              # learning picking
+              State(name='learning_pick_from_polygon', on_enter=['state_learning_pick_from_polygon'], on_exit=[]),
+              State(name='learning_pick_from_feeder', on_enter=['state_learning_pick_from_feeder'],
+                    on_exit=['state_learning_pick_from_feeder_exit']),
+              State(name='learning_pick_object_id', on_enter=['state_learning_pick_object_id'], on_exit=[]),
+
+              # learning placing
+              State(name='learning_place_to_pose', on_enter=['state_learning_place_to_pose'], on_exit=[]),
+
               State(name='learning_wait', on_enter=['state_learning_wait'], on_exit=[]),
-              State(name='learning_pick_from_feeder', on_enter=['state_learning_pick_from_feeder'], on_exit=[]),
               State(name='learning_step_done', on_enter=['state_learning_step_done'], on_exit=[]),
               State(name='learning_step_error', on_enter=['state_learning_step_error'], on_exit=[]),
               State(name='learning_done', on_enter=['state_learning_done'], on_exit=[])]
 
-    # program error severities
+    # program and learning error severities
     SEVERE = 0  # fatal, immediately shut down
     ERROR = 1  # cannot continue in current program
     WARNING = 2  # ask user what to do
@@ -69,6 +75,11 @@ class ArtBrainMachine(object):
 
     ERROR_PLACE_POSE_NOT_DEFINED = 401
     ERROR_PLACE_FAILED = 402
+
+    # Learning errors
+    ERROR_LEARNING_NOT_IMPLEMENTED = 0
+
+    ERROR_LEARNING_GRIPPER_NOT_DEFINED = 100
 
     def __init__(self):
         self.name = 'brain'
@@ -137,26 +148,27 @@ class ArtBrainMachine(object):
         self.machine.add_transition('done', 'learning_step_done', 'learning_run')
         self.machine.add_transition('error_handled', 'learning_step_error', 'learning_run')
         self.machine.add_transition('error_fatal', 'learning_step_error', 'waiting_for_action')
+        self.machine.add_transition('done', 'learning_done', 'waiting_for_action')
 
-        # learning pick
-        self.machine.add_transition('pick', 'learning_run', 'learning_pick')
-        self.machine.add_transition('done', 'learning_pick', 'learning_step_done')
-        self.machine.add_transition('error', 'learning_pick', 'learning_step_error')
+        # learning pick_from_polygon
+        self.machine.add_transition('pick_from_polygon', 'learning_run', 'learning_pick_from_polygon')
+        self.machine.add_transition('done', 'learning_pick_from_polygon', 'learning_step_done')
+        self.machine.add_transition('error', 'learning_pick_from_polygon', 'learning_step_error')
 
-        # learning place
-        self.machine.add_transition('place', 'learning_run', 'learning_place')
-        self.machine.add_transition('done', 'learning_place', 'learning_step_done')
-        self.machine.add_transition('error', 'learning_place', 'learning_step_error')
+        # learning pick_from_feeder
+        self.machine.add_transition('pick_from_feeder', 'learning_run', 'learning_pick_from_feeder')
+        self.machine.add_transition('done', 'learning_pick_from_feeder', 'learning_step_done')
+        self.machine.add_transition('error', 'learning_pick_from_feeder', 'learning_step_error')
 
-        # learning pick_place
-        self.machine.add_transition('pick_place', 'learning_run', 'learning_pick_place')
-        self.machine.add_transition('done', 'learning_pick_place', 'learning_step_done')
-        self.machine.add_transition('error', 'learning_pick_place', 'learning_step_error')
+        # learning pick_object_id
+        self.machine.add_transition('pick_object_id', 'learning_run', 'learning_pick_object_id')
+        self.machine.add_transition('done', 'learning_pick_object_id', 'learning_step_done')
+        self.machine.add_transition('error', 'learning_pick_object_id', 'learning_step_error')
 
-        # learning pick_place_from_feeder
-        self.machine.add_transition('pick_place_from_feeder', 'learning_run', 'learning_pick_place_from_feeder')
-        self.machine.add_transition('done', 'learning_pick_place_from_feeder', 'learning_step_done')
-        self.machine.add_transition('error', 'learning_pick_place_from_feeder', 'learning_step_error')
+        # learning place_to_pose
+        self.machine.add_transition('place_to_pose', 'learning_run', 'learning_place_to_pose')
+        self.machine.add_transition('done', 'learning_place_to_pose', 'learning_step_done')
+        self.machine.add_transition('error', 'learning_place_to_pose', 'learning_step_error')
 
         # learning wait
         self.machine.add_transition('wait', 'learning_run', 'learning_wait')
