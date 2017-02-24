@@ -108,12 +108,14 @@ def learning_request_cb(goal):
 
     action_server.set_succeeded(res)
 
+
 def learning_srv_cb(req):
 
     rospy.loginfo("learning_srv_cb")
     resp = TriggerResponse()
     resp.success = True
     return resp
+
 
 def main(args):
 
