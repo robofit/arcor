@@ -566,7 +566,7 @@ class ProgramItem(Item):
             painter.drawText(self.sp, 2*self.sp, translate("ProgramItem", "Block") + " ID: " + str(self.block_id))
         else:
 
-            if not self.program_learned  and not self.readonly:
+            if not self.program_learned and not self.readonly:
 
                 painter.setPen(QtCore.Qt.red)
 
