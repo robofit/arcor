@@ -32,11 +32,12 @@ class ButtonItem(Item):
 
             self.img = QtGui.QImage()
             self.img.load(image_path)
-            self.img = self.img.scaled(self.boundingRect().width()*0.9, self.boundingRect().height()*0.9, QtCore.Qt.KeepAspectRatio | QtCore.Qt.SmoothTransformation)
+            self.img = self.img.scaled(self.boundingRect().width() * 0.9, self.boundingRect(
+            ).height() * 0.9, QtCore.Qt.KeepAspectRatio | QtCore.Qt.SmoothTransformation)
 
     def boundingRect(self):
 
-        return QtCore.QRectF(-1.5, -1.5, self.w+3,  self.h+3)
+        return QtCore.QRectF(-1.5, -1.5, self.w + 3,  self.h + 3)
 
     def cursor_click(self):
 
@@ -66,14 +67,15 @@ class ButtonItem(Item):
 
         else:
 
-            br = metrics.boundingRect(QtCore.QRectF(0, 0, self.m2pix(width) - (20 * self.scale),  10000).toRect(), QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self.caption)
+            br = metrics.boundingRect(QtCore.QRectF(0, 0, self.m2pix(width) - (20 * self.scale),  10000).toRect(
+            ), QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self.caption)
 
             self.w = max(br.width() + 20 * self.scale, self.m2pix(width))
             self.h = br.height() + 20 * self.scale
 
         self.update()
 
-    def set_background_color(self, color = QtCore.Qt.green):
+    def set_background_color(self, color=QtCore.Qt.green):
 
         self.background_color = color
         self.update()
@@ -120,16 +122,20 @@ class ButtonItem(Item):
 
         if self.img is not None:
 
-            painter.drawImage(QtCore.QRectF((self.w - self.img.width())/2, (self.h - self.img.height())/2, self.img.width(), self.img.height()), self.img)
+            painter.drawImage(QtCore.QRectF((self.w - self.img.width()) / 2, (self.h -
+                                                                              self.img.height()) / 2, self.img.width(), self.img.height()), self.img)
 
         else:
 
-            text_rect = QtCore.QRectF(10 * self.scale, 10 * self.scale, self.w - 20 * self.scale, self.h - 20 * self.scale)
+            text_rect = QtCore.QRectF(
+                10 * self.scale, 10 * self.scale, self.w - 20 * self.scale, self.h - 20 * self.scale)
 
             if '\n' not in self.caption:
 
-                painter.drawText(text_rect, QtCore.Qt.AlignCenter, self.caption)
+                painter.drawText(
+                    text_rect, QtCore.Qt.AlignCenter, self.caption)
 
             else:
 
-                painter.drawText(text_rect, QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self.caption)
+                painter.drawText(text_rect, QtCore.Qt.AlignLeft |
+                                 QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self.caption)

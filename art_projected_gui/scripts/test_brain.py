@@ -37,7 +37,8 @@ def timer_callback(event):
     if it.type == ProgramItem.PICK_FROM_POLYGON or it.type == ProgramItem.PLACE_TO_POSE:
         flags["SELECTED_OBJECT_ID"] = "my_object"
 
-    state_manager.update_program_item(ph.get_program().header.id,  current_item[0],  ph.get_item_msg(*current_item),  flags)
+    state_manager.update_program_item(ph.get_program().header.id,  current_item[
+                                      0],  ph.get_item_msg(*current_item),  flags)
 
     if iters < 1:
         current_item = ph.get_id_on_success(*current_item)
@@ -85,6 +86,7 @@ def callback(old_state,  new_state,  flags):
 
     print "Got state update"
 
+
 def learning_request_cb(goal):
 
     global action_server
@@ -96,7 +98,7 @@ def learning_request_cb(goal):
 
     for i in range(0, 11):
 
-        fb.progress = i*10
+        fb.progress = i * 10
         action_server.publish_feedback(fb)
         rospy.sleep(0.1)
 
@@ -123,7 +125,8 @@ def main(args):
 
     art = ArtApiHelper()
 
-    action_server = actionlib.SimpleActionServer('/art/brain/learning_request', LearningRequestAction, execute_cb=learning_request_cb, auto_start = False)
+    action_server = actionlib.SimpleActionServer(
+        '/art/brain/learning_request', LearningRequestAction, execute_cb=learning_request_cb, auto_start=False)
     action_server.start()
 
     rospy.spin()

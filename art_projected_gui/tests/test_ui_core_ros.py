@@ -16,14 +16,17 @@ app = QApplication(sys.argv)
 rospack = rospkg.RosPack()
 
 translator = QtCore.QTranslator()
-translator.load(QtCore.QLocale.system().name() + '.qm', rospack.get_path('art_projected_gui') + '/lang')
+translator.load(QtCore.QLocale.system().name() + '.qm',
+                rospack.get_path('art_projected_gui') + '/lang')
 app.installTranslator(translator)
+
 
 class TestUICoreRos(unittest.TestCase):
 
     def test_ui(self):
 
-        user_status_pub = rospy.Publisher("/art/user/status", UserStatus, queue_size=10)
+        user_status_pub = rospy.Publisher(
+            "/art/user/status", UserStatus, queue_size=10)
 
         ui = UICoreRos()
         ui.start()
@@ -34,33 +37,44 @@ class TestUICoreRos(unittest.TestCase):
         objects = list(ui.get_scene_items_by_type(ObjectItem))
         self.assertEquals(len(objects), 3, 'test_detected_object_count')
 
-        self.assertEquals(ui.fsm.state, 'waiting_for_user', 'test_state_waiting_for_user')
+        self.assertEquals(ui.fsm.state, 'waiting_for_user',
+                          'test_state_waiting_for_user')
 
-        user_status_pub.publish(UserStatus(user_state=UserStatus.USER_NOT_CALIBRATED))
+        user_status_pub.publish(UserStatus(
+            user_state=UserStatus.USER_NOT_CALIBRATED))
         rospy.sleep(0.1)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents, 50)
 
         rospy.loginfo(ui.fsm.state)
-        self.assertEquals(ui.fsm.state, 'waiting_for_user_calibration', 'test_state_waiting_for_user_calibration')
+        self.assertEquals(ui.fsm.state, 'waiting_for_user_calibration',
+                          'test_state_waiting_for_user_calibration')
 
-        user_status_pub.publish(UserStatus(user_state=UserStatus.USER_CALIBRATED))
+        user_status_pub.publish(UserStatus(
+            user_state=UserStatus.USER_CALIBRATED))
         rospy.sleep(0.1)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents, 50)
 
-        self.assertEquals(ui.fsm.state, 'program_selection', 'test_state_program_selection')
-        self.assertEquals(ui.program_list.isVisible(), True, "test_program_list_visible")
-        self.assertEquals(ui.program_list.isEnabled(), True, "test_program_list_enabled")
+        self.assertEquals(ui.fsm.state, 'program_selection',
+                          'test_state_program_selection')
+        self.assertEquals(ui.program_list.isVisible(),
+                          True, "test_program_list_visible")
+        self.assertEquals(ui.program_list.isEnabled(),
+                          True, "test_program_list_enabled")
         self.assertEquals(ui.program_vis, None, "test_program_vis_none")
 
         ui.program_list.list.set_current_idx(0, select=True)
         ui.program_list.item_selected_cb()
-        self.assertEquals(ui.program_list.run_btn.isEnabled(), True, "test_program_selection")
+        self.assertEquals(ui.program_list.run_btn.isEnabled(),
+                          True, "test_program_selection")
 
         ui.program_list.run_btn.cursor_click()
-        self.assertEquals(ui.fsm.state, 'running', 'test_state_program_running')
+        self.assertEquals(ui.fsm.state, 'running',
+                          'test_state_program_running')
 
-        self.assertEquals(ui.program_vis.isVisible(), True, "test_program_vis_visible")
-        self.assertEquals(ui.program_vis.isEnabled(), True, "test_program_vis_enabled")
+        self.assertEquals(ui.program_vis.isVisible(),
+                          True, "test_program_vis_visible")
+        self.assertEquals(ui.program_vis.isEnabled(),
+                          True, "test_program_vis_enabled")
         self.assertEquals(ui.program_list, None, "test_program_list_none")
 
         # TODO test running program visualization
@@ -69,5 +83,6 @@ class TestUICoreRos(unittest.TestCase):
 if __name__ == '__main__':
 
     rospy.init_node('test_node')
-    rospy.sleep(2.0) # ...let init_db script does its work...
-    rostest.run('art_projected_gui', 'test_ui_core_ros', TestUICoreRos, sys.argv)
+    rospy.sleep(2.0)  # ...let init_db script does its work...
+    rostest.run('art_projected_gui', 'test_ui_core_ros',
+                TestUICoreRos, sys.argv)

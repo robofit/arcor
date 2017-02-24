@@ -7,6 +7,7 @@ import copy
 from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import Pose
 
+
 class ArtBrainUtils(object):
 
     @staticmethod
@@ -102,10 +103,14 @@ class ArtGripper(object):
             self.pp_client_name, pickplaceAction)
         self.holding_object = None
         self.group_name = name
-        self.interaction_on_client = rospy.ServiceProxy("/art/pr2/" + name + "/interaction/on", Empty)
-        self.interaction_off_client = rospy.ServiceProxy("/art/pr2/" + name + "/interaction/off", Empty)
-        self.get_ready_client = rospy.ServiceProxy("/art/pr2/" + name + "/get_ready", Trigger)
-        self.move_to_user_client = rospy.ServiceProxy("/art/pr2/" + name + "/move_to_user", Trigger)
+        self.interaction_on_client = rospy.ServiceProxy(
+            "/art/pr2/" + name + "/interaction/on", Empty)
+        self.interaction_off_client = rospy.ServiceProxy(
+            "/art/pr2/" + name + "/interaction/off", Empty)
+        self.get_ready_client = rospy.ServiceProxy(
+            "/art/pr2/" + name + "/get_ready", Trigger)
+        self.move_to_user_client = rospy.ServiceProxy(
+            "/art/pr2/" + name + "/move_to_user", Trigger)
 
 
 class ErrorMsgs(object):
