@@ -8,27 +8,32 @@ from shape_msgs.msg import SolidPrimitive
 from geometry_msgs.msg import PoseStamped, PolygonStamped, Point32
 from copy import deepcopy
 
+
 def store_object_type(ot):
 
     rospy.wait_for_service('/art/db/object_type/store')
 
     try:
-        store_object_srv = rospy.ServiceProxy('/art/db/object_type/store', storeObjectType)
+        store_object_srv = rospy.ServiceProxy(
+            '/art/db/object_type/store', storeObjectType)
         resp = store_object_srv(ot)
     except rospy.ServiceException, e:
         print "Service call failed: " + str(e)
         return
+
 
 def store_program(prog):
 
     rospy.wait_for_service('/art/db/program/store')
 
     try:
-        store_program_srv = rospy.ServiceProxy('/art/db/program/store', storeProgram)
+        store_program_srv = rospy.ServiceProxy(
+            '/art/db/program/store', storeProgram)
         resp = store_program_srv(program=prog)
     except rospy.ServiceException, e:
         print "Service call failed: " + str(e)
         return
+
 
 def main(args):
 
