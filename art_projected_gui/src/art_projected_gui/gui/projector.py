@@ -87,20 +87,21 @@ class Projector(QtGui.QWidget):
         self.corners_pub = rospy.Publisher("~corners", PoseArray, queue_size=10, latch=True)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('show_chessboard'), self.show_chessboard_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('show_pix_label'), self.show_pix_label_evt)
 
         self.showFullScreen()
+
+    def show_pix_label_evt(self, show):
+        
+        if show:
+            self.pix_label.show()
+        else:
+            self.pix_label.hide()
 
     def projectors_calibrated_cb(self, msg):
 
         self.projectors_calibrated = msg.data
-
-        if not self.projectors_calibrated:
-
-            self.pix_label.hide()
-
-        else:
-
-            self.pix_label.show()
+        self.emit(QtCore.SIGNAL('show_pix_label',  self.projectors_calibrated))
 
     def connect(self):
 
@@ -304,7 +305,7 @@ class Projector(QtGui.QWidget):
 
             rospy.logerr('Calibration failed')
 
-        self.pix_label.hide()
+        self.emit(QtCore.SIGNAL('show_pix_label',  False))
 
         self.shutdown_ts()
         if self.is_calibrated():
