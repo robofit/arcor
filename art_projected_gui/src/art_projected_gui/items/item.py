@@ -30,7 +30,7 @@ class Item(QtGui.QGraphicsItem):
 
     def get_font_size(self, f=1.0):
 
-        return 12 / 1280.0 * self.rpm * f
+        return 8 / 1280.0 * self.rpm * f
 
     def m2pix(self, x,  y=None):
 

@@ -21,8 +21,8 @@ class ListItem(Item):
         super(ListItem, self).__init__(scene, rpm, x, y, parent)
 
         self.w = self.m2pix(w)
-        self.h = self.m2pix(0.3)
-        self.sp = self.m2pix(0.01)
+        self.h = self.m2pix(0.2)
+        self.sp = self.m2pix(0.005)
 
         self.items = []
 

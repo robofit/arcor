@@ -10,7 +10,8 @@ from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorIte
 from art_projected_gui.helpers import ProjectorHelper,  conversions
 from art_utils import InterfaceStateManager,  ArtApiHelper, ProgramHelper
 from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse,  NotifyUser,  NotifyUserResponse
-from std_msgs.msg import Empty
+from std_msgs.msg import Empty,  Bool
+from std_srvs.srv import Trigger,  TriggerRequest
 from geometry_msgs.msg import PoseStamped
 import actionlib
 
@@ -90,6 +91,12 @@ class UICoreRos(UICore):
         self.learning_action_cl.wait_for_server()
 
         self.art = ArtApiHelper()
+
+        self.projectors_calibrated_pub = rospy.Publisher("~projectors_calibrated", Bool, queue_size=1, latch=True)
+        self.projectors_calibrated_pub.publish(False)
+
+        self.start_learning_srv = rospy.ServiceProxy('/art/brain/learning/start', Trigger)
+        self.stop_learning_srv = rospy.ServiceProxy('/art/brain/learning/stop', Trigger)
 
     def touch_calibration_points_evt(self,  pts):
 
@@ -258,8 +265,8 @@ class UICoreRos(UICore):
 
             elif it.type == ProgIt.PICK_OBJECT_ID:
 
-                # TODO PICK_OBJECT_ID
-                pass
+                self.notif(translate("UICoreRos", "Picking object with ID=") + it.object[0])
+                self.select_object(it.object[0])
 
             elif it.type == ProgIt.PLACE_TO_POSE:
 
@@ -407,6 +414,7 @@ class UICoreRos(UICore):
             else:
                 rospy.loginfo('Projectors calibrated.')
                 self.fsm.tr_projectors_calibrated()
+                self.projectors_calibrated_pub.publish(True)
 
         else:
 
@@ -420,9 +428,11 @@ class UICoreRos(UICore):
 
             rospy.loginfo('No projectors to calibrate.')
             self.fsm.tr_projectors_calibrated()
+            self.projectors_calibrated_pub.publish(True)
 
         else:
 
+            self.projectors_calibrated_pub.publish(False)
             rospy.loginfo('Starting calibration of ' + str(len(self.projectors)) + ' projector(s)')
 
             self.calib_proj_cnt = 0
@@ -473,6 +483,16 @@ class UICoreRos(UICore):
 
         self.notif(translate("UICoreRos", "Program stored with ID=") + str(prog.header.id), temp=True)
 
+        resp = None
+        try:
+            resp = self.stop_learning_srv()
+        except rospy.ServiceException, e:
+            print "Service call failed: %s" % e
+
+        if resp is None or not resp.success:
+
+            rospy.logwarn("Failed to stop learning mode.")
+
         self.fsm.tr_program_learned()
 
     def program_selected_cb(self,  prog_id,  run=False,  template=False):
@@ -501,7 +521,19 @@ class UICoreRos(UICore):
 
         else:
 
-            self.fsm.tr_program_edit()
+            resp = None
+            try:
+                resp = self.start_learning_srv()
+            except rospy.ServiceException, e:
+                print "Service call failed: %s" % e
+
+            if resp is not None and resp.success:
+
+                self.fsm.tr_program_edit()
+
+            else:
+
+                self.notif(translate("UICoreRos", "Failed to start edit mode."))
 
     def learning_request_cb(self, req):
 
@@ -532,8 +564,10 @@ class UICoreRos(UICore):
 
         prog_id = None
         if self.program_vis is not None:
+
             pos = self.program_vis.get_pos()
             prog_id = self.ph.get_program_id()
+
         else:
             pos = (0.2, self.height-0.2)
 
@@ -620,6 +654,11 @@ class UICoreRos(UICore):
 
             self.program_vis.set_object(obj.object_type.name)
             self.select_object_type(obj.object_type.name)
+
+        elif msg.type == ProgIt.PICK_OBJECT_ID:
+
+            self.program_vis.set_object(obj.object_id)
+            self.select_object(obj.object_id)
 
         elif msg.type == ProgIt.PICK_FROM_POLYGON:
 

@@ -6,6 +6,7 @@ from art_msgs.srv import startProgram,  startProgramResponse
 from art_msgs.msg import InterfaceState,  ProgramItem,  LearningRequestAction, LearningRequestFeedback, LearningRequestResult
 from art_utils import InterfaceStateManager,  ProgramHelper, ArtApiHelper
 import actionlib
+from std_srvs.srv import Trigger, TriggerResponse
 
 prog_timer = None
 current_item = (0,  0)  # block_id, item_id
@@ -107,6 +108,12 @@ def learning_request_cb(goal):
 
     action_server.set_succeeded(res)
 
+def learning_srv_cb(req):
+
+    rospy.loginfo("learning_srv_cb")
+    resp = TriggerResponse()
+    resp.success = True
+    return resp
 
 def main(args):
 
@@ -121,6 +128,8 @@ def main(args):
     ph = ProgramHelper()
 
     rospy.Service('/art/brain/program/start',  startProgram, start_program)
+    rospy.Service('/art/brain/learning/start',  Trigger, learning_srv_cb)
+    rospy.Service('/art/brain/learning/stop',  Trigger, learning_srv_cb)
     # rospy.Service('/art/brain/program/stop',  stopProgram, stop_program)
 
     art = ArtApiHelper()
