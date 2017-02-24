@@ -27,9 +27,9 @@ class ProgramItem(Item):
 
         super(ProgramItem, self).__init__(scene, rpm, x, y)
 
-        self.w = self.m2pix(0.25)
+        self.w = self.m2pix(0.2)
         self.h = self.m2pix(0.25)
-        self.sp = self.m2pix(0.01)
+        self.sp = self.m2pix(0.005)
 
         self.ph = program_helper
 
@@ -65,7 +65,7 @@ class ProgramItem(Item):
             if block_id in self.blocks_map_rev:
                 break
 
-        self.blocks_list = ListItem(self.scene(), self.rpm, self.m2pix(0.01), 0, 0.23, bdata, self.block_selected_cb, parent=self)
+        self.blocks_list = ListItem(self.scene(), self.rpm, 0, 0, 0.2-2*0.005, bdata, self.block_selected_cb, parent=self)
 
         for k, v in self.blocks_map.iteritems():
 
@@ -274,7 +274,7 @@ class ProgramItem(Item):
             if item_id[1] in self.items_map_rev:
                 break
 
-        self.items_list = ListItem(self.scene(), self.rpm, self.m2pix(0.01), 0, 0.23, idata, self.item_selected_cb, parent=self)
+        self.items_list = ListItem(self.scene(), self.rpm, 0, 0, 0.2-2*0.005, idata, self.item_selected_cb, parent=self)
 
         for k, v in self.items_map.iteritems():
 

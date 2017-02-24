@@ -21,7 +21,7 @@ class ProgramListItem(Item):
 
         super(ProgramListItem, self).__init__(scene, rpm, x, y)
 
-        self.w = self.m2pix(0.25)
+        self.w = self.m2pix(0.2)
         self.h = self.m2pix(0.25)
 
         self.fixed = False
@@ -38,7 +38,7 @@ class ProgramListItem(Item):
             self.map_from_idx_to_program_id[idx] = ph.id
             self.map_from_program_id_to_idx[ph.id] = idx
 
-        self.list = ListItem(self.scene(), self.rpm, self.m2pix(0.01), 0, 0.23, data, self.item_selected_cb, parent=self)
+        self.list = ListItem(self.scene(), self.rpm, 0, 0, 0.2-2*0.005, data, self.item_selected_cb, parent=self)
 
         for idx in range(0, len(data)):
 
@@ -57,8 +57,8 @@ class ProgramListItem(Item):
 
             self.list.set_current_idx(self.map_from_program_id_to_idx[selected_program_id])
 
-        sp = self.m2pix(0.01)
-        h = 5*sp
+        sp = self.m2pix(0.005)
+        h = 50
         self.list.setPos(sp,  h)
         h += self.list._height()
         h += 2*sp
