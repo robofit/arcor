@@ -3,8 +3,9 @@
 from PyQt4 import QtGui, QtCore
 import rospy
 
-
 # spolecny predek vseho ve scene
+
+
 class Item(QtGui.QGraphicsItem):
 
     def __init__(self, scene, rpm, x, y, parent=None):
@@ -29,21 +30,21 @@ class Item(QtGui.QGraphicsItem):
 
     def get_font_size(self, f=1.0):
 
-        return 12 / 1280.0 * self.rpm * f
+        return 8 / 1280.0 * self.rpm * f
 
     def m2pix(self, x,  y=None):
 
         if y is None:
             return x * self.rpm
 
-        return (self.m2pix(x),  self.scene().height()-self.m2pix(y))
+        return (self.m2pix(x),  self.scene().height() - self.m2pix(y))
 
     def pix2m(self, x,  y=None):
 
         if y is None:
             return x / self.rpm
 
-        return (self.pix2m(x),  self.pix2m(self.scene().height()-y))
+        return (self.pix2m(x),  self.pix2m(self.scene().height() - y))
 
     # world coordinates to scene coords - y has to be inverted
     def set_pos(self, x, y, parent_coords=False,  yaw=None):
@@ -51,8 +52,10 @@ class Item(QtGui.QGraphicsItem):
         (px,  py) = self.m2pix(x,  y)
 
         # limit pos to the scene size
-        px = max(0, min(px, self.scene().width()))
-        py = max(0, min(py, self.scene().height()))
+        px = max(-self._width() / 2,
+                 min(px, self.scene().width() - self._width() / 2))
+        py = max(-self._height() / 2,
+                 min(py, self.scene().height() - self._height() / 2))
 
         # we usually want to work with scene/world coordinates
         if self.parentItem() and not parent_coords:
@@ -80,6 +83,39 @@ class Item(QtGui.QGraphicsItem):
         (x, y) = self.get_pos()
         # TODO fixed width format
         return "[X: " + str(round(x, 3)).ljust(5, '0') + ", Y: " + str(round(y, 3)).ljust(5, '0') + "]"
+
+    def _width(self):
+
+        return self.boundingRect().width()
+
+    def _height(self):
+
+        return self.boundingRect().height()
+
+    def _place_childs_horizontally(self, y, padding, items):
+
+        # TODO test if items are childs of this item?
+
+        if len(items) == 1:  # if there is one item - center it
+
+            items[0].setPos((self._width() - items[0]._width()) / 2, y)
+
+        elif len(items) > 1:  # more than one - place them with equal space between them (with padding on left and right)
+
+            total_width = 0
+
+            for it in items:
+                total_width += it._width()
+
+            inner_space = (self._width() - 2 * padding -
+                           total_width) / len(items) - 1
+
+            items[0].setPos(padding, y)
+
+            for idx in range(1, len(items)):
+
+                items[idx].setPos(items[idx - 1].x() +
+                                  items[idx - 1]._width() + inner_space, y)
 
     def set_enabled(self, state,  also_set_visibility=False):
 

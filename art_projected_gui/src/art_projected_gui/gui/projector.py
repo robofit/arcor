@@ -60,7 +60,7 @@ class Projector(QtGui.QWidget):
         self.setAutoFillBackground(True)
         p = self.palette()
         p.setColor(self.backgroundRole(), QtCore.Qt.black)
-        # self.setPalette(p)
+        self.setPalette(p)
 
         self.pix_label = QtGui.QLabel(self)
         self.pix_label.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
@@ -80,12 +80,27 @@ class Projector(QtGui.QWidget):
         self.calibrated_pub = rospy.Publisher("~calibrated", Bool, queue_size=1, latch=True)
         self.calibrated_pub.publish(self.is_calibrated())
 
+        self.projectors_calibrated_sub = rospy.Subscriber('/art/interface/projected_gui/projectors_calibrated',  Bool,  self.projectors_calibrated_cb,  queue_size=10)
+        self.projectors_calibrated = False
+
         self.srv_calibrate = rospy.Service("~calibrate", Empty, self.calibrate_srv_cb)
         self.corners_pub = rospy.Publisher("~corners", PoseArray, queue_size=10, latch=True)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('show_chessboard'), self.show_chessboard_evt)
 
         self.showFullScreen()
+
+    def projectors_calibrated_cb(self, msg):
+
+        self.projectors_calibrated = msg.data
+
+        if not self.projectors_calibrated:
+
+            self.pix_label.hide()
+
+        else:
+
+            self.pix_label.show()
 
     def connect(self):
 
@@ -136,7 +151,7 @@ class Projector(QtGui.QWidget):
 
                 rospy.logerr("Failed to load image from received data")
 
-            if not self.is_calibrated() or self.calibrating:
+            if not self.is_calibrated() or self.calibrating or not self.projectors_calibrated:
                 return
 
             img = pix.convertToFormat(QtGui.QImage.Format_ARGB32)
@@ -289,6 +304,8 @@ class Projector(QtGui.QWidget):
 
             rospy.logerr('Calibration failed')
 
+        self.pix_label.hide()
+
         self.shutdown_ts()
         if self.is_calibrated():
             self.tfl = None
@@ -298,6 +315,7 @@ class Projector(QtGui.QWidget):
     def show_chessboard_evt(self):
 
         rat = 1.0  # TODO make checkerboard smaller and smaller if it cannot be detected
+        self.pix_label.show()
         self.pix_label.setPixmap(self.checkerboard_img.scaled(rat * self.width(), rat * self.height(), QtCore.Qt.KeepAspectRatio))
 
     def timeout_timer_cb(self, evt):

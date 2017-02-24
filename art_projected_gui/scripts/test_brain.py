@@ -3,8 +3,10 @@
 import sys
 import rospy
 from art_msgs.srv import startProgram,  startProgramResponse
-from art_msgs.msg import InterfaceState,  ProgramItem
+from art_msgs.msg import InterfaceState,  ProgramItem,  LearningRequestAction, LearningRequestFeedback, LearningRequestResult
 from art_utils import InterfaceStateManager,  ProgramHelper, ArtApiHelper
+import actionlib
+from std_srvs.srv import Trigger, TriggerResponse
 
 prog_timer = None
 current_item = (0,  0)  # block_id, item_id
@@ -12,6 +14,7 @@ state_manager = None
 ph = None
 art = None
 iters = 0
+action_server = None
 
 
 def timer_callback(event):
@@ -32,10 +35,11 @@ def timer_callback(event):
 
     flags = {}
     it = ph.get_item_msg(*current_item)
-    if it.type == ProgramItem.MANIP_PICK_PLACE:
+    if it.type == ProgramItem.PICK_FROM_POLYGON or it.type == ProgramItem.PLACE_TO_POSE:
         flags["SELECTED_OBJECT_ID"] = "my_object"
 
-    state_manager.update_program_item(ph.get_program().header.id,  current_item[0],  ph.get_item_msg(*current_item),  flags)
+    state_manager.update_program_item(ph.get_program().header.id,  current_item[
+                                      0],  ph.get_item_msg(*current_item),  flags)
 
     if iters < 1:
         current_item = ph.get_id_on_success(*current_item)
@@ -84,11 +88,41 @@ def callback(old_state,  new_state,  flags):
     print "Got state update"
 
 
+def learning_request_cb(goal):
+
+    global action_server
+
+    print "Received action goal"
+    print goal
+
+    fb = LearningRequestFeedback()
+
+    for i in range(0, 11):
+
+        fb.progress = i * 10
+        action_server.publish_feedback(fb)
+        rospy.sleep(0.1)
+
+    res = LearningRequestResult()
+    res.success = True
+
+    action_server.set_succeeded(res)
+
+
+def learning_srv_cb(req):
+
+    rospy.loginfo("learning_srv_cb")
+    resp = TriggerResponse()
+    resp.success = True
+    return resp
+
+
 def main(args):
 
     global state_manager
     global ph
     global art
+    global action_server
 
     rospy.init_node('test_brain')
 
@@ -96,9 +130,15 @@ def main(args):
     ph = ProgramHelper()
 
     rospy.Service('/art/brain/program/start',  startProgram, start_program)
+    rospy.Service('/art/brain/learning/start',  Trigger, learning_srv_cb)
+    rospy.Service('/art/brain/learning/stop',  Trigger, learning_srv_cb)
     # rospy.Service('/art/brain/program/stop',  stopProgram, stop_program)
 
     art = ArtApiHelper()
+
+    action_server = actionlib.SimpleActionServer(
+        '/art/brain/learning_request', LearningRequestAction, execute_cb=learning_request_cb, auto_start=False)
+    action_server.start()
 
     rospy.spin()
 
