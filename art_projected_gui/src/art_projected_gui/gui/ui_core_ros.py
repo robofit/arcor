@@ -73,13 +73,13 @@ class UICoreRos(UICore):
 
         cursors = rospy.get_param("~cursors", [])
         for cur in cursors:
-            self.scene_items.append(PoseStampedCursorItem(self.scene, self.rpm, cur))
+            PoseStampedCursorItem(self.scene, self.rpm, cur)
 
-        self.scene_items.append(TouchTableItem(self.scene,  self.rpm, '/art/interface/touchtable/touch', list(self.get_scene_items_by_type(PoseStampedCursorItem))))
+        TouchTableItem(self.scene, self.rpm, '/art/interface/touchtable/touch', list(self.get_scene_items_by_type(PoseStampedCursorItem)))
 
-        self.scene_items.append(ButtonItem(self.scene, self.rpm, 0, 0, "STOP", None, self.stop_btn_clicked, 2.0, QtCore.Qt.red))
-        self.scene_items[-1].setPos(self.scene.width() - self.scene_items[-1].boundingRect().width() - 40, self.scene.height() - self.scene_items[-1].boundingRect().height() - 60)
-        self.scene_items[-1].set_enabled(True)
+        stop_btn = ButtonItem(self.scene, self.rpm, 0, 0, "STOP", None, self.stop_btn_clicked, 2.0, QtCore.Qt.red)
+        stop_btn.setPos(self.scene.width() - stop_btn.boundingRect().width() - 40, self.scene.height() - stop_btn.boundingRect().height() - 60)
+        stop_btn.set_enabled(True)
 
         self.projectors = []
 
@@ -87,6 +87,7 @@ class UICoreRos(UICore):
         for proj in projs:
             self.add_projector(proj)
 
+        rospy.loginfo("Waiting for /art/brain/learning_request")
         self.learning_action_cl = actionlib.SimpleActionClient('/art/brain/learning_request', LearningRequestAction)
         self.learning_action_cl.wait_for_server()
 
@@ -101,7 +102,7 @@ class UICoreRos(UICore):
     def touch_calibration_points_evt(self,  pts):
 
         # TODO trigger state change?
-        for it in self.scene_items:
+        for it in self.scene.items():
 
             if isinstance(it, LabelItem):
                 continue
@@ -140,7 +141,7 @@ class UICoreRos(UICore):
 
             self.notif(translate("UICoreRos", "Touch saved."), temp=True)
 
-            for it in self.scene_items:
+            for it in self.scene.items():
 
                 if isinstance(it, LabelItem):
                     continue
@@ -293,6 +294,9 @@ class UICoreRos(UICore):
         rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: " + str((block_id, item_id)))
 
         self.clear_all()
+
+        from items import PolygonItem
+        print list(self.get_scene_items_by_type(PolygonItem))
 
         if item_id is None:
             # TODO hlaska
@@ -509,7 +513,6 @@ class UICoreRos(UICore):
         self.program_list = None
 
         self.program_vis = ProgramItem(self.scene, self.rpm, pos[0], pos[1], self.ph, done_cb=self.learning_done_cb, item_switched_cb=self.active_item_switched, learning_request_cb=self.learning_request_cb)
-        self.scene_items.append(self.program_vis)
 
         if run:
 
@@ -579,6 +582,8 @@ class UICoreRos(UICore):
 
         d = {}
 
+        headers_to_show = []
+
         for header in headers:
 
             ph = ProgramHelper()
@@ -586,11 +591,11 @@ class UICoreRos(UICore):
 
             if ph.load(self.art.load_program(header.id)):
 
+                headers_to_show.append(header)
                 d[header.id] = ph.program_learned()
 
         # rospy.loginfo(str(d))
-        self.program_list = ProgramListItem(self.scene, self.rpm, pos[0], pos[1], headers,  d, prog_id, self.program_selected_cb)
-        self.scene_items.append(self.program_list)
+        self.program_list = ProgramListItem(self.scene, self.rpm, pos[0], pos[1], headers_to_show,  d, prog_id, self.program_selected_cb)
 
     def object_cb(self, msg):
 
