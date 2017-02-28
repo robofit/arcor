@@ -2,12 +2,10 @@
 
 import rospy
 import moveit_commander
-import moveit_msgs.msg
-import sys
 
 import actionlib
 from pr2_controllers_msgs.msg import PointHeadAction, PointHeadGoal
-from std_srvs.srv import Empty, EmptyResponse
+from std_srvs.srv import Empty, EmptyResponse, Trigger
 from std_msgs.msg import Float32, Bool
 from geometry_msgs.msg import PointStamped, PoseStamped
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -18,6 +16,9 @@ import tf
 class ArtBasicControl:
 
     def __init__(self):
+
+        self.tfl = tf.TransformListener()
+
         self.head_action_client = actionlib.SimpleActionClient("/head_traj_controller/point_head_action", PointHeadAction)
         rospy.loginfo("Waiting for point_head_action server")
         self.head_action_client.wait_for_server()
@@ -52,17 +53,17 @@ class ArtBasicControl:
                                                    self.right_interaction_move_to_user_cb)
         self.right_int_pub = rospy.Publisher("right_arm/interaction/state", Bool, queue_size=1, latch=True)
 
-        rospy.loginfo("Server ready")
         self.spine_up_service = rospy.Service("spine/up", Empty, self.spine_up_cb)
         self.spine_down_service = rospy.Service("spine/down", Empty, self.spine_down_cb)
         self.spine_control_sub = rospy.Subscriber("spine/control", Float32, self.spine_control_cb)
         self.look_at_sub = rospy.Subscriber("look_at", PointStamped, self.look_at_cb)
         self.spine_control_pub = rospy.Publisher("/torso_controller/command", JointTrajectory, queue_size=1)
 
-        self.tfl = tf.TransformListener()
         self.left_gripper_pose_pub = rospy.Publisher("left_arm/gripper/pose", PoseStamped, queue_size=1)
         self.right_gripper_pose_pub = rospy.Publisher("right_arm/gripper/pose", PoseStamped, queue_size=1)
         self.gripper_pose_timer = rospy.Timer(rospy.Duration(0.2), self.gripper_pose_timer_cb)
+
+        rospy.loginfo("Server ready")
 
     def publish_gripper_pose(self, frame_id, publisher):
 
