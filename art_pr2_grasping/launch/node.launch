@@ -6,20 +6,14 @@
   <arg     if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
 
   <!-- Launch pick and place -->
-  <node name="pr2_pick_place_left" launch-prefix="$(arg launch_prefix)" pkg="art_pr2_grasping" 
+  <node name="pr2_grasping" launch-prefix="$(arg launch_prefix)" pkg="art_pr2_grasping" 
 	type="pr2grasp" output="screen" respawn="false">
-    <param name="group_name" value="left_arm"/>
-    <rosparam command="load" file="$(find pr2_moveit_config)/config/kinematics.yaml"/>
+    <rosparam command="load" file="$(find art_pr2_moveit_config)/config/kinematics.yaml"/>
     <rosparam command="load" file="$(find art_pr2_grasping)/config/pr2_grasp_data.gazebo.yaml"/>
-    <param name="gripper_state" value="/l_gripper_controller/state"/>
+    <rosparam param="groups">["left_arm", "right_arm"]</rosparam>
+    <rosparam param="gripper_state_topics">["/l_gripper_controller/state", "/r_gripper_controller/state"]</rosparam>
+    <rosparam param="default_poses">["tuck_left_arm", "tuck_right_arm"]</rosparam>
+
   </node>
-  
-  <!-- Launch pick and place -->
-  <!--node name="pr2_pick_place_right" launch-prefix="$(arg launch_prefix)" pkg="art_pr2_grasping" 
-	type="pr2grasp" output="screen" respawn="true">
-    <param name="group_name" value="right_arm"/>
-    <rosparam command="load" file="$(find pr2_moveit_config)/config/kinematics.yaml"/>
-    <rosparam command="load" file="$(find art_pr2_grasping)/config/pr2_grasp_data.gazebo.yaml"/>
-  </node-->
 
 </launch>

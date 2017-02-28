@@ -1,3 +1,4 @@
+# this should be faster than using point clouds but it requires OpenGL
 sensors:
   - sensor_plugin: occupancy_map_monitor/DepthImageOctomapUpdater
     image_topic: /head_mount_kinect/depth_registered/image_raw

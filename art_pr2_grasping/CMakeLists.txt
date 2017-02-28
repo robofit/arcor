@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   art_msgs
   pr2_moveit_config
   roslaunch
+  rostest
 )
 
 find_package(Eigen REQUIRED)
@@ -38,7 +39,8 @@ catkin_package(
 include_directories(include ${catkin_INCLUDE_DIRS})
 
 # Main executable
-add_executable(pr2grasp src/pr2grasp.cpp)
+add_executable(pr2grasp src/node.cpp src/objects.cpp src/action_server.cpp src/pr2grasp.cpp)
+add_dependencies(pr2grasp ${catkin_EXPORTED_TARGETS})
 target_link_libraries(pr2grasp ${catkin_LIBRARIES})
 
 set(ROSLINT_CPP_OPTS "--filter=-runtime/references,-runtime/int")
@@ -47,4 +49,5 @@ roslint_add_test()
 
 if (CATKIN_ENABLE_TESTING)
   roslaunch_add_file_check(launch)
+#  add_rostest(tests/grasping.test)
 endif()

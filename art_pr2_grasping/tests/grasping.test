@@ -1,0 +1,7 @@
+<launch>
+  
+  <!-- TODO start simulation, art_db, art_basic_control (to move spine up - how to wait for it?), start move_group -->
+  
+  <test test-name="test_grasping" pkg="art_pr2_grasping" type="test_grasping.py" />
+  
+</launch>
