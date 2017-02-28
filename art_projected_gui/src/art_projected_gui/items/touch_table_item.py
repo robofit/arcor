@@ -65,16 +65,10 @@ class TouchPointItem(Item):
                     self.pointed_item = it
                     self.pointed_item.cursor_press()
 
-                    if self.pointed_item.fixed:
+                    my_pos = self.get_pos()
+                    it_pos = self.pointed_item.get_pos()
 
-                        self.pointed_item.cursor_release()
-
-                    else:
-
-                        my_pos = self.get_pos()
-                        it_pos = self.pointed_item.get_pos()
-
-                        self.offset = (it_pos[0]-my_pos[0], it_pos[1]-my_pos[1])
+                    self.offset = (it_pos[0]-my_pos[0], it_pos[1]-my_pos[1])
 
                     break
 
