@@ -533,6 +533,13 @@ class ProgramItem(Item):
 
         self._update_item()
 
+    def set_pose(self,  ps):
+
+        msg = self.get_current_item()
+        msg.pose[0] = ps
+
+        self._update_item()
+
     def set_object(self, obj):
 
         msg = self.get_current_item()

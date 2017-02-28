@@ -6,7 +6,7 @@ import rospy
 from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt,  LearningRequestAction, LearningRequestGoal
 from fsm import FSM
 from transitions import MachineError
-from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem,  ProgramItem
+from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem,  ProgramItem, DialogItem
 from art_projected_gui.helpers import ProjectorHelper,  conversions
 from art_utils import InterfaceStateManager,  ArtApiHelper, ProgramHelper
 from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse,  NotifyUser,  NotifyUserResponse
@@ -50,6 +50,7 @@ class UICoreRos(UICore):
         QtCore.QObject.connect(self, QtCore.SIGNAL('touch_calibration_points_evt'), self.touch_calibration_points_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('touch_detected_evt'), self.touch_detected_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('notify_user_evt'), self.notify_user_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('learning_request_done_evt'), self.learning_request_done_evt)
 
         self.user_status = None
 
@@ -99,6 +100,8 @@ class UICoreRos(UICore):
         self.start_learning_srv = rospy.ServiceProxy('/art/brain/learning/start', Trigger)
         self.stop_learning_srv = rospy.ServiceProxy('/art/brain/learning/stop', Trigger)
 
+        self.grasp_dialog = None
+
     def touch_calibration_points_evt(self,  pts):
 
         # TODO trigger state change?
@@ -111,6 +114,21 @@ class UICoreRos(UICore):
 
         self.notif(translate("UICoreRos", "Touch table calibration started. Please press the white point."), temp=False)
         self.touch_points = TouchPointsItem(self.scene,  pts)
+
+    def save_gripper_pose_cb(self, idx):
+
+        topics = ['/art/pr2/right_arm/gripper/pose', '/art/pr2/left_arm/gripper/pose']
+
+        # wait for message, set pose
+        try:
+            ps = rospy.wait_for_message(topics[idx], PoseStamped, timeout=2)
+        except(rospy.ROSException), e:
+            rospy.logerror(str(e))
+            self.notif(translate("UICoreRos", "Failed to store gripper pose."), temp=False)
+            return
+
+        self.notif(translate("UICoreRos", "Gripper pose stored."), temp=False)
+        self.program_vis.set_pose(ps)
 
     def touch_calibration_points_cb(self,  req):
 
@@ -540,7 +558,14 @@ class UICoreRos(UICore):
         if req == LearningRequestGoal.GET_READY:
             self.notif(translate("UICoreRos", "Robot is getting ready for learning"))
         elif req == LearningRequestGoal.DONE:
+
             self.notif(translate("UICoreRos", "Robot is getting into default state"))
+
+            if self.grasp_dialog is not None:
+
+                self.scene.removeItem(self.grasp_dialog)
+                self.grasp_dialog = None
+
         elif req == LearningRequestGoal.EXECUTE_ITEM:
             self.notif(translate("UICoreRos", "Robot is executing current program instruction"))
 
@@ -553,10 +578,22 @@ class UICoreRos(UICore):
 
         rospy.logdebug('learning request progress: ' + str(fb.progress))
 
-    def learning_request_done_cb(self, status, result):
+    def learning_request_done_evt(self, status, result):
 
         # TODO some notif
         self.program_vis.learning_request_result(result.success)
+
+        if self.program_vis.editing_item:
+
+            item = self.program_vis.get_current_item()
+
+            if item.type == ProgIt.PICK_FROM_FEEDER:
+
+                self.grasp_dialog = DialogItem(self.scene, self.width/2, 0.1, "Save gripper pose", ["Right arm", "Left arm"],  self.save_gripper_pose_cb)
+
+    def learning_request_done_cb(self, status, result):
+
+        self.emit(QtCore.SIGNAL('learning_request_done_evt'), status, result)
 
     def cb_program_selection(self):
 
