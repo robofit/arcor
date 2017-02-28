@@ -39,18 +39,14 @@ class ArtBasicControl:
 
         self.left_interaction_on = rospy.Service("left_arm/interaction/on", Empty, self.left_interaction_on_cb)
         self.left_interaction_off = rospy.Service("left_arm/interaction/off", Empty, self.left_interaction_off_cb)
-        self.left_get_ready = rospy.Service("left_arm/interaction/get_ready", Trigger,
-                                                  self.left_interaction_get_ready_cb)
-        self.left_move_to_user = rospy.Service("left_arm/interaction/move_to_user", Trigger,
-                                                  self.left_interaction_move_to_user_cb)
+        self.left_get_ready = rospy.Service("left_arm/interaction/get_ready", Trigger, self.left_interaction_get_ready_cb)
+        self.left_move_to_user = rospy.Service("left_arm/interaction/move_to_user", Trigger, self.left_interaction_move_to_user_cb)
         self.left_int_pub = rospy.Publisher("left_arm/interaction/state", Bool, queue_size=1, latch=True)
 
         self.right_interaction_on = rospy.Service("right_arm/interaction/on", Empty, self.right_interaction_on_cb)
         self.right_interaction_off = rospy.Service("right_arm/interaction/off", Empty, self.right_interaction_off_cb)
-        self.right_get_ready = rospy.Service("right_arm/interaction/get_ready", Trigger,
-                                                   self.right_interaction_get_ready_cb)
-        self.right_move_to_user = rospy.Service("right_arm/interaction/move_to_user", Trigger,
-                                                   self.right_interaction_move_to_user_cb)
+        self.right_get_ready = rospy.Service("right_arm/interaction/get_ready", Trigger, self.right_interaction_get_ready_cb)
+        self.right_move_to_user = rospy.Service("right_arm/interaction/move_to_user", Trigger, self.right_interaction_move_to_user_cb)
         self.right_int_pub = rospy.Publisher("right_arm/interaction/state", Bool, queue_size=1, latch=True)
 
         self.spine_up_service = rospy.Service("spine/up", Empty, self.spine_up_cb)
