@@ -617,16 +617,14 @@ class ProgramItem(Item):
 
                 painter.setPen(QtCore.Qt.red)
 
-            painter.drawText(sp, 2 * sp, translate("ProgramItem",
-                                                             "Block") + " ID: " + str(self.block_id))
+            painter.drawText(sp, 2 * sp, translate("ProgramItem", "Block") + " ID: " + str(self.block_id))
         else:
 
             if not self.program_learned and not self.readonly:
 
                 painter.setPen(QtCore.Qt.red)
 
-            painter.drawText(sp, 2 * sp, translate("ProgramItem",
-                                                             "Program") + " ID: " + str(self.ph.get_program_id()))
+            painter.drawText(sp, 2 * sp, translate("ProgramItem", "Program") + " ID: " + str(self.ph.get_program_id()))
 
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.NoPen)

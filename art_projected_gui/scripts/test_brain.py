@@ -21,6 +21,7 @@ left_gripper_pub = None
 right_gripper_pub = None
 gripper_timer = None
 
+
 def gripper_timer(event):
 
     global left_gripper_pub
@@ -38,6 +39,7 @@ def gripper_timer(event):
 
     ps.pose.position.x = -0.5
     right_gripper_pub.publish(ps)
+
 
 def timer_callback(event):
 
