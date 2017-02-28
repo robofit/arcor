@@ -56,17 +56,17 @@ class UICore(QtCore.QObject):
         self.y = y
         self.width = width
         self.height = height
-        self.rpm = rpm
         self.port = scene_server_port
 
-        w = self.width * self.rpm
+        w = self.width * rpm
         h = self.height / self.width * w
 
         self.scene = QtGui.QGraphicsScene(0, 0, int(w), int(h))
+        self.scene.rpm = rpm
         self.scene.setBackgroundBrush(QtCore.Qt.black)
         # self.scene.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex) # should be good for dynamic scenes
 
-        self.bottom_label = LabelItem(self.scene, self.rpm, 0.2, 0.05, self.width - 0.4, 0.05)
+        self.bottom_label = LabelItem(self.scene, 0.2, 0.05, self.width - 0.4, 0.05)
 
         self.selected_object_ids = []
         self.selected_object_types = []
@@ -211,7 +211,7 @@ class UICore(QtCore.QObject):
             sel_cb (method): Callback which gets called one the object is selected.
         """
 
-        obj = ObjectItem(self.scene, self.rpm, object_id, object_type, x, y, yaw,  sel_cb)
+        obj = ObjectItem(self.scene, object_id, object_type, x, y, yaw,  sel_cb)
 
         if object_id in self.selected_object_ids or object_type.name in self.selected_object_types:
 
@@ -288,7 +288,6 @@ class UICore(QtCore.QObject):
         # TODO check frame_id in pose_stamped and transform if needed
         PlaceItem(
             self.scene,
-            self.rpm,
             caption,
             pose_stamped.pose.position.x,
             pose_stamped.pose.position.y,
@@ -301,7 +300,7 @@ class UICore(QtCore.QObject):
 
     def add_polygon(self, caption, obj_coords=[], poly_points=[], polygon_changed=None, fixed=False):
 
-        PolygonItem(self.scene, self.rpm, caption, obj_coords, poly_points, polygon_changed, fixed)
+        PolygonItem(self.scene, caption, obj_coords, poly_points, polygon_changed, fixed)
 
     def clear_places(self):
 

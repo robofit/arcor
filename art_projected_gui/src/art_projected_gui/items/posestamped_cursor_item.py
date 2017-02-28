@@ -37,9 +37,9 @@ class PoseStampedCursorItemHelper(QtCore.QObject):
 
 class PoseStampedCursorItem(Item):
 
-    def __init__(self, scene, rpm, topic, offset=(0.0, 0.0), world_frame="marker"):
+    def __init__(self, scene, topic, offset=(0.0, 0.0), world_frame="marker"):
 
-        super(PoseStampedCursorItem, self).__init__(scene, rpm, 0.5, 0.5)
+        super(PoseStampedCursorItem, self).__init__(scene, 0.5, 0.5)
 
         self.offset = offset
 
@@ -77,6 +77,9 @@ class PoseStampedCursorItem(Item):
         return QtCore.QRectF(-20, -20, 40, 40)
 
     def paint(self, painter, option, widget):
+
+        if not self.scene():
+            return
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)

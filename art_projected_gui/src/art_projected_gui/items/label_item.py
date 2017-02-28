@@ -10,12 +10,12 @@ import rospkg
 
 class LabelItem(Item):
 
-    def __init__(self, scene, rpm, x, y, w, h):
+    def __init__(self, scene, x, y, w, h):
 
         self.w = w
         self.h = h
 
-        super(LabelItem, self).__init__(scene, rpm, x, y)
+        super(LabelItem, self).__init__(scene, x, y)
 
         # TODO list of messages - display them intelligently, optional duration of message etc
         self.msgs = deque()
@@ -112,6 +112,12 @@ class LabelItem(Item):
 
     def paint(self, painter, option, widget):
 
+        if not self.scene():
+            return
+
+        painter.setClipRect(option.exposedRect)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
         msg = None
 
         if len(self.temp_msgs) > 0:
@@ -133,7 +139,6 @@ class LabelItem(Item):
             else:
                 v.setVisible(False)
 
-        painter.setClipRect(option.exposedRect)
         painter.setBrush(QtCore.Qt.white)
         painter.setPen(QtCore.Qt.white)
 

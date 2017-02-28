@@ -14,7 +14,7 @@ translate = QtCore.QCoreApplication.translate
 
 class ProgramItem(Item):
 
-    def __init__(self, scene, rpm, x, y, program_helper, done_cb=None, item_switched_cb=None,  learning_request_cb=None):
+    def __init__(self, scene, x, y, program_helper, done_cb=None, item_switched_cb=None,  learning_request_cb=None):
 
         self.w = 100
         self.h = 100
@@ -25,7 +25,7 @@ class ProgramItem(Item):
 
         self.readonly = False
 
-        super(ProgramItem, self).__init__(scene, rpm, x, y)
+        super(ProgramItem, self).__init__(scene, x, y)
 
         self.w = self.m2pix(0.2)
         self.h = self.m2pix(0.25)
@@ -39,11 +39,11 @@ class ProgramItem(Item):
         self.program_learned = False
 
         # block "view"
-        self.block_finished_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate(
+        self.block_finished_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Done"), self, self.block_finished_btn_cb)
-        self.block_edit_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate(
+        self.block_edit_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Edit"), self, self.block_edit_btn_cb)
-        self.block_on_failure_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate(
+        self.block_on_failure_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "On fail"), self, self.block_on_failure_btn)
 
         bdata = []
@@ -68,8 +68,7 @@ class ProgramItem(Item):
             if block_id in self.blocks_map_rev:
                 break
 
-        self.blocks_list = ListItem(self.scene(
-        ), self.rpm, 0, 0, 0.2 - 2 * 0.005, bdata, self.block_selected_cb, parent=self)
+        self.blocks_list = ListItem(self.scene(), 0, 0, 0.2 - 2 * 0.005, bdata, self.block_selected_cb, parent=self)
 
         for k, v in self.blocks_map.iteritems():
 
@@ -90,14 +89,14 @@ class ProgramItem(Item):
         self.update()
 
         # items "view"
-        self.item_edit_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate(
+        self.item_edit_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Edit"), self, self.item_edit_btn_cb)
-        self.item_run_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate(
+        self.item_run_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Run"), self, self.item_run_btn_cb)
-        self.item_on_failure_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate(
+        self.item_on_failure_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "On fail"), self, self.item_on_failure_btn_cb)
 
-        self.item_finished_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate(
+        self.item_finished_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Back to blocks"), self, self.item_finished_btn_cb)
 
         self.items_list = None
@@ -106,11 +105,11 @@ class ProgramItem(Item):
                        self.item_on_failure_btn, self.item_edit_btn), False)
 
         # readonly (program running) "view"
-        self.pr_pause_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate(
+        self.pr_pause_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Pause"), self, self.pr_pause_btn_cb)
-        self.pr_repeat_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate(
+        self.pr_repeat_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Repeat"), self, self.pr_repeat_btn_cb)
-        self.pr_cancel_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate(
+        self.pr_cancel_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Cancel"), self, self.pr_cancel_btn_cb)
 
         group_visible((self.pr_pause_btn, self.pr_repeat_btn,
@@ -303,7 +302,7 @@ class ProgramItem(Item):
                 break
 
         self.items_list = ListItem(self.scene(
-        ), self.rpm, 0, 0, 0.2 - 2 * 0.005, idata, self.item_selected_cb, parent=self)
+        ), 0, 0, 0.2 - 2 * 0.005, idata, self.item_selected_cb, parent=self)
 
         for k, v in self.items_map.iteritems():
 
@@ -590,6 +589,9 @@ class ProgramItem(Item):
 
     def paint(self, painter, option, widget):
 
+        if not self.scene():
+            return
+
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
@@ -600,13 +602,15 @@ class ProgramItem(Item):
 
         # TODO measure text size / use label
 
+        sp = self.m2pix(0.01)
+
         if self.block_id is not None:
 
             if not self.block_learned and not self.readonly:
 
                 painter.setPen(QtCore.Qt.red)
 
-            painter.drawText(self.sp, 2 * self.sp, translate("ProgramItem",
+            painter.drawText(sp, 2 * sp, translate("ProgramItem",
                                                              "Block") + " ID: " + str(self.block_id))
         else:
 
@@ -614,11 +618,8 @@ class ProgramItem(Item):
 
                 painter.setPen(QtCore.Qt.red)
 
-            painter.drawText(self.sp, 2 * self.sp, translate("ProgramItem",
+            painter.drawText(sp, 2 * sp, translate("ProgramItem",
                                                              "Program") + " ID: " + str(self.ph.get_program_id()))
-
-        painter.setClipRect(option.exposedRect)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.NoPen)

@@ -10,13 +10,13 @@ from button_item import ButtonItem
 
 class TouchPointItem(Item):
 
-    def __init__(self,  scene,  rpm,  x,  y,  parent):
+    def __init__(self, scene,  x,  y,  parent):
 
         self.pointed_item = None
         self.offset = (0, 0)
         self.last_update = rospy.Time.now()
 
-        super(TouchPointItem, self).__init__(scene, rpm, x, y,  parent)
+        super(TouchPointItem, self).__init__(scene, x, y,  parent)
 
         self.set_poss(x,  y)
 
@@ -96,6 +96,9 @@ class TouchPointItem(Item):
 
     def paint(self, painter, option, widget):
 
+        if not self.scene():
+            return
+
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
@@ -132,11 +135,9 @@ class TouchTableItemHelper(QtCore.QObject):
 class TouchTableItem(Item):
 
     # TODO display corners of touchable area
-    def __init__(self, scene, rpm, topic, items_to_disable_on_touch=[],  world_frame="marker"):
+    def __init__(self, scene, topic, items_to_disable_on_touch=[],  world_frame="marker"):
 
-        super(TouchTableItem, self).__init__(scene, rpm, 0.0, 0.0)
-
-        self.rpm = rpm
+        super(TouchTableItem, self).__init__(scene, 0.0, 0.0)
         self.touch_points = {}
 
         self.items_to_disable_on_touch = items_to_disable_on_touch
@@ -147,7 +148,7 @@ class TouchTableItem(Item):
 
     def boundingRect(self):
 
-        return QtCore.QRectF(0, 0, self.scene().width(), self.scene().height())  # TODO is this ok?
+        return self.scene().sceneRect()
 
     def paint(self, painter, option, widget):
 
@@ -175,7 +176,7 @@ class TouchTableItem(Item):
 
             # TODO check frame_id
             rospy.logdebug("new touch point, id: " + str(msg.id))
-            self.touch_points[msg.id] = TouchPointItem(self.scene(),  self.rpm,  msg.point.point.x,  msg.point.point.y,  self)
+            self.touch_points[msg.id] = TouchPointItem(self.scene(),  msg.point.point.x,  msg.point.point.y,  self)
 
         else:
 
