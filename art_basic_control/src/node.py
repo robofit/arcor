@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 import rospy
+import moveit_commander
+import moveit_msgs.msg
+import sys
 
 import actionlib
 from pr2_controllers_msgs.msg import PointHeadAction, PointHeadGoal
@@ -30,12 +33,23 @@ class ArtBasicControl:
         self.switch_req = SwitchControllerRequest()
         self.switch_req.strictness = SwitchControllerRequest.BEST_EFFORT
 
+        self.group_left = moveit_commander.MoveGroupCommander("left_arm")
+        self.group_right = moveit_commander.MoveGroupCommander("right_arm")
+
         self.left_interaction_on = rospy.Service("left_arm/interaction/on", Empty, self.left_interaction_on_cb)
         self.left_interaction_off = rospy.Service("left_arm/interaction/off", Empty, self.left_interaction_off_cb)
+        self.left_get_ready = rospy.Service("left_arm/interaction/get_ready", Trigger,
+                                                  self.left_interaction_get_ready_cb)
+        self.left_move_to_user = rospy.Service("left_arm/interaction/move_to_user", Trigger,
+                                                  self.left_interaction_move_to_user_cb)
         self.left_int_pub = rospy.Publisher("left_arm/interaction/state", Bool, queue_size=1, latch=True)
 
         self.right_interaction_on = rospy.Service("right_arm/interaction/on", Empty, self.right_interaction_on_cb)
         self.right_interaction_off = rospy.Service("right_arm/interaction/off", Empty, self.right_interaction_off_cb)
+        self.right_get_ready = rospy.Service("right_arm/interaction/get_ready", Trigger,
+                                                   self.right_interaction_get_ready_cb)
+        self.right_move_to_user = rospy.Service("right_arm/interaction/move_to_user", Trigger,
+                                                   self.right_interaction_move_to_user_cb)
         self.right_int_pub = rospy.Publisher("right_arm/interaction/state", Bool, queue_size=1, latch=True)
 
         rospy.loginfo("Server ready")
@@ -101,6 +115,48 @@ class ArtBasicControl:
 
         return EmptyResponse()
 
+    def left_interaction_get_ready_cb(self,  req):
+
+        if self.left_arm_mann:
+            rospy.logerr('Left arm in interactive mode')
+        else:
+            pose_target = PoseStamped()
+
+            pose_target.pose.position.x = 0.093
+            pose_target.pose.position.y = 0.7
+
+            pose_target.pose.position.z = 1.0
+            pose_target.pose.orientation.x = -0.001
+            pose_target.pose.orientation.y = 0.320
+            pose_target.pose.orientation.z = -0.001
+            pose_target.pose.orientation.w = 0.947
+            pose_target.header.frame_id = "base_link"
+            self.group_left.set_pose_target(pose_target)
+            self.group_left.plan()
+            self.group_left.go(wait=False)
+            pass
+
+        return EmptyResponse()
+
+    def left_interaction_move_to_user_cb(self,  req):
+
+        if self.left_arm_mann:
+            rospy.logerr('Left arm in interactive mode')
+        else:
+            pose = PoseStamped()
+            pose.pose.position.x = 0.7
+            pose.pose.position.y = 0.1
+            pose.pose.position.z = 1.2
+            pose.pose.orientation.w = 1
+            pose.header.frame_id = "base_link"
+
+            # pose_transformed = self.tf_listener.transformPose(pose, self.group_left.get_planning_frame())
+            self.group_left.set_pose_target(pose)
+            self.group_left.plan()
+            self.group_left.go(wait=False)
+
+        return EmptyResponse()
+
     def right_interaction_on_cb(self,  req):
 
         if self.right_arm_mann:
@@ -128,6 +184,43 @@ class ArtBasicControl:
             self.switch_req.start_controllers = [self.standard_controllers[0]]
             self.switch_control(self.switch_req)
             self.right_int_pub.publish(False)
+
+        return EmptyResponse()
+
+    def right_interaction_get_ready_cb(self, req):
+
+        if self.right_arm_mann:
+            rospy.logerr('Right arm in interactive mode')
+        else:
+            pose_target = PoseStamped()
+            pose_target.pose.position.x = 0.093
+            pose_target.pose.position.y = -0.7
+            pose_target.pose.position.z = 1.0
+            pose_target.pose.orientation.x = -0.001
+            pose_target.pose.orientation.y = 0.320
+            pose_target.pose.orientation.z = -0.001
+            pose_target.pose.orientation.w = 0.947
+            pose_target.header.frame_id = "base_link"
+            self.group_right.set_pose_target(pose_target)
+            plan1 = self.group_right.plan()
+            self.group_right.go(wait=False)
+
+        return EmptyResponse()
+
+    def right_interaction_move_to_user_cb(self, req):
+
+        if self.right_arm_mann:
+            rospy.logerr('Right arm in interactive mode')
+        else:
+            pose = PoseStamped()
+            pose.pose.position.x = 0.7
+            pose.pose.position.y = -0.1
+            pose.pose.position.z = 1.2
+            pose.pose.orientation.w = 1
+            pose.header.frame_id = "base_link"
+            self.group_right.set_pose_target(pose)
+            plan1 = self.group_right.plan()
+            self.group_right.go(wait=False)
 
         return EmptyResponse()
 
