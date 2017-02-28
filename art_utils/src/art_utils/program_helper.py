@@ -77,9 +77,13 @@ class ProgramHelper():
                 cache[block.id]["items"][item.id]["on_success"] = item.on_success
                 cache[block.id]["items"][item.id]["on_failure"] = item.on_failure
 
+        self._prog = prog
+        self._cache = cache
+
         # now the cache is done, let's make some simple checks
         for k,  v in cache.iteritems():
 
+            # TODO refactor into separate method check_item
             # 0 means jump to the end
             if v["on_success"] != 0 and v["on_success"] not in cache:
 
@@ -106,6 +110,7 @@ class ProgramHelper():
 
                 item = prog.blocks[v["idx"]].items[vv["idx"]]
 
+                # any reference should exist in the same block
                 for ref in item.ref_id:
 
                     if ref not in cache[k]["items"]:
@@ -113,14 +118,46 @@ class ProgramHelper():
                         rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has invalid ref_id: " + str(ref))
                         return False
 
-                if item.type in [ProgramItem.PLACE_TO_POSE] and len(item.ref_id) == 0:
+                # at least one 'object' mandatory for following types
+                if item.type in [ProgramItem.PICK_FROM_POLYGON,  ProgramItem.PICK_FROM_FEEDER,  ProgramItem.PICK_OBJECT_ID] and len(item.object) == 0:
 
-                    rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has NO ref_id!")
+                    rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has zero size of 'object' array!")
                     return False
 
+                # at least one 'pose' mandatory for following types
+                if item.type in [ProgramItem.PICK_FROM_FEEDER,  ProgramItem.PLACE_TO_POSE] and len(item.pose) == 0:
+
+                    rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has zero size of 'pose' array!")
+                    return False
+
+                # at least one 'polygon' mandatory for following types
+                if item.type in [ProgramItem.PICK_FROM_POLYGON] and len(item.polygon) == 0:
+
+                    rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has zero size of 'polygon' array!")
+                    return False
+
+                # check if PLACE_* instruction has correct ref_id(s) - should be set and point to PICK_*
+                if item.type in [ProgramItem.PLACE_TO_POSE]:
+
+                    if len(item.ref_id) == 0:
+
+                        rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has NO ref_id!")
+                        return False
+
+                    for ref_id in item.ref_id:
+
+                        ref_msg = self.get_item_msg(k, ref_id)
+
+                        if ref_msg.type not in [ProgramItem.PICK_FROM_POLYGON,  ProgramItem.PICK_FROM_FEEDER,  ProgramItem.PICK_OBJECT_ID]:
+
+                            rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has ref_id which is not PICK_*!")
+                            return False
+
+                # TODO refactor into separate method
                 if template:
 
-                    item.object = []
+                    for i in range(0,  len(item.object)):
+                        item.object[i] = ""
 
                     # for stamped types we want to keep header (frame_id)
                     for polygon in item.polygon:
@@ -129,8 +166,6 @@ class ProgramHelper():
                     for pose in item.pose:
                         pose.pose = Pose()
 
-        self._prog = prog
-        self._cache = cache
         return True
 
     def get_program(self):
@@ -248,7 +283,7 @@ class ProgramHelper():
 
         if len(msg.object) == 0:
 
-            return False
+            raise ValueError("Array 'object' is empty.")
 
         for object in msg.object:
             if object == "":

@@ -41,6 +41,9 @@ def main(args):
 
     rospy.init_node('art_db_service_tester', anonymous=True)
 
+    # -------------------------------------------------------------------------------------------
+    # PROGRAMS
+    # -------------------------------------------------------------------------------------------
     prog = Program()
     prog.header.id = 0
     prog.header.name = "Advanced pick&place"
@@ -150,6 +153,7 @@ def main(args):
 
     store_program(prog)
 
+    # -------------------------------------------------------------------------------------------
     prog = Program()
     prog.header.id = 1
     prog.header.name = "Basic pick&place"
@@ -180,6 +184,7 @@ def main(args):
     p.on_success = 4
     p.on_failure = 0
     p.type = ProgramItem.PICK_OBJECT_ID
+    p.object.append("")
     pf = PoseStamped()
     pf.header.frame_id = "marker"
     p.pose.append(pf)
@@ -197,6 +202,97 @@ def main(args):
     pb.items.append(deepcopy(p))
 
     store_program(prog)
+
+    # -------------------------------------------------------------------------------------------
+    prog = Program()
+    prog.header.id = 2
+    prog.header.name = "Classic pick&place"
+
+    pb = ProgramBlock()
+    pb.id = 1  # can't be zero
+    pb.name = "First block"
+    pb.on_success = 1
+    pb.on_failure = 0
+    prog.blocks.append(pb)
+
+    p = ProgramItem()
+    p.id = 1
+    p.on_success = 2
+    p.on_failure = 0
+    p.type = ProgramItem.GET_READY
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 2
+    p.on_success = 3
+    p.on_failure = 0
+    p.type = ProgramItem.WAIT_FOR_USER
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 3
+    p.on_success = 4
+    p.on_failure = 0
+    p.type = ProgramItem.PICK_FROM_POLYGON
+    p.object.append("")
+    pp = PolygonStamped()
+    pp.header.frame_id = "marker"
+    p.polygon.append(pp)
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 4
+    p.on_success = 5
+    p.on_failure = 0
+    p.type = ProgramItem.PLACE_TO_POSE
+    p.ref_id.append(3)
+    pp = PoseStamped()
+    pp.header.frame_id = "marker"
+    p.pose.append(pp)
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 5
+    p.on_success = 6
+    p.on_failure = 0
+    p.type = ProgramItem.GET_READY
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 6
+    p.on_success = 7
+    p.on_failure = 0
+    p.type = ProgramItem.WAIT_UNTIL_USER_FINISHES
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 7
+    p.on_success = 8
+    p.on_failure = 0
+    p.type = ProgramItem.PICK_FROM_POLYGON
+    p.object.append("")
+    p.object.append("profile_20_60")
+    pp = PolygonStamped()
+    pp.header.frame_id = "marker"
+    p.polygon.append(pp)
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 8
+    p.on_success = 3
+    p.on_failure = 0
+    p.type = ProgramItem.PLACE_TO_POSE
+    p.ref_id.append(7)
+    pp = PoseStamped()
+    pp.header.frame_id = "marker"
+    p.pose.append(pp)
+    pb.items.append(deepcopy(p))
+
+    store_program(prog)
+
+    # -------------------------------------------------------------------------------------------
+    # OBJECT TYPES
+    # -------------------------------------------------------------------------------------------
 
     ot = ObjectType()
     ot.name = "profile_20_60"

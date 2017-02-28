@@ -9,7 +9,7 @@ from math import fabs,  atan2
 
 class PolygonItem(Item):
 
-    def __init__(self, scene, rpm, caption, obj_coords=[], poly_points=[], polygon_changed=None, fixed=False):
+    def __init__(self, scene, caption, obj_coords=[], poly_points=[], polygon_changed=None, fixed=False):
 
         self.caption = caption
         self.polygon_changed = polygon_changed
@@ -17,7 +17,7 @@ class PolygonItem(Item):
         self.poly = QtGui.QPolygon()
         self.desc = None
 
-        super(PolygonItem, self).__init__(scene, rpm, 0.5, 0.5)  # TODO what should be here?
+        super(PolygonItem, self).__init__(scene, 0.5, 0.5)  # TODO what should be here?
         self.fixed = fixed
         self.convex = True
 
@@ -48,10 +48,10 @@ class PolygonItem(Item):
             max[0] += pad
             max[1] += pad
 
-            self.pts.append(PointItem(scene, rpm, min[0], min[1], self,  self.point_changed))
-            self.pts.append(PointItem(scene, rpm, max[0], min[1], self, self.point_changed))
-            self.pts.append(PointItem(scene, rpm, max[0], max[1], self, self.point_changed))
-            self.pts.append(PointItem(scene, rpm, min[0], max[1], self, self.point_changed))
+            self.pts.append(PointItem(scene, min[0], min[1], self,  self.point_changed))
+            self.pts.append(PointItem(scene, max[0], min[1], self, self.point_changed))
+            self.pts.append(PointItem(scene, max[0], max[1], self, self.point_changed))
+            self.pts.append(PointItem(scene, min[0], max[1], self, self.point_changed))
 
             if self.polygon_changed is not None:
                 self.polygon_changed(self.get_poly_points())
@@ -60,7 +60,7 @@ class PolygonItem(Item):
 
             for pt in poly_points:
 
-                self.pts.append(PointItem(scene, rpm, pt[0], pt[1], self, self.point_changed, fixed))
+                self.pts.append(PointItem(scene, pt[0], pt[1], self, self.point_changed, fixed))
 
         else:
 
@@ -69,7 +69,7 @@ class PolygonItem(Item):
         for pt in self.pts:
                 self.poly.append(pt.pos().toPoint())
 
-        self.desc = DescItem(scene, rpm, 0,  0, self)
+        self.desc = DescItem(scene, 0,  0, self)
         self.desc.setFlag(QtGui.QGraphicsItem.ItemIgnoresTransformations)
         self.__update_desc_pos()
         self.__update_text()
@@ -88,8 +88,7 @@ class PolygonItem(Item):
         if self.desc is None:
             return
 
-        desc = []
-        desc.append(self.caption)
+        desc = self.caption
         # TODO number of objects in polygon?
         self.desc.set_content(desc)
 
@@ -156,6 +155,9 @@ class PolygonItem(Item):
     def paint(self, painter, option, widget):
         # TODO detekovat ze je polygon "divny" (prekrouceny) a zcervenat
         # TODO vypsat kolik obsahuje objektu
+
+        if not self.scene():
+            return
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
