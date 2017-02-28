@@ -6,9 +6,10 @@ import actionlib
 from pr2_controllers_msgs.msg import PointHeadAction, PointHeadGoal
 from std_srvs.srv import Empty, EmptyResponse
 from std_msgs.msg import Float32, Bool
-from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import PointStamped, PoseStamped
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from pr2_mechanism_msgs.srv import SwitchController, SwitchControllerRequest
+import tf
 
 
 class ArtBasicControl:
@@ -43,6 +44,32 @@ class ArtBasicControl:
         self.spine_control_sub = rospy.Subscriber("spine/control", Float32, self.spine_control_cb)
         self.look_at_sub = rospy.Subscriber("look_at", PointStamped, self.look_at_cb)
         self.spine_control_pub = rospy.Publisher("/torso_controller/command", JointTrajectory, queue_size=1)
+
+        self.tfl = tf.TransformListener()
+        self.left_gripper_pose_pub = rospy.Publisher("left_arm/gripper/pose", PoseStamped, queue_size=1)
+        self.right_gripper_pose_pub = rospy.Publisher("right_arm/gripper/pose", PoseStamped, queue_size=1)
+        self.gripper_pose_timer = rospy.Timer(rospy.Duration(0.2), self.gripper_pose_timer_cb)
+
+    def publish_gripper_pose(self, frame_id, publisher):
+
+        ps = PoseStamped()
+        ps.header.frame_id = frame_id
+        ps.header.stamp = rospy.Time(0)
+        ps.pose.orientation.w = 1
+
+        try:
+            self.tfl.waitForTransform("/marker", ps.header.frame_id, ps.header.stamp, rospy.Duration(0.1))
+            ps = self.tfl.transformPose("/marker", ps)
+        except (tf.Exception, tf.ConnectivityException, tf.LookupException):
+            rospy.logerr("Failed to transform gripper pose")
+            return
+
+        publisher.publish(ps)
+
+    def gripper_pose_timer_cb(self, event):
+
+        self.publish_gripper_pose("l_gripper_tool_frame",  self.left_gripper_pose_pub)
+        self.publish_gripper_pose("r_gripper_tool_frame",  self.right_gripper_pose_pub)
 
     def left_interaction_on_cb(self,  req):
 
