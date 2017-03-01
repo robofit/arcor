@@ -86,6 +86,10 @@ class ObjectItem(Item):
         self.update()
 
     def boundingRect(self):
+        
+        if not self.scene():
+            
+            return QtCore.QRectF()
 
         lx = self.hover_ratio*self.inflate*self.m2pix(self.object_type.bbox.dimensions[0])
         ly = self.hover_ratio*self.inflate*self.m2pix(self.object_type.bbox.dimensions[1])
