@@ -7,7 +7,7 @@
         args="--stopped r_arm_controller_loose l_arm_controller_loose" />
 
    <node name="art_basic_control" pkg="art_basic_control"
-	type="node.py" output="screen" respawn="true" ns="/art/pr2">
+	type="node.py" output="screen" respawn="true">
 
   </node>
 
