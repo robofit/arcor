@@ -372,7 +372,8 @@ class ArtBrain(object):
                                error=ArtBrainMachine.ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE)
                 return
             rospy.logdebug(self.instruction)
-            gripper = self.get_gripper_by_pick_instruction_id(self.instruction.ref_id[0])
+            gripper = self.get_gripper_by_pick_instruction_id(
+                self.instruction.ref_id[0])
             self.check_gripper_for_place(gripper)
             if gripper.holding_object is None:
                 rospy.logerr("Robot is not holding selected object")
