@@ -877,7 +877,6 @@ class ArtBrain(object):
     def learning_request_cb(self,
                             goal):  # type: LearningRequestGoal
         rospy.loginfo("Learning_request goal: " + str(goal.request))
-	rospy.sleep(2)
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
         result = LearningRequestResult()
         if goal.request == LearningRequestGoal.GET_READY:
