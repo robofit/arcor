@@ -132,18 +132,8 @@ class ArtBasicControl:
             rospy.logerr('Left arm in interactive mode')
             resp.success = False
         else:
-            pose_target = PoseStamped()
-
-            pose_target.pose.position.x = 0.093
-            pose_target.pose.position.y = 0.7
-
-            pose_target.pose.position.z = 1.0
-            pose_target.pose.orientation.x = -0.001
-            pose_target.pose.orientation.y = 0.320
-            pose_target.pose.orientation.z = -0.001
-            pose_target.pose.orientation.w = 0.947
-            pose_target.header.frame_id = "base_link"
-            self.group_left.set_pose_target(pose_target)
+            
+            self.group_left.set_named_target("tuck_left_arm")
             self.group_left.plan()
             self.group_left.go(wait=True)
             resp.success = True
@@ -211,16 +201,7 @@ class ArtBasicControl:
             rospy.logerr('Right arm in interactive mode')
             resp.success = False
         else:
-            pose_target = PoseStamped()
-            pose_target.pose.position.x = 0.093
-            pose_target.pose.position.y = -0.7
-            pose_target.pose.position.z = 1.0
-            pose_target.pose.orientation.x = -0.001
-            pose_target.pose.orientation.y = 0.320
-            pose_target.pose.orientation.z = -0.001
-            pose_target.pose.orientation.w = 0.947
-            pose_target.header.frame_id = "base_link"
-            self.group_right.set_pose_target(pose_target)
+            self.group_right.set_named_target("tuck_right_arm")
             plan1 = self.group_right.plan()
             self.group_right.go(wait=True)
             resp.success = True
