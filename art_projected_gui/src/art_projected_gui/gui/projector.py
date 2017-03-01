@@ -161,7 +161,7 @@ class Projector(QtGui.QWidget):
             v = qimage2ndarray.rgb_view(img)
 
             # TODO gpu
-            image_np = cv2.warpPerspective(v, self.h_matrix, (self.width(), self.height()), flags=cv2.INTER_NEAREST)
+            image_np = cv2.warpPerspective(v, self.h_matrix, (self.width(), self.height()))  # , flags=cv2.INTER_NEAREST
 
             height, width, channel = image_np.shape
             bytesPerLine = 3 * width
