@@ -69,8 +69,10 @@ class FakeGrasping:
             rospy.sleep(self.pick_length)
             if (left and self.holding_left) or (not left and self.holding_right):
                 result.result = PickPlaceResult.FAILURE
-                rospy.logerr("Failure, already holding object in " + "left" if left else "right" + "arm")
-                self.server.set_aborted(result, "Already holding object in " + "left" if left else "right" + "arm")
+                rospy.logerr("Failure, already holding object in " +
+                             "left" if left else "right" + "arm")
+                self.server.set_aborted(
+                    result, "Already holding object in " + "left" if left else "right" + "arm")
                 return
             if self.grasp == self.ALWAYS:
                 grasped = True
@@ -115,8 +117,10 @@ class FakeGrasping:
             rospy.sleep(self.place_length)
             if (left and not self.holding_left) or (not left and not self.holding_right):
                 result.result = PickPlaceResult.FAILURE
-                rospy.logerr("Failure, already holding object in " + "left" if left else "right" + "arm")
-                self.server.set_aborted(result, "Already holding object in " + "left" if left else "right" + "arm")
+                rospy.logerr("Failure, already holding object in " +
+                             "left" if left else "right" + "arm")
+                self.server.set_aborted(
+                    result, "Already holding object in " + "left" if left else "right" + "arm")
                 return
             if self.place == self.ALWAYS:
                 placed = True
