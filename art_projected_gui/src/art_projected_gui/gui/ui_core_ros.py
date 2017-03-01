@@ -92,7 +92,7 @@ class UICoreRos(UICore):
 
         self.art = ArtApiHelper()
 
-        self.projectors_calibrated_pub = rospy.Publisher("~projectors_calibrated", Bool, queue_size=1, latch=True)
+        self.projectors_calibrated_pub = rospy.Publisher("/art/interface/projected_gui/projectors_calibrated", Bool, queue_size=1, latch=True)
         self.projectors_calibrated_pub.publish(False)
 
         self.start_learning_srv = rospy.ServiceProxy('/art/brain/learning/start', Trigger)
