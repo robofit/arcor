@@ -7,7 +7,7 @@ import sys
 
 import actionlib
 from pr2_controllers_msgs.msg import PointHeadAction, PointHeadGoal
-from std_srvs.srv import Empty, EmptyResponse
+from std_srvs.srv import Empty, EmptyResponse, Trigger, TriggerResponse
 from std_msgs.msg import Float32, Bool
 from geometry_msgs.msg import PointStamped, Pose, PoseStamped
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -33,29 +33,29 @@ class ArtBasicControl:
         self.switch_req.strictness = SwitchControllerRequest.BEST_EFFORT
 
         self.group_left = moveit_commander.MoveGroupCommander("left_arm")
-        self.group_right = moveit_commander.MoveGroupCommander("right_arm")
+        #self.group_right = moveit_commander.MoveGroupCommander("right_arm")
 
-        self.left_interaction_on = rospy.Service("left_arm/interaction/on", Empty, self.left_interaction_on_cb)
-        self.left_interaction_off = rospy.Service("left_arm/interaction/off", Empty, self.left_interaction_off_cb)
-        self.left_get_ready = rospy.Service("left_arm/interaction/get_ready", Trigger,
+        self.left_interaction_on = rospy.Service("/art/pr2/left_arm/interaction/on", Empty, self.left_interaction_on_cb)
+        self.left_interaction_off = rospy.Service("/art/pr2/left_arm/interaction/off", Empty, self.left_interaction_off_cb)
+        self.left_get_ready = rospy.Service("/art/pr2/left_arm/get_ready", Trigger,
                                                   self.left_interaction_get_ready_cb)
-        self.left_move_to_user = rospy.Service("left_arm/interaction/move_to_user", Trigger,
+        self.left_move_to_user = rospy.Service("/art/pr2/left_arm/move_to_user", Trigger,
                                                   self.left_interaction_move_to_user_cb)
-        self.left_int_pub = rospy.Publisher("left_arm/interaction/state", Bool, queue_size=1, latch=True)
+        self.left_int_pub = rospy.Publisher("/art/pr2/left_arm/interaction/state", Bool, queue_size=1, latch=True)
 
-        self.right_interaction_on = rospy.Service("right_arm/interaction/on", Empty, self.right_interaction_on_cb)
-        self.right_interaction_off = rospy.Service("right_arm/interaction/off", Empty, self.right_interaction_off_cb)
-        self.right_get_ready = rospy.Service("right_arm/interaction/get_ready", Trigger,
+        self.right_interaction_on = rospy.Service("/art/pr2/right_arm/interaction/on", Empty, self.right_interaction_on_cb)
+        self.right_interaction_off = rospy.Service("/art/pr2/right_arm/interaction/off", Empty, self.right_interaction_off_cb)
+        self.right_get_ready = rospy.Service("/art/pr2/right_arm/get_ready", Trigger,
                                                    self.right_interaction_get_ready_cb)
-        self.right_move_to_user = rospy.Service("right_arm/interaction/move_to_user", Trigger,
+        self.right_move_to_user = rospy.Service("/art/pr2/right_arm/move_to_user", Trigger,
                                                    self.right_interaction_move_to_user_cb)
-        self.right_int_pub = rospy.Publisher("right_arm/interaction/state", Bool, queue_size=1, latch=True)
+        self.right_int_pub = rospy.Publisher("/art/pr2/right_arm/interaction/state", Bool, queue_size=1, latch=True)
 
         rospy.loginfo("Server ready")
-        self.spine_up_service = rospy.Service("spine/up", Empty, self.spine_up_cb)
-        self.spine_down_service = rospy.Service("spine/down", Empty, self.spine_down_cb)
-        self.spine_control_sub = rospy.Subscriber("spine/control", Float32, self.spine_control_cb)
-        self.look_at_sub = rospy.Subscriber("look_at", PointStamped, self.look_at_cb)
+        self.spine_up_service = rospy.Service("/art/pr2/spine/up", Empty, self.spine_up_cb)
+        self.spine_down_service = rospy.Service("/art/pr2/spine/down", Empty, self.spine_down_cb)
+        self.spine_control_sub = rospy.Subscriber("/art/pr2/spine/control", Float32, self.spine_control_cb)
+        self.look_at_sub = rospy.Subscriber("/art/pr2/look_at", PointStamped, self.look_at_cb)
         self.spine_control_pub = rospy.Publisher("/torso_controller/command", JointTrajectory, queue_size=1)
 
     def left_interaction_on_cb(self,  req):
@@ -89,7 +89,7 @@ class ArtBasicControl:
         return EmptyResponse()
 
     def left_interaction_get_ready_cb(self,  req):
-
+	
         if self.left_arm_mann:
             rospy.logerr('Left arm in interactive mode')
         else:
@@ -106,11 +106,12 @@ class ArtBasicControl:
             pose_target.header.frame_id = "base_link"
             self.group_left.set_pose_target(pose_target)
             self.group_left.plan()
-            self.group_left.go(wait=False)
+            self.group_left.go(wait=True)
             pass
-
-        return EmptyResponse()
-
+        resp = TriggerResponse()
+        resp.success = True
+        return resp
+        
     def left_interaction_move_to_user_cb(self,  req):
 
         if self.left_arm_mann:
@@ -126,10 +127,10 @@ class ArtBasicControl:
             # pose_transformed = self.tf_listener.transformPose(pose, self.group_left.get_planning_frame())
             self.group_left.set_pose_target(pose)
             self.group_left.plan()
-            self.group_left.go(wait=False)
-
-        return EmptyResponse()
-
+            self.group_left.go(wait=True)
+        resp = TriggerResponse()
+        resp.success = True
+        return resp
     def right_interaction_on_cb(self,  req):
 
         if self.right_arm_mann:
@@ -176,9 +177,11 @@ class ArtBasicControl:
             pose_target.header.frame_id = "base_link"
             self.group_right.set_pose_target(pose_target)
             plan1 = self.group_right.plan()
-            self.group_right.go(wait=False)
+            self.group_right.go(wait=True)
 
-        return EmptyResponse()
+        resp = TriggerResponse()
+        resp.success = True
+        return resp
 
     def right_interaction_move_to_user_cb(self, req):
 
@@ -193,9 +196,11 @@ class ArtBasicControl:
             pose.header.frame_id = "base_link"
             self.group_right.set_pose_target(pose)
             plan1 = self.group_right.plan()
-            self.group_right.go(wait=False)
+            self.group_right.go(wait=True)
 
-        return EmptyResponse()
+        resp = TriggerResponse()
+        resp.success = True
+        return resp
 
     def spine_up_cb(self, empty):
         self.spine_move_to(1)
@@ -239,6 +244,7 @@ class ArtBasicControl:
 
 if __name__ == '__main__':
     rospy.init_node('art_basic_control')
+    rospy.sleep(1)
     try:
         node = ArtBasicControl()
         rospy.spin()
