@@ -8,7 +8,7 @@ translate = QtCore.QCoreApplication.translate
 
 class ButtonItem(Item):
 
-    def __init__(self, scene, rpm, x, y, caption, parent, clicked, scale=1.0, background_color=QtCore.Qt.green, width=None, push_button=False, image_path=None):
+    def __init__(self, scene, x, y, caption, parent, clicked, scale=1.0, background_color=QtCore.Qt.green, width=None, push_button=False, image_path=None):
 
         self.background_color = background_color
         self.scale = scale
@@ -21,7 +21,7 @@ class ButtonItem(Item):
         self.w = 0
         self.h = 0
 
-        super(ButtonItem, self).__init__(scene, rpm, x, y, parent)
+        super(ButtonItem, self).__init__(scene, x, y, parent)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
         self.setZValue(100)
 
@@ -88,6 +88,9 @@ class ButtonItem(Item):
         self.update()
 
     def paint(self, painter, option, widget):
+
+        if not self.scene():
+            return
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)

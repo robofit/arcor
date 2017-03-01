@@ -8,11 +8,10 @@ import rospy
 
 class Item(QtGui.QGraphicsItem):
 
-    def __init__(self, scene, rpm, x, y, parent=None):
+    def __init__(self, scene, x, y, parent=None):
 
         super(Item, self).__init__(parent=parent, scene=scene)
 
-        self.rpm = rpm
         self.hover = False
         self.hover_sources = []
         self.fixed = True
@@ -30,19 +29,19 @@ class Item(QtGui.QGraphicsItem):
 
     def get_font_size(self, f=1.0):
 
-        return 8 / 1280.0 * self.rpm * f
+        return 8 / 1280.0 * self.scene().rpm * f
 
     def m2pix(self, x,  y=None):
 
         if y is None:
-            return x * self.rpm
+            return x * self.scene().rpm
 
         return (self.m2pix(x),  self.scene().height() - self.m2pix(y))
 
     def pix2m(self, x,  y=None):
 
         if y is None:
-            return x / self.rpm
+            return x / self.scene().rpm
 
         return (self.pix2m(x),  self.pix2m(self.scene().height() - y))
 

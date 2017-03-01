@@ -10,7 +10,7 @@ translate = QtCore.QCoreApplication.translate
 
 class ProgramListItem(Item):
 
-    def __init__(self, scene, rpm, x, y, program_headers, learned_dict, selected_program_id=None, program_selected_cb=None):
+    def __init__(self, scene, x, y, program_headers, learned_dict, selected_program_id=None, program_selected_cb=None):
 
         self.w = 100
         self.h = 100
@@ -19,7 +19,7 @@ class ProgramListItem(Item):
         self.learned_dict = learned_dict
         self.program_selected_cb = program_selected_cb
 
-        super(ProgramListItem, self).__init__(scene, rpm, x, y)
+        super(ProgramListItem, self).__init__(scene, x, y)
 
         self.w = self.m2pix(0.2)
         self.h = self.m2pix(0.25)
@@ -38,16 +38,16 @@ class ProgramListItem(Item):
             self.map_from_idx_to_program_id[idx] = ph.id
             self.map_from_program_id_to_idx[ph.id] = idx
 
-        self.list = ListItem(self.scene(), self.rpm, 0, 0, 0.2-2*0.005, data, self.item_selected_cb, parent=self)
+        self.list = ListItem(scene, 0, 0, 0.2-2*0.005, data, self.item_selected_cb, parent=self)
 
         for idx in range(0, len(data)):
 
             if not self.learned_dict[self.map_from_idx_to_program_id[idx]]:
                 self.list.items[idx].set_background_color(QtCore.Qt.red)
 
-        self.run_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Run"), self, self.run_btn_cb)
-        self.edit_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Edit"), self, self.edit_btn_cb)
-        self.template_btn = ButtonItem(self.scene(), self.rpm, 0, 0, translate("ProgramItem", "Template"), self, self.template_btn_cb)
+        self.run_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Run"), self, self.run_btn_cb)
+        self.edit_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Edit"), self, self.edit_btn_cb)
+        self.template_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Template"), self, self.template_btn_cb)
 
         self.run_btn.set_enabled(False)
         self.edit_btn.set_enabled(False)
@@ -111,6 +111,9 @@ class ProgramListItem(Item):
         return QtCore.QRectF(0, 0, self.w, self.h)
 
     def paint(self, painter, option, widget):
+
+        if not self.scene():
+            return
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)

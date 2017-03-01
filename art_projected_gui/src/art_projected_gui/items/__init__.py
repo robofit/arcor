@@ -9,4 +9,5 @@ from touch_points_item import TouchPointsItem
 from touch_table_item import TouchTableItem
 from desc_item import DescItem
 from program_list_item import ProgramListItem
+from dialog_item import DialogItem
 from item import Item

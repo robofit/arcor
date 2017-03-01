@@ -7,6 +7,8 @@ from art_msgs.msg import InterfaceState,  ProgramItem,  LearningRequestAction, L
 from art_utils import InterfaceStateManager,  ProgramHelper, ArtApiHelper
 import actionlib
 from std_srvs.srv import Trigger, TriggerResponse
+from geometry_msgs.msg import PoseStamped
+from copy import deepcopy
 
 prog_timer = None
 current_item = (0,  0)  # block_id, item_id
@@ -15,6 +17,28 @@ ph = None
 art = None
 iters = 0
 action_server = None
+left_gripper_pub = None
+right_gripper_pub = None
+gripper_timer = None
+
+
+def gripper_timer(event):
+
+    global left_gripper_pub
+    global right_gripper_pub
+
+    ps = PoseStamped()
+    ps.header.stamp = rospy.Time.now()
+    ps.header.frame_id = "marker"
+    ps.pose.position.x = 1.9
+    ps.pose.position.y = 0.5
+    ps.pose.position.z = 0.39
+    ps.pose.orientation.w = 1.0
+
+    left_gripper_pub.publish(deepcopy(ps))
+
+    ps.pose.position.x = -0.5
+    right_gripper_pub.publish(ps)
 
 
 def timer_callback(event):
@@ -123,6 +147,9 @@ def main(args):
     global ph
     global art
     global action_server
+    global left_gripper_pub
+    global right_gripper_pub
+    global gripper_timer
 
     rospy.init_node('test_brain')
 
@@ -139,6 +166,11 @@ def main(args):
     action_server = actionlib.SimpleActionServer(
         '/art/brain/learning_request', LearningRequestAction, execute_cb=learning_request_cb, auto_start=False)
     action_server.start()
+
+    left_gripper_pub = rospy.Publisher('/art/pr2/left_arm/gripper/pose', PoseStamped, queue_size=10)
+    right_gripper_pub = rospy.Publisher('/art/pr2/right_arm/gripper/pose', PoseStamped, queue_size=10)
+
+    gripper_timer = rospy.Timer(rospy.Duration(0.5), gripper_timer)
 
     rospy.spin()
 
