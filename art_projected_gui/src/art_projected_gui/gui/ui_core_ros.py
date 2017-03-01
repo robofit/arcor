@@ -94,7 +94,7 @@ class UICoreRos(UICore):
 
         self.art = ArtApiHelper()
 
-        self.projectors_calibrated_pub = rospy.Publisher("/art/interface/projected_gui/projectors_calibrated", Bool, queue_size=1, latch=True)
+        self.projectors_calibrated_pub = rospy.Publisher("~projectors_calibrated", Bool, queue_size=1, latch=True)
         self.projectors_calibrated_pub.publish(False)
 
         self.start_learning_srv = rospy.ServiceProxy('/art/brain/learning/start', Trigger)
@@ -110,7 +110,7 @@ class UICoreRos(UICore):
             if isinstance(it, LabelItem):
                 continue
 
-            it.set_enabled(False, True)
+            it.setVisible(False)  # TODO remember settings (how?)
 
         self.notif(translate("UICoreRos", "Touch table calibration started. Please press the white point."), temp=False)
         self.touch_points = TouchPointsItem(self.scene,  pts)
@@ -164,7 +164,7 @@ class UICoreRos(UICore):
                 if isinstance(it, LabelItem):
                     continue
 
-                it.set_enabled(True, True)
+                it.setVisible(True)
 
             self.notif(translate("UICoreRos", "Touch table calibration finished."), temp=False)
             self.scene.removeItem(self.touch_points)
