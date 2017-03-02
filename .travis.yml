@@ -63,6 +63,11 @@ env:
     - CATKIN_OPTIONS=$CI_SOURCE_PATH/catkin.options
     - ROS_PARALLEL_JOBS='-j8 -l6'
 
+addons:
+  hosts:
+    - artable-n1
+    - rosserver
+
 ################################################################################
 
 # Install system dependencies, namely a very barebones ROS setup.
