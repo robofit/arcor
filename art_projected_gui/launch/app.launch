@@ -8,7 +8,7 @@
         <node pkg="art_projected_gui" name="app" type="app.py" output="screen">
 
             <rosparam param="cursors">["/art/user/pointing_left"]</rosparam>
-            <rosparam param="projectors">["test"]</rosparam> <!-- comment this param for testing purposes - gui will not wait for projector nodes -->
+            <rosparam param="projectors">["projector1", "projector2"]</rosparam> <!-- comment this param for testing purposes - gui will not wait for projector nodes -->
 
             <!-- open window with scene - for debugging purposes (can be controlled using mouse) -->
             <param name="show_scene" value="true"/>

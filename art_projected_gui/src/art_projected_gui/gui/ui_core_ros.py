@@ -110,7 +110,7 @@ class UICoreRos(UICore):
             if isinstance(it, LabelItem):
                 continue
 
-            it.set_enabled(False, True)
+            it.setVisible(False)  # TODO remember settings (how?)
 
         self.notif(translate("UICoreRos", "Touch table calibration started. Please press the white point."), temp=False)
         self.touch_points = TouchPointsItem(self.scene,  pts)
@@ -164,7 +164,7 @@ class UICoreRos(UICore):
                 if isinstance(it, LabelItem):
                     continue
 
-                it.set_enabled(True, True)
+                it.setVisible(True)
 
             self.notif(translate("UICoreRos", "Touch table calibration finished."), temp=False)
             self.scene.removeItem(self.touch_points)

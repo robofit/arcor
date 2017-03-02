@@ -802,7 +802,9 @@ class ArtBrain(object):
 
         rospy.loginfo('Stopping learning')
         self.learning = False
-        return EmptyResponse()
+        resp = TriggerResponse()
+        resp.success = True
+        return resp
 
     def interface_state_manager_cb(self,
                                    state,  # type: InterfaceState
