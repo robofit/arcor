@@ -4,6 +4,7 @@
 import rospy
 import time
 import copy
+import sys
 
 import actionlib
 from art_msgs.msg import LocalizeAgainstUMFAction, LocalizeAgainstUMFGoal, LocalizeAgainstUMFResult
@@ -12,7 +13,7 @@ from art_msgs.msg import UserStatus,  UserActivity, InterfaceState
 from art_msgs.srv import startProgram,  startProgramResponse,  getProgram
 from geometry_msgs.msg import PoseStamped, Pose
 from std_msgs.msg import String, Bool
-from art_msgs.msg import pickplaceAction, pickplaceGoal, SystemState, ObjInstance, InstancesArray, ProgramItem, \
+from art_msgs.msg import PickPlaceAction, PickPlaceGoal, SystemState, ObjInstance, InstancesArray, ProgramItem, \
     ObjectType, LearningRequestAction, LearningRequestGoal, LearningRequestResult
 from shape_msgs.msg import SolidPrimitive
 from art_msgs.srv import getObjectType
@@ -76,6 +77,7 @@ class ArtBrain(object):
         self.fsm.state_learning_step_error = self.state_learning_step_error
         self.fsm.state_learning_done = self.state_learning_done
         self.fsm.state_learning_pick_from_feeder_exit = self.state_learning_pick_from_feeder_exit
+        self.fsm.state_shutdown = self.state_shutdown
 
         self.block_id = None
         self.user_id = 0
@@ -96,6 +98,8 @@ class ArtBrain(object):
         self.learning_item_id = None
 
         self.quit = False
+
+        self.user_activity = None
 
         rospy.loginfo('Waiting for other nodes to come up...')
 
@@ -222,6 +226,10 @@ class ArtBrain(object):
         rospy.loginfo('state_waiting_for_action')
         self.state_manager.set_system_state(InterfaceState.STATE_IDLE)
 
+    def state_shutdown(self, event):
+        rospy.loginfo('state_shutdown')
+        sys.exit()
+
     # ***************************************************************************************
     #                                  STATES PROGRAM
     # ***************************************************************************************
@@ -256,17 +264,18 @@ class ArtBrain(object):
             ', item type: ' + str(self.instruction.type))
 
         instructions = {
-            ProgramItem.GET_READY: self.get_ready,
-            ProgramItem.PICK_FROM_POLYGON: self.pick_from_polygon,
-            ProgramItem.PICK_FROM_FEEDER: self.pick_from_feeder,
-            ProgramItem.PICK_OBJECT_ID: self.pick_object_id,
-            ProgramItem.PLACE_TO_POSE: self.place_to_pose,
-            ProgramItem.WAIT_FOR_USER: self.wait_for_user,
-            ProgramItem.WAIT_UNTIL_USER_FINISHES: self.wait_until_user_finishes,
+            ProgramItem.GET_READY: self.fsm.get_ready,
+            ProgramItem.PICK_FROM_POLYGON: self.fsm.pick_from_polygon,
+            ProgramItem.PICK_FROM_FEEDER: self.fsm.pick_from_feeder,
+            ProgramItem.PICK_OBJECT_ID: self.fsm.pick_object_id,
+            ProgramItem.PLACE_TO_POSE: self.fsm.place_to_pose,
+            ProgramItem.WAIT_FOR_USER: self.fsm.wait_for_user,
+            ProgramItem.WAIT_UNTIL_USER_FINISHES: self.fsm.wait_until_user_finishes,
         }
 
         instruction_transition = instructions.get(self.instruction.type, None)
         print (instruction_transition)
+        print (self.instruction.type)
         if instruction_transition is None:
             self.fsm.error()
             return
@@ -291,7 +300,7 @@ class ArtBrain(object):
         if not self.check_gripper_for_pick(gripper):
             return
 
-        if self.pick_object(obj, gripper.pp_client, self.instruction.pick_pose):
+        if self.pick_object_by_id(obj, gripper.pp_client):
             gripper.holding_object = obj
             self.fsm.done(success=True)
 
@@ -301,9 +310,7 @@ class ArtBrain(object):
 
     def state_pick_from_feeder(self, event):
         rospy.loginfo('state_pick_from_feeder')
-        self.fsm.error(severity=ArtBrainMachine.ERROR,
-                       error=ArtBrainMachine.ERROR_NOT_IMPLEMENTED)
-        return
+
         obj = ArtBrainUtils.get_pick_obj_from_feeder(self.instruction)
         if obj is None:
             self.fsm.error(severity=ArtBrainMachine.WARNING,
@@ -313,13 +320,14 @@ class ArtBrain(object):
             self.fsm.error(severity=ArtBrainMachine.WARNING,
                            error=ArtBrainMachine.ERROR_PICK_POSE_NOT_SELECTED)
             return
-        gripper = self.get_gripper(pick_pose=self.instruction.pick_pose)
+        gripper = self.get_gripper(pick_pose=self.instruction.pose)
         if not self.check_gripper_for_pick(gripper):
             return
 
         # TODO: pick from feeder method
-        if self.pick_object(obj, gripper.pp_client, self.instruction.pick_pose):
+        if self.pick_object_from_feeder(obj, gripper, self.instruction.pose):
             gripper.holding_object = obj
+            gripper.last_pick_instruction_id = self.instruction.id
             self.done(success=True)
 
         else:
@@ -338,8 +346,9 @@ class ArtBrain(object):
         if not self.check_gripper_for_pick(gripper):
             return
 
-        if self.pick_object(obj, gripper.pp_client, self.instruction.pick_pose):
+        if self.pick_object_by_id(obj, gripper):
             gripper.holding_object = obj
+            gripper.last_pick_instruction_id = self.instruction.id
             self.fsm.done()
 
         else:
@@ -353,12 +362,18 @@ class ArtBrain(object):
             self.ph.get_program_id(), self.block_id, self.instruction)
         # TODO place pose
 
-        if pose is None:
+        if pose is None or len(pose) < 1:
             self.fsm.error(severity=ArtBrainMachine.ERROR,
                            error=ArtBrainMachine.ERROR_PLACE_POSE_NOT_DEFINED)
             return
         else:
-            gripper = self.get_gripper_holding_object(self.instruction.object)
+            if len(self.instruction.ref_id) < 1:
+                self.fsm.error(severity=ArtBrainMachine.ERROR,
+                               error=ArtBrainMachine.ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE)
+                return
+            rospy.logdebug(self.instruction)
+            gripper = self.get_gripper_by_pick_instruction_id(
+                self.instruction.ref_id[0])
             self.check_gripper_for_place(gripper)
             if gripper.holding_object is None:
                 rospy.logerr("Robot is not holding selected object")
@@ -366,8 +381,9 @@ class ArtBrain(object):
                                error=ArtBrainMachine.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
                 return
 
-            if self.place_object(gripper.holding_object, pose, gripper.pp_client):
+            if self.place_object(gripper.holding_object, pose[0], gripper):
                 gripper.holding_object = None
+                gripper.last_pick_instruction_id = self.instruction.id
                 self.fsm.done(success=True)
                 return
             else:
@@ -412,7 +428,9 @@ class ArtBrain(object):
 
     def state_program_load_instruction(self, event):
         rospy.loginfo('state_program_load_instruction')
-
+        if not self.executing_program:
+            self.fsm.finished()
+            return
         (self.block_id, item_id) = self.ph.get_id_on_success(
             self.block_id, self.instruction.id)
 
@@ -434,12 +452,13 @@ class ArtBrain(object):
             InterfaceState.STATE_PROGRAM_FINISHED)
         self.state_manager.send()
         self.executing_program = False
-        self.done()
+        self.fsm.done()
 
     def state_program_error(self, event):
         rospy.loginfo('state_program_error')
         severity = event.kwargs.get('severity', ArtBrainMachine.SEVERE)
         error = event.kwargs.get('error', None)
+        rospy.logerr("Error: " + str(error))
         if severity == ArtBrainMachine.SEVERE:
             # handle
             self.fsm.program_error_shutdown()
@@ -545,82 +564,75 @@ class ArtBrain(object):
 
     def state_learning_done(self, event):
         rospy.loginfo('state_learning_done')
+        self.fsm.done()
         pass
 
     # ***************************************************************************************
     #                                     MANIPULATION
     # ***************************************************************************************
 
-    def pick_object(self, obj, pp_client, pick_pose=None):
+    def pick_object_by_id(self, obj, gripper):
 
-        goal = pickplaceGoal()
-        goal.id = obj.object_id
-        goal.operation = goal.PICK
+        goal = PickPlaceGoal()
+        goal.object = obj.object_id
+        goal.operation = goal.PICK_OBJECT_ID
         goal.keep_orientation = False
         rospy.loginfo("Picking object with ID: " + str(obj.object_id))
-        pp_client.send_goal(goal)
-        pp_client.wait_for_result()
+        gripper.pp_client.send_goal(goal)
+        gripper.pp_client.wait_for_result()
         # TODO: make some error msg etc
         rospy.loginfo('got result')
-        print(pp_client.get_result())
-        print("status: " + pp_client.get_goal_status_text())
-        print("state: " + str(pp_client.get_state()))
+        print(gripper.pp_client.get_result())
+        print("status: " + gripper.pp_client.get_goal_status_text())
+        print("state: " + str(gripper.pp_client.get_state()))
 
-        if pp_client.get_result().result == 0:
+        if gripper.pp_client.get_result().result == 0:
             return True
         else:
             return False
 
-    def place_object(self, obj, place, pp_client):
+    def pick_object_from_feeder(self, obj_type, gripper, pick_pose):
 
-        goal = pickplaceGoal()
-        goal.operation = goal.PLACE
-        goal.id = obj.object_id
+        goal = PickPlaceGoal()
+        goal.object = obj_type
+        goal.operation = goal.PICK_FROM_FEEDER
+        goal.pose = pick_pose
+        goal.keep_orientation = False
+        rospy.loginfo("Picking object from feeder")
+        gripper.pp_client.send_goal(goal)
+        gripper.pp_client.wait_for_result()
+        # TODO: make some error msg etc
+        rospy.loginfo('got result')
+        print(gripper.pp_client.get_result())
+        print("status: " + gripper.pp_client.get_goal_status_text())
+        print("state: " + str(gripper.pp_client.get_state()))
+
+        if gripper.pp_client.get_result().result == 0:
+            return True
+        else:
+            return False
+
+    def place_object(self, obj, place, gripper):
+        rospy.logdebug(obj)
+        goal = PickPlaceGoal()
+        goal.operation = goal.PLACE_TO_POSE
+        goal.object = obj.object_id
         if not self.check_place_pose(place, obj):
             return False
         # TODO how to decide between 180 and 90 deg?
         # allow object to be rotated by 90 deg around z axis
         goal.z_axis_angle_increment = 3.14 / 2
 
-        goal.place_pose = PoseStamped()
-
-        goal.place_pose = place
-        goal.place_pose.header.stamp = rospy.Time.now()
-        goal.place_pose.header.frame_id = self.objects.header.frame_id
+        goal.pose = place
+        goal.pose.header.stamp = rospy.Time.now()
+        goal.pose.header.frame_id = self.objects.header.frame_id
         # TODO: how to deal with this?
-        goal.place_pose.pose.position.z = 0.1  # + obj.bbox.dimensions[2]/2
-        rospy.loginfo("Place pose: " + str(goal.place_pose))
-        pp_client.send_goal(goal)
-        pp_client.wait_for_result()
+        goal.pose.pose.position.z = 0.1  # + obj.bbox.dimensions[2]/2
+        rospy.loginfo("Place pose: " + str(goal.pose))
+        gripper.pp_client.send_goal(goal)
+        gripper.pp_client.wait_for_result()
         rospy.loginfo("Placing object with ID: " + str(obj.object_id))
-        if pp_client.get_result().result == 0:
-            return True
-        else:
-            return False
-
-    def pick_place_object(self,  obj,  place, pp_client, pick_pose=None):
-        goal = pickplaceGoal()
-        goal.id = obj.object_id
-        if not self.check_place_pose(place, obj):
-            return False
-        goal.operation = goal.PICK_AND_PLACE
-        goal.keep_orientation = False
-        rospy.loginfo("Picking and placing object with ID: " +
-                      str(obj.object_id))
-
-        # allow object to be rotated by 90 deg around z axis
-        goal.z_axis_angle_increment = 3.14 / 2
-
-        goal.place_pose = PoseStamped()
-
-        goal.place_pose = place
-        goal.place_pose.header.stamp = rospy.Time.now()
-        # TODO: how to deal with this?
-        goal.place_pose.pose.position.z = 0.1  # + obj.bbox.dimensions[2]/2
-        rospy.loginfo("Place pose: " + str(goal.place_pose))
-        pp_client.send_goal(goal)
-        pp_client.wait_for_result()
-        if pp_client.get_result().result == 0:
+        if gripper.pp_client.get_result().result == 0:
             return True
         else:
             return False
@@ -678,6 +690,14 @@ class ArtBrain(object):
         else:
             return None
 
+    def get_gripper_by_pick_instruction_id(self, pick_instruction_id):
+        if self.left_gripper is not None and self.left_gripper.last_pick_instruction_id == pick_instruction_id:
+            return self.left_gripper
+        elif self.right_gripper is not None and self.right_gripper.last_pick_instruction_id == pick_instruction_id:
+            return self.right_gripper
+        else:
+            return None
+
     def check_place_pose(self, place_pose, obj):
         w1 = self.get_object_max_width(obj)
         if w1 is None:
@@ -689,6 +709,7 @@ class ArtBrain(object):
             if w2 is None:
                 # TODO: how to deal with this
                 return False
+
             d = ArtBrainUtils.distance_2d(place_pose.pose, o.pose)
             if d < (w1 + w2):
                 rospy.logerr('Another object too close to desired place pose')
@@ -769,13 +790,13 @@ class ArtBrain(object):
 
         rospy.loginfo('Starting program')
 
-        self.program_start()
+        self.fsm.program_start()
         resp.success = True
         return resp
 
     def program_stop_cb(self, req):
 
-        rospy.loginfo('Stopping program ' + str(req.program_id) + '...')
+        rospy.loginfo('Stopping program')
         self.executing_program = False
         return EmptyResponse()
 
@@ -804,6 +825,7 @@ class ArtBrain(object):
         self.learning = False
         resp = TriggerResponse()
         resp.success = True
+        self.fsm.learning_done()
         return resp
 
     def interface_state_manager_cb(self,
@@ -877,6 +899,7 @@ class ArtBrain(object):
     def learning_request_cb(self,
                             goal):  # type: LearningRequestGoal
         rospy.loginfo("Learning_request goal: " + str(goal.request))
+        rospy.sleep(2)
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
         result = LearningRequestResult()
         if goal.request == LearningRequestGoal.GET_READY:
