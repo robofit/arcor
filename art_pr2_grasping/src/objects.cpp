@@ -8,6 +8,7 @@ namespace art_pr2_grasping
 {
 Objects::Objects(boost::shared_ptr<tf::TransformListener> tfl, std::string target_frame)
 {
+  tfl_ = tfl;
   object_type_srv_ = nh_.serviceClient<art_msgs::getObjectType>("/art/db/object_type/get");
   obj_sub_ = nh_.subscribe("/art/object_detector/object_filtered", 1, &Objects::detectedObjectsCallback, this);
   target_frame_ = target_frame;
