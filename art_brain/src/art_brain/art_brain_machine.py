@@ -96,6 +96,7 @@ class ArtBrainMachine(object):
 
     ERROR_PLACE_POSE_NOT_DEFINED = 401
     ERROR_PLACE_FAILED = 402
+    ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE = 403
 
     # Learning errors
     ERROR_LEARNING_NOT_IMPLEMENTED = 0
@@ -204,6 +205,8 @@ class ArtBrainMachine(object):
             'error_fatal', 'learning_step_error', 'waiting_for_action')
         self.machine.add_transition(
             'done', 'learning_done', 'waiting_for_action')
+        self.machine.add_transition(
+            'learning_done', 'learning_run', 'learning_done')
 
         # learning pick_from_polygon
         self.machine.add_transition(
