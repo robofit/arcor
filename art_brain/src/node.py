@@ -300,7 +300,7 @@ class ArtBrain(object):
         if not self.check_gripper_for_pick(gripper):
             return
 
-        if self.pick_object_by_id(obj, gripper.pp_client):
+        if self.pick_object_by_id(obj, gripper):
             gripper.holding_object = obj
             self.fsm.done(success=True)
 

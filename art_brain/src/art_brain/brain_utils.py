@@ -27,7 +27,7 @@ class ArtBrainUtils(object):
     def get_pick_obj_from_feeder(instruction):
         obj = ObjInstance()
         obj.object_id = None
-        obj.object_type = instruction.object
+        obj.object_type = instruction.object[0]
         obj.pose = Pose()
         return obj
 
@@ -39,7 +39,7 @@ class ArtBrainUtils(object):
         if len(instruction.object) < 1:
             return None
         # TODO check frame_id and transform to table frame?
-        for point in instruction.pick_polygon.polygon.points:
+        for point in instruction.polygon[0].polygon.points:
             pick_polygon.append([point.x, point.y])
         pick_polygon.append([0, 0])
 
@@ -76,7 +76,7 @@ class ArtBrainUtils(object):
 
     @staticmethod
     def get_place_pose(instruction):
-        return instruction.pose
+        return instruction.pose[0]
 
     @staticmethod
     def distance_2d(pose1, pose2):
