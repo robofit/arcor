@@ -14,6 +14,7 @@
 #include "art_msgs/getObjectType.h"
 #include <boost/thread/recursive_mutex.hpp>
 #include <moveit_visual_tools/visual_tools.h>
+#include <stdexcept>
 
 namespace art_pr2_grasping
 {
@@ -22,15 +23,15 @@ typedef struct
   std::string object_id;
   geometry_msgs::PoseStamped pose;
   art_msgs::ObjectType type;
-}
-TObjectInfo;
+} TObjectInfo;
 
 typedef std::map<std::string, TObjectInfo> TObjectMap;
 
 class Objects
 {
 public:
-  Objects(boost::shared_ptr<tf::TransformListener> tfl, std::string target_frame);
+  Objects(boost::shared_ptr<tf::TransformListener> tfl,
+          std::string target_frame);
 
   bool isKnownObject(std::string id);
 
@@ -40,7 +41,7 @@ public:
     return grasped_objects_.count(object_id);
   }
 
-  TObjectInfo getObject(std::string object_id);  // TODO(ZdenekM) return pointer?
+  TObjectInfo getObject(std::string object_id); // TODO(ZdenekM) return pointer?
 
   void setGrasped(std::string object_id, bool grasped);
 
@@ -57,15 +58,15 @@ private:
   ros::Subscriber obj_sub_;
   ros::NodeHandle nh_;
 
-  bool transformPose(geometry_msgs::PoseStamped &ps);
+  bool transformPose(geometry_msgs::PoseStamped& ps);
 
-  void detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr &msg);
+  void detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr& msg);
 
   moveit_visual_tools::VisualToolsPtr visual_tools_;
 
   std::set<std::string> grasped_objects_;
 };
 
-}  // namespace art_pr2_grasping
+} // namespace art_pr2_grasping
 
-#endif  // ART_PR2_GRASPING_OBJECTS_H
+#endif // ART_PR2_GRASPING_OBJECTS_H

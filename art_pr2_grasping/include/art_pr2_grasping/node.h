@@ -20,12 +20,12 @@ public:
   bool init();
 
 private:
-  std::vector<artActionServer> action_servers_;
+  std::vector<boost::shared_ptr<artActionServer> > action_servers_;
   boost::shared_ptr<tf::TransformListener> tfl_;
   boost::shared_ptr<Objects> objects_;
   const std::string target_frame_;
   ros::NodeHandle nh_;
 };
-}  // namespace art_pr2_grasping
+} // namespace art_pr2_grasping
 
-#endif  // ART_PR2_GRASPING_NODE_H
+#endif // ART_PR2_GRASPING_NODE_H

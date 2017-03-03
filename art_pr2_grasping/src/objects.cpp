@@ -6,14 +6,18 @@
 
 namespace art_pr2_grasping
 {
-Objects::Objects(boost::shared_ptr<tf::TransformListener> tfl, std::string target_frame)
+Objects::Objects(boost::shared_ptr<tf::TransformListener> tfl,
+                 std::string target_frame)
 {
   tfl_ = tfl;
-  object_type_srv_ = nh_.serviceClient<art_msgs::getObjectType>("/art/db/object_type/get");
-  obj_sub_ = nh_.subscribe("/art/object_detector/object_filtered", 1, &Objects::detectedObjectsCallback, this);
+  object_type_srv_ =
+      nh_.serviceClient<art_msgs::getObjectType>("/art/db/object_type/get");
+  obj_sub_ = nh_.subscribe("/art/object_detector/object_filtered", 1,
+                           &Objects::detectedObjectsCallback, this);
   target_frame_ = target_frame;
 
-  visual_tools_.reset(new moveit_visual_tools::VisualTools(target_frame_, "markers"));
+  visual_tools_.reset(
+      new moveit_visual_tools::VisualTools(target_frame_, "markers"));
   visual_tools_->loadPlanningSceneMonitor();
   visual_tools_->setLifetime(10.0);
   visual_tools_->setMuted(false);
@@ -45,39 +49,38 @@ TObjectInfo Objects::getObject(std::string object_id)
   if (isKnownObject(object_id))
     return objects_[object_id];
   else
-    return TObjectInfo();  // TODO(ZdenekM): use exception?
+    throw std::invalid_argument("unknown object_id: " + object_id);
 }
 
-bool Objects::transformPose(geometry_msgs::PoseStamped &ps)
+bool Objects::transformPose(geometry_msgs::PoseStamped& ps)
 {
   try
   {
-    if (tfl_->waitForTransform(target_frame_, ps.header.frame_id, ps.header.stamp, ros::Duration(5)))
+    if (tfl_->waitForTransform(target_frame_, ps.header.frame_id,
+                               ps.header.stamp, ros::Duration(1.0)))
     {
       tfl_->transformPose(target_frame_, ps, ps);
     }
     else
     {
-      ROS_ERROR_STREAM("Transform between" << target_frame_ << "and " << ps.header.frame_id << " not "
-                                                                                               "available!");
+      ROS_ERROR_NAMED("objects", "Transform between %s and %s not available!",
+                      target_frame_.c_str(), ps.header.frame_id.c_str());
       return false;
     }
   }
-  catch (tf::TransformException &ex)
+  catch (tf::TransformException& ex)
   {
-    ROS_ERROR("%s", ex.what());
+    ROS_ERROR_NAMED("objects", "%s", ex.what());
     return false;
   }
 
   return true;
 }
 
-void Objects::detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr &msg)
+void Objects::detectedObjectsCallback(
+    const art_msgs::InstancesArrayConstPtr& msg)
 {
-  boost::recursive_mutex::scoped_try_lock lock(mutex_);
-
-  if (!lock)
-    return;
+  boost::recursive_mutex::scoped_lock lock(mutex_);
 
   // remove outdated objects
   TObjectMap::iterator it;
@@ -121,7 +124,7 @@ void Objects::detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr &ms
 
     if (!transformPose(ps))
     {
-      ROS_WARN("Failed to transform object.");
+      ROS_WARN_NAMED("objects", "Failed to transform object.");
       continue;
     }
 
@@ -136,7 +139,7 @@ void Objects::detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr &ms
 
       if (!object_type_srv_.call(srv))
       {
-        ROS_ERROR("Failed to call object_type service");
+        ROS_ERROR_NAMED("objects", "Failed to call object_type service");
         continue;
       }
 
@@ -158,7 +161,8 @@ void Objects::detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr &ms
     collision_obj.header.stamp = ros::Time::now();
     collision_obj.header.frame_id = target_frame_;
     collision_obj.id = it->first;
-    collision_obj.operation = moveit_msgs::CollisionObject::ADD;  // todo param for update?
+    collision_obj.operation =
+        moveit_msgs::CollisionObject::ADD; // todo param for update?
     collision_obj.primitives.resize(1);
     collision_obj.primitives[0] = it->second.type.bbox;
     collision_obj.primitive_poses.resize(1);
@@ -170,8 +174,10 @@ void Objects::detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr &ms
       ros::Duration(0.1).sleep();
     }
 
-    visual_tools_->publishBlock(it->second.pose.pose, moveit_visual_tools::BLUE, it->second.type.bbox.dimensions[0],
-                                it->second.type.bbox.dimensions[1], it->second.type.bbox.dimensions[2]);
+    visual_tools_->publishBlock(it->second.pose.pose, moveit_visual_tools::BLUE,
+                                it->second.type.bbox.dimensions[0],
+                                it->second.type.bbox.dimensions[1],
+                                it->second.type.bbox.dimensions[2]);
   }
 }
 
@@ -194,4 +200,4 @@ void Objects::setGrasped(std::string object_id, bool grasped)
   }
 }
 
-}  // namespace art_pr2_grasping
+} // namespace art_pr2_grasping

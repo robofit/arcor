@@ -19,7 +19,7 @@ def get_ready(client):
 
     goal = art_msgs.msg.PickPlaceGoal()
     goal.operation = goal.GET_READY
-    send_goal(client)
+    send_goal(client, goal)
 
 
 def place_object(client, x, y):
@@ -35,7 +35,7 @@ def place_object(client, x, y):
     goal.pose.pose.position.z = 0.1
     goal.pose.pose.orientation.w = 1.0
 
-    send_goal(client)
+    send_goal(client, goal)
 
 
 def send_goal(client,  goal):
@@ -62,22 +62,24 @@ def main():
 
     goal = art_msgs.msg.PickPlaceGoal()
     goal.operation = goal.RESET
-    send_goal(l_client)
-    send_goal(r_client)
+    send_goal(l_client, goal)
+    send_goal(r_client, goal)
 
     get_ready(l_client)
     get_ready(r_client)
 
+    rospy.sleep(2)  # time to store existing objects
+
     for client in [l_client, r_client]:
 
-        pick_object_id(client, "10")
+        pick_object_id(client, "3")
         place_object(client,  0.75, 0.5)
         get_ready(client)
 
-    pick_object_id(l_client, "10")
+    pick_object_id(l_client, "3")
     get_ready(l_client)
 
-    pick_object_id(r_client, "11")
+    pick_object_id(r_client, "4")
     place_object(r_client,  0.5, 0.5)
     get_ready(r_client)
 

@@ -45,7 +45,8 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
   art_msgs::PickPlaceResult res;
   art_msgs::PickPlaceFeedback f;
 
-  ROS_INFO_NAMED(group_name_, "Got goal, operation: %d", goal->operation);
+  ROS_INFO_STREAM_NAMED(group_name_,
+                        "Got goal, operation: " << goal->operation);
 
   // TODO(ZdenekM): check /art/pr2/xyz_arm/interaction/state topic?
 
@@ -93,11 +94,11 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
     while (tries > 0 && !as_->isPreemptRequested())
     {
       f.attempt = (max_attempts_ - tries) + 1;
-      ROS_INFO("Pick %d", f.attempt);
+      ROS_INFO_NAMED(group_name_, "Pick %d", f.attempt);
       tries--;
       as_->publishFeedback(f);
 
-      grasped = pick(goal->object);  // todo flag if it make sense to try again
+      grasped = pick(goal->object); // todo flag if it make sense to try again
       // (type of failure)
       if (grasped)
         break;
@@ -131,7 +132,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
 
   case art_msgs::PickPlaceGoal::PLACE_TO_POSE:
   {
-    geometry_msgs::PoseStamped p2 = goal->pose;  // place goal
+    geometry_msgs::PoseStamped p2 = goal->pose; // place goal
 
     // do transformation in advance - before timestamp get too old
     if (!transformPose(p2))
@@ -191,4 +192,4 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
   }
 }
 
-}  // namespace art_pr2_grasping
+} // namespace art_pr2_grasping

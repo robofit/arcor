@@ -6,7 +6,7 @@
 
 namespace art_pr2_grasping
 {
-GraspingNode::GraspingNode() : target_frame_("marker"), nh_("~")
+GraspingNode::GraspingNode() : target_frame_("odom_combined"), nh_("~")
 {
   tfl_.reset(new tf::TransformListener());
   objects_.reset(new Objects(tfl_, target_frame_));
@@ -19,31 +19,34 @@ GraspingNode::GraspingNode() : target_frame_("marker"), nh_("~")
   nh_.getParam("gripper_state_topics", gripper_state_topics);
   nh_.getParam("default_poses", default_poses);
 
-  ROS_ASSERT(groups.size() == gripper_state_topics.size() && groups.size() == default_poses.size() &&
-             groups.size() > 0);
+  ROS_ASSERT(groups.size() == gripper_state_topics.size() &&
+             groups.size() == default_poses.size() && groups.size() > 0);
 
   for (int i = 0; i < groups.size(); i++)
   {
-    action_servers_.push_back(artActionServer(tfl_, objects_, groups[i], default_poses[i], gripper_state_topics[i]));
+    action_servers_.push_back(boost::shared_ptr<artActionServer>(
+        new artActionServer(tfl_, objects_, groups[i], default_poses[i],
+                            gripper_state_topics[i])));
   }
 
-  // TODO(ZdenekM): visual_tools + callback from objects + publish/remove collision objects
+  // TODO(ZdenekM): visual_tools + callback from objects + publish/remove
+  // collision objects
 }
 
 bool GraspingNode::init()
 {
   for (int i = 0; i < action_servers_.size(); i++)
   {
-    if (!action_servers_[i].init())
+    if (!action_servers_[i]->init())
       return false;
   }
 
   return true;
 }
 
-}  // namespace art_pr2_grasping
+} // namespace art_pr2_grasping
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "pr2_pick_place");
 
