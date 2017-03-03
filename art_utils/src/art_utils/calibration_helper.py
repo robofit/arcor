@@ -72,3 +72,4 @@ class ArtCalibrationHelper(object):
         if norm <= 0.0000001:
             return None
         return v/norm
+
