@@ -15,10 +15,11 @@ class FakeObjectTracker:
         self.object_publisher = rospy.Publisher('/art/object_detector/object_filtered',
                                                 InstancesArray, queue_size=10, latch=True)
 
-    def publish_objects(self):
+        self.objects = []
         obj = ObjInstance()
         obj.object_id = "profile_20_60"
-        obj.object_type = "profile"
+        obj.object_type = "profile_20_60"
+
         obj.pose = Pose()
         obj.pose.position.x = 1
         obj.pose.position.y = 1
@@ -27,9 +28,28 @@ class FakeObjectTracker:
         obj.pose.orientation.y = 0
         obj.pose.orientation.z = 0
         obj.pose.orientation.w = 1
+        self.objects.append(obj)
+        obj = ObjInstance()
+        obj.object_id = "profile_21_60"
+        obj.object_type = "profile_20_60"
+
+        obj.pose = Pose()
+        obj.pose.position.x = 0.75
+        obj.pose.position.y = 0.58
+        obj.pose.position.z = 0
+        obj.pose.orientation.x = 0
+        obj.pose.orientation.y = 0
+        obj.pose.orientation.z = 0
+        obj.pose.orientation.w = 1
+        self.objects.append(obj)
+
+    def publish_objects(self):
+
         objs = InstancesArray()
-        objs.instances.append(obj)
+        for obj in self.objects:
+            objs.instances.append(obj)
         objs.header = Header()
+        objs.header.frame_id = "marker"
         self.object_publisher.publish(objs)
 
 if __name__ == '__main__':

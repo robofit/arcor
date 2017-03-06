@@ -19,19 +19,19 @@ class PlaceItem(ObjectItem):
 
     """
 
-    def __init__(self, scene, rpm,  caption,  x, y, object_type,  object_id=None,  yaw=0,  place_pose_changed=None,  selected=False, fixed=False):
+    def __init__(self, scene,  caption,  x, y, object_type,  object_id=None,  yaw=0,  place_pose_changed=None,  selected=False, fixed=False):
 
         self.in_collision = False
         self.caption = caption
 
-        super(PlaceItem, self).__init__(scene, rpm, object_id, object_type,  x, y,  yaw)
+        super(PlaceItem, self).__init__(scene, object_id, object_type,  x, y,  yaw)
 
         self.update_text()
         self.fixed = fixed
         self.place_pose_changed = place_pose_changed
         if not self.fixed:
             self.set_color(QtCore.Qt.white)
-            self.point = PointItem(scene, rpm, 0, 0, self,  self.point_changed)  # TODO option to pass pixels?
+            self.point = PointItem(scene, 0, 0, self,  self.point_changed)  # TODO option to pass pixels?
             self.point.setPos(self.boundingRect().topLeft())
 
         self.setZValue(50)
@@ -41,17 +41,16 @@ class PlaceItem(ObjectItem):
         if self.desc is None:
             return
 
-        desc = []
-        desc.append(self.caption)
+        desc = self.caption
 
         if self.object_id is not None:
-            desc.append(translate("ObjectItem", "ID: ") + str(self.object_id))
+            desc += "\n" + translate("ObjectItem", "ID: ") + str(self.object_id)
         else:
-            desc.append(translate("ObjectItem", "TYPE: ") + self.object_type.name)
+            desc += "\n" + translate("ObjectItem", "TYPE: ") + self.object_type.name
 
         if self.hover:
 
-            desc.append(self.get_pos_str())
+            desc += "\n" + self.get_pos_str()
 
         self.desc.set_content(desc)
 

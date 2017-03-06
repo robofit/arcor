@@ -14,16 +14,27 @@ class FakeGrasping:
 
     def __init__(self):
         self.server = SimpleActionServer('/art/pr2/left_arm/pp', pickplaceAction,
-                                         execute_cb=self.pickplace_cb)
+                                         execute_cb=self.pick_place_left_cb)
+
+        self.server = SimpleActionServer('/art/pr2/right_arm/pp', pickplaceAction,
+                                         execute_cb=self.pick_place_right_cb)
         self.objects = self.ALWAYS
         self.grasp = self.ALWAYS
         self.place = self.ALWAYS
         self.object_randomness = 0.8  # 80% of time object is known
         self.grasp_randomness = 0.4
         self.place_randomness = 0.4
+        self.holding_left = False
+        self.holding_right = False
         random.seed()
 
-    def pickplace_cb(self, goal):
+    def pick_place_left_cb(self, goal):
+        self.pickplace_cb(goal, True)
+
+    def pick_place_right_cb(self, goal):
+        self.pickplace_cb(goal, False)
+
+    def pickplace_cb(self, goal, left=True):
         result = pickplaceResult()
         feedback = pickplaceFeedback()
         if not (goal.operation == pickplaceGoal.PICK or
@@ -52,6 +63,11 @@ class FakeGrasping:
         grasped = False
 
         if goal.operation == pickplaceGoal.PICK or goal.operation == pickplaceGoal.PICK_AND_PLACE:
+            if (left and self.holding_left) or (not left and self.holding_right):
+                result.result = pickplaceResult.FAILURE
+                rospy.logerr("Failure, already holding object in " + "left" if left else "right" + "arm")
+                self.server.set_aborted(result, "Already holding object in " + "left" if left else "right" + "arm")
+                return
             if self.grasp == self.ALWAYS:
                 grasped = True
                 pass
@@ -85,8 +101,18 @@ class FakeGrasping:
                 self.server.set_aborted(result, "Pick failed")
                 rospy.logerr("FAILURE, Pick Failed")
                 return
+            else:
+                if left:
+                    self.holding_left = True
+                else:
+                    self.holding_right = True
         placed = False
         if goal.operation == pickplaceGoal.PICK_AND_PLACE or goal.operation == pickplaceGoal.PLACE:
+            if (left and not self.holding_left) or (not left and not self.holding_right):
+                result.result = pickplaceResult.FAILURE
+                rospy.logerr("Failure, already holding object in " + "left" if left else "right" + "arm")
+                self.server.set_aborted(result, "Already holding object in " + "left" if left else "right" + "arm")
+                return
             if self.place == self.ALWAYS:
                 placed = True
                 pass
@@ -114,6 +140,11 @@ class FakeGrasping:
                 self.server.set_aborted(result, "Place failed")
                 rospy.logerr("FAILURE, Place Failed")
                 return
+            else:
+                if left:
+                    self.holding_left = False
+                else:
+                    self.holding_right = False
 
         result.result = pickplaceResult.SUCCESS
         self.server.set_succeeded(result)

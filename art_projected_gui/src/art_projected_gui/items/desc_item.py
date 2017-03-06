@@ -6,45 +6,33 @@ from item import Item
 
 class DescItem(Item):
 
-    def __init__(self, scene, rpm, x, y, parent):
+    def __init__(self, scene, x, y, parent):
 
-        self.w = 0
-        self.h = 0
-        self.lines = []
+        self.text = ""
         self.scale = 1.0
-        self.padding = 5  # TODO should be in meters
 
-        super(DescItem, self).__init__(scene, rpm, x, y, parent)
+        super(DescItem, self).__init__(scene, x, y, parent)
 
     def boundingRect(self):
 
-        return QtCore.QRectF(0, 0, self.w, self.h)
-
-    def set_content(self, lines, scale=1.0):
-
-        self.prepareGeometryChange()
-
-        self.lines = lines
-        self.w = 0
-        self.h = 0
-        self.scale = scale
+        if not self.scene():
+            return QtCore.QRectF()
 
         font = QtGui.QFont(self.default_font, self.get_font_size(self.scale))
         metrics = QtGui.QFontMetrics(font)
+        return QtCore.QRectF(metrics.boundingRect(QtCore.QRect(0, 0, 10000, 10000), QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self.text))
 
-        self.h = (len(lines) - 1) * (20 * self.scale) + len(lines) * metrics.height()
+    def set_content(self, text, scale=1.0):
 
-        for l in lines:
-
-            if metrics.width(l) > self.w:
-                self.w = metrics.width(l)
-
-        self.w += 2 * self.padding
-        self.h += 2 * self.padding
-
+        self.prepareGeometryChange()
+        self.scale = scale
+        self.text = text
         self.update()
 
     def paint(self, painter, option, widget):
+
+        if not self.scene():
+            return
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
@@ -60,9 +48,5 @@ class DescItem(Item):
             painter.setPen(QtCore.Qt.gray)
 
         font = QtGui.QFont(self.default_font, self.get_font_size(self.scale))
-        metrics = QtGui.QFontMetrics(font)
-        h = metrics.height()
-
-        for i in range(0, len(self.lines)):
-
-            painter.drawText(self.padding, self.padding + h + i * 20 * self.scale, self.lines[i])
+        painter.setFont(font)
+        painter.drawText(self.boundingRect(), QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self.text)

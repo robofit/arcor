@@ -56,28 +56,24 @@ class UICore(QtCore.QObject):
         self.y = y
         self.width = width
         self.height = height
-        self.rpm = rpm
         self.port = scene_server_port
 
-        w = self.width * self.rpm
+        w = self.width * rpm
         h = self.height / self.width * w
 
         self.scene = QtGui.QGraphicsScene(0, 0, int(w), int(h))
+        self.scene.rpm = rpm
         self.scene.setBackgroundBrush(QtCore.Qt.black)
         # self.scene.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex) # should be good for dynamic scenes
 
-        self.scene_items = []
-
-        self.bottom_label = LabelItem(self.scene, self.rpm, 0.2, 0.05, self.width - 0.4, 0.05)
-
-        self.scene_items.append(self.bottom_label)
+        self.bottom_label = LabelItem(self.scene, 0.2, 0.05, self.width - 0.4, 0.05)
 
         self.selected_object_ids = []
         self.selected_object_types = []
 
         self.view = customGraphicsView(self.scene)
         self.view.setRenderHint(QtGui.QPainter.Antialiasing)
-        self.view.setViewportUpdateMode(QtGui.QGraphicsView.SmartViewportUpdate)
+        self.view.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
         self.view.setStyleSheet("QGraphicsView { border-style: none; }")
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('send_scene'), self.send_to_clients_evt)
@@ -186,7 +182,7 @@ class UICore(QtCore.QObject):
     def get_scene_items_by_type(self, itype):
         """Generator to filter content of scene_items array."""
 
-        for el in self.scene_items:
+        for el in self.scene.items():
             if type(el) is itype:  # TODO option for 'isinstance' ??
                 yield el
 
@@ -195,7 +191,7 @@ class UICore(QtCore.QObject):
 
         its = []
 
-        for it in self.scene_items:
+        for it in self.scene.items():
 
             if type(it) is not itype:
                 continue
@@ -204,7 +200,6 @@ class UICore(QtCore.QObject):
         for it in its:
 
             self.scene.removeItem(it)
-            self.scene_items.remove(it)
 
     def add_object(self, object_id, object_type, x, y, yaw,  sel_cb=None):
         """Adds object to the scene.
@@ -216,8 +211,7 @@ class UICore(QtCore.QObject):
             sel_cb (method): Callback which gets called one the object is selected.
         """
 
-        obj = ObjectItem(self.scene, self.rpm, object_id, object_type, x, y, yaw,  sel_cb)
-        self.scene_items.append(obj)
+        obj = ObjectItem(self.scene, object_id, object_type, x, y, yaw,  sel_cb)
 
         if object_id in self.selected_object_ids or object_type.name in self.selected_object_types:
 
@@ -238,7 +232,6 @@ class UICore(QtCore.QObject):
         if obj is not None:
 
             self.scene.removeItem(obj)
-            self.scene_items.remove(obj)
             return True
 
         return False
@@ -293,24 +286,21 @@ class UICore(QtCore.QObject):
     def add_place(self, caption,  pose_stamped, object_type,  object_id=None,  place_cb=None, fixed=False):
 
         # TODO check frame_id in pose_stamped and transform if needed
-        self.scene_items.append(
-            PlaceItem(
-                self.scene,
-                self.rpm,
-                caption,
-                pose_stamped.pose.position.x,
-                pose_stamped.pose.position.y,
-                object_type,
-                object_id,
-                place_pose_changed=place_cb,
-                fixed=fixed,
-                yaw=conversions.quaternion2yaw(pose_stamped.pose.orientation)
-                )
+        PlaceItem(
+            self.scene,
+            caption,
+            pose_stamped.pose.position.x,
+            pose_stamped.pose.position.y,
+            object_type,
+            object_id,
+            place_pose_changed=place_cb,
+            fixed=fixed,
+            yaw=conversions.quaternion2yaw(pose_stamped.pose.orientation)
             )
 
     def add_polygon(self, caption, obj_coords=[], poly_points=[], polygon_changed=None, fixed=False):
 
-        self.scene_items.append(PolygonItem(self.scene, self.rpm, caption, obj_coords, poly_points, polygon_changed, fixed))
+        PolygonItem(self.scene, caption, obj_coords, poly_points, polygon_changed, fixed)
 
     def add_square(self, caption, min_x, min_y, square_width, square_height, object_type, square_changed=None):
 

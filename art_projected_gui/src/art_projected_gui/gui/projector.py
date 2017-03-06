@@ -29,9 +29,9 @@ class Projector(QtGui.QWidget):
         self.proj_id = rospy.get_param('~projector_id', 'test')
         self.world_frame = rospy.get_param('~world_frame', 'marker')
         self.screen = rospy.get_param('~screen_number', 0)
-        self.camera_image_topic = rospy.get_param('~camera_image_topic', '/kinect2/qhd/image_color_rect')
-        self.camera_depth_topic = rospy.get_param('~camera_depth_topic', '/kinect2/qhd/image_depth_rect')
-        self.camera_info_topic = rospy.get_param('~camera_info_topic', '/kinect2/qhd/camera_info')
+        self.camera_image_topic = rospy.get_param('~camera_image_topic', '/kinect2/hd/image_color_rect')
+        self.camera_depth_topic = rospy.get_param('~camera_depth_topic', '/kinect2/hd/image_depth_rect')
+        self.camera_info_topic = rospy.get_param('~camera_info_topic', '/kinect2/hd/camera_info')
 
         self.h_matrix = rospy.get_param("~calibration_matrix", None)
 
@@ -60,7 +60,7 @@ class Projector(QtGui.QWidget):
         self.setAutoFillBackground(True)
         p = self.palette()
         p.setColor(self.backgroundRole(), QtCore.Qt.black)
-        # self.setPalette(p)
+        self.setPalette(p)
 
         self.pix_label = QtGui.QLabel(self)
         self.pix_label.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
@@ -80,12 +80,29 @@ class Projector(QtGui.QWidget):
         self.calibrated_pub = rospy.Publisher("~calibrated", Bool, queue_size=1, latch=True)
         self.calibrated_pub.publish(self.is_calibrated())
 
+        self.projectors_calibrated_sub = rospy.Subscriber('/art/interface/projected_gui/app/projectors_calibrated',  Bool,  self.projectors_calibrated_cb,  queue_size=10)
+        self.projectors_calibrated = False
+
         self.srv_calibrate = rospy.Service("~calibrate", Empty, self.calibrate_srv_cb)
         self.corners_pub = rospy.Publisher("~corners", PoseArray, queue_size=10, latch=True)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('show_chessboard'), self.show_chessboard_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('show_pix_label'), self.show_pix_label_evt)
 
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
         self.showFullScreen()
+
+    def show_pix_label_evt(self, show):
+
+        if show:
+            self.pix_label.show()
+        else:
+            self.pix_label.hide()
+
+    def projectors_calibrated_cb(self, msg):
+
+        self.projectors_calibrated = msg.data
+        self.emit(QtCore.SIGNAL('show_pix_label'), self.projectors_calibrated)
 
     def connect(self):
 
@@ -136,7 +153,7 @@ class Projector(QtGui.QWidget):
 
                 rospy.logerr("Failed to load image from received data")
 
-            if not self.is_calibrated() or self.calibrating:
+            if not self.is_calibrated() or self.calibrating or not self.projectors_calibrated:
                 return
 
             img = pix.convertToFormat(QtGui.QImage.Format_ARGB32)
@@ -144,7 +161,7 @@ class Projector(QtGui.QWidget):
             v = qimage2ndarray.rgb_view(img)
 
             # TODO gpu
-            image_np = cv2.warpPerspective(v, self.h_matrix, (self.width(), self.height()))  # ,  flags = cv2.INTER_LINEAR
+            image_np = cv2.warpPerspective(v, self.h_matrix, (self.width(), self.height()))
 
             height, width, channel = image_np.shape
             bytesPerLine = 3 * width
@@ -289,6 +306,8 @@ class Projector(QtGui.QWidget):
 
             rospy.logerr('Calibration failed')
 
+        self.emit(QtCore.SIGNAL('show_pix_label'), False)
+
         self.shutdown_ts()
         if self.is_calibrated():
             self.tfl = None
@@ -298,6 +317,7 @@ class Projector(QtGui.QWidget):
     def show_chessboard_evt(self):
 
         rat = 1.0  # TODO make checkerboard smaller and smaller if it cannot be detected
+        self.pix_label.show()
         self.pix_label.setPixmap(self.checkerboard_img.scaled(rat * self.width(), rat * self.height(), QtCore.Qt.KeepAspectRatio))
 
     def timeout_timer_cb(self, evt):
