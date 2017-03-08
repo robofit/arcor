@@ -2,30 +2,34 @@
 
 import rospy
 import actionlib
-import art_msgs.msg
-from art_msgs.msg import PickPlaceAction
+from art_msgs.msg import PickPlaceAction, PickPlaceGoal, PickPlaceResult
 from geometry_msgs.msg import PoseStamped
 
 
 def pick_object_id(client,  object_id):
 
-    goal = art_msgs.msg.PickPlaceGoal()
+    rospy.loginfo('pick_object_id: ' + str(object_id))
+    goal = PickPlaceGoal()
     goal.object = object_id
     goal.operation = goal.PICK_OBJECT_ID
-    send_goal(client, goal)
+    return send_goal(client, goal)
 
 
 def get_ready(client):
 
-    goal = art_msgs.msg.PickPlaceGoal()
+    rospy.loginfo('get_ready')
+    goal = PickPlaceGoal()
     goal.operation = goal.GET_READY
-    send_goal(client, goal)
+    return send_goal(client, goal)
 
 
 def place_object(client, x, y):
 
-    goal = art_msgs.msg.PickPlaceGoal()
+    rospy.loginfo('place_object: ' + str((x, y)))
+    goal = PickPlaceGoal()
     goal.operation = goal.PLACE_TO_POSE
+    goal.z_axis_angle_increment = 1.57
+    goal.keep_orientation = False
 
     goal.pose = PoseStamped()
     goal.pose.header.frame_id = "marker"
@@ -35,7 +39,7 @@ def place_object(client, x, y):
     goal.pose.pose.position.z = 0.1
     goal.pose.pose.orientation.w = 1.0
 
-    send_goal(client, goal)
+    return send_goal(client, goal)
 
 
 def send_goal(client,  goal):
@@ -50,6 +54,8 @@ def send_goal(client,  goal):
     print "status: " + client.get_goal_status_text()
     print "state: " + str(client.get_state())
     print
+    
+    return client.get_result().result
 
 
 def main():
@@ -60,31 +66,52 @@ def main():
     r_client = actionlib.SimpleActionClient('/art/pr2/right_arm/pp', PickPlaceAction)
     r_client.wait_for_server()
 
-    goal = art_msgs.msg.PickPlaceGoal()
-    goal.operation = goal.RESET
-    send_goal(l_client, goal)
-    send_goal(r_client, goal)
+    # goal = PickPlaceGoal()
+    # goal.operation = goal.RESET
+    # send_goal(l_client, goal)
+    # send_goal(r_client, goal)
 
-    get_ready(l_client)
-    get_ready(r_client)
+    if get_ready(l_client) != PickPlaceResult.SUCCESS:
+        return
+        
+    if get_ready(r_client) != PickPlaceResult.SUCCESS:
+        return
 
     rospy.sleep(2)  # time to store existing objects
 
-    for client in [l_client, r_client]:
+    #for client in [l_client, r_client]:
 
-        pick_object_id(client, "3")
-        place_object(client,  0.75, 0.5)
-        get_ready(client)
+     #   if pick_object_id(client, "3") != PickPlaceResult.SUCCESS:
+      #      return
+        
+       # if place_object(client,  0.75, 0.4) != PickPlaceResult.SUCCESS:
+        #    return
+        
+       # if get_ready(client) != PickPlaceResult.SUCCESS:
+        #    return
+            
+        #rospy.sleep(5)
 
-    pick_object_id(l_client, "3")
-    get_ready(l_client)
+    if pick_object_id(l_client, "3")  != PickPlaceResult.SUCCESS:
+        return
+        
+    if get_ready(l_client)  != PickPlaceResult.SUCCESS:
+        return
 
-    pick_object_id(r_client, "4")
-    place_object(r_client,  0.5, 0.5)
-    get_ready(r_client)
+    if pick_object_id(r_client, "4")  != PickPlaceResult.SUCCESS:
+        return
+        
+    if place_object(r_client,  0.5, 0.4)  != PickPlaceResult.SUCCESS:
+        return
+    
+    if get_ready(r_client)  != PickPlaceResult.SUCCESS:
+        return
 
-    place_object(l_client,  0.75, 0.5)
-    get_ready(l_client)
+    if place_object(l_client,  0.75, 0.4) != PickPlaceResult.SUCCESS:
+        return
+    
+    if get_ready(l_client)  != PickPlaceResult.SUCCESS:
+        return
 
     rospy.loginfo("Done!")
 

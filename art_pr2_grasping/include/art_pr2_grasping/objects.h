@@ -61,6 +61,7 @@ private:
   bool transformPose(geometry_msgs::PoseStamped& ps);
 
   void detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr& msg);
+  void publishObject(std::string object_id);
 
   moveit_visual_tools::VisualToolsPtr visual_tools_;
 

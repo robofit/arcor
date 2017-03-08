@@ -27,7 +27,7 @@ bool artActionServer::init()
   }
 
   // TODO(ZdenekM): read size/position from param
-  if (!addTable(0.75, 0, 0, 1.5, 0.78, 0.70, "table1"))
+  if (!addTable(0.65, 0, 0, 1.5, 0.78, 0.70, "table1"))
   {
     ROS_ERROR("failed to add table");
     return false;
@@ -47,6 +47,9 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
 
   ROS_INFO_STREAM_NAMED(group_name_,
                         "Got goal, operation: " << goal->operation);
+                        
+  // TODO(ZdenekM): hack - table sometimes gets deleted from planning scene
+  addTable(0.65, 0, 0, 1.5, 0.78, 0.70, "table1");
 
   // TODO(ZdenekM): check /art/pr2/xyz_arm/interaction/state topic?
 
@@ -86,6 +89,8 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
       as_->setAborted(res, "unknown object id");
       return;
     }
+    
+    objects_->setGrasped(goal->object, true);  // will stop publishing it to collision scene
 
     int tries = max_attempts_;
 
@@ -107,6 +112,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
     if (as_->isPreemptRequested())
     {
       as_->setPreempted(res, "pick cancelled");
+      objects_->setGrasped(goal->object, false);
       return;
     }
 
@@ -114,6 +120,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
     {
       res.result = art_msgs::PickPlaceResult::FAILURE;
       as_->setAborted(res, "pick failed");
+      objects_->setGrasped(goal->object, false);
       return;
     }
 
@@ -180,6 +187,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
       return;
     }
 
+    objects_->setGrasped(goal->object, false);
     res.result = art_msgs::PickPlaceResult::SUCCESS;
     as_->setSucceeded(res);
   }

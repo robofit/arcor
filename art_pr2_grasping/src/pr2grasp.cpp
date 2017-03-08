@@ -33,7 +33,7 @@ artPr2Grasping::artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl,
 
   move_group_.reset(new move_group_interface::MoveGroup(group_name_));
   move_group_->setPlanningTime(30.0);
-  move_group_->allowLooking(false); // true causes failure
+  move_group_->allowLooking(true);
   move_group_->allowReplanning(true);
   move_group_->setGoalTolerance(0.005);
   move_group_->setPlannerId("RRTConnectkConfigDefault");

@@ -23,7 +23,7 @@ public:
   bool init();
 
 private:
-  boost::shared_ptr<actionlib::SimpleActionServer<art_msgs::PickPlaceAction>>
+  boost::shared_ptr<actionlib::SimpleActionServer<art_msgs::PickPlaceAction> >
       as_;
   int max_attempts_;
 

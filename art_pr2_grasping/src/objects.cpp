@@ -155,30 +155,36 @@ void Objects::detectedObjectsCallback(
     // do not publish for grasped objects
     if (isGrasped(it->first))
       continue;
+      
+    publishObject(it->first);
+  }
+}
+
+void Objects::publishObject(std::string object_id) {
 
     moveit_msgs::CollisionObject collision_obj;
 
     collision_obj.header.stamp = ros::Time::now();
     collision_obj.header.frame_id = target_frame_;
-    collision_obj.id = it->first;
+    collision_obj.id = object_id;
     collision_obj.operation =
         moveit_msgs::CollisionObject::ADD; // todo param for update?
     collision_obj.primitives.resize(1);
-    collision_obj.primitives[0] = it->second.type.bbox;
+    collision_obj.primitives[0] = objects_[object_id].type.bbox;
     collision_obj.primitive_poses.resize(1);
-    collision_obj.primitive_poses[0] = it->second.pose.pose;
+    collision_obj.primitive_poses[0] = objects_[object_id].pose.pose;
 
     for (int j = 0; j < 3; j++)
     {
       visual_tools_->publishCollisionObjectMsg(collision_obj);
-      ros::Duration(0.1).sleep();
+      // ros::Duration(0.1).sleep();
     }
 
-    visual_tools_->publishBlock(it->second.pose.pose, moveit_visual_tools::BLUE,
-                                it->second.type.bbox.dimensions[0],
-                                it->second.type.bbox.dimensions[1],
-                                it->second.type.bbox.dimensions[2]);
-  }
+    visual_tools_->publishBlock(objects_[object_id].pose.pose, moveit_visual_tools::BLUE,
+                                objects_[object_id].type.bbox.dimensions[0],
+                                objects_[object_id].type.bbox.dimensions[1],
+                                objects_[object_id].type.bbox.dimensions[2]);
+
 }
 
 void Objects::setGrasped(std::string object_id, bool grasped)
@@ -197,6 +203,11 @@ void Objects::setGrasped(std::string object_id, bool grasped)
     {
       visual_tools_->cleanupCO(object_id);
     }
+    else
+    {
+      publishObject(object_id);
+    }
+    
   }
 }
 
