@@ -197,7 +197,7 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
 
     double des_dist =
         std::max(grasp_data_.approach_retreat_desired_dist_,
-                 0.05 +
+                 0.1 +
                      0.5 *
                          grasped_object_->type.bbox
                              .dimensions[shape_msgs::SolidPrimitive::BOX_Z]);

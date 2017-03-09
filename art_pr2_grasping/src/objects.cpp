@@ -162,6 +162,8 @@ void Objects::detectedObjectsCallback(
 
 void Objects::publishObject(std::string object_id) {
 
+    ROS_DEBUG_NAMED("objects", "Publishing object_id: %s", object_id.c_str());
+
     moveit_msgs::CollisionObject collision_obj;
 
     collision_obj.header.stamp = ros::Time::now();
@@ -193,10 +195,12 @@ void Objects::setGrasped(std::string object_id, bool grasped)
 
   if (grasped)
   {
+    ROS_DEBUG_NAMED("objects", "Setting object_id as grasped: %s", object_id.c_str());
     grasped_objects_.insert(object_id);
   }
   else
   {
+    ROS_DEBUG_NAMED("objects", "Setting object_id as not grasped: %s", object_id.c_str());
     grasped_objects_.erase(object_id);
 
     if (!isKnownObject(object_id))
