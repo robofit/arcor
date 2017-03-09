@@ -302,6 +302,7 @@ class ArtBrain(object):
 
         if self.pick_object_by_id(obj, gripper):
             gripper.holding_object = obj
+            gripper.last_pick_instruction_id = self.instruction.id
             self.fsm.done(success=True)
 
         else:
@@ -373,7 +374,8 @@ class ArtBrain(object):
                 return
             rospy.logdebug(self.instruction)
             gripper = self.get_gripper_by_pick_instruction_id(
-                self.instruction.ref_id[0])
+                self.instruction.ref_id)
+            # TODO what to do if gripper is None?
             self.check_gripper_for_place(gripper)
             if gripper.holding_object is None:
                 rospy.logerr("Robot is not holding selected object")
@@ -383,7 +385,7 @@ class ArtBrain(object):
 
             if self.place_object(gripper.holding_object, pose[0], gripper):
                 gripper.holding_object = None
-                gripper.last_pick_instruction_id = self.instruction.id
+                # gripper.last_pick_instruction_id = self.instruction.id
                 self.fsm.done(success=True)
                 return
             else:
@@ -422,6 +424,7 @@ class ArtBrain(object):
         self.state_manager.update_program_item(
             self.ph.get_program_id(), self.block_id, self.instruction)
         # TODO: call some service to set PR2 to ready position
+        # TODO handle if it fails
         self.right_gripper.get_ready_client.call()
         self.left_gripper.get_ready_client.call()
         self.fsm.done(success=True)
@@ -674,6 +677,8 @@ class ArtBrain(object):
                         obj_pose = PoseStamped()
                         obj_pose.pose = o.pose
                         obj_pose.header = self.objects.header
+                        obj_pose.header.stamp = rospy.Time(0)  # exact time does not matter in this case
+                        self.tf_listener.waitForTransform('/base_link', obj_pose.header.frame_id, obj_pose.header.stamp, rospy.Duration(1))
                         obj_pose = self.tf_listener.transformPose(
                             '/base_link', obj_pose)
                         if obj_pose.pose.position.y < 0:
@@ -690,10 +695,11 @@ class ArtBrain(object):
         else:
             return None
 
-    def get_gripper_by_pick_instruction_id(self, pick_instruction_id):
-        if self.left_gripper is not None and self.left_gripper.last_pick_instruction_id == pick_instruction_id:
+    def get_gripper_by_pick_instruction_id(self, pick_instruction_ids):
+
+        if self.left_gripper is not None and self.left_gripper.last_pick_instruction_id in pick_instruction_ids:
             return self.left_gripper
-        elif self.right_gripper is not None and self.right_gripper.last_pick_instruction_id == pick_instruction_id:
+        elif self.right_gripper is not None and self.right_gripper.last_pick_instruction_id in pick_instruction_ids:
             return self.right_gripper
         else:
             return None
@@ -736,7 +742,7 @@ class ArtBrain(object):
             return False
 
         if gripper.holding_object is None:
-            rospy.logwarn("Gripper already holding an object")
+            rospy.logwarn("Place: gripper " + gripper.name + " is not holding object")
             self.fsm.error(severity=ArtBrainMachine.WARNING,
                            error=ArtBrainMachine.ERROR_OBJECT_IN_GRIPPER)
             return False
@@ -747,7 +753,7 @@ class ArtBrain(object):
         if not self.check_gripper(gripper):
             return False
         if gripper.holding_object is not None:
-            rospy.logwarn("Gripper already holding an object")
+            rospy.logwarn("Pick: gripper " + gripper.name + " already holding an object (" + gripper.holding_object.object_id + ")")
             self.fsm.error(severity=ArtBrainMachine.WARNING,
                            error=ArtBrainMachine.ERROR_OBJECT_IN_GRIPPER)
             return False

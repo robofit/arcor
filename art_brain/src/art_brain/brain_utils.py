@@ -76,7 +76,7 @@ class ArtBrainUtils(object):
 
     @staticmethod
     def get_place_pose(instruction):
-        return instruction.pose[0]
+        return instruction.pose
 
     @staticmethod
     def distance_2d(pose1, pose2):
