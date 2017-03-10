@@ -77,5 +77,5 @@ public:
   bool addTable(double x, double y, double angle, double width, double height,
                 double depth, std::string name);
 };
-} // namespace art_pr2_grasping
-#endif // ART_PR2_GRASPING_PR2GRASP_H
+}  // namespace art_pr2_grasping
+#endif  // ART_PR2_GRASPING_PR2GRASP_H

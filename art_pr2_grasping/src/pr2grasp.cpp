@@ -17,7 +17,7 @@ float artPr2Grasping::getGripperValue()
   if (msg)
     return msg->process_value;
   else
-    return 1000; // TODO(ZdenekM): NaN / exception?
+    return 1000;  // TODO(ZdenekM): NaN / exception?
 }
 
 artPr2Grasping::artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl,
@@ -147,15 +147,14 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
                               bb.dimensions[2]);
 
   if (z_axis_angle_increment < 0)
-    z_axis_angle_increment *= -1.0; // only positive increment allowed
+    z_axis_angle_increment *= -1.0;  // only positive increment allowed
   if (z_axis_angle_increment == 0)
     z_axis_angle_increment =
-        2 * M_PI; // for 0 we only want one cycle (only given orientation)
+        2 * M_PI;  // for 0 we only want one cycle (only given orientation)
 
   // Create 360 degrees of place location rotated around a center
   for (double angle = 0; angle < 2 * M_PI; angle += z_axis_angle_increment)
   {
-
     geometry_msgs::PoseStamped pps = pose_stamped;
 
     // Orientation
@@ -175,24 +174,24 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
     moveit_msgs::GripperTranslation pre_place_approach;
     pre_place_approach.direction.header.stamp = ros::Time::now();
     pre_place_approach.desired_distance =
-        grasp_data_.approach_retreat_desired_dist_; // The distance the origin
-                                                    // of a robot link needs
-                                                    // to travel
+        grasp_data_.approach_retreat_desired_dist_;  // The distance the origin
+                                                     // of a robot link needs
+                                                     // to travel
     pre_place_approach.min_distance =
         grasp_data_
             .approach_retreat_min_dist_; // half of the desired? Untested.
     pre_place_approach.direction.header.frame_id = grasp_data_.base_link_;
     pre_place_approach.direction.vector.x = 0;
     pre_place_approach.direction.vector.y = 0;
-    pre_place_approach.direction.vector.z = -1; // Approach direction
-                                                // (negative z axis)  // TODO:
-                                                // document this assumption
+    pre_place_approach.direction.vector.z = -1;  // Approach direction
+                                                 // (negative z axis)
+                                                 // document this assumption
     place_loc.pre_place_approach = pre_place_approach;
 
     // Retreat
     moveit_msgs::GripperTranslation post_place_retreat;
     post_place_retreat.direction.header.stamp = ros::Time::now();
-    // todo is box_z always height of the object?
+    // TODO(ZdenekM): is box_z always height of the object?
     // assume that robot holds the object in the middle of its height
 
     double des_dist =
@@ -203,15 +202,15 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
                              .dimensions[shape_msgs::SolidPrimitive::BOX_Z]);
 
     post_place_retreat.desired_distance =
-        des_dist; // The distance the origin of a robot link needs to travel
-                  // -> depends on the object size
+        des_dist;  // The distance the origin of a robot link needs to travel
+                   // -> depends on the object size
     post_place_retreat.min_distance =
         grasp_data_
-            .approach_retreat_min_dist_; // half of the desired? Untested.
+            .approach_retreat_min_dist_;  // half of the desired? Untested.
     post_place_retreat.direction.header.frame_id = grasp_data_.base_link_;
     post_place_retreat.direction.vector.x = 0;
     post_place_retreat.direction.vector.y = 0;
-    post_place_retreat.direction.vector.z = 1; // Retreat direction (pos z axis)
+    post_place_retreat.direction.vector.z = 1;  // Retreat direction (pos z axis)
     place_loc.post_place_retreat = post_place_retreat;
 
     // Post place posture - use same as pre-grasp posture (the OPEN command)
@@ -277,7 +276,6 @@ bool artPr2Grasping::pick(const std::string& object_id)
   }
   catch (const std::invalid_argument& e)
   {
-
     ROS_ERROR_NAMED(group_name_, "Unknown object_id: %s", object_id.c_str());
     return false;
   }
@@ -289,7 +287,6 @@ bool artPr2Grasping::pick(const std::string& object_id)
 
   if (!transformPose(p))
   {
-
     return false;
   }
 
@@ -307,7 +304,7 @@ bool artPr2Grasping::pick(const std::string& object_id)
 
   // todo fix this (No kinematic solver found)
   std::vector<trajectory_msgs::JointTrajectoryPoint>
-      ik_solutions; // save each grasps ik solution for visualization
+      ik_solutions;  // save each grasps ik solution for visualization
   if (!grasp_filter_->filterGrasps(grasps, ik_solutions, true,
                                    grasp_data_.ee_parent_link_, group_name_))
   {
@@ -370,7 +367,7 @@ bool artPr2Grasping::addTable(double x, double y, double angle, double width,
 
   visual_tools_->cleanupCO(name);
 
-  for (int j = 0; j < 3; j++) // hmm, sometimes the table is not added
+  for (int j = 0; j < 3; j++)  // hmm, sometimes the table is not added
   {
     if (!visual_tools_->publishCollisionTable(x, y, angle, width, height, depth,
                                               name))
@@ -382,4 +379,4 @@ bool artPr2Grasping::addTable(double x, double y, double angle, double width,
   return true;
 }
 
-} // namespace art_pr2_grasping
+}  // namespace art_pr2_grasping

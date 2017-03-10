@@ -26,6 +26,6 @@ private:
   const std::string target_frame_;
   ros::NodeHandle nh_;
 };
-} // namespace art_pr2_grasping
+}  // namespace art_pr2_grasping
 
-#endif // ART_PR2_GRASPING_NODE_H
+#endif  // ART_PR2_GRASPING_NODE_H

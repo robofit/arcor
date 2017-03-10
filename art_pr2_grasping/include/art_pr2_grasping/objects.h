@@ -23,7 +23,8 @@ typedef struct
   std::string object_id;
   geometry_msgs::PoseStamped pose;
   art_msgs::ObjectType type;
-} TObjectInfo;
+}
+  TObjectInfo;
 
 typedef std::map<std::string, TObjectInfo> TObjectMap;
 
@@ -41,7 +42,7 @@ public:
     return grasped_objects_.count(object_id);
   }
 
-  TObjectInfo getObject(std::string object_id); // TODO(ZdenekM) return pointer?
+  TObjectInfo getObject(std::string object_id);  // TODO(ZdenekM) return pointer?
 
   void setGrasped(std::string object_id, bool grasped);
 
@@ -68,6 +69,6 @@ private:
   std::set<std::string> grasped_objects_;
 };
 
-} // namespace art_pr2_grasping
+}  // namespace art_pr2_grasping
 
-#endif // ART_PR2_GRASPING_OBJECTS_H
+#endif  // ART_PR2_GRASPING_OBJECTS_H

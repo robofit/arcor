@@ -29,6 +29,6 @@ private:
 
   void executeCB(const art_msgs::PickPlaceGoalConstPtr& goal);
 };
-} // namespace art_pr2_grasping
+}  // namespace art_pr2_grasping
 
-#endif // ART_PR2_GRASPING_ACTION_SERVER_H
+#endif  // ART_PR2_GRASPING_ACTION_SERVER_H

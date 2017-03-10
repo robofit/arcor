@@ -47,7 +47,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
 
   ROS_INFO_STREAM_NAMED(group_name_,
                         "Got goal, operation: " << goal->operation);
-                        
+
   // TODO(ZdenekM): hack - table sometimes gets deleted from planning scene
   addTable(0.65, 0, 0, 1.5, 0.78, 0.70, "table1");
 
@@ -89,7 +89,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
       as_->setAborted(res, "unknown object id");
       return;
     }
-    
+
     objects_->setGrasped(goal->object, true);  // will stop publishing it to collision scene
 
     int tries = max_attempts_;
@@ -103,7 +103,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
       tries--;
       as_->publishFeedback(f);
 
-      grasped = pick(goal->object); // todo flag if it make sense to try again
+      grasped = pick(goal->object);  // todo flag if it make sense to try again
       // (type of failure)
       if (grasped)
         break;
@@ -139,7 +139,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
 
   case art_msgs::PickPlaceGoal::PLACE_TO_POSE:
   {
-    geometry_msgs::PoseStamped p2 = goal->pose; // place goal
+    geometry_msgs::PoseStamped p2 = goal->pose;  // place goal
 
     // do transformation in advance - before timestamp get too old
     if (!transformPose(p2))
@@ -200,4 +200,4 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
   }
 }
 
-} // namespace art_pr2_grasping
+}  // namespace art_pr2_grasping

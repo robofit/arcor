@@ -155,12 +155,13 @@ void Objects::detectedObjectsCallback(
     // do not publish for grasped objects
     if (isGrasped(it->first))
       continue;
-      
+
     publishObject(it->first);
   }
 }
 
-void Objects::publishObject(std::string object_id) {
+void Objects::publishObject(std::string object_id)
+{
 
     ROS_DEBUG_NAMED("objects", "Publishing object_id: %s", object_id.c_str());
 
@@ -170,7 +171,7 @@ void Objects::publishObject(std::string object_id) {
     collision_obj.header.frame_id = target_frame_;
     collision_obj.id = object_id;
     collision_obj.operation =
-        moveit_msgs::CollisionObject::ADD; // todo param for update?
+        moveit_msgs::CollisionObject::ADD;  // TODO(ZdenekM): param for update?
     collision_obj.primitives.resize(1);
     collision_obj.primitives[0] = objects_[object_id].type.bbox;
     collision_obj.primitive_poses.resize(1);
@@ -186,7 +187,6 @@ void Objects::publishObject(std::string object_id) {
                                 objects_[object_id].type.bbox.dimensions[0],
                                 objects_[object_id].type.bbox.dimensions[1],
                                 objects_[object_id].type.bbox.dimensions[2]);
-
 }
 
 void Objects::setGrasped(std::string object_id, bool grasped)
@@ -211,8 +211,8 @@ void Objects::setGrasped(std::string object_id, bool grasped)
     {
       publishObject(object_id);
     }
-    
+
   }
 }
 
-} // namespace art_pr2_grasping
+}  // namespace art_pr2_grasping
