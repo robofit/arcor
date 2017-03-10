@@ -162,7 +162,6 @@ void Objects::detectedObjectsCallback(
 
 void Objects::publishObject(std::string object_id)
 {
-
     ROS_DEBUG_NAMED("objects", "Publishing object_id: %s", object_id.c_str());
 
     moveit_msgs::CollisionObject collision_obj;
@@ -211,7 +210,6 @@ void Objects::setGrasped(std::string object_id, bool grasped)
     {
       publishObject(object_id);
     }
-
   }
 }
 

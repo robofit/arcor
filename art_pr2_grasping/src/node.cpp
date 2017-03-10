@@ -44,7 +44,7 @@ bool GraspingNode::init()
   return true;
 }
 
-} // namespace art_pr2_grasping
+}  // namespace art_pr2_grasping
 
 int main(int argc, char** argv)
 {

@@ -179,7 +179,7 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
                                                      // to travel
     pre_place_approach.min_distance =
         grasp_data_
-            .approach_retreat_min_dist_; // half of the desired? Untested.
+            .approach_retreat_min_dist_;  // half of the desired? Untested.
     pre_place_approach.direction.header.frame_id = grasp_data_.base_link_;
     pre_place_approach.direction.vector.x = 0;
     pre_place_approach.direction.vector.y = 0;
