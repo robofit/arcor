@@ -279,7 +279,7 @@ def main(args):
 
     p = ProgramItem()
     p.id = 8
-    p.on_success = 3
+    p.on_success = 1
     p.on_failure = 0
     p.type = ProgramItem.PLACE_TO_POSE
     p.ref_id.append(7)

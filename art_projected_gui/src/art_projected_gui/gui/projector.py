@@ -91,6 +91,7 @@ class Projector(QtGui.QWidget):
 
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
         self.showFullScreen()
+        self.setCursor(QtCore.Qt.BlankCursor)
 
     def show_pix_label_evt(self, show):
 
