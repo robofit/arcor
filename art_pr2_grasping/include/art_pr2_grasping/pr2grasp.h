@@ -57,22 +57,25 @@ protected:
   float getGripperValue();
 
 public:
-  artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl, boost::shared_ptr<Objects> objects,
-                 std::string group_name, std::string default_target, std::string gripper_state_topic);
+  artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl,
+                 boost::shared_ptr<Objects> objects, std::string group_name,
+                 std::string default_target, std::string gripper_state_topic);
 
-  bool transformPose(geometry_msgs::PoseStamped &ps);
+  bool transformPose(geometry_msgs::PoseStamped& ps);
 
   bool getReady();
 
-  bool place(const geometry_msgs::Pose &ps, double z_axis_angle_increment = 0.0, bool keep_orientation = false);
+  bool place(const geometry_msgs::Pose& ps, double z_axis_angle_increment = 0.0,
+             bool keep_orientation = false);
 
   std::string getPlanningFrame();
 
   bool hasGraspedObject();
 
-  bool pick(const std::string &object_id);
+  bool pick(const std::string& object_id);
 
-  bool addTable(double x, double y, double angle, double width, double height, double depth, std::string name);
+  bool addTable(double x, double y, double angle, double width, double height,
+                double depth, std::string name);
 };
 }  // namespace art_pr2_grasping
 #endif  // ART_PR2_GRASPING_PR2GRASP_H

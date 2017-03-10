@@ -16,16 +16,18 @@ namespace art_pr2_grasping
 class artActionServer : public artPr2Grasping
 {
 public:
-  artActionServer(boost::shared_ptr<tf::TransformListener> tfl, boost::shared_ptr<Objects> objects,
-                  std::string group_name, std::string default_target, std::string gripper_state_topic);
+  artActionServer(boost::shared_ptr<tf::TransformListener> tfl,
+                  boost::shared_ptr<Objects> objects, std::string group_name,
+                  std::string default_target, std::string gripper_state_topic);
 
   bool init();
 
 private:
-  boost::shared_ptr<actionlib::SimpleActionServer<art_msgs::PickPlaceAction> > as_;
+  boost::shared_ptr<actionlib::SimpleActionServer<art_msgs::PickPlaceAction> >
+      as_;
   int max_attempts_;
 
-  void executeCB(const art_msgs::PickPlaceGoalConstPtr &goal);
+  void executeCB(const art_msgs::PickPlaceGoalConstPtr& goal);
 };
 }  // namespace art_pr2_grasping
 

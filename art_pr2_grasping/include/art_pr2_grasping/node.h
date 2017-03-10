@@ -20,7 +20,7 @@ public:
   bool init();
 
 private:
-  std::vector<artActionServer> action_servers_;
+  std::vector<boost::shared_ptr<artActionServer> > action_servers_;
   boost::shared_ptr<tf::TransformListener> tfl_;
   boost::shared_ptr<Objects> objects_;
   const std::string target_frame_;
