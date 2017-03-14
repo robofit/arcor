@@ -359,8 +359,7 @@ class ArtBrain(object):
     def state_place_to_pose(self, event):
         rospy.loginfo('state_place_to_pose')
         pose = ArtBrainUtils.get_place_pose(self.instruction)
-        self.state_manager.update_program_item(
-            self.ph.get_program_id(), self.block_id, self.instruction)
+
         # TODO place pose
 
         if pose is None or len(pose) < 1:
@@ -382,7 +381,9 @@ class ArtBrain(object):
                 self.fsm.error(severity=ArtBrainMachine.WARNING,
                                error=ArtBrainMachine.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
                 return
-
+            self.state_manager.update_program_item(
+                self.ph.get_program_id(), self.block_id, self.instruction,
+                {"SELECTED_OBJECT_ID": gripper.holding_object})
             if self.place_object(gripper.holding_object, pose[0], gripper):
                 gripper.holding_object = None
                 # gripper.last_pick_instruction_id = self.instruction.id
