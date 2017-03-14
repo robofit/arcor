@@ -19,10 +19,13 @@ class PlaceItem(ObjectItem):
 
     """
 
-    def __init__(self, scene,  caption,  x, y, object_type,  object_id=None,  yaw=0,  place_pose_changed=None,  selected=False, fixed=False):
+    def __init__(self, scene,  caption,  x, y, object_type,  object_id=None,  yaw=0,  place_pose_changed=None,  selected=False, fixed=False, txt=True, rot=True):
 
         self.in_collision = False
         self.caption = caption
+        self.txt = txt
+        self.rot = rot
+        self.other_items = []
 
         super(PlaceItem, self).__init__(scene, object_id, object_type,  x, y,  yaw)
 
@@ -31,12 +34,16 @@ class PlaceItem(ObjectItem):
         self.place_pose_changed = place_pose_changed
         if not self.fixed:
             self.set_color(QtCore.Qt.white)
-            self.point = PointItem(scene, 0, 0, self,  self.point_changed)  # TODO option to pass pixels?
-            self.point.setPos(self.boundingRect().topLeft())
+            if self.rot:
+                self.point = PointItem(scene, 0, 0, self,  self.point_changed)  # TODO option to pass pixels?
+                self.point.setPos(self.boundingRect().topLeft())
 
         self.setZValue(50)
 
     def update_text(self):
+
+        if not self.txt:
+            return
 
         if self.desc is None:
             return
@@ -74,10 +81,13 @@ class PlaceItem(ObjectItem):
         self.setRotation(angle)
         self.point.setRotation(-angle)
 
+        if self.other_items:
+            for it in self.other_items:
+                it.setRotation(self.rotation())
+
         self._update_desc_pos()
 
         if finished:
-
             self.point.setPos(self.boundingRect().topLeft())
 
             if self.place_pose_changed is not None:
@@ -97,3 +107,6 @@ class PlaceItem(ObjectItem):
         else:
             self.in_collision = False
             self.set_color(QtCore.Qt.white)
+
+    def set_other_items(self, items):
+        self.other_items = items

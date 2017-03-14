@@ -26,7 +26,7 @@ class ObjectItem(Item):
         self.selected = selected
         self.sel_cb = sel_cb
         self.object_type = object_type  # TODO check bbox type and use rectangle (used now) / ellipse, consider other angles
-        self.inflate = 2.0
+        self.inflate = 1.0
         self.hover_ratio = 1.1
         self.def_color = QtCore.Qt.gray
 

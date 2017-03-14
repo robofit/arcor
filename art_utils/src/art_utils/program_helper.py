@@ -253,7 +253,7 @@ class ProgramHelper():
 
     def item_requires_learning(self, block_id, item_id):
 
-        return self.get_item_type(block_id,  item_id) in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID, ProgramItem.PLACE_TO_POSE]
+        return self.get_item_type(block_id,  item_id) in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID, ProgramItem.PLACE_TO_POSE, ProgramItem.PLACE_TO_GRID]
 
     def is_pose_set(self, block_id, item_id):
 
@@ -277,7 +277,7 @@ class ProgramHelper():
 
         msg = self.get_item_msg(block_id, item_id)
 
-        if msg.type not in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID, ProgramItem.PLACE_TO_POSE]:
+        if msg.type not in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID, ProgramItem.PLACE_TO_POSE, ProgramItem.PLACE_TO_GRID]:
 
             raise ValueError("Instruction type " + str(msg.type) + " does not use 'object'.")
 
@@ -295,7 +295,7 @@ class ProgramHelper():
 
         msg = self.get_item_msg(block_id, item_id)
 
-        if msg.type not in [ProgramItem.PICK_FROM_POLYGON]:
+        if msg.type not in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PLACE_TO_GRID]:
 
             raise ValueError("Instruction type " + str(msg.type) + " does not use 'polygon'.")
 
@@ -362,6 +362,13 @@ class ProgramHelper():
         elif msg.type == ProgramItem.PICK_OBJECT_ID:
 
             if not (self.is_object_set(block_id, item_id)):
+                return False
+            else:
+                return True
+
+        elif msg.type == ProgramItem.PLACE_TO_GRID:
+
+            if not self.is_polygon_set(block_id, item_id):
                 return False
             else:
                 return True

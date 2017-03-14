@@ -248,7 +248,7 @@ class UICoreRos(UICore):
 
                 return
 
-            self.program_vis.set_active(state.block_id, state.program_current_item.id)
+            self.program_vis.set_active(state.block_id, state.program_current_item.id, state.program_current_item.ref_id)
             it = state.program_current_item
 
             if it.type == ProgIt.GET_READY:
@@ -302,6 +302,17 @@ class UICoreRos(UICore):
                 else:
                     # TODO what to do if brain wants to manipulate with non-existent object?
                     pass
+
+            elif it.type == ProgIt.PLACE_TO_GRID:
+
+                ref_item = self.program_vis.get_ref_item()  # ziskanie referencneho itemu
+                obj = self.get_object(ref_item.object[0])   # objekt referencneho itemu
+                self.program_vis.get_current_item().object[0] = obj.object_id   # nastavime objekt aktualneho itemu
+                # print "FLag", flags["SELECTED_OBJECT_ID"] # nastavuje sa v test_brain(riadok 62)
+                self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
+                                0.075, obj.object_type, square_changed=self.square_changed)
+
+
 
     def interface_state_cb(self, our_state, state, flags):
 
@@ -396,6 +407,15 @@ class UICoreRos(UICore):
                     else:
                         self.notif(translate("UICoreRos", "Set where to place picked object"))
                         self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  self.get_def_pose(), object_type,  object_id, place_cb=self.place_pose_changed, fixed=read_only)
+
+        elif msg.type == ProgIt.PLACE_TO_GRID:
+
+            ref_item = self.program_vis.get_ref_item()  # ziskanie referencneho itemu
+            obj = self.get_object(ref_item.object[0])  # objekt referencneho itemu
+            self.program_vis.get_current_item().object[0] = obj.object_id  # nastavime objekt aktualneho itemu
+            # print "FLag", flags["SELECTED_OBJECT_ID"] # nastavuje sa v test_brain(riadok 62)
+            self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
+                            0.075, obj.object_type, square_changed=self.square_changed)
 
     def get_def_pose(self):
 
@@ -660,6 +680,11 @@ class UICoreRos(UICore):
 
             self.program_vis.set_polygon(pts)
             self.state_manager.update_program_item(self.ph.get_program_id(), self.program_vis.block_id, self.program_vis.get_current_item())
+            print "___________"
+            print self.ph.get_program_id()
+            print self.program_vis.block_id
+            print self.program_vis.get_current_item()
+            print "___________"
 
     def square_changed(self, pts):
 

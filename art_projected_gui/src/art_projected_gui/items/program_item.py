@@ -35,6 +35,8 @@ class ProgramItem(Item):
 
         self.block_id = None
         self.item_id = None
+        self.ref_id = [3]
+
         self.block_learned = False
         self.program_learned = False
 
@@ -165,12 +167,13 @@ class ProgramItem(Item):
 
         self.update()
 
-    def set_active(self, block_id, item_id):
+    def set_active(self, block_id, item_id, ref_id):
 
         old_block_id = self.block_id
 
         self.block_id = block_id
         self.item_id = item_id
+        self.ref_id = ref_id
 
         if not self.readonly:
 
@@ -277,6 +280,19 @@ class ProgramItem(Item):
             else:
 
                 text += "\n" + "x=??, y=??"
+
+        elif item.type == ProgIt.PLACE_TO_GRID:
+
+            text += QtCore.QCoreApplication.translate(
+                "ProgramItem", "PLACE_TO_GRID")
+
+            if self.ph.is_object_set(block_id,  item_id):
+
+                text += "\n" + "object ID=" + item.object[0]
+
+            else:
+
+                text += "\n" + "object ID=??"
 
         return text
 
@@ -560,14 +576,18 @@ class ProgramItem(Item):
         self._update_item()
 
     # Metoda ulozi 4 body SquareItem-u do place_grid v zprave ProgramItem
-    # def set_place_grid(self, pts):
+    def set_place_grid(self, pts):
 
-    #     # predchadzajuce body musime zmazat, aby sme tam nemali body predchadzajucej polohy gridu
-    #     del self.active_item.item.place_grid.polygon.points[:]
+        msg = self.get_current_item()
 
-    #     for pt in pts:
+        # predchadzajuce body musime zmazat, aby sme tam nemali body predchadzajucej polohy gridu
+        del msg.polygon[0].polygon.points[:]
 
-    #         self.active_item.item.place_grid.polygon.points.append(Point32(pt[0], pt[1], 0))
+        for pt in pts:
+            msg.polygon[0].polygon.points.append(Point32(pt[0], pt[1], 0))
+
+        self._update_item()
+
 
     def _update_block(self, block_id):
 
@@ -603,6 +623,14 @@ class ProgramItem(Item):
             return self.ph.get_item_msg(self.block_id, self.item_id)
 
         return None
+
+    def get_ref_item(self):
+
+        if (self.block_id is not None and self.ref_id):
+
+            return self.ph.get_item_msg(self.block_id, self.ref_id[0])
+        return None
+
 
     def paint(self, painter, option, widget):
 
