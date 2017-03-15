@@ -10,14 +10,17 @@ translate = QtCore.QCoreApplication.translate
 
 class TouchPointsItem(Item):
 
-    def __init__(self, scene, rpm, points=[],  outline_diameter=0.04):
+    def __init__(self, scene, points=[],  outline_diameter=0.04):
 
         self.outline_diameter = outline_diameter
         self.points = points
         self.current_point_idx = 0
-        super(TouchPointsItem, self).__init__(scene, rpm, self.points[self.current_point_idx][0], self.points[self.current_point_idx][1])
+        super(TouchPointsItem, self).__init__(scene, self.points[self.current_point_idx][0], self.points[self.current_point_idx][1])
 
     def boundingRect(self):
+
+        if not self.scene():
+            return QtCore.QRectF()
 
         es = self.m2pix(self.outline_diameter*6) + 2*self.m2pix(self.outline_diameter*0.2)
         return QtCore.QRectF(-es / 2, -es / 2, es, es)
@@ -36,6 +39,9 @@ class TouchPointsItem(Item):
             return False
 
     def paint(self, painter, option, widget):
+
+        if not self.scene():
+            return
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)

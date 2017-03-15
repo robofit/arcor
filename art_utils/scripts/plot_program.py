@@ -41,6 +41,7 @@ def get_type_string(item):
     elif item.type == ProgramItem.WAIT_UNTIL_USER_FINISHES:
         return "Wait until user finishes"
 
+
 def main(args):
 
     if len(args) < 2:
@@ -91,7 +92,7 @@ def main(args):
 
             for ref in item_msg.ref_id:
 
-              A.add_edge(get_node_name(block_id,  ref), nn, color="gray",  style="dashed", key="ref_" + nn + "_" + get_node_name(block_id,  ref))
+                A.add_edge(get_node_name(block_id,  ref), nn, color="gray",  style="dashed", key="ref_" + nn + "_" + get_node_name(block_id,  ref))
 
             A.get_node(nn).attr['label'] = 'Item ID: ' + str(item_id) + '\n' + get_type_string(item_msg)
             A.get_node(nn).attr['shape'] = 'box'

@@ -6,11 +6,12 @@ import rospy
 from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt,  LearningRequestAction, LearningRequestGoal
 from fsm import FSM
 from transitions import MachineError
-from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem,  ProgramItem
+from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem,  ProgramItem, DialogItem
 from art_projected_gui.helpers import ProjectorHelper,  conversions
 from art_utils import InterfaceStateManager,  ArtApiHelper, ProgramHelper
 from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse,  NotifyUser,  NotifyUserResponse
-from std_msgs.msg import Empty
+from std_msgs.msg import Empty,  Bool
+from std_srvs.srv import Trigger,  TriggerRequest
 from geometry_msgs.msg import PoseStamped
 import actionlib
 
@@ -49,6 +50,7 @@ class UICoreRos(UICore):
         QtCore.QObject.connect(self, QtCore.SIGNAL('touch_calibration_points_evt'), self.touch_calibration_points_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('touch_detected_evt'), self.touch_detected_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL('notify_user_evt'), self.notify_user_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL('learning_request_done_evt'), self.learning_request_done_evt)
 
         self.user_status = None
 
@@ -72,13 +74,13 @@ class UICoreRos(UICore):
 
         cursors = rospy.get_param("~cursors", [])
         for cur in cursors:
-            self.scene_items.append(PoseStampedCursorItem(self.scene, self.rpm, cur))
+            PoseStampedCursorItem(self.scene, cur)
 
-        self.scene_items.append(TouchTableItem(self.scene,  self.rpm, '/art/interface/touchtable/touch', list(self.get_scene_items_by_type(PoseStampedCursorItem))))
+        TouchTableItem(self.scene, '/art/interface/touchtable/touch', list(self.get_scene_items_by_type(PoseStampedCursorItem)))
 
-        self.scene_items.append(ButtonItem(self.scene, self.rpm, 0, 0, "STOP", None, self.stop_btn_clicked, 2.0, QtCore.Qt.red))
-        self.scene_items[-1].setPos(self.scene.width() - self.scene_items[-1].boundingRect().width() - 40, self.scene.height() - self.scene_items[-1].boundingRect().height() - 60)
-        self.scene_items[-1].set_enabled(True)
+        stop_btn = ButtonItem(self.scene, 0, 0, "STOP", None, self.stop_btn_clicked, 2.0, QtCore.Qt.red)
+        stop_btn.setPos(self.scene.width() - stop_btn.boundingRect().width() - 40, self.scene.height() - stop_btn.boundingRect().height() - 60)
+        stop_btn.set_enabled(True)
 
         self.projectors = []
 
@@ -86,23 +88,47 @@ class UICoreRos(UICore):
         for proj in projs:
             self.add_projector(proj)
 
+        rospy.loginfo("Waiting for /art/brain/learning_request")
         self.learning_action_cl = actionlib.SimpleActionClient('/art/brain/learning_request', LearningRequestAction)
         self.learning_action_cl.wait_for_server()
 
         self.art = ArtApiHelper()
 
+        self.projectors_calibrated_pub = rospy.Publisher("~projectors_calibrated", Bool, queue_size=1, latch=True)
+        self.projectors_calibrated_pub.publish(False)
+
+        self.start_learning_srv = rospy.ServiceProxy('/art/brain/learning/start', Trigger)
+        self.stop_learning_srv = rospy.ServiceProxy('/art/brain/learning/stop', Trigger)
+
+        self.grasp_dialog = None
+
     def touch_calibration_points_evt(self,  pts):
 
         # TODO trigger state change?
-        for it in self.scene_items:
+        for it in self.scene.items():
 
             if isinstance(it, LabelItem):
                 continue
 
-            it.set_enabled(False, True)
+            it.setVisible(False)  # TODO remember settings (how?)
 
         self.notif(translate("UICoreRos", "Touch table calibration started. Please press the white point."), temp=False)
-        self.touch_points = TouchPointsItem(self.scene, self.rpm,  pts)
+        self.touch_points = TouchPointsItem(self.scene,  pts)
+
+    def save_gripper_pose_cb(self, idx):
+
+        topics = ['/art/pr2/right_arm/gripper/pose', '/art/pr2/left_arm/gripper/pose']
+
+        # wait for message, set pose
+        try:
+            ps = rospy.wait_for_message(topics[idx], PoseStamped, timeout=2)
+        except(rospy.ROSException), e:
+            rospy.logerror(str(e))
+            self.notif(translate("UICoreRos", "Failed to store gripper pose."), temp=False)
+            return
+
+        self.notif(translate("UICoreRos", "Gripper pose stored."), temp=False)
+        self.program_vis.set_pose(ps)
 
     def touch_calibration_points_cb(self,  req):
 
@@ -133,12 +159,12 @@ class UICoreRos(UICore):
 
             self.notif(translate("UICoreRos", "Touch saved."), temp=True)
 
-            for it in self.scene_items:
+            for it in self.scene.items():
 
                 if isinstance(it, LabelItem):
                     continue
 
-                it.set_enabled(True, True)
+                it.setVisible(True)
 
             self.notif(translate("UICoreRos", "Touch table calibration finished."), temp=False)
             self.scene.removeItem(self.touch_points)
@@ -258,8 +284,8 @@ class UICoreRos(UICore):
 
             elif it.type == ProgIt.PICK_OBJECT_ID:
 
-                # TODO PICK_OBJECT_ID
-                pass
+                self.notif(translate("UICoreRos", "Picking object with ID=") + it.object[0])
+                self.select_object(it.object[0])
 
             elif it.type == ProgIt.PLACE_TO_POSE:
 
@@ -407,6 +433,7 @@ class UICoreRos(UICore):
             else:
                 rospy.loginfo('Projectors calibrated.')
                 self.fsm.tr_projectors_calibrated()
+                self.projectors_calibrated_pub.publish(True)
 
         else:
 
@@ -420,9 +447,11 @@ class UICoreRos(UICore):
 
             rospy.loginfo('No projectors to calibrate.')
             self.fsm.tr_projectors_calibrated()
+            self.projectors_calibrated_pub.publish(True)
 
         else:
 
+            self.projectors_calibrated_pub.publish(False)
             rospy.loginfo('Starting calibration of ' + str(len(self.projectors)) + ' projector(s)')
 
             self.calib_proj_cnt = 0
@@ -473,6 +502,16 @@ class UICoreRos(UICore):
 
         self.notif(translate("UICoreRos", "Program stored with ID=") + str(prog.header.id), temp=True)
 
+        resp = None
+        try:
+            resp = self.stop_learning_srv()
+        except rospy.ServiceException, e:
+            print "Service call failed: %s" % e
+
+        if resp is None or not resp.success:
+
+            rospy.logwarn("Failed to stop learning mode.")
+
         self.fsm.tr_program_learned()
 
     def program_selected_cb(self,  prog_id,  run=False,  template=False):
@@ -488,8 +527,7 @@ class UICoreRos(UICore):
         self.remove_scene_items_by_type(ProgramListItem)
         self.program_list = None
 
-        self.program_vis = ProgramItem(self.scene, self.rpm, pos[0], pos[1], self.ph, done_cb=self.learning_done_cb, item_switched_cb=self.active_item_switched, learning_request_cb=self.learning_request_cb)
-        self.scene_items.append(self.program_vis)
+        self.program_vis = ProgramItem(self.scene, pos[0], pos[1], self.ph, done_cb=self.learning_done_cb, item_switched_cb=self.active_item_switched, learning_request_cb=self.learning_request_cb)
 
         if run:
 
@@ -501,14 +539,33 @@ class UICoreRos(UICore):
 
         else:
 
-            self.fsm.tr_program_edit()
+            resp = None
+            try:
+                resp = self.start_learning_srv()
+            except rospy.ServiceException, e:
+                print "Service call failed: %s" % e
+
+            if resp is not None and resp.success:
+
+                self.fsm.tr_program_edit()
+
+            else:
+
+                self.notif(translate("UICoreRos", "Failed to start edit mode."))
 
     def learning_request_cb(self, req):
 
         if req == LearningRequestGoal.GET_READY:
             self.notif(translate("UICoreRos", "Robot is getting ready for learning"))
         elif req == LearningRequestGoal.DONE:
+
             self.notif(translate("UICoreRos", "Robot is getting into default state"))
+
+            if self.grasp_dialog is not None:
+
+                self.scene.removeItem(self.grasp_dialog)
+                self.grasp_dialog = None
+
         elif req == LearningRequestGoal.EXECUTE_ITEM:
             self.notif(translate("UICoreRos", "Robot is executing current program instruction"))
 
@@ -521,10 +578,22 @@ class UICoreRos(UICore):
 
         rospy.logdebug('learning request progress: ' + str(fb.progress))
 
-    def learning_request_done_cb(self, status, result):
+    def learning_request_done_evt(self, status, result):
 
         # TODO some notif
         self.program_vis.learning_request_result(result.success)
+
+        if self.program_vis.editing_item:
+
+            item = self.program_vis.get_current_item()
+
+            if item.type == ProgIt.PICK_FROM_FEEDER:
+
+                self.grasp_dialog = DialogItem(self.scene, self.width/2, 0.1, "Save gripper pose", ["Right arm", "Left arm"],  self.save_gripper_pose_cb)
+
+    def learning_request_done_cb(self, status, result):
+
+        self.emit(QtCore.SIGNAL('learning_request_done_evt'), status, result)
 
     def cb_program_selection(self):
 
@@ -532,8 +601,10 @@ class UICoreRos(UICore):
 
         prog_id = None
         if self.program_vis is not None:
+
             pos = self.program_vis.get_pos()
             prog_id = self.ph.get_program_id()
+
         else:
             pos = (0.2, self.height-0.2)
 
@@ -545,6 +616,8 @@ class UICoreRos(UICore):
 
         d = {}
 
+        headers_to_show = []
+
         for header in headers:
 
             ph = ProgramHelper()
@@ -552,11 +625,11 @@ class UICoreRos(UICore):
 
             if ph.load(self.art.load_program(header.id)):
 
+                headers_to_show.append(header)
                 d[header.id] = ph.program_learned()
 
         # rospy.loginfo(str(d))
-        self.program_list = ProgramListItem(self.scene, self.rpm, pos[0], pos[1], headers,  d, prog_id, self.program_selected_cb)
-        self.scene_items.append(self.program_list)
+        self.program_list = ProgramListItem(self.scene, pos[0], pos[1], headers_to_show,  d, prog_id, self.program_selected_cb)
 
     def object_cb(self, msg):
 
@@ -620,6 +693,11 @@ class UICoreRos(UICore):
 
             self.program_vis.set_object(obj.object_type.name)
             self.select_object_type(obj.object_type.name)
+
+        elif msg.type == ProgIt.PICK_OBJECT_ID:
+
+            self.program_vis.set_object(obj.object_id)
+            self.select_object(obj.object_id)
 
         elif msg.type == ProgIt.PICK_FROM_POLYGON:
 
