@@ -72,3 +72,11 @@ class InterfaceStateManager():
 
         # TODO send only if auto_send was not used
         self.interface_state_pub.publish(self.state)
+
+    def set_error(self, error_severity, error_code,  auto_send=True):
+
+        self.state.error_severity = error_severity
+        self.state.error_code = error_code
+
+        if auto_send:
+            self.send()

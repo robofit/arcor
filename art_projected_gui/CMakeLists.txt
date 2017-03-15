@@ -32,6 +32,7 @@ if (CATKIN_ENABLE_TESTING)
   roslaunch_add_file_check(launch)
   # catkin_add_nosetests(tests/test_ui_core.py)
   add_rostest(tests/ui_core.test)
+  add_rostest(tests/ui_core_ros.test)
 endif()
 
 install(DIRECTORY launch/

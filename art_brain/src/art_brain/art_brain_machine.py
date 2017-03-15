@@ -1,0 +1,266 @@
+#from transitions import Machine
+#from transitions.extensions import GraphMachine as Machine
+from transitions.extensions import LockedMachine as Machine
+
+from transitions import State
+
+
+class ArtBrainMachine(object):
+    states = [State(name='pre_init', on_enter=[], on_exit=[]),
+              State(name='init', on_enter=['state_init_ros'], on_exit=[]),
+              State(name='shutdown', on_enter=['state_shutdown'], on_exit=[]),
+              State(name='waiting_for_action', on_enter=[
+                    'state_waiting_for_action'], on_exit=[]),
+              State(name='program_init', on_enter=[
+                    'state_program_init'], on_exit=[]),
+              State(name='program_run', on_enter=[
+                    'state_program_run'], on_exit=[]),
+
+              # basic instructions
+              State(name='get_ready', on_enter=[
+                    'state_get_ready'], on_exit=[]),
+
+              # synchronization with the user
+              State(name='wait_for_user', on_enter=[
+                    'state_wait_for_user'], on_exit=[]),
+              State(name='wait_until_user_finishes', on_enter=[
+                    'state_wait_until_user_finishes'], on_exit=[]),
+
+              # manipulation - pick
+              State(name='pick_from_polygon', on_enter=[
+                    'state_pick_from_polygon'], on_exit=[]),
+              State(name='pick_from_feeder', on_enter=[
+                    'state_pick_from_feeder'], on_exit=[]),
+              State(name='pick_object_id', on_enter=[
+                    'state_pick_object_id'], on_exit=[]),
+
+              # manipulation - place
+              State(name='place_to_pose', on_enter=[
+                    'state_place_to_pose'], on_exit=[]),
+
+              State(name='program_error', on_enter=[
+                    'state_program_error'], on_exit=[]),
+              State(name='program_finished', on_enter=[
+                    'state_program_finished'], on_exit=[]),
+              State(name='program_load_instruction', on_enter=[
+                    'state_program_load_instruction'], on_exit=[]),
+
+              # learning
+              State(name='learning_init', on_enter=[
+                    'state_learning_init'], on_exit=[]),
+              State(name='learning_run', on_enter=[
+                    'state_learning_run'], on_exit=[]),
+
+              # learning picking
+              State(name='learning_pick_from_polygon', on_enter=[
+                    'state_learning_pick_from_polygon'], on_exit=[]),
+              State(name='learning_pick_from_feeder', on_enter=['state_learning_pick_from_feeder'],
+                    on_exit=['state_learning_pick_from_feeder_exit']),
+              State(name='learning_pick_object_id', on_enter=[
+                    'state_learning_pick_object_id'], on_exit=[]),
+
+              # learning placing
+              State(name='learning_place_to_pose', on_enter=[
+                    'state_learning_place_to_pose'], on_exit=[]),
+
+              State(name='learning_wait', on_enter=[
+                    'state_learning_wait'], on_exit=[]),
+              State(name='learning_step_done', on_enter=[
+                    'state_learning_step_done'], on_exit=[]),
+              State(name='learning_step_error', on_enter=[
+                    'state_learning_step_error'], on_exit=[]),
+              State(name='learning_done', on_enter=['state_learning_done'], on_exit=[])]
+
+    '''    # program and learning error severities
+    SEVERE = 0  # fatal, immediately shut down
+    ERROR = 1  # cannot continue in current program
+    WARNING = 2  # ask user what to do
+    INFO = 3  # let user know about what happened, but continue in program execution
+
+    # program errors
+    ERROR_NOT_IMPLEMENTED = 0
+    ERROR_NOT_EXECUTING_PROGRAM = 1
+    ERROR_NO_INSTRUCTION = 2
+    ERROR_NO_PROGRAM_HELPER = 3
+
+    ERROR_OBJECT_MISSING = 100
+    ERROR_OBJECT_MISSING_IN_POLYGON = 101
+    ERROR_OBJECT_NOT_DEFINED = 102
+
+    ERROR_GRIPPER_PP_CLIENT_MISSING = 201
+    ERROR_NO_GRIPPER_AVAILABLE = 202
+    ERROR_OBJECT_IN_GRIPPER = 203
+    ERROR_NO_OBJECT_IN_GRIPPER = 204
+    ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT = 205
+
+    ERROR_PICK_FAILED = 301
+    ERROR_PICK_POSE_NOT_SELECTED = 302
+
+    ERROR_PLACE_POSE_NOT_DEFINED = 401
+    ERROR_PLACE_FAILED = 402
+    ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE = 403
+
+    # Learning errors
+    ERROR_LEARNING_NOT_IMPLEMENTED = 0
+
+    ERROR_LEARNING_GRIPPER_NOT_DEFINED = 100'''
+
+    def __init__(self):
+        self.name = 'brain'
+        self.machine = Machine(model=self,  states=ArtBrainMachine.states, initial='pre_init',
+                               auto_transitions=False, send_event=True, queued=True)
+
+        # *** transitions ***
+
+        self.machine.add_transition('init',  'pre_init',  'init')
+        self.machine.add_transition(
+            'init_done',  'init',  'waiting_for_action', conditions='is_everything_calibrated')
+        self.machine.add_transition(
+            'program_start', 'waiting_for_action', 'program_init')
+        self.machine.add_transition(
+            'learning_start', 'waiting_for_action', 'learning_init')
+
+        # program
+        self.machine.add_transition(
+            'program_init_done',  'program_init',  'program_run')
+        self.machine.add_transition('error',  'program_init',  'program_error')
+        self.machine.add_transition('error',  'program_run',  'program_error')
+        self.machine.add_transition(
+            'program_error_handled', 'program_error',  'program_load_instruction')
+        self.machine.add_transition(
+            'program_error_shutdown', 'program_error',  'shutdown')
+        self.machine.add_transition(
+            'program_error_fatal', 'program_error',  'waiting_for_action')
+        self.machine.add_transition(
+            'try_again', 'program_error', 'program_run')
+        self.machine.add_transition(
+            'skip', 'program_error', 'program_load_instruction')
+        self.machine.add_transition(
+            'fail', 'program_error', 'program_load_instruction')
+        self.machine.add_transition(
+            'done', 'program_load_instruction',  'program_run')
+        self.machine.add_transition(
+            'error', 'program_load_instruction',  'program_error')
+        self.machine.add_transition(
+            'finished', 'program_load_instruction',  'program_finished')
+        self.machine.add_transition(
+            'done', 'program_finished',  'waiting_for_action')
+
+        # get ready instruction
+        self.machine.add_transition('get_ready', 'program_run', 'get_ready')
+        self.machine.add_transition(
+            'done', 'get_ready', 'program_load_instruction')
+        self.machine.add_transition('error', 'get_ready', 'program_error')
+
+        # pick_from_polygon instruction
+        self.machine.add_transition(
+            'pick_from_polygon',  'program_run',  'pick_from_polygon')
+        self.machine.add_transition(
+            'done',  'pick_from_polygon',  'program_load_instruction')
+        self.machine.add_transition(
+            'error',  'pick_from_polygon',  'program_error')
+
+        # pick_from_feeder instruction
+        self.machine.add_transition(
+            'pick_from_feeder', 'program_run', 'pick_from_feeder')
+        self.machine.add_transition(
+            'done', 'pick_from_feeder', 'program_load_instruction')
+        self.machine.add_transition(
+            'error', 'pick_from_feeder', 'program_error')
+
+        # pick_object_id instruction
+        self.machine.add_transition(
+            'pick_object_id', 'program_run', 'pick_object_id')
+        self.machine.add_transition(
+            'done', 'pick_object_id', 'program_load_instruction')
+        self.machine.add_transition('error', 'pick_object_id', 'program_error')
+
+        # place_to_pose instruction
+        self.machine.add_transition(
+            'place_to_pose',  'program_run',  'place_to_pose')
+        self.machine.add_transition(
+            'done',  'place_to_pose',  'program_load_instruction')
+        self.machine.add_transition(
+            'error',  'place_to_pose',  'program_error')
+
+        # wait instruction
+        self.machine.add_transition(
+            'wait_for_user',  'program_run',  'wait_for_user')
+        self.machine.add_transition(
+            'done',  'wait_for_user',  'program_load_instruction')
+        self.machine.add_transition(
+            'error',  'wait_for_user',  'program_error')
+
+        # wait instruction
+        self.machine.add_transition(
+            'wait_until_user_finishes', 'program_run', 'wait_until_user_finishes')
+        self.machine.add_transition(
+            'done', 'wait_until_user_finishes', 'program_load_instruction')
+        self.machine.add_transition(
+            'error', 'wait_until_user_finishes', 'program_error')
+
+        #
+        # learning
+        #
+
+        self.machine.add_transition(
+            'init_done', 'learning_init', 'learning_run')
+        self.machine.add_transition(
+            'done', 'learning_step_done', 'learning_run')
+        self.machine.add_transition(
+            'error_handled', 'learning_step_error', 'learning_run')
+        self.machine.add_transition(
+            'error_fatal', 'learning_step_error', 'waiting_for_action')
+        self.machine.add_transition(
+            'done', 'learning_done', 'waiting_for_action')
+        self.machine.add_transition(
+            'learning_done', 'learning_run', 'learning_done')
+
+        # learning pick_from_polygon
+        self.machine.add_transition(
+            'pick_from_polygon', 'learning_run', 'learning_pick_from_polygon')
+        self.machine.add_transition(
+            'done', 'learning_pick_from_polygon', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_pick_from_polygon', 'learning_step_error')
+
+        # learning pick_from_feeder
+        self.machine.add_transition(
+            'pick_from_feeder', 'learning_run', 'learning_pick_from_feeder')
+        self.machine.add_transition(
+            'done', 'learning_pick_from_feeder', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_pick_from_feeder', 'learning_step_error')
+
+        # learning pick_object_id
+        self.machine.add_transition(
+            'pick_object_id', 'learning_run', 'learning_pick_object_id')
+        self.machine.add_transition(
+            'done', 'learning_pick_object_id', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_pick_object_id', 'learning_step_error')
+
+        # learning place_to_pose
+        self.machine.add_transition(
+            'place_to_pose', 'learning_run', 'learning_place_to_pose')
+        self.machine.add_transition(
+            'done', 'learning_place_to_pose', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_place_to_pose', 'learning_step_error')
+
+        # learning wait
+        self.machine.add_transition('wait', 'learning_run', 'learning_wait')
+        self.machine.add_transition(
+            'done', 'learning_wait', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_wait', 'learning_step_error')
+
+        # learning pick_from_feeder
+        # self.machine.add_transition('pick_from_feeder', 'learning_pick', 'learning_pick_from_feeder')
+        # self.machine.add_transition('pick__from_feeder', 'learning_pick_place', 'learning_pick_from_feeder')
+        # self.machine.add_transition('done_pick', 'learning_pick_from_feeder', 'learning_pick')
+        # self.machine.add_transition('done_pick_place', 'learning_pick_from_feeder', 'learning_pick_place')
+        # self.machine.add_transition('error', 'learning_pick_from_feeder', 'learning_step_error')
+
+        #self.graph.draw('my_state_diagram.png', prog='dot')
+        # return

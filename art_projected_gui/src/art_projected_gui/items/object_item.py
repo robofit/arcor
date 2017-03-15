@@ -20,7 +20,7 @@ class ObjectItem(Item):
 
     """
 
-    def __init__(self, scene, rpm, object_id, object_type, x, y, yaw,  sel_cb=None, selected=False):
+    def __init__(self, scene, object_id, object_type, x, y, yaw,  sel_cb=None, selected=False):
 
         self.object_id = object_id
         self.selected = selected
@@ -32,9 +32,9 @@ class ObjectItem(Item):
 
         self.desc = None
 
-        super(ObjectItem, self).__init__(scene, rpm, x, y)
+        super(ObjectItem, self).__init__(scene, x, y)
 
-        self.desc = DescItem(scene, rpm, 0,  0, self)
+        self.desc = DescItem(scene, 0,  0, self)
         self.desc.setFlag(QtGui.QGraphicsItem.ItemIgnoresTransformations)
 
         self.update_text()
@@ -70,13 +70,13 @@ class ObjectItem(Item):
         if self.desc is None:
             return
 
-        desc = []
-        desc.append(translate("ObjectItem", "ID: ") + self.object_id)
+        desc = ""
+        desc += translate("ObjectItem", "ID: ") + self.object_id
 
         if self.hover:
 
-            desc.append(translate("ObjectItem", "TYPE: ") + self.object_type.name)
-            desc.append(self.get_pos_str())
+            desc += "\n" + translate("ObjectItem", "TYPE: ") + self.object_type.name
+            desc += "\n" + self.get_pos_str()
 
         self.desc.set_content(desc)
 
@@ -87,12 +87,19 @@ class ObjectItem(Item):
 
     def boundingRect(self):
 
+        if not self.scene():
+
+            return QtCore.QRectF()
+
         lx = self.hover_ratio*self.inflate*self.m2pix(self.object_type.bbox.dimensions[0])
         ly = self.hover_ratio*self.inflate*self.m2pix(self.object_type.bbox.dimensions[1])
         p = 1.0
         return QtCore.QRectF(-lx / 2 - p, -ly / 2 - p, lx + 2 * p, ly + 2 * p)
 
     def paint(self, painter, option, widget):
+
+        if not self.scene():
+            return
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
