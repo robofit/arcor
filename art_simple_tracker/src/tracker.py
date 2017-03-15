@@ -164,7 +164,7 @@ class tracker:
 
 if __name__ == '__main__':
         try:
-                rospy.init_node('pp_client_py')
+                rospy.init_node('simple_tracker')
                 tr = tracker()
                 rospy.spin()
         except rospy.ROSInterruptException:

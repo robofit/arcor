@@ -41,7 +41,7 @@ class ArtRobotCalibration(object):
         if point is None or m is None:
             return 
             
-        self.transformation.rotation = transformations.quaternion_from_matrix(m)
+        self.transformation.rotation = ArtCalibrationHelper.normalize_vector(transformations.quaternion_from_matrix(m))
         self.transformation.translation = transformations.translation_from_matrix(m)
         self.calibrated = True
 

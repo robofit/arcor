@@ -2,7 +2,7 @@ import matplotlib.path as mplPath
 import numpy as np
 import rospy
 import actionlib
-from art_msgs.msg import pickplaceAction, ObjInstance
+from art_msgs.msg import PickPlaceAction, ObjInstance
 import copy
 from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import Pose
@@ -12,8 +12,12 @@ class ArtBrainUtils(object):
 
     @staticmethod
     def get_pick_obj(instruction, objects):
-        for obj in objects:
-            if obj.object_id == instruction.object:
+        rospy.logdebug("Object to pick: " + str(instruction.object))
+        if len(instruction.object) < 1:
+            return None
+        for obj in objects.instances:
+
+            if obj.object_id == instruction.object[0]:
                 obj_ret = copy.deepcopy(obj)
                 return obj_ret
         else:
@@ -23,7 +27,7 @@ class ArtBrainUtils(object):
     def get_pick_obj_from_feeder(instruction):
         obj = ObjInstance()
         obj.object_id = None
-        obj.object_type = instruction.object
+        obj.object_type = instruction.object[0]
         obj.pose = Pose()
         return obj
 
@@ -32,9 +36,10 @@ class ArtBrainUtils(object):
         pick_polygon = []
         pol = None
         obj_ret = None
-
+        if len(instruction.object) < 1:
+            return None
         # TODO check frame_id and transform to table frame?
-        for point in instruction.pick_polygon.polygon.points:
+        for point in instruction.polygon[0].polygon.points:
             pick_polygon.append([point.x, point.y])
         pick_polygon.append([0, 0])
 
@@ -50,7 +55,7 @@ class ArtBrainUtils(object):
 
                 # if no pick polygon is specified - let's take the first
                 # object of that type
-                if obj.object_type == instruction.object:
+                if obj.object_type == instruction.object[0]:
                     obj_ret = copy.deepcopy(obj)
                     break
 
@@ -71,17 +76,7 @@ class ArtBrainUtils(object):
 
     @staticmethod
     def get_place_pose(instruction):
-
-        if instruction.spec == instruction.MANIP_ID:
-            pose = instruction.place_pose
-        elif instruction.spec == instruction.MANIP_TYPE:
-            # pose = None
-            pose = instruction.place_pose
-            # TODO: how to get free position inside polygon? some perception
-            # node?
-        else:
-            return None
-        return pose
+        return instruction.pose
 
     @staticmethod
     def distance_2d(pose1, pose2):
@@ -100,8 +95,9 @@ class ArtGripper(object):
         self.name = name
         self.pp_client_name = "/art/pr2/" + name + "/pp"
         self.pp_client = actionlib.SimpleActionClient(
-            self.pp_client_name, pickplaceAction)
+            self.pp_client_name, PickPlaceAction)
         self.holding_object = None
+        self.last_pick_instruction_id = None
         self.group_name = name
         self.interaction_on_client = rospy.ServiceProxy(
             "/art/pr2/" + name + "/interaction/on", Empty)
