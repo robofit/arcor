@@ -6,8 +6,10 @@
 	<arg name="cam_image_topic" default="/kinect2/hd/image_color" />
 	<arg name="cam_info_topic" default="/kinect2/hd/camera_info" />
 
-	<arg name="output_frame" default="/kinect2_link" />
+	<arg name="output_frame" default="/marker" />
 	<arg name="bundle_files" default="$(find art_arcode_detector)/bundles/truthTableLeg.xml"  />
 
-	<node ns="detector" name="ar_track_alvar_bundle_pr2" pkg="ar_track_alvar" type="findMarkerBundlesNoKinect" respawn="false" output="screen" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame) $(arg bundle_files)" />
+	<node ns="/art/object_detector" name="ar_track_alvar_bundle_pr2" pkg="ar_track_alvar" type="findMarkerBundlesNoKinect" respawn="false" output="screen" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame) $(arg bundle_files)" />
+
+	<node name="ar_code_detector" pkg="art_arcode_detector" type="detector.py" output="screen" />
 </launch>
