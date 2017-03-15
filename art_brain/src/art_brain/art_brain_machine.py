@@ -1,5 +1,7 @@
-from transitions import Machine
-# from transitions.extensions import GraphMachine as Machine
+#from transitions import Machine
+#from transitions.extensions import GraphMachine as Machine
+from transitions.extensions import LockedMachine as Machine
+
 from transitions import State
 
 
@@ -69,7 +71,7 @@ class ArtBrainMachine(object):
                     'state_learning_step_error'], on_exit=[]),
               State(name='learning_done', on_enter=['state_learning_done'], on_exit=[])]
 
-    # program and learning error severities
+    '''    # program and learning error severities
     SEVERE = 0  # fatal, immediately shut down
     ERROR = 1  # cannot continue in current program
     WARNING = 2  # ask user what to do
@@ -101,7 +103,7 @@ class ArtBrainMachine(object):
     # Learning errors
     ERROR_LEARNING_NOT_IMPLEMENTED = 0
 
-    ERROR_LEARNING_GRIPPER_NOT_DEFINED = 100
+    ERROR_LEARNING_GRIPPER_NOT_DEFINED = 100'''
 
     def __init__(self):
         self.name = 'brain'
@@ -129,6 +131,12 @@ class ArtBrainMachine(object):
             'program_error_shutdown', 'program_error',  'shutdown')
         self.machine.add_transition(
             'program_error_fatal', 'program_error',  'waiting_for_action')
+        self.machine.add_transition(
+            'try_again', 'program_error', 'program_run')
+        self.machine.add_transition(
+            'skip', 'program_error', 'program_load_instruction')
+        self.machine.add_transition(
+            'fail', 'program_error', 'program_load_instruction')
         self.machine.add_transition(
             'done', 'program_load_instruction',  'program_run')
         self.machine.add_transition(
@@ -254,5 +262,5 @@ class ArtBrainMachine(object):
         # self.machine.add_transition('done_pick_place', 'learning_pick_from_feeder', 'learning_pick_place')
         # self.machine.add_transition('error', 'learning_pick_from_feeder', 'learning_step_error')
 
-        # self.graph.draw('my_state_diagram.png', prog='dot')
+        #self.graph.draw('my_state_diagram.png', prog='dot')
         # return
