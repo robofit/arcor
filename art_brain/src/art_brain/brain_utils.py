@@ -79,6 +79,10 @@ class ArtBrainUtils(object):
         return instruction.pose
 
     @staticmethod
+    def get_place_grid(instruction):
+        return instruction.polygon[0].polygon
+
+    @staticmethod
     def distance_2d(pose1, pose2):
         a = np.array((pose1.position.x, pose1.position.y))
         b = np.array((pose2.position.x, pose2.position.y))

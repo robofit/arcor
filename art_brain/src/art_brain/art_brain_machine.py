@@ -35,6 +35,8 @@ class ArtBrainMachine(object):
               # manipulation - place
               State(name='place_to_pose', on_enter=[
                     'state_place_to_pose'], on_exit=[]),
+              State(name='place_to_grid', on_enter=[
+                  'state_place_to_grid'], on_exit=[]),
 
               State(name='program_error', on_enter=[
                     'state_program_error'], on_exit=[]),
@@ -60,6 +62,8 @@ class ArtBrainMachine(object):
               # learning placing
               State(name='learning_place_to_pose', on_enter=[
                     'state_learning_place_to_pose'], on_exit=[]),
+              State(name='learning_place_to_grid', on_enter=[
+                  'state_learning_place_to_grid'], on_exit=[]),
 
               State(name='learning_wait', on_enter=[
                     'state_learning_wait'], on_exit=[]),
@@ -175,6 +179,14 @@ class ArtBrainMachine(object):
         self.machine.add_transition(
             'error',  'place_to_pose',  'program_error')
 
+        # place_to_grid instruction
+        self.machine.add_transition(
+            'place_to_grid', 'program_run', 'place_to_grid')
+        self.machine.add_transition(
+            'done', 'place_to_grid', 'program_load_instruction')
+        self.machine.add_transition(
+            'error', 'place_to_grid', 'program_error')
+
         # wait instruction
         self.machine.add_transition(
             'wait_for_user',  'program_run',  'wait_for_user')
@@ -239,6 +251,14 @@ class ArtBrainMachine(object):
             'done', 'learning_place_to_pose', 'learning_step_done')
         self.machine.add_transition(
             'error', 'learning_place_to_pose', 'learning_step_error')
+
+        # learning place_to_grid
+        self.machine.add_transition(
+            'place_to_grid', 'learning_run', 'learning_place_to_grid')
+        self.machine.add_transition(
+            'done', 'learning_place_to_grid', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_place_to_grid', 'learning_step_error')
 
         # learning wait
         self.machine.add_transition('wait', 'learning_run', 'learning_wait')

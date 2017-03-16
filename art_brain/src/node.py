@@ -63,6 +63,7 @@ class ArtBrain(object):
         self.fsm.state_pick_from_feeder = self.state_pick_from_feeder
         self.fsm.state_pick_object_id = self.state_pick_object_id
         self.fsm.state_place_to_pose = self.state_place_to_pose
+        self.fsm.state_place_to_grid = self.state_place_to_grid
         self.fsm.state_program_error = self.state_program_error
         self.fsm.state_program_finished = self.state_program_finished
         self.fsm.state_program_load_instruction = self.state_program_load_instruction
@@ -72,6 +73,7 @@ class ArtBrain(object):
         self.fsm.state_learning_pick_from_feeder = self.state_learning_pick_from_feeder
         self.fsm.state_learning_pick_object_id = self.state_learning_pick_object_id
         self.fsm.state_learning_place_to_pose = self.state_learning_place_to_pose
+        self.fsm.state_learning_place_to_grid = self.state_learning_place_to_grid
         self.fsm.state_learning_wait = self.state_learning_wait
         self.fsm.state_learning_step_done = self.state_learning_step_done
         self.fsm.state_learning_step_error = self.state_learning_step_error
@@ -269,6 +271,7 @@ class ArtBrain(object):
             ProgramItem.PICK_FROM_FEEDER: self.fsm.pick_from_feeder,
             ProgramItem.PICK_OBJECT_ID: self.fsm.pick_object_id,
             ProgramItem.PLACE_TO_POSE: self.fsm.place_to_pose,
+            ProgramItem.PLACE_TO_GRID: self.fsm.place_to_grid,
             ProgramItem.WAIT_FOR_USER: self.fsm.wait_for_user,
             ProgramItem.WAIT_UNTIL_USER_FINISHES: self.fsm.wait_until_user_finishes,
         }
@@ -392,6 +395,12 @@ class ArtBrain(object):
                 self.fsm.error(severity=ArtBrainMachine.WARNING,
                                error=ArtBrainMachine.ERROR_PLACE_FAILED)
                 return
+
+    def state_place_to_grid(self, event):
+        rospy.loginfo('state_place_to_grid')
+        grid = ArtBrainUtils.get_place_grid(self.instruction)
+        pose = ArtBrainUtils.get_place_pose(self.instruction)
+        pass
 
     def state_wait_for_user(self, event):
         rospy.loginfo('state_wait_for_user')
@@ -534,6 +543,10 @@ class ArtBrain(object):
 
     def state_learning_place_to_pose(self, event):
         rospy.loginfo('state_learning_place_to_pose')
+        pass
+
+    def state_learning_place_to_grid(self, event):
+        rospy.loginfo('state_learning_place_to_grid')
         pass
 
     def state_learning_wait(self, event):
@@ -922,6 +935,8 @@ class ArtBrain(object):
                     pass
                 elif instruction.type == instruction.PLACE_TO_POSE:
                     self.fsm.place_to_pose()
+                elif instruction.type == instruction.PLACE_TO_GRID:
+                    self.fsm.place_to_grid()
             else:
                 result.success = False
                 result.message = "Not in learning state!"

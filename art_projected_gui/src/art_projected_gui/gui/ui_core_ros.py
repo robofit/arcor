@@ -680,15 +680,13 @@ class UICoreRos(UICore):
 
             self.program_vis.set_polygon(pts)
             self.state_manager.update_program_item(self.ph.get_program_id(), self.program_vis.block_id, self.program_vis.get_current_item())
-            print "___________"
-            print self.ph.get_program_id()
-            print self.program_vis.block_id
-            print self.program_vis.get_current_item()
-            print "___________"
 
-    def square_changed(self, pts):
+    def square_changed(self, pts, poses=None):
 
         self.program_vis.set_place_grid(pts)    # ulozenie bodov do ProgramItem zpravy
+        if poses != None and poses:
+            pos = poses[0].get_pos()
+            self.program_vis.set_place_pose(pos[0], pos[1], 0.0)
 
     def object_selected(self, id, selected):
 

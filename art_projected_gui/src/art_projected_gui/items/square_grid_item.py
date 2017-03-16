@@ -86,7 +86,7 @@ class SquareItem(Item):
         self.object_type = object_type
         self.scene_items = scene_items
         self.square_changed = square_changed
-        space = 0.005
+        space = 0.005   # pripocitava sa k bbox objektu, cize v skutocnosti je medzera medzi objektami 0.005, ale mezdi objektom a krabicou len 0.0025
         self.object_side_length = self.object_type.bbox.dimensions[0] + space
 
         self.previous_width = 0
@@ -118,7 +118,7 @@ class SquareItem(Item):
         self.pts.append(SquarePointItem(scene, self.min[0], self.max[1], self, "TL"))  # top-left corner
 
         if self.square_changed is not None:
-            self.square_changed(self.get_square_points())   # ulozenie bodov do ProgramItem zpravy
+            self.square_changed(self.get_square_points(), self.items)   # ulozenie bodov do ProgramItem zpravy
 
         self.update_bound()
 
@@ -269,7 +269,7 @@ class SquareItem(Item):
 
 
         if finished and self.square_changed is not None:
-            self.square_changed(self.get_square_points())   # ulozenie bodov do ProgramItem zpravy
+            self.square_changed(self.get_square_points(), self.items)   # ulozenie bodov do ProgramItem zpravy
 
         self.update()
 

@@ -321,7 +321,7 @@ def main(args):
     p.on_success = 4
     p.on_failure = 0
     p.type = ProgramItem.PICK_OBJECT_ID
-    p.object.append("my_object")
+    p.object.append("3")
     pf = PoseStamped()
     pf.header.frame_id = "marker"
     p.pose.append(pf)
@@ -345,6 +345,8 @@ def main(args):
     p.on_failure = 0
     p.type = ProgramItem.PLACE_TO_GRID
     p.object.append("")
+    pa = PoseStamped()
+    p.pose.append(pa)
     pp = PolygonStamped()
     p.polygon.append(pp)
     p.ref_id.append(3)
