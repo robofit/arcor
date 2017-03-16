@@ -42,7 +42,7 @@ class ArtTouchDriver:
         self.y = 0
         self.touch = False
         self.touch_id = -1
-        self.device = input.EventDevice("/dev/input/event17")
+        self.device = input.EventDevice("/dev/input/event18")
 
         self.slots = []
         self.slot = None

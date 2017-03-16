@@ -2,15 +2,13 @@
 <launch>
 
     <machine name="n1" address="artable-n1" user="artable" env-loader="/home/artable/env.sh"/>
-    <machine name="n2" address="rosserver" user="pr2admin" env-loader="/home/pr2admin/env.sh"/>
+    <machine name="n2" address="artable-n2" user="pr2admin" env-loader="/home/pr2admin/env.sh"/>
 
     <include file="$(find art_projected_gui)/launch/projector.launch">
-      <arg name="projector_id" value="projector1"/>
       <arg name="machine" value="n1"/>
     </include>
     
     <include file="$(find art_projected_gui)/launch/projector.launch">
-      <arg name="projector_id" value="projector2"/>
       <arg name="machine" value="n2"/>
     </include>
 
