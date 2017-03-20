@@ -50,13 +50,20 @@ class ArtTouchDriver:
 
         self.ns = '/art/interface/touchtable/'
 
-        self.touch_pub = rospy.Publisher(self.ns + "touch", Touch, queue_size=100,  tcp_nodelay=True)  # make sure that all messages will be sent
-        self.calibrated_pub = rospy.Publisher(self.ns + 'calibrated', Bool, queue_size=1, latch=True)
-        self.calibrating_pub = rospy.Publisher(self.ns + 'calibrating', Bool, queue_size=1, latch=True)
-        self.touch_det_pub = rospy.Publisher(self.ns + 'touch_detected', Empty, queue_size=10)
-        self.calibrate_req_srv = rospy.Service(self.ns + "calibrate", EmptySrv, self.calibrate_req_srv_cb)
+        # make sure that all messages will be sent
+        self.touch_pub = rospy.Publisher(
+            self.ns + "touch", Touch, queue_size=100,  tcp_nodelay=True)
+        self.calibrated_pub = rospy.Publisher(
+            self.ns + 'calibrated', Bool, queue_size=1, latch=True)
+        self.calibrating_pub = rospy.Publisher(
+            self.ns + 'calibrating', Bool, queue_size=1, latch=True)
+        self.touch_det_pub = rospy.Publisher(
+            self.ns + 'touch_detected', Empty, queue_size=10)
+        self.calibrate_req_srv = rospy.Service(
+            self.ns + "calibrate", EmptySrv, self.calibrate_req_srv_cb)
 
-        self.calib_srv = rospy.ServiceProxy('/art/interface/projected_gui/touch_calibration', TouchCalibrationPoints)
+        self.calib_srv = rospy.ServiceProxy(
+            '/art/interface/projected_gui/touch_calibration', TouchCalibrationPoints)
 
         self.set_calibrated(False)
         self.set_calibrating(False)
@@ -80,7 +87,9 @@ class ArtTouchDriver:
 
     def calibrate_req_srv_cb(self, req):
 
-        rospy.wait_for_service('/art/interface/projected_gui/touch_calibration')  # TODO wait in __init__??
+        # TODO wait in __init__??
+        rospy.wait_for_service(
+            '/art/interface/projected_gui/touch_calibration')
 
         req = TouchCalibrationPointsRequest()
         ps = PointStamped()
@@ -89,8 +98,8 @@ class ArtTouchDriver:
         ps.point.z = 0
 
         self.ref_points = ((0.1, 0.05), (0.6, 0.05),  (1.25, 0.05),
-                        (0.1, 0.25), (0.6, 0.25),  (1.25, 0.25),
-                        (0.1, 0.55), (0.6, 0.55),  (1.25, 0.55))
+                           (0.1, 0.25), (0.6, 0.25),  (1.25, 0.25),
+                           (0.1, 0.55), (0.6, 0.55),  (1.25, 0.55))
 
         # self.ref_points += self.ref_points
 
@@ -176,7 +185,8 @@ class ArtTouchDriver:
 
                         pt = [self.slot.x, self.slot.y, 1]
 
-                        pt = self.h_matrix.dot(np.array(pt, dtype='float64')).tolist()
+                        pt = self.h_matrix.dot(
+                            np.array(pt, dtype='float64')).tolist()
                         # print pt
                         touch.point.point.x = pt[0][0]
                         touch.point.point.y = pt[0][1]
@@ -190,14 +200,17 @@ class ArtTouchDriver:
                             pp = np.array(self.calib_points[-1])
                             p = np.array((self.slot.x,  self.slot.y))
 
-                            # calculate distance from previous touch - in order to avoid unintended touches
-                            dist = np.linalg.norm(pp-p)
+                            # calculate distance from previous touch - in order
+                            # to avoid unintended touches
+                            dist = np.linalg.norm(pp - p)
 
-                            rospy.logdebug("Distance from previous touch: " + str(dist))
+                            rospy.logdebug(
+                                "Distance from previous touch: " + str(dist))
 
                         if self.touch_cnt < len(self.ref_points) and (dist is None or dist > 500):
 
-                            self.calib_points.append((self.slot.x,  self.slot.y))
+                            self.calib_points.append(
+                                (self.slot.x,  self.slot.y))
                             self.touch_det_pub.publish()
                             self.touch_cnt += 1
 
@@ -222,7 +235,8 @@ class ArtTouchDriver:
         # print self.calib_points
         # print self.ref_points
 
-        h, status = cv2.findHomography(np.array(self.calib_points, dtype='float64'), np.array(self.ref_points, dtype='float64'), cv2.LMEDS)
+        h, status = cv2.findHomography(np.array(self.calib_points, dtype='float64'), np.array(
+            self.ref_points, dtype='float64'), cv2.LMEDS)
 
         self.h_matrix = np.matrix(h)
 
@@ -232,6 +246,7 @@ class ArtTouchDriver:
         # print self.h_matrix
 
         self.set_calibrated(True)
+
 
 if __name__ == '__main__':
     rospy.init_node('art_touch_driver')
