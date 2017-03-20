@@ -89,8 +89,8 @@ class ArtTouchDriver:
         ps.point.z = 0
 
         self.ref_points = ((0.1, 0.05), (0.6, 0.05),  (1.25, 0.05),
-                            (0.1, 0.25), (0.6, 0.25),  (1.25, 0.25),
-                            (0.1, 0.55), (0.6, 0.55),  (1.25, 0.55))
+                        (0.1, 0.25), (0.6, 0.25),  (1.25, 0.25),
+                        (0.1, 0.55), (0.6, 0.55),  (1.25, 0.55))
 
         # self.ref_points += self.ref_points
 
@@ -185,7 +185,7 @@ class ArtTouchDriver:
 
                         dist = None
 
-                        if len(self.calib_points)  > 0:
+                        if len(self.calib_points) > 0:
 
                             pp = np.array(self.calib_points[-1])
                             p = np.array((self.slot.x,  self.slot.y))
