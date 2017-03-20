@@ -88,7 +88,11 @@ class ArtTouchDriver:
         ps.header.frame_id = "marker"
         ps.point.z = 0
 
-        self.ref_points = ((0.4, 0.1), (1.0, 0.1), (0.4, 0.5), (1.0, 0.5))
+        self.ref_points = ((0.1, 0.05), (0.6, 0.05),  (1.25, 0.05),
+                                    (0.1, 0.25), (0.6, 0.25),  (1.25, 0.25),
+                                    (0.1, 0.55), (0.6, 0.55),  (1.25, 0.55))
+                                    
+        # self.ref_points += self.ref_points
 
         for pt in self.ref_points:
 
@@ -179,14 +183,25 @@ class ArtTouchDriver:
 
                     if self.calibrating:
 
-                        # TODO check for "double click" (calc distance from prev touch?)
-                        if self.touch_cnt < 4:
+                        dist = None
+                        
+                        if len(self.calib_points)  > 0:
+                            
+                            pp = np.array(self.calib_points[-1])
+                            p = np.array((self.slot.x,  self.slot.y))
+                            
+                            # calculate distance from previous touch - in order to avoid unintended touches
+                            dist = np.linalg.norm(pp-p)
+                            
+                            rospy.logdebug("Distance from previous touch: " + str(dist))
 
+                        if self.touch_cnt < len(self.ref_points) and (dist is None or dist > 500):
+                            
                             self.calib_points.append((self.slot.x,  self.slot.y))
                             self.touch_det_pub.publish()
                             self.touch_cnt += 1
 
-                            if self.touch_cnt == 4:
+                            if self.touch_cnt == len(self.ref_points):
 
                                 self.calculate_calibration()
                                 self.set_calibrating(False)
@@ -207,7 +222,8 @@ class ArtTouchDriver:
         # print self.calib_points
         # print self.ref_points
 
-        h, status = cv2.findHomography(np.array(self.calib_points, dtype='float64'), np.array(self.ref_points, dtype='float64'))
+        h, status = cv2.findHomography(np.array(self.calib_points, dtype='float64'), np.array(self.ref_points, dtype='float64'), cv2.LMEDS)
+
         self.h_matrix = np.matrix(h)
 
         s = str(self.h_matrix.tolist())
