@@ -12,7 +12,8 @@
       <arg name="machine" value="$(arg machine_name)"/>
     </include>
     
-    <include ns="/art/$(arg machine_name)" file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
+    <!-- BUG: kinect crashes on artable-n1 when launched like this for some reason ("local" (through ssh) launch runs fine) -->
+    <!--include ns="/art/$(arg machine_name)" file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
       <arg name="machine" value="$(arg machine_name)"/>
       <arg name="fps_limit" value="5"/>
       <arg name="base_name_tf" value="$(arg machine_name)_kinect2"/>
@@ -22,6 +23,6 @@
       <arg name="machine" value="$(arg machine_name)"/>
       <arg name="cam_image_topic" value="kinect2/hd/image_color"/>
       <arg name="cam_info_topic" value="kinect2/hd/camera_info"/>
-    </include>
+    </include-->
     
 </launch>
