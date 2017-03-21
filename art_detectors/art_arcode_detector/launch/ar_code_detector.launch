@@ -1,4 +1,9 @@
+<?xml version="1.0"?>
 <launch>
+    
+    <machine name="localhost" address="localhost" default="true" />
+    <arg name="machine" default="localhost"/>
+
 	<arg name="marker_size" default="4.6" />
 	<arg name="max_new_marker_error" default="0.08" />
 	<arg name="max_track_error" default="0.2" />
@@ -7,7 +12,7 @@
 	<arg name="cam_info_topic" default="/kinect2/hd/camera_info" />		
 	<arg name="output_frame" default="/marker" />
 
-	<node name="ar_track_alvar" pkg="ar_track_alvar" type="individualMarkersNoKinect" respawn="true" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame) 10 5" />
+	<node name="ar_track_alvar" machine="$(arg machine)" pkg="ar_track_alvar" type="individualMarkersNoKinect" respawn="true" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame) 10 5" />
 
-	<node name="ar_code_detector" pkg="art_arcode_detector" type="detector.py" output="screen" />
+	<node name="ar_code_detector" machine="$(arg machine)" pkg="art_arcode_detector" type="detector.py" output="screen" />
 </launch>

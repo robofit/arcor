@@ -317,10 +317,10 @@ class ArtBrain(object):
             self.fsm.error(severity=ArtBrainMachine.WARNING,
                            error=ArtBrainMachine.ERROR_OBJECT_NOT_DEFINED)
             return
-        if not self.ph.is_pick_pose_set(self.block_id, self.instruction.id):
+        '''if not self.ph.is_pick_pose_set(self.block_id, self.instruction.id):
             self.fsm.error(severity=ArtBrainMachine.WARNING,
                            error=ArtBrainMachine.ERROR_PICK_POSE_NOT_SELECTED)
-            return
+            return'''
         gripper = self.get_gripper(pick_pose=self.instruction.pose)
         if not self.check_gripper_for_pick(gripper):
             return
@@ -644,6 +644,9 @@ class ArtBrain(object):
     #                                        OTHERS
     # ***************************************************************************************
 
+    def program_start_timer_cb(self, event):
+        self.fsm.program_start()
+
     def update_state_manager(self):
         self.state_manager.update_program_item(
             self.ph.get_program_id(), self.block_id, self.instruction)
@@ -796,7 +799,8 @@ class ArtBrain(object):
 
         rospy.loginfo('Starting program')
 
-        self.fsm.program_start()
+        rospy.Timer(rospy.Duration(1), self.program_start_timer_cb)
+        rospy.loginfo("program started")
         resp.success = True
         return resp
 
