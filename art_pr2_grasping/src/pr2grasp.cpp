@@ -348,6 +348,7 @@ bool artPr2Grasping::pick(const std::string& object_id)
 
   if (gripper < 0.005)
   {
+    visual_tools_->cleanupACO(object_id);
     grasped_object_.reset();
     ROS_ERROR_NAMED(group_name_,
                     "Gripper is closed - object missed or dropped :-(");
