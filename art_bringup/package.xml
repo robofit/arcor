@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package>
+  <name>art_bringup</name>
+  <version>0.0.0</version>
+  <description>The art_bringup package</description>
+
+  <maintainer email="imaterna@todo.todo">imaterna</maintainer>
+  <license>TODO</license>
+  <buildtool_depend>catkin</buildtool_depend>
+
+</package>

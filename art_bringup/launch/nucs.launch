@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+
+    <include file="$(find art_bringup)/launch/nuc.launch">
+      <arg name="machine_name" value="n1"/>
+      <arg name="address" value="artable-n1"/>
+    </include>
+    
+    <include file="$(find art_bringup)/launch/nuc.launch">
+      <arg name="machine_name" value="n2"/>
+      <arg name="address" value="artable-n2"/>
+    </include>
+
+</launch>
