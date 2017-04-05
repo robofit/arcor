@@ -84,6 +84,22 @@ class ArtBrainUtils(object):
         b = np.array((pose2.position.x, pose2.position.y))
         return np.linalg.norm(a - b)
 
+    @staticmethod
+    def create_service_client(service_name, service_type, print_info=True):
+        '''
+        Waits for service (eventually informs user about it) and return an instance of it
+        Args:
+            service_name:
+            service_type:
+            print_info:
+
+        Returns: created service proxy
+
+        '''
+        rospy.loginfo("Waiting for service: " + str(service_name))
+        rospy.wait_for_service(service_name)
+        rospy.loginfo("Service " + str(service_name) + " ready")
+        return rospy.ServiceProxy(service_name, service_type)
 
 class ArtGripper(object):
 
