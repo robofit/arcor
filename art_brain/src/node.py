@@ -252,7 +252,10 @@ class ArtBrain(object):
         self.instruction = self.ph.get_item_msg(self.block_id, item_id)
 
         self.executing_program = True
-
+        if self.left_gripper is not None:
+            self.left_gripper.re_init
+        if self.right_gripper is not None:
+            self.right_gripper.re_init
         self.state_manager.set_system_state(
             InterfaceState.STATE_PROGRAM_RUNNING)
         self.fsm.program_init_done()
@@ -881,10 +884,12 @@ class ArtBrain(object):
         return resp
 
     def learning_stop_cb(self, req):
-
+        resp = TriggerResponse()
+        if not self.fsm.is_learning_run:
+            resp.success = False
         rospy.loginfo('Stopping learning')
         self.learning = False
-        resp = TriggerResponse()
+
         resp.success = True
         self.fsm.learning_done()
         return resp
@@ -959,10 +964,14 @@ class ArtBrain(object):
 
     def learning_request_cb(self,
                             goal):  # type: LearningRequestGoal
+        result = LearningRequestResult()
+        if not self.fsm.is_learning_run:
+            result.success = False
+            result.message = "Not in learning mode!"
         rospy.loginfo("Learning_request goal: " + str(goal.request))
         rospy.sleep(2)
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
-        result = LearningRequestResult()
+
         if goal.request == LearningRequestGoal.GET_READY:
             if self.fsm.is_learning_run:
                 if instruction.type == instruction.PICK_OBJECT_ID:

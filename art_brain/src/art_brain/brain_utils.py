@@ -124,6 +124,10 @@ class ArtGripper(object):
         self.move_to_user_client = ArtBrainUtils.create_service_client(
             "/art/pr2/" + name + "/move_to_user", Trigger)
 
+    def re_init(self):
+        self.last_pick_instruction_id = None
+        self.holding_object = None
+
 
 class ErrorMsgs(object):
 
