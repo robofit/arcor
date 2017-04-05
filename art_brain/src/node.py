@@ -292,8 +292,6 @@ class ArtBrain(object):
             return
         instruction_transition()
 
-
-
     def state_pick_from_polygon(self, event):
         rospy.loginfo('state_pick_from_polygon')
         obj = ArtBrainUtils.get_pick_obj_from_polygon(
@@ -314,6 +312,7 @@ class ArtBrain(object):
             self.fsm.done(success=True)
 
         else:
+            gripper.get_ready_clinet.call()
             self.fsm.error(severity=InterfaceState.WARNING,
                            error=InterfaceState.ERROR_PICK_FAILED)
 
@@ -340,6 +339,7 @@ class ArtBrain(object):
             self.done(success=True)
 
         else:
+            gripper.get_ready_clinet.call()
             self.done(success=False)
 
     def state_pick_object_id(self, event):
@@ -361,6 +361,7 @@ class ArtBrain(object):
             self.fsm.done()
 
         else:
+            gripper.get_ready_clinet.call()
             self.fsm.error(severity=InterfaceState.WARNING,
                            error=InterfaceState.ERROR_PICK_FAILED)
 
@@ -398,6 +399,7 @@ class ArtBrain(object):
                 self.fsm.done(success=True)
                 return
             else:
+                gripper.get_ready_clinet.call()
                 self.fsm.error(severity=InterfaceState.WARNING,
                                error=InterfaceState.ERROR_PLACE_FAILED)
                 return
@@ -497,6 +499,7 @@ class ArtBrain(object):
                 rospy.logwarn("Object is missing")
             elif error == InterfaceState.ERROR_PICK_FAILED:
                 rospy.logwarn("Pick failed")
+
             rospy.logwarn("Waiting for user response")
 
             return
