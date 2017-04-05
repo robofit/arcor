@@ -13,14 +13,15 @@ class FakeGrasping:
     RANDOM = 2
 
     def __init__(self):
-        self.server = SimpleActionServer('/art/pr2/left_arm/pp', PickPlaceAction,
+        self.left_server = SimpleActionServer('/art/pr2/left_arm/pp', PickPlaceAction,
                                          execute_cb=self.pick_place_left_cb)
 
-        self.server = SimpleActionServer('/art/pr2/right_arm/pp', PickPlaceAction,
+        self.right_server = SimpleActionServer('/art/pr2/right_arm/pp', PickPlaceAction,
                                          execute_cb=self.pick_place_right_cb)
+        self.server = None
         self.objects = self.ALWAYS
-        self.grasp = self.ALWAYS
-        self.place = self.ALWAYS
+        self.grasp = self.RANDOM
+        self.place = self.RANDOM
         self.object_randomness = 0.8  # 80% of time object is known
         self.grasp_randomness = 0.4
         self.place_randomness = 0.4
@@ -40,12 +41,17 @@ class FakeGrasping:
     def pickplace_cb(self, goal, left=True):
         result = PickPlaceResult()
         feedback = PickPlaceFeedback()
+        if left:
+            self.server = self.left_server
+        else:
+            self.server = self.right_server
         if not (goal.operation == PickPlaceGoal.PICK_OBJECT_ID or
                 goal.operation == PickPlaceGoal.PICK_FROM_FEEDER or
                 goal.operation == PickPlaceGoal.PLACE_TO_POSE):
             result.result = PickPlaceResult.BAD_REQUEST
             rospy.logerr("BAD_REQUEST, Unknown operation")
             self.server.set_aborted(result, "Unknown operation")
+
             return
 
         if self.objects == self.ALWAYS:
