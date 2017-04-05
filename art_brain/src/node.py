@@ -259,6 +259,9 @@ class ArtBrain(object):
 
     def state_program_run(self, event):
         rospy.loginfo('state_program_run')
+        if not self.executing_program:
+            self.finished()
+            return
         if self.instruction is None:
             self.fsm.error(severity=InterfaceState.SEVERE,
                            error=InterfaceState.ERROR_NO_INSTRUCTION)
@@ -286,10 +289,7 @@ class ArtBrain(object):
             return
         instruction_transition()
 
-        if not self.executing_program:
-            self.fsm.error(severity=InterfaceState.SEVERE,
-                           error=InterfaceState.ERROR_NOT_EXECUTING_PROGRAM)
-            return
+
 
     def state_pick_from_polygon(self, event):
         rospy.loginfo('state_pick_from_polygon')
@@ -697,7 +697,7 @@ class ArtBrain(object):
                 return self.left_gripper
             elif self.gripper_usage == ArtGripper.GRIPPER_RIGHT:
                 return self.right_gripper
-        
+
         if self.tf_listener.frameExists("/base_link") and self.tf_listener.frameExists(self.objects.header.frame_id):
             if pick_pose is not None:
                 transformed_pose = self.tf_listener.transformPose(

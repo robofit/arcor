@@ -115,13 +115,13 @@ class ArtGripper(object):
         self.holding_object = None
         self.last_pick_instruction_id = None
         self.group_name = name
-        self.interaction_on_client = rospy.ServiceProxy(
+        self.interaction_on_client = ArtBrainUtils.create_service_client(
             "/art/pr2/" + name + "/interaction/on", Empty)
-        self.interaction_off_client = rospy.ServiceProxy(
+        self.interaction_off_client = ArtBrainUtils.create_service_client(
             "/art/pr2/" + name + "/interaction/off", Empty)
-        self.get_ready_client = rospy.ServiceProxy(
+        self.get_ready_client = ArtBrainUtils.create_service_client(
             "/art/pr2/" + name + "/get_ready", Trigger)
-        self.move_to_user_client = rospy.ServiceProxy(
+        self.move_to_user_client = ArtBrainUtils.create_service_client(
             "/art/pr2/" + name + "/move_to_user", Trigger)
 
 
