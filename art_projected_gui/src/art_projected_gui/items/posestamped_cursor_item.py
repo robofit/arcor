@@ -180,7 +180,19 @@ class PoseStampedCursorItem(Item):
                     self.pointed_item_clicked = True
 
                 (x,  y) = self.pix2m(pt.x(), pt.y())
+                old_pos = self.pointed_item.get_pos()
                 self.pointed_item.set_pos(x+self.offset[0], y+self.offset[1])
+                new_pos = self.pointed_item.get_pos()
+
+                if hasattr(self.pointed_item, 'items'):     # uprava pozicie itemov a rot_pointu
+                    of_x = new_pos[0] - old_pos[0]
+                    of_y = new_pos[1] - old_pos[1]
+                    for item in self.pointed_item.items:
+                        (x, y) = self.pix2m(item.x(), item.y())
+                        item.set_pos(x + of_x, y + of_y)
+                        if item.rot_point is not None:
+                            item.rot_point = [item.rot_point[0] + of_x, item.rot_point[1] + of_y]
+
                 self.pointed_item.item_moved()
 
                 if mm > 5:

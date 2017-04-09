@@ -302,11 +302,10 @@ class UICore(QtCore.QObject):
 
         PolygonItem(self.scene, caption, obj_coords, poly_points, polygon_changed, fixed)
 
-    def add_square(self, caption, min_x, min_y, square_width, square_height, object_type, square_changed=None):
+    def add_square(self, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points=[], square_changed=None, fixed=False):
 
-        # self.scene_items.append(SquareItem(self.scene, caption, min_x, min_y, square_width, square_height, object_type, self.scene_items, square_changed))
-        SquareItem(self.scene, caption, min_x, min_y, square_width, square_height, object_type, self.scene.items,
-                   square_changed)
+        SquareItem(self.scene, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points, self.scene.items,
+                   square_changed, fixed)
 
     def clear_places(self):
 

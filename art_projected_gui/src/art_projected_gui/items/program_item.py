@@ -8,6 +8,7 @@ from button_item import ButtonItem
 from art_projected_gui.helpers import conversions
 from list_item import ListItem
 from art_projected_gui.helpers.items import group_enable, group_visible
+from geometry_msgs.msg import PoseStamped
 
 translate = QtCore.QCoreApplication.translate
 
@@ -546,6 +547,29 @@ class ProgramItem(Item):
         msg.pose[0].pose.position.x = x
         msg.pose[0].pose.position.y = y
         msg.pose[0].pose.orientation = conversions.yaw2quaternion(yaw)
+
+        self._update_item()
+
+    def set_place_poses(self, poses):
+
+        msg = self.get_current_item()
+
+        poses_count = len(poses)
+        msg_poses_count = len(msg.pose)
+
+        if poses_count > msg_poses_count:
+            for i in range(poses_count - msg_poses_count):
+                ps = PoseStamped()
+                msg.pose.append(ps)
+        elif poses_count < msg_poses_count:
+            for i in range(msg_poses_count - poses_count):
+                msg.pose.pop()
+
+        for i, pose in enumerate(poses):
+            pos = pose.get_pos()
+            msg.pose[i].pose.position.x = pos[0]
+            msg.pose[i].pose.position.y = pos[1]
+            msg.pose[i].pose.orientation = conversions.yaw2quaternion(pose.rotation())
 
         self._update_item()
 

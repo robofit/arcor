@@ -308,9 +308,9 @@ class UICoreRos(UICore):
                 ref_item = self.program_vis.get_ref_item()  # ziskanie referencneho itemu
                 obj = self.get_object(ref_item.object[0])   # objekt referencneho itemu
                 self.program_vis.get_current_item().object[0] = obj.object_id   # nastavime objekt aktualneho itemu
-                # print "FLag", flags["SELECTED_OBJECT_ID"] # nastavuje sa v test_brain(riadok 62)
                 self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
-                                0.075, obj.object_type, square_changed=self.square_changed)
+                                0.075, obj.object_type, it.pose, grid_points=conversions.get_pick_polygon_points(it),
+                                square_changed=self.square_changed, fixed=True)
 
 
 
@@ -350,7 +350,7 @@ class UICoreRos(UICore):
 
             if not self.ph.is_object_set(block_id, item_id):
 
-                    self.notif(translate("UICoreRos", "Select object type to be picked up"), temp=True)
+                self.notif(translate("UICoreRos", "Select object type to be picked up"), temp=True)
 
             else:
 
@@ -358,7 +358,7 @@ class UICoreRos(UICore):
 
             if self.ph.is_polygon_set(block_id, item_id):
 
-                    self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=conversions.get_pick_polygon_points(msg), polygon_changed=self.polygon_changed, fixed=read_only)
+                self.add_polygon(translate("UICoreRos", "PICK POLYGON"), poly_points=conversions.get_pick_polygon_points(msg), polygon_changed=self.polygon_changed, fixed=read_only)
 
         elif msg.type == ProgIt.PICK_FROM_FEEDER:
 
@@ -413,9 +413,8 @@ class UICoreRos(UICore):
             ref_item = self.program_vis.get_ref_item()  # ziskanie referencneho itemu
             obj = self.get_object(ref_item.object[0])  # objekt referencneho itemu
             self.program_vis.get_current_item().object[0] = obj.object_id  # nastavime objekt aktualneho itemu
-            # print "FLag", flags["SELECTED_OBJECT_ID"] # nastavuje sa v test_brain(riadok 62)
             self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
-                            0.075, obj.object_type, square_changed=self.square_changed)
+                            0.075, obj.object_type, msg.pose, grid_points=conversions.get_pick_polygon_points(msg), square_changed=self.square_changed, fixed=read_only)
 
     def get_def_pose(self):
 
@@ -684,9 +683,7 @@ class UICoreRos(UICore):
     def square_changed(self, pts, poses=None):
 
         self.program_vis.set_place_grid(pts)    # ulozenie bodov do ProgramItem zpravy
-        if poses != None and poses:
-            pos = poses[0].get_pos()
-            self.program_vis.set_place_pose(pos[0], pos[1], 0.0)
+        self.program_vis.set_place_poses(poses)
 
     def object_selected(self, id, selected):
 
@@ -738,8 +735,6 @@ class UICoreRos(UICore):
 
             self.add_polygon(translate("UICoreRos", "PICK POLYGON"),  poly_points,  polygon_changed=self.polygon_changed)
             self.notif(translate("UICoreRos", "Check and adjust pick polygon"),  temp=True)
-
-        # self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width/2, self.height/2, 0.1, 0.075, obj.object_type, square_changed=self.square_changed)
 
         self.state_manager.update_program_item(self.ph.get_program_id(), self.program_vis.block_id, self.program_vis.get_current_item())
         return True

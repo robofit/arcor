@@ -400,7 +400,36 @@ class ArtBrain(object):
         rospy.loginfo('state_place_to_grid')
         grid = ArtBrainUtils.get_place_grid(self.instruction)
         pose = ArtBrainUtils.get_place_pose(self.instruction)
-        pass
+
+        if pose is None or len(pose) < 1:
+            self.fsm.error(severity=ArtBrainMachine.ERROR,
+                           error=ArtBrainMachine.ERROR_PLACE_POSE_NOT_DEFINED)
+            return
+        else:
+            if len(self.instruction.ref_id) < 1:
+                self.fsm.error(severity=ArtBrainMachine.ERROR,
+                               error=ArtBrainMachine.ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE)
+                return
+
+            rospy.logdebug(self.instruction)
+            gripper = self.get_gripper_by_pick_instruction_id(
+                self.instruction.ref_id)
+            self.check_gripper_for_place(gripper)
+            if gripper.holding_object is None:
+                rospy.logerr("Robot is not holding selected object")
+                self.fsm.error(severity=ArtBrainMachine.WARNING,
+                               error=ArtBrainMachine.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
+                return
+
+            if self.place_object(gripper.holding_object, pose[0], gripper):
+                gripper.holding_object = None
+                # gripper.last_pick_instruction_id = self.instruction.id
+                self.fsm.done(success=True)
+                return
+            else:
+                self.fsm.error(severity=ArtBrainMachine.WARNING,
+                               error=ArtBrainMachine.ERROR_PLACE_FAILED)
+                return
 
     def state_wait_for_user(self, event):
         rospy.loginfo('state_wait_for_user')

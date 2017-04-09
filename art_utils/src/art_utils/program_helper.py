@@ -368,7 +368,7 @@ class ProgramHelper():
 
         elif msg.type == ProgramItem.PLACE_TO_GRID:
 
-            if not self.is_polygon_set(block_id, item_id):
+            if not self.is_polygon_set(block_id, item_id) or len(msg.pose) == 0:
                 return False
             else:
                 return True

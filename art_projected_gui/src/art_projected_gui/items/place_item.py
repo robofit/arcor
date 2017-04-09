@@ -19,12 +19,13 @@ class PlaceItem(ObjectItem):
 
     """
 
-    def __init__(self, scene,  caption,  x, y, object_type,  object_id=None,  yaw=0,  place_pose_changed=None,  selected=False, fixed=False, txt=True, rot=True):
+    def __init__(self, scene,  caption,  x, y, object_type,  object_id=None,  yaw=0,  place_pose_changed=None,  selected=False, fixed=False, txt=True, rot=True, rot_point=None, rotation_changed=None):
 
         self.in_collision = False
         self.caption = caption
         self.txt = txt
         self.rot = rot
+        self.rot_point = rot_point
         self.other_items = []
 
         super(PlaceItem, self).__init__(scene, object_id, object_type,  x, y,  yaw)
@@ -32,13 +33,23 @@ class PlaceItem(ObjectItem):
         self.update_text()
         self.fixed = fixed
         self.place_pose_changed = place_pose_changed
+        self.rotation_changed=rotation_changed
         if not self.fixed:
             self.set_color(QtCore.Qt.white)
             if self.rot:
-                self.point = PointItem(scene, 0, 0, self,  self.point_changed)  # TODO option to pass pixels?
-                self.point.setPos(self.boundingRect().topLeft())
-
+                if rot_point is None:
+                    self.point = PointItem(scene, 0, 0, self,  self.point_changed)  # TODO option to pass pixels?
+                    self.point.setPos(self.boundingRect().topLeft())
+                else:
+                    self.point = PointItem(scene, self.rot_point[0], self.rot_point[1], self, self.point_changed)
         self.setZValue(50)
+
+    def update_point(self):
+
+        if self.rot_point is None:
+            return
+
+        self.point.set_pos(self.rot_point[0], self.rot_point[1])
 
     def update_text(self):
 
@@ -81,15 +92,34 @@ class PlaceItem(ObjectItem):
         self.setRotation(angle)
         self.point.setRotation(-angle)
 
-        if self.other_items:
+        if self.other_items:    # zaroven nastavovat novu rotaciu vsetkym ostatnym objektom v gride
             for it in self.other_items:
                 it.setRotation(self.rotation())
+                # it.item_moved()   # ked to je tu, tak to prilis laguje
 
         self._update_desc_pos()
 
         if finished:
-            self.point.setPos(self.boundingRect().topLeft())
 
+            self.item_moved()
+            for it in self.other_items:
+                it.item_moved()
+
+            if self.rot_point is None:
+                self.point.setPos(self.boundingRect().topLeft())
+            else:
+                self.point.set_pos(self.rot_point[0], self.rot_point[1])
+
+            if self.rotation_changed is not None:
+                in_collision = False
+                for it in ([self] + self.other_items):
+                    if it.in_collision:
+                        in_collision = True
+                        break
+                if in_collision:
+                    self.rotation_changed([])  # v pripade ze su v kolizii, tak nechcem ulozit ich polohy, aby sa nesplnila podmienka
+                else:
+                    self.rotation_changed([self] + self.other_items)    # ulozenie novych rotacii objektov do ProgramItem spravy
             if self.place_pose_changed is not None:
                 self.place_pose_changed(self.get_pos(),  self.rotation())
 

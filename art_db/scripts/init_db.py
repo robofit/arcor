@@ -345,8 +345,6 @@ def main(args):
     p.on_failure = 0
     p.type = ProgramItem.PLACE_TO_GRID
     p.object.append("")
-    pa = PoseStamped()
-    p.pose.append(pa)
     pp = PolygonStamped()
     p.polygon.append(pp)
     p.ref_id.append(3)
