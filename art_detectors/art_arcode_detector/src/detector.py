@@ -156,7 +156,7 @@ class ArCodeDetector:
         self.visualize_pub.publish(marker)
 
 if __name__ == '__main__':
-    rospy.init_node('art_arcode_detector')
+    rospy.init_node('art_arcode_detector2')
     # rospy.init_node('art_arcode_detector', log_level=rospy.DEBUG)
     try:
         rospy.wait_for_service('/art/db/object_type/get')
