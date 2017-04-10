@@ -254,7 +254,7 @@ class ArtBrain(object):
         self.executing_program = True
 
         self.state_manager.set_system_state(
-            InterfaceState.STATE_PROGRAM_RUNNING)
+            InterfaceState.STATE_PROGRAM_RUNNING, auto_send=False)
         self.fsm.program_init_done()
 
     def state_program_run(self, event):
@@ -298,6 +298,8 @@ class ArtBrain(object):
         if obj is None or obj.object_id is None:
             self.fsm.error(severity=InterfaceState.WARNING,
                            error=InterfaceState.ERROR_OBJECT_MISSING_IN_POLYGON)
+            self.state_manager.update_program_item(
+                self.ph.get_program_id(), self.block_id, self.instruction)
             return
         self.state_manager.update_program_item(self.ph.get_program_id(), self.block_id, self.instruction,
                                                {"SELECTED_OBJECT_ID": obj.object_id})
@@ -345,6 +347,8 @@ class ArtBrain(object):
         if obj is None or obj.object_id is None:
             self.fsm.error(severity=InterfaceState.WARNING,
                            error=InterfaceState.ERROR_OBJECT_MISSING)
+            self.state_manager.update_program_item(
+                self.ph.get_program_id(), self.block_id, self.instruction)
             return
         self.state_manager.update_program_item(self.ph.get_program_id(), self.block_id, self.instruction,
                                                {"SELECTED_OBJECT_ID": obj.object_id})
@@ -370,11 +374,15 @@ class ArtBrain(object):
         if pose is None or len(pose) < 1:
             self.fsm.error(severity=InterfaceState.ERROR,
                            error=InterfaceState.ERROR_PLACE_POSE_NOT_DEFINED)
+            self.state_manager.update_program_item(
+                self.ph.get_program_id(), self.block_id, self.instruction)
             return
         else:
             if len(self.instruction.ref_id) < 1:
                 self.fsm.error(severity=InterfaceState.ERROR,
                                error=InterfaceState.ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE)
+                self.state_manager.update_program_item(
+                    self.ph.get_program_id(), self.block_id, self.instruction)
                 return
             rospy.logdebug(self.instruction)
             gripper = self.get_gripper_by_pick_instruction_id(
@@ -385,6 +393,8 @@ class ArtBrain(object):
                 rospy.logerr("Robot is not holding selected object")
                 self.fsm.error(severity=InterfaceState.WARNING,
                                error=InterfaceState.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
+                self.state_manager.update_program_item(
+                    self.ph.get_program_id(), self.block_id, self.instruction)
                 return
             self.state_manager.update_program_item(
                 self.ph.get_program_id(), self.block_id, self.instruction,
@@ -712,8 +722,10 @@ class ArtBrain(object):
                         obj_pose = PoseStamped()
                         obj_pose.pose = o.pose
                         obj_pose.header = self.objects.header
-                        obj_pose.header.stamp = rospy.Time(0)  # exact time does not matter in this case
-                        self.tf_listener.waitForTransform('/base_link', obj_pose.header.frame_id, obj_pose.header.stamp, rospy.Duration(1))
+                        # exact time does not matter in this case
+                        obj_pose.header.stamp = rospy.Time(0)
+                        self.tf_listener.waitForTransform(
+                            '/base_link', obj_pose.header.frame_id, obj_pose.header.stamp, rospy.Duration(1))
                         obj_pose = self.tf_listener.transformPose(
                             '/base_link', obj_pose)
                         if obj_pose.pose.position.y < 0:
@@ -777,7 +789,8 @@ class ArtBrain(object):
             return False
 
         if gripper.holding_object is None:
-            rospy.logwarn("Place: gripper " + gripper.name + " is not holding object")
+            rospy.logwarn("Place: gripper " + gripper.name +
+                          " is not holding object")
             self.fsm.error(severity=InterfaceState.WARNING,
                            error=InterfaceState.ERROR_OBJECT_IN_GRIPPER)
             return False
@@ -788,7 +801,8 @@ class ArtBrain(object):
         if not self.check_gripper(gripper):
             return False
         if gripper.holding_object is not None:
-            rospy.logwarn("Pick: gripper " + gripper.name + " already holding an object (" + gripper.holding_object.object_id + ")")
+            rospy.logwarn("Pick: gripper " + gripper.name +
+                          " already holding an object (" + gripper.holding_object.object_id + ")")
             self.fsm.error(severity=InterfaceState.WARNING,
                            error=InterfaceState.ERROR_OBJECT_IN_GRIPPER)
             return False
@@ -831,7 +845,8 @@ class ArtBrain(object):
 
         rospy.loginfo('Starting program')
 
-        rospy.Timer(rospy.Duration(1), self.program_start_timer_cb, oneshot=True)
+        rospy.Timer(rospy.Duration(
+            1), self.program_start_timer_cb, oneshot=True)
         rospy.loginfo("program started")
         resp.success = True
         return resp
@@ -851,11 +866,14 @@ class ArtBrain(object):
         rospy.loginfo('We\'ve got response to our program error')
         if req.user_response_type == ProgramErrorResolveRequest.TRY_AGAIN:
             self.state_manager.set_error(0, 0)
-            rospy.Timer(rospy.Duration(1), self.program_try_again_timer_cb, oneshot=True)
+            rospy.Timer(rospy.Duration(
+                1), self.program_try_again_timer_cb, oneshot=True)
         elif req.user_response_type == ProgramErrorResolveRequest.SKIP_INSTRUCTION:
-            rospy.Timer(rospy.Duration(1), self.program_skip_instruction_timer_cb, oneshot=True)
+            rospy.Timer(rospy.Duration(
+                1), self.program_skip_instruction_timer_cb, oneshot=True)
         elif req.user_response_type == ProgramErrorResolveRequest.FAIL_INSTRUCTION:
-            rospy.Timer(rospy.Duration(1), self.program_fail_instruction_timer_cb, oneshot=True)
+            rospy.Timer(rospy.Duration(
+                1), self.program_fail_instruction_timer_cb, oneshot=True)
         elif req.user_response_type == ProgramErrorResolveRequest.END_PROGRAM:
             self.fsm.program_error_fatal()
         resp.success = True
