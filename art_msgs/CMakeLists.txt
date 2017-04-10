@@ -44,6 +44,7 @@ add_service_files(
     TouchCalibrationPoints.srv
     NotifyUser.srv
     ProgramErrorResolve.srv
+    SelectArm.srv
 )
 
 generate_messages(
