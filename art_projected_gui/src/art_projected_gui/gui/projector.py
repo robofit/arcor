@@ -104,7 +104,7 @@ class Projector(QtGui.QWidget):
         self.map_x = np.zeros((Hd,Wd), np.float32)
         self.map_y = np.zeros((Hd,Wd), np.float32)
         
-        m = np.invert(m)
+        # m = np.invert(m)
         
         for y in range(0,int(Hd-1)):
             for x in range(0,int(Wd-1)):
