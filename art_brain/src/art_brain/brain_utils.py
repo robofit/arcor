@@ -6,6 +6,9 @@ from art_msgs.msg import PickPlaceAction, ObjInstance
 import copy
 from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import Pose
+from art_msgs.msg import InterfaceState
+
+from enum import Enum  # sudo pip install enum34
 
 
 class ArtBrainUtils(object):
@@ -109,6 +112,25 @@ class ArtGripper(object):
             "/art/pr2/" + name + "/move_to_user", Trigger)
 
 
-class ErrorMsgs(object):
+class ArtBrainErrors(Enum):
+    ERROR_NOT_IMPLEMENTED = 1
+    ERROR_NOT_EXECUTING_PROGRAM = 2
+    ERROR_NO_INSTRUCTION = 3
+    ERROR_NO_PROGRAM_HELPER = 4
+    ERROR_OBJECT_NOT_DEFINED = 5
+    ERROR_GRIPPER_PP_CLIENT_MISSING = 6
+    ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT = 7
+    ERROR_PICK_POSE_NOT_SELECTED = 8
+    ERROR_PLACE_POSE_NOT_DEFINED = 9
+    ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE = 10
+    # Learning errors
+    ERROR_LEARNING_NOT_IMPLEMENTED = 101
+    ERROR_LEARNING_GRIPPER_NOT_DEFINED = 102
 
-    MISSING_OBJECT = ""
+    ERROR_OBJECT_MISSING = InterfaceState.ERROR_OBJECT_MISSING
+    ERROR_OBJECT_MISSING_IN_POLYGON = InterfaceState.ERROR_OBJECT_MISSING_IN_POLYGON
+    ERROR_NO_GRIPPER_AVAILABLE = InterfaceState.ERROR_NO_GRIPPER_AVAILABLE
+    ERROR_OBJECT_IN_GRIPPER = InterfaceState.ERROR_OBJECT_IN_GRIPPER
+    ERROR_NO_OBJECT_IN_GRIPPER = InterfaceState.ERROR_NO_OBJECT_IN_GRIPPER
+    ERROR_PICK_FAILED = InterfaceState.ERROR_PICK_FAILED
+    ERROR_PLACE_FAILED = InterfaceState.ERROR_PLACE_FAILED
