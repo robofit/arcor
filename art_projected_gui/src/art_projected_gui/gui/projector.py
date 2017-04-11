@@ -109,8 +109,8 @@ class Projector(QtGui.QWidget):
         for y in range(0,int(Hd-1)):
             for x in range(0,int(Wd-1)):
                 
-                self.map_x.itemset((y,x), (m[1, 1]*x+m[1, 2]*y+m[1, 3]) / (m[3, 1]*x+m[3, 2]*y + m[3, 3]))
-                self.map_y.itemset((y,x), (m[2, 1]*x+m[2, 2]*y+m[2, 3]) / (m[3, 1]*x+m[3, 2]*y + m[3, 3]))
+                self.map_x.itemset((y,x), (m[0, 0]*x+m[0, 1]*y+m[0, 2]) / (m[2, 0]*x+m[2, 1]*y + m[2, 2]))
+                self.map_y.itemset((y,x), (m[1, 0]*x+m[1, 1]*y+m[1, 2]) / (m[2, 0]*x+m[2, 1]*y + m[2, 2]))
 
     def show_pix_label_evt(self, show):
 
