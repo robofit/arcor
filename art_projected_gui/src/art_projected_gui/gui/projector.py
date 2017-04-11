@@ -36,12 +36,6 @@ class Projector(QtGui.QWidget):
         self.map_x = None
         self.map_y = None
 
-        h_matrix = rospy.get_param("~calibration_matrix", None)
-        
-        if h_matrix is not None:
-            rospy.loginfo('Loaded calibration from param.')
-            self.init_map_from_matrix(np.matrix(ast.literal_eval(h_matrix)))
-
         self.rpm = rospy.get_param('rpm')
         self.scene_size = rospy.get_param("scene_size")
         self.scene_origin = rospy.get_param("scene_origin")
@@ -104,13 +98,15 @@ class Projector(QtGui.QWidget):
         self.map_x = np.zeros((Hd,Wd), np.float32)
         self.map_y = np.zeros((Hd,Wd), np.float32)
         
-        # m = np.invert(m)
+        m = np.linalg.inv(m)
         
         for y in range(0,int(Hd-1)):
             for x in range(0,int(Wd-1)):
                 
                 self.map_x.itemset((y,x), (m[0, 0]*x+m[0, 1]*y+m[0, 2]) / (m[2, 0]*x+m[2, 1]*y + m[2, 2]))
                 self.map_y.itemset((y,x), (m[1, 0]*x+m[1, 1]*y+m[1, 2]) / (m[2, 0]*x+m[2, 1]*y + m[2, 2]))
+        
+        self.map_x, self.map_y = cv2.convertMaps(self.map_x, self.map_y, cv2.CV_16SC2)
 
     def show_pix_label_evt(self, show):
 
@@ -180,7 +176,8 @@ class Projector(QtGui.QWidget):
             img = img.mirrored()
             v = qimage2ndarray.rgb_view(img)
 
-            image_np = cv2.remap(v, self.map_x,  self.map_y,  cv2.INTER_CUBIC)
+            image_np = cv2.remap(v, self.map_x,  self.map_y,  cv2.INTER_LINEAR)
+            rospy.loginfo(str(image_np))
             #image_np = cv2.warpPerspective(v, self.h_matrix, (self.width(), self.height()))
 
             height, width, channel = image_np.shape
@@ -390,3 +387,11 @@ class Projector(QtGui.QWidget):
     def on_resize(self, event):
 
         self.pix_label.resize(self.size())
+        
+        rospy.loginfo("resize")
+        
+        h_matrix = rospy.get_param("~calibration_matrix", None)
+        
+        if h_matrix is not None:
+            rospy.loginfo('Loaded calibration from param.')
+            self.init_map_from_matrix(np.matrix(ast.literal_eval(h_matrix)))
