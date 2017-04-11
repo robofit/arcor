@@ -188,7 +188,7 @@ class ArtBrain(object):
         self.art.wait_for_api()
 
         self.get_obj_type_srv_client = ArtBrainUtils.create_service_client('/art/db/object_type/get', getObjectType)
-        self.select_arm_srv_client = ArtBrainUtils.create_service_client('/art/fuzzy/select_arm', SelectArm)
+        #self.select_arm_srv_client = ArtBrainUtils.create_service_client('/art/fuzzy/select_arm', SelectArm)
 
         if not self.table_calibrated:
             rospy.loginfo(
@@ -389,6 +389,8 @@ class ArtBrain(object):
                 self.instruction.ref_id)
             # TODO what to do if gripper is None?
             self.check_gripper_for_place(gripper)
+            if gripper is None:
+	        return
             if gripper.holding_object is None:
                 rospy.logerr("Robot is not holding selected object")
                 self.fsm.error(severity=InterfaceState.WARNING,
@@ -504,6 +506,8 @@ class ArtBrain(object):
                 rospy.logwarn("Object is missing")
             elif error == InterfaceState.ERROR_PICK_FAILED:
                 rospy.logwarn("Pick failed")
+                self.left_gripper.get_ready_client.call()
+                self.right_gripper.get_ready_client.call()
             rospy.logwarn("Waiting for user response")
 
             return
