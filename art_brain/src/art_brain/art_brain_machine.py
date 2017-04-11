@@ -130,7 +130,7 @@ class ArtBrainMachine(object):
         self.machine.add_transition(
             'program_error_shutdown', 'program_error',  'shutdown')
         self.machine.add_transition(
-            'program_error_fatal', 'program_error',  'waiting_for_action')
+            'program_error_fatal', 'program_error',  'program_finished')
         self.machine.add_transition(
             'try_again', 'program_error', 'program_run')
         self.machine.add_transition(
@@ -145,6 +145,8 @@ class ArtBrainMachine(object):
             'finished', 'program_load_instruction',  'program_finished')
         self.machine.add_transition(
             'done', 'program_finished',  'waiting_for_action')
+        self.machine.add_transition(
+            'finished', 'program_run', 'program_finished')
 
         # get ready instruction
         self.machine.add_transition('get_ready', 'program_run', 'get_ready')
