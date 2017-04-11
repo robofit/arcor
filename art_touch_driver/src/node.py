@@ -42,7 +42,7 @@ class ArtTouchDriver:
         self.y = 0
         self.touch = False
         self.touch_id = -1
-        self.device = input.EventDevice("/dev/input/event18")
+        self.device = input.EventDevice("/dev/input/event14")
 
         self.slots = []
         self.slot = None
@@ -97,9 +97,9 @@ class ArtTouchDriver:
         ps.header.frame_id = "marker"
         ps.point.z = 0
 
-        self.ref_points = ((0.1, 0.05), (0.6, 0.05),  (1.25, 0.05),
-                           (0.1, 0.25), (0.6, 0.25),  (1.25, 0.25),
-                           (0.1, 0.55), (0.6, 0.55),  (1.25, 0.55))
+        self.ref_points = ((0.15, 0.1), (0.55, 0.1),  (1.25, 0.1),
+                           (0.15, 0.25), (0.55, 0.25),  (1.25, 0.25),
+                           (0.15, 0.55), (0.55, 0.55),  (1.25, 0.55))
 
         # self.ref_points += self.ref_points
 
