@@ -33,11 +33,14 @@ class Projector(QtGui.QWidget):
         self.camera_depth_topic = rospy.get_param('~camera_depth_topic', '/kinect2/hd/image_depth_rect')
         self.camera_info_topic = rospy.get_param('~camera_info_topic', '/kinect2/hd/camera_info')
 
-        self.h_matrix = rospy.get_param("~calibration_matrix", None)
+        self.map_x = None
+        self.map_y = None
 
-        if self.h_matrix is not None:
+        h_matrix = rospy.get_param("~calibration_matrix", None)
+        
+        if h_matrix is not None:
             rospy.loginfo('Loaded calibration from param.')
-            self.h_matrix = np.matrix(ast.literal_eval(self.h_matrix))
+            self.init_map_from_matrix(np.matrix(ast.literal_eval(h_matrix)))
 
         self.rpm = rospy.get_param('rpm')
         self.scene_size = rospy.get_param("scene_size")
@@ -92,6 +95,22 @@ class Projector(QtGui.QWidget):
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
         self.showFullScreen()
         self.setCursor(QtCore.Qt.BlankCursor)
+
+    def init_map_from_matrix(self, m):
+        
+        Hw = self.height()
+        Wd = self.width()
+        
+        self.map_x = np.zeros((Hd,Wd), np.float32)
+        self.map_y = np.zeros((Hd,Wd), np.float32)
+        
+        m = np.invert(m)
+        
+        for y in range(0,int(Hd-1)):
+            for x in range(0,int(Wd-1)):
+                
+                self.map_x.itemset((y,x), (m[1, 1]*x+m[1, 2]*y+m[1, 3]) / (m[3, 1]*x+m[3, 2]*y + m[3, 3]))
+                self.map_y.itemset((y,x), (m[2, 1]*x+m[2, 2]*y+m[2, 3]) / (m[3, 1]*x+m[3, 2]*y + m[3, 3]))
 
     def show_pix_label_evt(self, show):
 
@@ -161,8 +180,8 @@ class Projector(QtGui.QWidget):
             img = img.mirrored()
             v = qimage2ndarray.rgb_view(img)
 
-            # TODO gpu
-            image_np = cv2.warpPerspective(v, self.h_matrix, (self.width(), self.height()))
+            image_np = cv2.remap(v, self.map_x,  self.map_y,  cv2.INTER_CUBIC)
+            #image_np = cv2.warpPerspective(v, self.h_matrix, (self.width(), self.height()))
 
             height, width, channel = image_np.shape
             bytesPerLine = 3 * width
@@ -270,11 +289,12 @@ class Projector(QtGui.QWidget):
 
         h, status = cv2.findHomography(np.array(points), np.array(ppoints), cv2.LMEDS)
 
-        self.h_matrix = np.matrix(h)
+        h_matrix = np.matrix(h)
+        self.init_map_from_matrix(h_matrix)
         # self.h_matrix = np.matrix([[1,  0,  0], [0,  1,  0], [0,  0, 1.0]])
 
         # store homography matrix to parameter server
-        s = str(self.h_matrix.tolist())
+        s = str(h_matrix.tolist())
         rospy.set_param("~calibration_matrix", s)
         print s
 
@@ -365,7 +385,7 @@ class Projector(QtGui.QWidget):
 
     def is_calibrated(self):
 
-        return self.h_matrix is not None
+        return self.map_x is not None and self.map_y is not None
 
     def on_resize(self, event):
 
