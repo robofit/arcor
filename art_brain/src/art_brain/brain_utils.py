@@ -104,6 +104,7 @@ class ArtBrainUtils(object):
         rospy.loginfo("Service " + str(service_name) + " ready")
         return rospy.ServiceProxy(service_name, service_type)
 
+
 class ArtGripper(object):
 
     GRIPPER_LEFT = 0
