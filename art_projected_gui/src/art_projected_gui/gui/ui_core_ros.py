@@ -347,7 +347,7 @@ class UICoreRos(UICore):
                     translate("UICoreRos", "Waiting for user to finish"))
 
             elif it.type == ProgIt.PICK_FROM_POLYGON:
-                
+
                 obj_id = None
                 try:
                     obj_id = flags["SELECTED_OBJECT_ID"]
@@ -356,13 +356,13 @@ class UICoreRos(UICore):
                         "PICK_FROM_POLYGON: SELECTED_OBJECT_ID flag not set")
 
                 if obj_id is not None:
-                    
+
                     self.select_object(obj_id)
-                    
+
                     obj = self.get_object(obj_id)  # TODO notif - object type
                     self.notif(
-                        translate("UICoreRos", "Going to pick object ID ") + obj_id + translate("UICoreRos", " of type ") + obj.object_type.name  + translate("UICoreRos", " from polygon."))
-                    
+                        translate("UICoreRos", "Going to pick object ID ") + obj_id + translate("UICoreRos", " of type ") + obj.object_type.name + translate("UICoreRos", " from polygon."))
+
                 self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
                                  poly_points=conversions.get_pick_polygon_points(it),  fixed=True)
 
