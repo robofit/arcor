@@ -16,7 +16,7 @@ class ArCodeDetector:
 
     def __init__(self):
 
-        self.ar_code_sub = rospy.Subscriber("/art/object_detector/ar_pose_marker", AlvarMarkers, self.ar_code_cb)
+        self.ar_code_sub = rospy.Subscriber("ar_pose_marker", AlvarMarkers, self.ar_code_cb)
         self.detected_objects_pub = rospy.Publisher("/art/object_detector/object", InstancesArray, queue_size=10)
         self.visualize_pub = rospy.Publisher("object_detector/visualize_objects", Marker, queue_size=10)
 

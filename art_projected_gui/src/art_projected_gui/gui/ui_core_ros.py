@@ -277,8 +277,6 @@ class UICoreRos(UICore):
 
     def interface_state_evt(self, our_state, state, flags):
 
-        print "state.system_state: " + str(state.system_state)
-
         # display info/warning/error if there is any - only once (on change)
         if state.error_severity != InterfaceState.NONE and our_state.error_severity != state.error_severity:
 
@@ -349,21 +347,24 @@ class UICoreRos(UICore):
                     translate("UICoreRos", "Waiting for user to finish"))
 
             elif it.type == ProgIt.PICK_FROM_POLYGON:
-
+                
+                obj_id = None
                 try:
                     obj_id = flags["SELECTED_OBJECT_ID"]
                 except KeyError:
                     rospy.logerr(
                         "PICK_FROM_POLYGON: SELECTED_OBJECT_ID flag not set")
-                    return
 
-                self.select_object(obj_id)
+                if obj_id is not None:
+                    
+                    self.select_object(obj_id)
+                    
+                    obj = self.get_object(obj_id)  # TODO notif - object type
+                    self.notif(
+                        translate("UICoreRos", "Going to pick object ID ") + obj_id + translate("UICoreRos", " of type ") + obj.object_type.name  + translate("UICoreRos", " from polygon."))
+                    
                 self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
                                  poly_points=conversions.get_pick_polygon_points(it),  fixed=True)
-
-                obj = self.get_object(obj_id)
-                self.notif(
-                    translate("UICoreRos", "Going to manipulate with object ID=") + obj_id)
 
             elif it.type == ProgIt.PICK_FROM_FEEDER:
 
