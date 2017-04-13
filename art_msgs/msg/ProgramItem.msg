@@ -22,6 +22,7 @@ uint16 PICK_OBJECT_ID=102 # object (ID)
 
 # manipulation - place
 uint16 PLACE_TO_POSE=200 # pose, object from ProgramItem.id == ref_id
+uint16 PLACE_TO_GRID=201
 
 # -----------------------------------------------------
 # OPERATION PARAMETERS
