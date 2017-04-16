@@ -328,8 +328,8 @@ def main(args):
     pb.items.append(deepcopy(p))
 
     # p = ProgramItem()
-    # p.id = 4
-    # p.on_success = 3
+    # p.id = 3
+    # p.on_success = 4
     # p.on_failure = 0
     # p.type = ProgramItem.PICK_FROM_POLYGON
     # p.object.append("")

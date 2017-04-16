@@ -400,6 +400,8 @@ class ArtBrain(object):
         rospy.loginfo('state_place_to_grid')
         grid = ArtBrainUtils.get_place_grid(self.instruction)
         pose = ArtBrainUtils.get_place_pose(self.instruction)
+        self.state_manager.update_program_item(
+            self.ph.get_program_id(), self.block_id, self.instruction)
 
         if pose is None or len(pose) < 1:
             self.fsm.error(severity=ArtBrainMachine.ERROR,
@@ -422,8 +424,9 @@ class ArtBrain(object):
                 return
 
             if self.place_object(gripper.holding_object, pose[0], gripper):
+                # self.instruction.pose = pose[1:]
+                self.instruction.pose.pop(0)
                 gripper.holding_object = None
-                # gripper.last_pick_instruction_id = self.instruction.id
                 self.fsm.done(success=True)
                 return
             else:

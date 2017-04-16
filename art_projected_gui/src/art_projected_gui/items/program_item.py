@@ -287,13 +287,27 @@ class ProgramItem(Item):
             text += QtCore.QCoreApplication.translate(
                 "ProgramItem", "PLACE_TO_GRID")
 
-            if self.ph.is_object_set(block_id,  item_id):
+            ref_item = self.ph.get_item_msg(block_id, item.ref_id[0])
 
-                text += "\n" + "object ID=" + item.object[0]
+            if ref_item.type == ProgIt.PICK_OBJECT_ID:
 
-            else:
+                if self.ph.is_object_set(block_id,  item_id):
 
-                text += "\n" + "object ID=??"
+                    text += "\n" + "object ID=" + item.object[0]
+
+                else:
+
+                    text += "\n" + "object ID=??"
+
+            elif ref_item.type == ProgIt.PICK_FROM_POLYGON:
+
+                if self.ph.is_object_set(block_id, item_id):
+
+                    text += "\n" + "object TYPE=" + item.object[0]
+
+                else:
+
+                    text += "\n" + "object TYPE=??"
 
         return text
 

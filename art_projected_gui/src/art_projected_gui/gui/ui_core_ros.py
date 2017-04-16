@@ -305,11 +305,24 @@ class UICoreRos(UICore):
 
             elif it.type == ProgIt.PLACE_TO_GRID:
 
-                ref_item = self.program_vis.get_ref_item()  # ziskanie referencneho itemu
-                obj = self.get_object(ref_item.object[0])   # objekt referencneho itemu
-                self.program_vis.get_current_item().object[0] = obj.object_id   # nastavime objekt aktualneho itemu
+                ref_msg = self.program_vis.get_ref_item()  # ziskanie referencneho itemu
+
+                if ref_msg.type == ProgIt.PICK_OBJECT_ID:
+
+                    obj = self.get_object(ref_msg.object[0])
+                    object_type = obj.object_type
+                    self.program_vis.get_current_item().object[0] = obj.object_id  # nastavime objekt aktualneho itemu
+                    # self.select_object(ref_msg.object[0])
+
+                else:
+
+                    object_type = self.art.get_object_type(ref_msg.object[0])
+                    self.program_vis.get_current_item().object[0] = ref_msg.object[
+                        0]  # nastavime objekt aktualneho itemu
+                    # self.select_object_type(ref_msg.object[0])
+
                 self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
-                                0.075, obj.object_type, it.pose, grid_points=conversions.get_pick_polygon_points(it),
+                                0.075, object_type, it.pose, grid_points=conversions.get_pick_polygon_points(it),
                                 square_changed=self.square_changed, fixed=True)
 
 
@@ -410,11 +423,24 @@ class UICoreRos(UICore):
 
         elif msg.type == ProgIt.PLACE_TO_GRID:
 
-            ref_item = self.program_vis.get_ref_item()  # ziskanie referencneho itemu
-            obj = self.get_object(ref_item.object[0])  # objekt referencneho itemu
-            self.program_vis.get_current_item().object[0] = obj.object_id  # nastavime objekt aktualneho itemu
+            ref_msg = self.program_vis.get_ref_item()  # ziskanie referencneho itemu
+
+            if ref_msg.type == ProgIt.PICK_OBJECT_ID:
+
+                obj = self.get_object(ref_msg.object[0])
+                object_type = obj.object_type
+                self.program_vis.get_current_item().object[0] = obj.object_id  # nastavime objekt aktualneho itemu
+                # self.select_object(ref_msg.object[0])
+
+            else:
+
+                object_type = self.art.get_object_type(ref_msg.object[0])
+                self.program_vis.get_current_item().object[0] = ref_msg.object[0]  # nastavime objekt aktualneho itemu
+                # self.select_object_type(ref_msg.object[0])
+
             self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
-                            0.075, obj.object_type, msg.pose, grid_points=conversions.get_pick_polygon_points(msg), square_changed=self.square_changed, fixed=read_only)
+                            0.075, object_type, msg.pose, grid_points=conversions.get_pick_polygon_points(msg), square_changed=self.square_changed, fixed=read_only)
+
 
     def get_def_pose(self):
 
