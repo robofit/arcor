@@ -184,10 +184,6 @@ class Projector(QtGui.QWidget):
             ba = QtCore.QByteArray()
             instr >> ba
 
-            if self.tcpSocket.bytesAvailable() > 0:
-                rospy.logdebug("Image dropped")
-                continue
-
             ba = QtCore.qUncompress(ba)
             if not pix.loadFromData(ba):
 
@@ -201,8 +197,6 @@ class Projector(QtGui.QWidget):
             v = qimage2ndarray.rgb_view(img)
 
             image_np = cv2.remap(v, self.map_x, self.map_y, cv2.INTER_LINEAR)
-            rospy.loginfo(str(image_np))
-            #image_np = cv2.warpPerspective(v, self.h_matrix, (self.width(), self.height()))
 
             height, width, channel = image_np.shape
             bytesPerLine = 3 * width
