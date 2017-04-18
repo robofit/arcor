@@ -80,10 +80,6 @@ class Projector(QtGui.QWidget):
 
         self.connect()
 
-        self.calibrated_pub = rospy.Publisher(
-            "~calibrated", Bool, queue_size=1, latch=True)
-        self.calibrated_pub.publish(self.is_calibrated())
-
         self.projectors_calibrated_sub = rospy.Subscriber(
             '/art/interface/projected_gui/app/projectors_calibrated', Bool, self.projectors_calibrated_cb, queue_size=10)
         self.projectors_calibrated = False
@@ -107,6 +103,10 @@ class Projector(QtGui.QWidget):
         if h_matrix is not None:
             rospy.loginfo('Loaded calibration from param.')
             self.init_map_from_matrix(np.matrix(ast.literal_eval(h_matrix)))
+
+        self.calibrated_pub = rospy.Publisher(
+            "~calibrated", Bool, queue_size=1, latch=True)
+        self.calibrated_pub.publish(self.is_calibrated())
 
     def init_map_from_matrix(self, m):
 
@@ -184,7 +184,6 @@ class Projector(QtGui.QWidget):
             ba = QtCore.QByteArray()
             instr >> ba
 
-            ba = QtCore.qUncompress(ba)
             if not pix.loadFromData(ba):
 
                 rospy.logerr("Failed to load image from received data")
