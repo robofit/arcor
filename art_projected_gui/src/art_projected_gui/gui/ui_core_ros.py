@@ -6,12 +6,12 @@ import rospy
 from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt, LearningRequestAction, LearningRequestGoal
 from fsm import FSM
 from transitions import MachineError
-from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, TouchPointsItem, LabelItem, TouchTableItem, ProgramListItem, ProgramItem, DialogItem
-from art_projected_gui.helpers import ProjectorHelper, conversions
-from art_utils import InterfaceStateManager, ArtApiHelper, ProgramHelper
-from art_msgs.srv import TouchCalibrationPoints, TouchCalibrationPointsResponse, NotifyUser, NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest
-from std_msgs.msg import Empty, Bool
-from std_srvs.srv import Trigger, TriggerRequest
+from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem,  ProgramItem, DialogItem
+from art_projected_gui.helpers import ProjectorHelper,  conversions, error_strings
+from art_utils import InterfaceStateManager,  ArtApiHelper, ProgramHelper
+from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse,  NotifyUser,  NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest
+from std_msgs.msg import Empty,  Bool
+from std_srvs.srv import Trigger,  TriggerRequest
 from geometry_msgs.msg import PoseStamped
 import actionlib
 
@@ -281,7 +281,8 @@ class UICoreRos(UICore):
         if state.error_severity != InterfaceState.NONE and our_state.error_severity != state.error_severity:
 
             # TODO translate error number to error message
-            self.notif("error_code: " + str(state.error_code), temp=True)
+            self.notif(translate("UICoreRos", "Error occured: ") +
+                       error_strings.get_error_string(state.error_code), temp=True)
 
         if state.system_state == InterfaceState.STATE_PROGRAM_FINISHED or state.system_state == InterfaceState.STATE_IDLE:
 
@@ -304,7 +305,7 @@ class UICoreRos(UICore):
                                                        self.width / 2,
                                                        0.1,
                                                        translate(
-                                                           "UICoreRos", "Handle error: ") + str(state.error_code),
+                                                           "UICoreRos", "Handle error: ") + error_strings.get_error_string(state.error_code),
                                                        [
                                                            translate(
                                                                "UICoreRos", "Try again"),
