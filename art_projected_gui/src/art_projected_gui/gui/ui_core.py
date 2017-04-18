@@ -95,7 +95,7 @@ class UICore(QtCore.QObject):
             self.scene_timer,
             QtCore.SIGNAL('timeout()'),
             self.send_to_clients_evt)
-        self.scene_timer.start(1.0 / 20 * 1000)
+        self.scene_timer.start(1.0 / 15 * 1000)
 
     def new_connection(self):
 
@@ -114,6 +114,7 @@ class UICore(QtCore.QObject):
             self.scene.height(),
             QtGui.QImage.Format_RGB888)
         painter = QtGui.QPainter(pix)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
         self.scene.render(painter)
         painter.end()
 
