@@ -172,6 +172,17 @@ class UICore(QtCore.QObject):
             temp (:obj:`bool`, optional): temporal message disappears after min_duration and last non-temporal message is displayed instead.
         """
 
+        log_func = rospy.loginfo
+        if message_type == NotifyUserRequest.WARN:
+            log_func = rospy.logwarn
+        elif message_type == NotifyUserRequest.ERROR:
+            log_func = rospy.logerr
+
+        if temp:
+            log_func("Notification (temp): " + msg)
+        else:
+            log_func("Notification: " + msg)
+
         self.bottom_label.add_msg(msg, message_type,  rospy.Duration(min_duration), temp)
 
     def debug_view(self):

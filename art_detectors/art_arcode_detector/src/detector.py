@@ -18,7 +18,7 @@ class ArCodeDetector:
 
         self.ar_code_sub = rospy.Subscriber("ar_pose_marker", AlvarMarkers, self.ar_code_cb)
         self.detected_objects_pub = rospy.Publisher("/art/object_detector/object", InstancesArray, queue_size=10)
-        self.visualize_pub = rospy.Publisher("art/object_detector/visualize_objects", Marker, queue_size=10)
+        self.visualize_pub = rospy.Publisher("object_detector/visualize_objects", Marker, queue_size=10)
 
         # TODO make a timer clearing this cache from time to time
         self.objects_cache = {}
@@ -38,7 +38,7 @@ class ArCodeDetector:
 
             # list of allowed object ids
             # TODO load from param
-            if aid not in [4, 5, 3]: 
+            if aid not in [4, 5, 3, 21]: 
                 continue
 
             if aid not in self.objects_cache:

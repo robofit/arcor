@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="machine_name" default="localhost"/>
+    <arg name="address" default="localhost"/>
+    <arg name="user" default="artable"/>
+    <arg name="env_loader" default="/home/artable/env.sh"/>
+
+    <machine name="$(arg machine_name)" address="$(arg address)" user="$(arg user)" env-loader="$(arg env_loader)"/>
+
+    <include file="$(find art_projected_gui)/launch/projector.launch">
+      <arg name="machine" value="$(arg machine_name)"/>
+    </include>
+    
+    <!-- BUG: kinect crashes on artable-n1 when launched like this for some reason ("local" (through ssh) launch runs fine) -->
+    <!--include ns="/art/$(arg machine_name)" file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
+      <arg name="machine" value="$(arg machine_name)"/>
+      <arg name="fps_limit" value="5"/>
+      <arg name="base_name_tf" value="$(arg machine_name)_kinect2"/>
+    </include>
+    
+    <include ns="/art/$(arg machine_name)" file="$(find art_arcode_detector)/launch/ar_code_detector.launch">
+      <arg name="machine" value="$(arg machine_name)"/>
+      <arg name="cam_image_topic" value="kinect2/hd/image_color"/>
+      <arg name="cam_info_topic" value="kinect2/hd/camera_info"/>
+    </include-->
+    
+</launch>

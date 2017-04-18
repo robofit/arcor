@@ -1,5 +1,7 @@
-from transitions import Machine
+# from transitions import Machine
 # from transitions.extensions import GraphMachine as Machine
+from transitions.extensions import LockedMachine as Machine
+
 from transitions import State
 
 
@@ -73,7 +75,7 @@ class ArtBrainMachine(object):
                     'state_learning_step_error'], on_exit=[]),
               State(name='learning_done', on_enter=['state_learning_done'], on_exit=[])]
 
-    # program and learning error severities
+    '''    # program and learning error severities
     SEVERE = 0  # fatal, immediately shut down
     ERROR = 1  # cannot continue in current program
     WARNING = 2  # ask user what to do
@@ -105,7 +107,7 @@ class ArtBrainMachine(object):
     # Learning errors
     ERROR_LEARNING_NOT_IMPLEMENTED = 0
 
-    ERROR_LEARNING_GRIPPER_NOT_DEFINED = 100
+    ERROR_LEARNING_GRIPPER_NOT_DEFINED = 100'''
 
     def __init__(self):
         self.name = 'brain'
@@ -132,7 +134,13 @@ class ArtBrainMachine(object):
         self.machine.add_transition(
             'program_error_shutdown', 'program_error',  'shutdown')
         self.machine.add_transition(
-            'program_error_fatal', 'program_error',  'waiting_for_action')
+            'program_error_fatal', 'program_error',  'program_finished')
+        self.machine.add_transition(
+            'try_again', 'program_error', 'program_run')
+        self.machine.add_transition(
+            'skip', 'program_error', 'program_load_instruction')
+        self.machine.add_transition(
+            'fail', 'program_error', 'program_load_instruction')
         self.machine.add_transition(
             'done', 'program_load_instruction',  'program_run')
         self.machine.add_transition(
@@ -141,6 +149,8 @@ class ArtBrainMachine(object):
             'finished', 'program_load_instruction',  'program_finished')
         self.machine.add_transition(
             'done', 'program_finished',  'waiting_for_action')
+        self.machine.add_transition(
+            'finished', 'program_run', 'program_finished')
 
         # get ready instruction
         self.machine.add_transition('get_ready', 'program_run', 'get_ready')

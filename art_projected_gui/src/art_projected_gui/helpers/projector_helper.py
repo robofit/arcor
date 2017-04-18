@@ -14,7 +14,7 @@ class ProjectorHelper():
         self.calibrated_cb = None
         self.calibrating = False
 
-        self.proj_ns = "/art/interface/projected_gui/" + proj_id + "/"
+        self.proj_ns = "/art/" + proj_id + "/projector/"
 
         self.calib_sub = rospy.Subscriber(self.proj_ns + "calibrated", Bool, self.calib_cb, queue_size=10)
         self.srv_calibrate = rospy.ServiceProxy(self.proj_ns + "calibrate", Empty)
