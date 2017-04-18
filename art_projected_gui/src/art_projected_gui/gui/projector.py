@@ -89,8 +89,16 @@ class Projector(QtGui.QWidget):
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
         self.showFullScreen()
         self.setCursor(QtCore.Qt.BlankCursor)
+        
+        h_matrix = rospy.get_param("~calibration_matrix", None)
+        
+        if h_matrix is not None:
+            rospy.loginfo('Loaded calibration from param.')
+            self.init_map_from_matrix(np.matrix(ast.literal_eval(h_matrix)))
 
     def init_map_from_matrix(self, m):
+        
+        rospy.loginfo("Building map from calibration matrix...")
         
         Hd = self.height()
         Wd = self.width()
@@ -107,6 +115,7 @@ class Projector(QtGui.QWidget):
                 self.map_y.itemset((y,x), (m[1, 0]*x+m[1, 1]*y+m[1, 2]) / (m[2, 0]*x+m[2, 1]*y + m[2, 2]))
         
         self.map_x, self.map_y = cv2.convertMaps(self.map_x, self.map_y, cv2.CV_16SC2)
+        rospy.loginfo("Done!")
 
     def show_pix_label_evt(self, show):
 
@@ -307,9 +316,8 @@ class Projector(QtGui.QWidget):
         self.ts = None
 
     def sync_cb(self, image, cam_info, depth):
-
+        
         self.timeout_timer.shutdown()
-        self.timeout_timer = rospy.Timer(rospy.Duration(3.0), self.timeout_timer_cb, oneshot=True)
 
         if self.calibrate(image, cam_info, depth):
 
@@ -320,6 +328,7 @@ class Projector(QtGui.QWidget):
             self.calibration_attempts += 1
 
             if self.calibration_attempts < 10:
+                self.timeout_timer = rospy.Timer(rospy.Duration(3.0), self.timeout_timer_cb, oneshot=True)
                 return
 
             rospy.logerr('Calibration failed')
@@ -347,7 +356,7 @@ class Projector(QtGui.QWidget):
 
     def tfl_delay_timer_cb(self, evt=None):
 
-        rospy.loginfo('Subscribing to camera topics')
+        rospy.loginfo('Subscribing to camera topics: ' + str([self.camera_image_topic, self.camera_info_topic, self.camera_depth_topic]))
 
         self.subs = []
         self.subs.append(message_filters.Subscriber(self.camera_image_topic, Image))
@@ -389,9 +398,3 @@ class Projector(QtGui.QWidget):
         self.pix_label.resize(self.size())
         
         rospy.loginfo("resize")
-        
-        h_matrix = rospy.get_param("~calibration_matrix", None)
-        
-        if h_matrix is not None:
-            rospy.loginfo('Loaded calibration from param.')
-            self.init_map_from_matrix(np.matrix(ast.literal_eval(h_matrix)))
