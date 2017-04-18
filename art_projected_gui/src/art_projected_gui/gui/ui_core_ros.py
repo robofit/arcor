@@ -7,7 +7,7 @@ from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem
 from fsm import FSM
 from transitions import MachineError
 from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem,  ProgramItem, DialogItem
-from art_projected_gui.helpers import ProjectorHelper,  conversions
+from art_projected_gui.helpers import ProjectorHelper,  conversions, error_strings
 from art_utils import InterfaceStateManager,  ArtApiHelper, ProgramHelper
 from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse,  NotifyUser,  NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest
 from std_msgs.msg import Empty,  Bool
@@ -281,7 +281,8 @@ class UICoreRos(UICore):
         if state.error_severity != InterfaceState.NONE and our_state.error_severity != state.error_severity:
 
             # TODO translate error number to error message
-            self.notif("error_code: " + str(state.error_code), temp=True)
+            self.notif(translate("UICoreRos", "Error occured: ") +
+                       error_strings.get_error_string(state.error_code), temp=True)
 
         if state.system_state == InterfaceState.STATE_PROGRAM_FINISHED or state.system_state == InterfaceState.STATE_IDLE:
 
@@ -304,7 +305,7 @@ class UICoreRos(UICore):
                                                        self.width / 2,
                                                        0.1,
                                                        translate(
-                                                           "UICoreRos", "Handle error: ") + str(state.error_code),
+                                                           "UICoreRos", "Handle error: ") + error_strings.get_error_string(state.error_code),
                                                        [
                                                            translate(
                                                                "UICoreRos", "Try again"),
@@ -346,7 +347,7 @@ class UICoreRos(UICore):
                     translate("UICoreRos", "Waiting for user to finish"))
 
             elif it.type == ProgIt.PICK_FROM_POLYGON:
-                
+
                 obj_id = None
                 try:
                     obj_id = flags["SELECTED_OBJECT_ID"]
@@ -355,13 +356,13 @@ class UICoreRos(UICore):
                         "PICK_FROM_POLYGON: SELECTED_OBJECT_ID flag not set")
 
                 if obj_id is not None:
-                    
+
                     self.select_object(obj_id)
-                    
+
                     obj = self.get_object(obj_id)  # TODO notif - object type
                     self.notif(
-                        translate("UICoreRos", "Going to pick object ID ") + obj_id + translate("UICoreRos", " of type ") + obj.object_type.name  + translate("UICoreRos", " from polygon."))
-                    
+                        translate("UICoreRos", "Going to pick object ID ") + obj_id + translate("UICoreRos", " of type ") + obj.object_type.name + translate("UICoreRos", " from polygon."))
+
                 self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
                                  poly_points=conversions.get_pick_polygon_points(it),  fixed=True)
 

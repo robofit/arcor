@@ -6,6 +6,9 @@ from art_msgs.msg import PickPlaceAction, ObjInstance
 import copy
 from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import Pose
+from art_msgs.msg import InterfaceState
+
+from enum import Enum  # sudo pip install enum34
 
 
 class ArtBrainUtils(object):
@@ -84,6 +87,23 @@ class ArtBrainUtils(object):
         b = np.array((pose2.position.x, pose2.position.y))
         return np.linalg.norm(a - b)
 
+    @staticmethod
+    def create_service_client(service_name, service_type, print_info=True):
+        '''
+        Waits for service (eventually informs user about it) and return an instance of it
+        Args:
+            service_name:
+            service_type:
+            print_info:
+
+        Returns: created service proxy
+
+        '''
+        rospy.loginfo("Waiting for service: " + str(service_name))
+        rospy.wait_for_service(service_name)
+        rospy.loginfo("Service " + str(service_name) + " ready")
+        return rospy.ServiceProxy(service_name, service_type)
+
 
 class ArtGripper(object):
 
@@ -99,16 +119,39 @@ class ArtGripper(object):
         self.holding_object = None
         self.last_pick_instruction_id = None
         self.group_name = name
-        self.interaction_on_client = rospy.ServiceProxy(
+        self.interaction_on_client = ArtBrainUtils.create_service_client(
             "/art/pr2/" + name + "/interaction/on", Empty)
-        self.interaction_off_client = rospy.ServiceProxy(
+        self.interaction_off_client = ArtBrainUtils.create_service_client(
             "/art/pr2/" + name + "/interaction/off", Empty)
-        self.get_ready_client = rospy.ServiceProxy(
+        self.get_ready_client = ArtBrainUtils.create_service_client(
             "/art/pr2/" + name + "/get_ready", Trigger)
-        self.move_to_user_client = rospy.ServiceProxy(
+        self.move_to_user_client = ArtBrainUtils.create_service_client(
             "/art/pr2/" + name + "/move_to_user", Trigger)
 
+    def re_init(self):
+        self.last_pick_instruction_id = None
+        self.holding_object = None
 
-class ErrorMsgs(object):
 
-    MISSING_OBJECT = ""
+class ArtBrainErrors(Enum):
+    ERROR_NOT_IMPLEMENTED = 1
+    ERROR_NOT_EXECUTING_PROGRAM = 2
+    ERROR_NO_INSTRUCTION = 3
+    ERROR_NO_PROGRAM_HELPER = 4
+    ERROR_OBJECT_NOT_DEFINED = 5
+    ERROR_GRIPPER_PP_CLIENT_MISSING = 6
+    ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT = 7
+    ERROR_PICK_POSE_NOT_SELECTED = 8
+    ERROR_PLACE_POSE_NOT_DEFINED = 9
+    ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE = 10
+    # Learning errors
+    ERROR_LEARNING_NOT_IMPLEMENTED = 101
+    ERROR_LEARNING_GRIPPER_NOT_DEFINED = 102
+
+    ERROR_OBJECT_MISSING = InterfaceState.ERROR_OBJECT_MISSING
+    ERROR_OBJECT_MISSING_IN_POLYGON = InterfaceState.ERROR_OBJECT_MISSING_IN_POLYGON
+    ERROR_NO_GRIPPER_AVAILABLE = InterfaceState.ERROR_NO_GRIPPER_AVAILABLE
+    ERROR_OBJECT_IN_GRIPPER = InterfaceState.ERROR_OBJECT_IN_GRIPPER
+    ERROR_NO_OBJECT_IN_GRIPPER = InterfaceState.ERROR_NO_OBJECT_IN_GRIPPER
+    ERROR_PICK_FAILED = InterfaceState.ERROR_PICK_FAILED
+    ERROR_PLACE_FAILED = InterfaceState.ERROR_PLACE_FAILED

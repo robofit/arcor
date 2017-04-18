@@ -1,0 +1,43 @@
+-
+    name: brain
+    description: art_brain API
+    topics:
+        -
+           name: /art/interface/state
+           type: art_msgs/InterfaceState
+
+-
+    name: objects
+    description: API related to object detection and tracking.
+    topics:
+        -
+           name: /art/object_detector/object_filtered
+           type: art_msgs/InstancesArray
+
+-
+    name: user
+    description: API related to sensing a user.
+    topics:
+       -
+           name: /art/user/status
+           type: art_msgs/UserStatus
+       -
+           name: /art/user/activity
+           type: art_msgs/UserActivity
+
+-
+    name: db
+    description: The art_db package provides persistentstorage for ARTable.
+    services:
+        -
+           name: /art/db/program/get
+           type: art_msgs/getProgram
+        -
+           name: /art/db/program/store
+           type: art_msgs/storeProgram
+        -
+           name: /art/db/object_type/get
+           type: art_msgs/getObjectType
+        -
+           name: /art/db/object_type/store
+           type: art_msgs/storeObjectType
