@@ -37,12 +37,14 @@ class Slot:
 
 class ArtTouchDriver:
 
-    def __init__(self):
+    def __init__(self, device_name="USBest Technology SiS HID Touch Controller"):
+        self.device_name = device_name
         self.x = 0
         self.y = 0
         self.touch = False
         self.touch_id = -1
-        self.device = input.EventDevice("/dev/input/event14")
+        self.device = input.EventDevice()
+        self.device.find(name=self.device_name)
 
         self.slots = []
         self.slot = None
@@ -138,7 +140,16 @@ class ArtTouchDriver:
 
     def process(self):
         # print 1 if self.device._eventq else 0
-        event = self.device.read()
+        try:
+            event = self.device.read()
+        except (OSError, TypeError):
+            rospy.sleep(0.1)
+            try:
+                self.device.find(name=self.device_name)
+            except IOError:
+                pass
+            return
+            
         while True:
             if event.evtype == 3 and event.code == 47 and event.value >= 0:
                 # MT_SLOT
@@ -228,7 +239,16 @@ class ArtTouchDriver:
 
             if not self.device._eventq:
                 break
-            event = self.device.read()
+            
+            try:
+                event = self.device.read()
+            except (OSError, TypeError):
+                rospy.sleep(0.1)
+                try:
+                    self.device.find(name=self.device_name)
+                except IOError:
+                    pass
+                return
 
     def calculate_calibration(self):
 
