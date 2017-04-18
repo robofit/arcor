@@ -319,7 +319,7 @@ class ArtBrain(object):
         if not self.check_gripper_for_pick(gripper):
             return
 
-        if self.pick_object_by_id(obj, gripper):
+        if self.pick_object_by_id(obj, gripper, only_top=True):
             gripper.holding_object = obj
             gripper.last_pick_instruction_id = self.instruction.id
             self.fsm.done(success=True)
@@ -664,12 +664,13 @@ class ArtBrain(object):
     #                                     MANIPULATION
     # ***************************************************************************************
 
-    def pick_object_by_id(self, obj, gripper):
+    def pick_object_by_id(self, obj, gripper, only_top=False):
 
         goal = PickPlaceGoal()
         goal.object = obj.object_id
         goal.operation = goal.PICK_OBJECT_ID
         goal.keep_orientation = False
+        goal.pick_from_top = only_top
         rospy.loginfo("Picking object with ID: " + str(obj.object_id))
         gripper.pp_client.send_goal(goal)
         gripper.pp_client.wait_for_result()
