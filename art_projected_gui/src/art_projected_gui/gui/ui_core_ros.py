@@ -3,7 +3,7 @@
 from art_projected_gui.gui import UICore
 from PyQt4 import QtCore, QtGui
 import rospy
-from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt,  LearningRequestAction, LearningRequestGoal
+from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt, LearningRequestAction, LearningRequestGoal
 from fsm import FSM
 from transitions import MachineError
 from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem,  ProgramItem, DialogItem
@@ -42,7 +42,7 @@ class UICoreRos(UICore):
         port = rospy.get_param("scene_server_port")
 
         super(UICoreRos, self).__init__(
-            origin[0], origin[1], size[0], size[1], rpm,  port)
+            origin[0], origin[1], size[0], size[1], rpm, port)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL(
             'objects'), self.object_cb_evt)
@@ -122,7 +122,7 @@ class UICoreRos(UICore):
 
         self.grasp_dialog = None
 
-    def touch_calibration_points_evt(self,  pts):
+    def touch_calibration_points_evt(self, pts):
 
         # TODO trigger state change?
         for it in self.scene.items():
@@ -134,7 +134,7 @@ class UICoreRos(UICore):
 
         self.notif(translate(
             "UICoreRos", "Touch table calibration started. Please press the white point."), temp=False)
-        self.touch_points = TouchPointsItem(self.scene,  pts)
+        self.touch_points = TouchPointsItem(self.scene, pts)
 
     def save_gripper_pose_cb(self, idx):
 
@@ -144,7 +144,7 @@ class UICoreRos(UICore):
         # wait for message, set pose
         try:
             ps = rospy.wait_for_message(topics[idx], PoseStamped, timeout=2)
-        except(rospy.ROSException), e:
+        except(rospy.ROSException) as e:
             rospy.logerror(str(e))
             self.notif(
                 translate("UICoreRos", "Failed to store gripper pose."), temp=False)
@@ -153,7 +153,7 @@ class UICoreRos(UICore):
         self.notif(translate("UICoreRos", "Gripper pose stored."), temp=False)
         self.program_vis.set_pose(ps)
 
-    def touch_calibration_points_cb(self,  req):
+    def touch_calibration_points_cb(self, req):
 
         resp = TouchCalibrationPointsResponse()
 
@@ -166,15 +166,15 @@ class UICoreRos(UICore):
 
         for pt in req.points:
 
-            pts.append((pt.point.x,  pt.point.y))
+            pts.append((pt.point.x, pt.point.y))
 
         self.emit(QtCore.SIGNAL('touch_calibration_points_evt'), pts)
         self.touched_sub = rospy.Subscriber(
-            '/art/interface/touchtable/touch_detected',  Empty,  self.touch_detected_cb,  queue_size=10)
+            '/art/interface/touchtable/touch_detected', Empty, self.touch_detected_cb, queue_size=10)
         resp.success = True
         return resp
 
-    def touch_detected_evt(self,  msg):
+    def touch_detected_evt(self, msg):
 
         if self.touch_points is None:
             return
@@ -202,7 +202,7 @@ class UICoreRos(UICore):
             self.notif(
                 translate("UICoreRos", "Please press the next point."), temp=False)
 
-    def touch_detected_cb(self,  msg):
+    def touch_detected_cb(self, msg):
 
         self.emit(QtCore.SIGNAL('touch_detected_evt'), msg)
 
@@ -232,18 +232,18 @@ class UICoreRos(UICore):
 
         self.fsm.tr_start()
 
-    def notify_user_srv_cb(self,  req):
+    def notify_user_srv_cb(self, req):
 
         self.emit(QtCore.SIGNAL('notify_user_evt'), req)
         return NotifyUserResponse()
 
-    def notify_user_evt(self,  req):
+    def notify_user_evt(self, req):
 
         # TODO message should be displayed until user closes it
         if req.duration == rospy.Duration(0):
-            self.notif(req.message,  message_type=req.type)
+            self.notif(req.message, message_type=req.type)
         else:
-            self.notif(req.message,  min_duration=req.duration.to_sec(),
+            self.notif(req.message, min_duration=req.duration.to_sec(),
                        temp=True, message_type=req.type)
 
     def add_projector(self, proj_id):
@@ -264,7 +264,7 @@ class UICoreRos(UICore):
         resp = None
         try:
             resp = self.program_error_resolve_srv(req)
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
             rospy.logerr("Service call failed: " + str(e))
 
         if resp is None or not resp.success:
@@ -364,7 +364,7 @@ class UICoreRos(UICore):
                         translate("UICoreRos", "Going to pick object ID ") + obj_id + translate("UICoreRos", " of type ") + obj.object_type.name + translate("UICoreRos", " from polygon."))
 
                 self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
-                                 poly_points=conversions.get_pick_polygon_points(it),  fixed=True)
+                                 poly_points=conversions.get_pick_polygon_points(it), fixed=True)
 
             elif it.type == ProgIt.PICK_FROM_FEEDER:
 
@@ -390,7 +390,7 @@ class UICoreRos(UICore):
 
                 if obj is not None:
                     self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),
-                                   it.pose[0], obj.object_type, obj_id,  fixed=True)
+                                   it.pose[0], obj.object_type, obj_id, fixed=True)
                 else:
                     # TODO what to do if brain wants to manipulate with
                     # non-existent object?
@@ -413,7 +413,7 @@ class UICoreRos(UICore):
             return
 
         self.state_manager.update_program_item(
-            self.ph.get_program_id(), block_id,  self.ph.get_item_msg(block_id, item_id))
+            self.ph.get_program_id(), block_id, self.ph.get_item_msg(block_id, item_id))
 
         if not self.ph.item_requires_learning(block_id, item_id):
 
@@ -428,7 +428,8 @@ class UICoreRos(UICore):
 
         else:
 
-            if msg.type in [ProgIt.PICK_FROM_POLYGON, ProgIt.PICK_FROM_FEEDER, ProgIt.PICK_OBJECT_ID, ProgIt.PLACE_TO_POSE]:
+            if msg.type in [ProgIt.PICK_FROM_POLYGON, ProgIt.PICK_FROM_FEEDER,
+                            ProgIt.PICK_OBJECT_ID, ProgIt.PLACE_TO_POSE]:
 
                 self.notif(
                     translate("UICoreRos", "Program current manipulation task"))
@@ -497,12 +498,12 @@ class UICoreRos(UICore):
 
                         if object_type is not None:
                             self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),
-                                           msg.pose[0], object_type,  object_id, place_cb=self.place_pose_changed, fixed=read_only)
+                                           msg.pose[0], object_type, object_id, place_cb=self.place_pose_changed, fixed=read_only)
                     else:
                         self.notif(
                             translate("UICoreRos", "Set where to place picked object"))
-                        self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),  self.get_def_pose(
-                        ), object_type,  object_id, place_cb=self.place_pose_changed, fixed=read_only)
+                        self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), self.get_def_pose(
+                        ), object_type, object_id, place_cb=self.place_pose_changed, fixed=read_only)
 
     def get_def_pose(self):
 
@@ -512,11 +513,11 @@ class UICoreRos(UICore):
         ps.pose.orientation.w = 1.0
         return ps
 
-    def place_pose_changed(self, pos,  yaw):
+    def place_pose_changed(self, pos, yaw):
 
         if self.program_vis.editing_item:
 
-            self.program_vis.set_place_pose(pos[0], pos[1],  yaw)
+            self.program_vis.set_place_pose(pos[0], pos[1], yaw)
             self.state_manager.update_program_item(self.ph.get_program_id(
             ), self.program_vis.block_id, self.program_vis.get_current_item())
 
@@ -535,14 +536,19 @@ class UICoreRos(UICore):
 
             self.calib_proj_cnt += 1
 
-            if self.calib_proj_cnt < len(self.projectors):
+            while self.calib_proj_cnt < len(self.projectors):
+
+                if self.projectors[self.calib_proj_cnt].is_calibrated():
+                    self.calib_proj_cnt += 1
+                    continue
 
                 self.projectors[self.calib_proj_cnt].calibrate(
                     self.calib_done_cb)
-            else:
-                rospy.loginfo('Projectors calibrated.')
-                self.fsm.tr_projectors_calibrated()
-                self.projectors_calibrated_pub.publish(True)
+                return
+
+            rospy.loginfo('Projectors calibrated.')
+            self.fsm.tr_projectors_calibrated()
+            self.projectors_calibrated_pub.publish(True)
 
         else:
 
@@ -566,9 +572,24 @@ class UICoreRos(UICore):
 
             self.calib_proj_cnt = 0
 
-            if not self.projectors[0].calibrate(self.calib_done_cb):
-                # TODO what to do?
-                rospy.logerr("Failed to start projector calibration")
+            for proj in self.projectors:
+
+                if proj.is_calibrated():
+
+                    self.calib_proj_cnt += 1
+                    continue
+
+                else:
+
+                    if not proj.calibrate(self.calib_done_cb):
+                        # TODO what to do?
+                        rospy.logerr("Failed to start projector calibration")
+
+                    return
+
+            rospy.loginfo('Projectors calibrated.')
+            self.fsm.tr_projectors_calibrated()
+            self.projectors_calibrated_pub.publish(True)
 
     def cb_waiting_for_user(self):
 
@@ -617,7 +638,7 @@ class UICoreRos(UICore):
         resp = None
         try:
             resp = self.stop_learning_srv()
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
             print "Service call failed: %s" % e
 
         if resp is None or not resp.success:
@@ -626,7 +647,7 @@ class UICoreRos(UICore):
 
         self.fsm.tr_program_learned()
 
-    def program_selected_cb(self,  prog_id,  run=False,  template=False):
+    def program_selected_cb(self, prog_id, run=False, template=False):
 
         self.template = template
 
@@ -654,7 +675,7 @@ class UICoreRos(UICore):
             resp = None
             try:
                 resp = self.start_learning_srv()
-            except rospy.ServiceException, e:
+            except rospy.ServiceException as e:
                 print "Service call failed: %s" % e
 
             if resp is not None and resp.success:
@@ -718,7 +739,7 @@ class UICoreRos(UICore):
             if item.type == ProgIt.PICK_FROM_FEEDER:
 
                 self.grasp_dialog = DialogItem(self.scene, self.width / 2, 0.1, "Save gripper pose", [
-                                               "Right arm", "Left arm"],  self.save_gripper_pose_cb)
+                                               "Right arm", "Left arm"], self.save_gripper_pose_cb)
 
     def learning_request_done_cb(self, status, result):
 
@@ -759,7 +780,7 @@ class UICoreRos(UICore):
 
         # rospy.loginfo(str(d))
         self.program_list = ProgramListItem(
-            self.scene, pos[0], pos[1], headers_to_show,  d, prog_id, self.program_selected_cb)
+            self.scene, pos[0], pos[1], headers_to_show, d, prog_id, self.program_selected_cb)
 
     def object_cb(self, msg):
 
@@ -784,7 +805,7 @@ class UICoreRos(UICore):
 
                 obj_type = self.art.get_object_type(inst.object_type)
                 self.add_object(inst.object_id, obj_type, inst.pose.position.x, inst.pose.position.y,
-                                conversions.quaternion2yaw(inst.pose.orientation),  self.object_selected)
+                                conversions.quaternion2yaw(inst.pose.orientation), self.object_selected)
                 self.notif(translate("UICoreRos", "New object") +
                            " ID=" + str(inst.object_id), temp=True)
 

@@ -16,6 +16,7 @@ def sigint_handler(*args):
 def main(args):
 
     rospy.init_node('projected_gui_projector',  anonymous=True)
+    rospy.sleep(1)
 
     signal.signal(signal.SIGINT, sigint_handler)
 
