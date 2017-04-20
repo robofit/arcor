@@ -396,6 +396,9 @@ class ArtBrain(object):
             rospy.logdebug(self.instruction)
             gripper = self.get_gripper_by_pick_instruction_id(
                 self.instruction.ref_id)
+            if gripper is None:
+	        self.fsm.error(severity=InterfaceState.WARNING,
+                               error=ArtBrainErrors.ERROR_PLACE_FAILED)
             # TODO what to do if gripper is None?
             self.check_gripper_for_place(gripper)
             if gripper is None:
@@ -501,6 +504,7 @@ class ArtBrain(object):
             error = ArtBrainErrors.ERROR_UNKNOWN
         rospy.logerr("Error: " + str(error))
         self.state_manager.set_error(severity, error)
+        self.state_manager.set_error(0, 0)
         if severity == InterfaceState.SEVERE:
             # handle
             self.fsm.program_error_shutdown()
@@ -998,7 +1002,7 @@ class ArtBrain(object):
             result.success = False
             result.message = "Not in learning mode!"
         rospy.loginfo("Learning_request goal: " + str(goal.request))
-        rospy.sleep(2)
+        
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
 
         if goal.request == LearningRequestGoal.GET_READY:
