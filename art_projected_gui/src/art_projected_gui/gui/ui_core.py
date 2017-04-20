@@ -5,6 +5,7 @@ from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, ProgramIte
 import rospy
 from art_projected_gui.helpers import conversions
 from art_msgs.srv import NotifyUserRequest
+# import time
 
 
 class customGraphicsView(QtGui.QGraphicsView):
@@ -109,6 +110,8 @@ class UICore(QtCore.QObject):
 
     def send_to_clients_evt(self, client=None):
 
+        # start = time.time()
+
         pix = QtGui.QImage(
             self.scene.width(),
             self.scene.height(),
@@ -117,6 +120,7 @@ class UICore(QtCore.QObject):
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         self.scene.render(painter)
         painter.end()
+        pix = pix.mirrored()
 
         block = QtCore.QByteArray()
         out = QtCore.QDataStream(block, QtCore.QIODevice.WriteOnly)
@@ -143,6 +147,9 @@ class UICore(QtCore.QObject):
         else:
 
             client.write(block)
+
+        # end = time.time()
+        # rospy.logdebug("Image sent in: " + str(end-start))
 
     def scene_changed(self, rects):
 
@@ -196,7 +203,7 @@ class UICore(QtCore.QObject):
         """Generator to filter content of scene_items array."""
 
         for el in self.scene.items():
-            if type(el) == itype:
+            if isinstance(el, itype):
                 yield el
 
     def remove_scene_items_by_type(self, itype):
@@ -206,7 +213,7 @@ class UICore(QtCore.QObject):
 
         for it in self.scene.items():
 
-            if not type(it) == itype:
+            if not isinstance(it, itype):
                 continue
             its.append(it)
 
