@@ -15,6 +15,7 @@ from image_geometry import PinholeCameraModel
 from geometry_msgs.msg import PointStamped, Pose, PoseArray
 import tf
 import ast
+# import time
 
 # TODO create ProjectorROS (to separate QT / ROS stuff)
 # podle vysky v pointcloudu / pozice projektoru se vymaskuji mista kde je
@@ -50,6 +51,7 @@ class Projector(QtGui.QWidget):
         img_path = rospkg.RosPack().get_path('art_projected_gui') + '/imgs'
         self.checkerboard_img = QtGui.QPixmap(img_path + "/pattern.png")
         self.calibrating = False
+        self.calibrated = False
 
         desktop = QtGui.QDesktopWidget()
         geometry = desktop.screenGeometry(self.screen)
@@ -76,9 +78,6 @@ class Projector(QtGui.QWidget):
         self.blockSize = 0
         self.tcpSocket.readyRead.connect(self.getScene)
         self.tcpSocket.error.connect(self.on_error)
-        self.tcpSocket.connectToHost(self.server, self.port)
-
-        self.connect()
 
         self.projectors_calibrated_sub = rospy.Subscriber(
             '/art/interface/projected_gui/app/projectors_calibrated', Bool, self.projectors_calibrated_cb, queue_size=10)
@@ -98,15 +97,19 @@ class Projector(QtGui.QWidget):
         self.showFullScreen()
         self.setCursor(QtCore.Qt.BlankCursor)
 
+        self.calibrated_pub = rospy.Publisher(
+            "~calibrated", Bool, queue_size=1, latch=True)
+
         h_matrix = rospy.get_param("~calibration_matrix", None)
 
         if h_matrix is not None:
             rospy.loginfo('Loaded calibration from param.')
+            self.calibrated = True
+            self.calibrated_pub.publish(self.is_calibrated())
             self.init_map_from_matrix(np.matrix(ast.literal_eval(h_matrix)))
-
-        self.calibrated_pub = rospy.Publisher(
-            "~calibrated", Bool, queue_size=1, latch=True)
-        self.calibrated_pub.publish(self.is_calibrated())
+            self.connect()
+        else:
+            self.calibrated_pub.publish(self.is_calibrated())
 
     def init_map_from_matrix(self, m):
 
@@ -135,6 +138,7 @@ class Projector(QtGui.QWidget):
     def show_pix_label_evt(self, show):
 
         if show:
+            self.pix_label.clear()
             self.pix_label.show()
         else:
             self.pix_label.hide()
@@ -160,6 +164,7 @@ class Projector(QtGui.QWidget):
 
     def on_error(self):
 
+        rospy.logdebug("socket error")
         QtCore.QTimer.singleShot(0, self.connect)
 
     def getScene(self):
@@ -184,19 +189,30 @@ class Projector(QtGui.QWidget):
             ba = QtCore.QByteArray()
             instr >> ba
 
-            if not pix.loadFromData(ba):
+            # skip this frame if there is another one in buffer
+            if self.tcpSocket.bytesAvailable() > 0:
+                rospy.logdebug("Frame dropped")
+                continue
+
+            # start = time.time()
+
+            # 16ms
+            if not pix.loadFromData(ba, "JPG"):
 
                 rospy.logerr("Failed to load image from received data")
+                return
 
             if not self.is_calibrated() or self.calibrating or not self.projectors_calibrated:
                 return
 
+            # 3ms
             img = pix.convertToFormat(QtGui.QImage.Format_ARGB32)
-            img = img.mirrored()
             v = qimage2ndarray.rgb_view(img)
 
+            # TODO some further optimalization? this is about 30ms (with INTER_LINEAR)s...
             image_np = cv2.remap(v, self.map_x, self.map_y, cv2.INTER_LINEAR)
 
+            # this is about 3ms
             height, width, channel = image_np.shape
             bytesPerLine = 3 * width
             image = QtGui.QPixmap.fromImage(QtGui.QImage(
@@ -204,6 +220,10 @@ class Projector(QtGui.QWidget):
 
             self.pix_label.setPixmap(image)
             self.update()
+
+            # end = time.time()
+            # rospy.logdebug("Frame loaded in: " + str(end-start))
+
             return
 
     def calibrate(self, image, info, depth):
@@ -308,13 +328,17 @@ class Projector(QtGui.QWidget):
             np.array(points), np.array(ppoints), cv2.LMEDS)
 
         h_matrix = np.matrix(h)
+
+        self.emit(QtCore.SIGNAL('show_pix_label'), False)
+        self.calibrating = False
+        self.calibrated_pub.publish(self.is_calibrated())
+
         self.init_map_from_matrix(h_matrix)
         # self.h_matrix = np.matrix([[1,  0,  0], [0,  1,  0], [0,  0, 1.0]])
 
         # store homography matrix to parameter server
         s = str(h_matrix.tolist())
         rospy.set_param("~calibration_matrix", s)
-        print s
 
         return True
 
@@ -345,14 +369,14 @@ class Projector(QtGui.QWidget):
                 return
 
             rospy.logerr('Calibration failed')
-
-        self.emit(QtCore.SIGNAL('show_pix_label'), False)
+            self.calibrating = False
+            self.emit(QtCore.SIGNAL('show_pix_label'), False)
+            self.calibrated_pub.publish(self.is_calibrated())
 
         self.shutdown_ts()
         if self.is_calibrated():
+            self.connect()
             self.tfl = None
-        self.calibrated_pub.publish(self.is_calibrated())
-        self.calibrating = False
 
     def show_chessboard_evt(self):
 
@@ -387,15 +411,20 @@ class Projector(QtGui.QWidget):
         self.timeout_timer = rospy.Timer(rospy.Duration(
             3.0), self.timeout_timer_cb, oneshot=True)
 
-    def calibrate_srv_cb(self, req):
+    def calibrate_srv_cb(self, req):  # TODO Trigger service
 
         if self.calibrating:
             rospy.logwarn('Calibration already running')
             return None
 
+        if not self.projectors_calibrated:
+
+            rospy.logwarn('Some projector is not calibrated yet')
+            return None
+
         rospy.loginfo('Starting calibration')
-        self.emit(QtCore.SIGNAL('show_chessboard'))
         self.calibrating = True
+        self.emit(QtCore.SIGNAL('show_chessboard'))
 
         self.calibration_attempts = 0
 
@@ -411,7 +440,7 @@ class Projector(QtGui.QWidget):
 
     def is_calibrated(self):
 
-        return self.map_x is not None and self.map_y is not None
+        return self.calibrated
 
     def on_resize(self, event):
 
