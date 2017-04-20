@@ -398,6 +398,9 @@ class SquareItem(Item):
             self.plus_btn.setEnabled(True)  # uz mozno zvacsovat space
             self.minus_btn.setEnabled(True)  # uz mozno zmensovat space
 
+            # if self.last_corner == "BR" or self.last_corner == "BL":
+            #     self.items.reverse()    # aby robot ukladal od najvzdialenejsieho radu, aby mu ulozene objekty nezavadzali
+
             in_collision = False
             for it in self.items:   # kontrola ci nie su objekty v kolizii
                 if it.in_collision:
