@@ -31,11 +31,11 @@ class Projector(QtGui.QWidget):
         self.world_frame = rospy.get_param('~world_frame', 'marker')
         self.screen = rospy.get_param('~screen_number', 0)
         self.camera_image_topic = rospy.get_param(
-            '~camera_image_topic', '/kinect2/hd/image_color_rect')
+            '~camera_image_topic', 'kinect2/hd/image_color_rect')
         self.camera_depth_topic = rospy.get_param(
-            '~camera_depth_topic', '/kinect2/hd/image_depth_rect')
+            '~camera_depth_topic', 'kinect2/hd/image_depth_rect')
         self.camera_info_topic = rospy.get_param(
-            '~camera_info_topic', '/kinect2/hd/camera_info')
+            '~camera_info_topic', 'kinect2/hd/camera_info')
 
         self.map_x = None
         self.map_y = None

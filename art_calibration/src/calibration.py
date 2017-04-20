@@ -14,8 +14,13 @@ class ArtCalibration(object):
     def __init__(self):
         self.robot_calibration = ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
                                                      '/odom_combined', '/marker')
-        self.cells = [ArtCellCalibration('table', '/table/ar_pose_marker',
-                                         '/kinect2_link', '/marker')]
+
+        self.cells = []
+
+        for cell in rospy.get_param("cells", ["n1", "n2"]):
+
+            self.cells.append(ArtCellCalibration(cell, '/art/' + cell + '/ar_pose_marker',
+                                                 '/' + cell + '_kinect2_link', '/marker'))
 
         self.calibrated_pub = rospy.Publisher('system_calibrated', Bool,
                                               queue_size=10, latch=True)
@@ -33,7 +38,7 @@ class ArtCalibration(object):
             self.broadcaster.sendTransform(tr.translation, tr.rotation,
                                            rospy.Time.now(), self.robot_calibration.world_frame,
                                            self.robot_calibration.robot_frame)
-            
+
         else:
             calibrated = True
 
@@ -43,7 +48,7 @@ class ArtCalibration(object):
                 self.broadcaster.sendTransform(tr.translation, tr.rotation,
                                                rospy.Time.now(), cell.world_frame,
                                                cell.cell_frame)
-                
+
             else:
                 calibrated = False
 
@@ -51,6 +56,7 @@ class ArtCalibration(object):
             self.calibrated_sended = True
             self.calibrated.data = True
             self.calibrated_pub.publish(self.calibrated)
+
 
 if __name__ == '__main__':
     rospy.init_node('art_calibration', log_level=rospy.INFO)
