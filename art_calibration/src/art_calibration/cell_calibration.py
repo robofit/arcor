@@ -25,13 +25,13 @@ class ArtCellCalibration(object):
         rospy.loginfo("Cell: " + str(self.cell_id) + " ready")
 
     def calibrate(self):
-        rospy.loginfo("Trying to calibrate")
-        for p in self.positions:
+        rospy.loginfo("Cell: " + str(self.cell_id) + " trying to calibrate")
+        '''for p in self.positions:
             if p is None:
-                return False
+                return False'''
         point, m = ArtCalibrationHelper.transform_from_markers_positions(self.positions[0],
                                                                          self.positions[1],
-                                                                         self.positions[2],
+                                                                        0,
                                                                          self.positions[3])
      
         if point is None or m is None:
@@ -54,6 +54,8 @@ class ArtCellCalibration(object):
         all_markers = True
         for i in xrange(4):
             if self.positions[i] is not None:
+                continue
+            if i == 2:
                 continue
             p = ArtCalibrationHelper.get_marker_position_by_id(markers, i + 10)
             if p is not None:
