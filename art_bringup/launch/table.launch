@@ -9,9 +9,9 @@
     <node name="brain_node" pkg="art_brain" type="node.py" respawn="false" output="screen"/>
     <!-- include file="$(find art_table_pointing)/launch/node.launch"></include -->  <!-- moved to ar-table-pr2 -->
     
-    <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
+    <!--include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
         <arg name="fps_limit" value="3"/>
         <arg name="respawn" value="false"/>
-    </include>
+    </include-->
 	
 </launch>

@@ -37,12 +37,15 @@ class Slot:
 
 class ArtTouchDriver:
 
-    def __init__(self):
+    def __init__(
+            self, device_name="USBest Technology SiS HID Touch Controller"):
+        self.device_name = device_name
         self.x = 0
         self.y = 0
         self.touch = False
         self.touch_id = -1
-        self.device = input.EventDevice("/dev/input/event18")
+        self.device = input.EventDevice()
+        self.device.find(name=self.device_name)
 
         self.slots = []
         self.slot = None
@@ -52,7 +55,7 @@ class ArtTouchDriver:
 
         # make sure that all messages will be sent
         self.touch_pub = rospy.Publisher(
-            self.ns + "touch", Touch, queue_size=100,  tcp_nodelay=True)
+            self.ns + "touch", Touch, queue_size=100, tcp_nodelay=True)
         self.calibrated_pub = rospy.Publisher(
             self.ns + 'calibrated', Bool, queue_size=1, latch=True)
         self.calibrating_pub = rospy.Publisher(
@@ -97,9 +100,9 @@ class ArtTouchDriver:
         ps.header.frame_id = "marker"
         ps.point.z = 0
 
-        self.ref_points = ((0.1, 0.05), (0.6, 0.05),  (1.25, 0.05),
-                           (0.1, 0.25), (0.6, 0.25),  (1.25, 0.25),
-                           (0.1, 0.55), (0.6, 0.55),  (1.25, 0.55))
+        self.ref_points = ((0.15, 0.1), (0.55, 0.1), (1.25, 0.1),
+                           (0.15, 0.25), (0.55, 0.25), (1.25, 0.25),
+                           (0.15, 0.55), (0.55, 0.55), (1.25, 0.55))
 
         # self.ref_points += self.ref_points
 
@@ -111,7 +114,7 @@ class ArtTouchDriver:
 
         try:
             resp = self.calib_srv(req)
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
             print "Service call failed: %s" % e
             self.set_calibrating(False)
             return EmptyResponse()
@@ -138,7 +141,16 @@ class ArtTouchDriver:
 
     def process(self):
         # print 1 if self.device._eventq else 0
-        event = self.device.read()
+        try:
+            event = self.device.read()
+        except (OSError, TypeError):
+            rospy.sleep(0.1)
+            try:
+                self.device.find(name=self.device_name)
+            except IOError:
+                pass
+            return
+
         while True:
             if event.evtype == 3 and event.code == 47 and event.value >= 0:
                 # MT_SLOT
@@ -198,7 +210,7 @@ class ArtTouchDriver:
                         if len(self.calib_points) > 0:
 
                             pp = np.array(self.calib_points[-1])
-                            p = np.array((self.slot.x,  self.slot.y))
+                            p = np.array((self.slot.x, self.slot.y))
 
                             # calculate distance from previous touch - in order
                             # to avoid unintended touches
@@ -207,10 +219,11 @@ class ArtTouchDriver:
                             rospy.logdebug(
                                 "Distance from previous touch: " + str(dist))
 
-                        if self.touch_cnt < len(self.ref_points) and (dist is None or dist > 500):
+                        if self.touch_cnt < len(self.ref_points) and (
+                                dist is None or dist > 500):
 
                             self.calib_points.append(
-                                (self.slot.x,  self.slot.y))
+                                (self.slot.x, self.slot.y))
                             self.touch_det_pub.publish()
                             self.touch_cnt += 1
 
@@ -228,7 +241,16 @@ class ArtTouchDriver:
 
             if not self.device._eventq:
                 break
-            event = self.device.read()
+
+            try:
+                event = self.device.read()
+            except (OSError, TypeError):
+                rospy.sleep(0.1)
+                try:
+                    self.device.find(name=self.device_name)
+                except IOError:
+                    pass
+                return
 
     def calculate_calibration(self):
 

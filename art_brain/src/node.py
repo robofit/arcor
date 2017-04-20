@@ -188,8 +188,10 @@ class ArtBrain(object):
 
         self.art.wait_for_api()
 
-        self.get_obj_type_srv_client = ArtBrainUtils.create_service_client('/art/db/object_type/get', getObjectType)
-        #self.select_arm_srv_client = ArtBrainUtils.create_service_client('/art/fuzzy/select_arm', SelectArm)
+        self.get_obj_type_srv_client = ArtBrainUtils.create_service_client(
+            '/art/db/object_type/get', getObjectType)
+        self.select_arm_srv_client = ArtBrainUtils.create_service_client(
+            '/art/fuzzy/select_arm', SelectArm)
 
         if not self.table_calibrated:
             rospy.loginfo(
@@ -922,7 +924,7 @@ class ArtBrain(object):
             resp.success = False
         rospy.loginfo('Stopping learning')
         self.learning = False
-    
+
         resp.success = True
         self.fsm.learning_done()
         return resp
