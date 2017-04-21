@@ -203,7 +203,7 @@ class UICore(QtCore.QObject):
         """Generator to filter content of scene_items array."""
 
         for el in self.scene.items():
-            if isinstance(el, itype):
+            if type(el) == itype:
                 yield el
 
     def remove_scene_items_by_type(self, itype):
@@ -213,7 +213,7 @@ class UICore(QtCore.QObject):
 
         for it in self.scene.items():
 
-            if not isinstance(it, itype):
+            if type(it) != itype:
                 continue
             its.append(it)
 
