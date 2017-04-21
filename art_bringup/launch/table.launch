@@ -6,7 +6,7 @@
 	<include file="$(find art_projected_gui)/launch/app.launch"></include>
 	<include file="$(find art_simple_tracker)/launch/art_simple_tracker.launch"></include>
 	<include file="$(find art_touch_driver)/launch/touch.launch"></include>
-    <node name="brain_node" pkg="art_brain" type="node.py" respawn="true" output="screen"/>
+    <node name="brain_node" pkg="art_brain" type="node.py" respawn="false" output="screen"/>
     <!-- include file="$(find art_table_pointing)/launch/node.launch"></include -->  <!-- moved to ar-table-pr2 -->
     
     <!--include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">

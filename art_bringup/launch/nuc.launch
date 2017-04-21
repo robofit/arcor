@@ -12,6 +12,10 @@
       <arg name="machine" value="$(arg machine_name)"/>
     </include>
     
+    <include file="$(find art_calibration)/launch/calibration_marker_detector.launch">
+      <arg name="machine" value="$(arg machine_name)"/>
+    </include>
+       
     <!-- BUG: kinect crashes on artable-n1 when launched like this for some reason ("local" (through ssh) launch runs fine) -->
     <include ns="/art/$(arg machine_name)" file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
       <arg name="machine" value="$(arg machine_name)"/>

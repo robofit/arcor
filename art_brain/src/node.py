@@ -9,8 +9,8 @@ import sys
 import actionlib
 from art_msgs.msg import LocalizeAgainstUMFAction, LocalizeAgainstUMFGoal, LocalizeAgainstUMFResult
 from std_srvs.srv import Empty, EmptyRequest, EmptyResponse, Trigger, TriggerResponse
-from art_msgs.msg import UserStatus,  UserActivity, InterfaceState
-from art_msgs.srv import startProgram,  startProgramResponse,  getProgram
+from art_msgs.msg import UserStatus, UserActivity, InterfaceState
+from art_msgs.srv import startProgram, startProgramResponse, getProgram
 from geometry_msgs.msg import PoseStamped, Pose
 from std_msgs.msg import String, Bool
 from art_msgs.msg import PickPlaceAction, PickPlaceGoal, SystemState, ObjInstance, InstancesArray, ProgramItem, \
@@ -20,7 +20,7 @@ from art_msgs.srv import getObjectType, ProgramErrorResolveRequest, ProgramError
 import matplotlib.path as mplPath
 import numpy as np
 import random
-from art_utils import InterfaceStateManager,  ArtApiHelper,  ProgramHelper
+from art_utils import InterfaceStateManager, ArtApiHelper, ProgramHelper
 
 from tf import TransformerROS, TransformListener
 
@@ -121,12 +121,12 @@ class ArtBrain(object):
             "/art/user/status", UserStatus, self.user_status_cb)
         self.user_activity_sub = rospy.Subscriber(
             "/art/user/activity", UserActivity, self.user_activity_cb)
-        self.table_calibrated_sub = rospy.Subscriber("/art/interface/touchtable/calibrated", Bool,
-                                                     self.table_calibrated_cb)
-        self.table_calibrating_sub = rospy.Subscriber("/art/interface/touchtable/calibrating", Bool,
-                                                      self.table_calibrating_cb)
-        self.system_calibrated_sub = rospy.Subscriber("/system_calibrated", Bool,
-                                                      self.system_calibrated_cb)
+        self.table_calibrated_sub = rospy.Subscriber(
+            "/art/interface/touchtable/calibrated", Bool, self.table_calibrated_cb)
+        self.table_calibrating_sub = rospy.Subscriber(
+            "/art/interface/touchtable/calibrating", Bool, self.table_calibrating_cb)
+        self.system_calibrated_sub = rospy.Subscriber(
+            "/system_calibrated", Bool, self.system_calibrated_cb)
 
         self.srv_program_start = rospy.Service(
             '/art/brain/program/start', startProgram, self.program_start_cb)
@@ -139,17 +139,23 @@ class ArtBrain(object):
             '/art/brain/learning/stop', Trigger, self.learning_stop_cb)
 
         self.srv_program_error_response = rospy.Service(
-            '/art/brain/program/error_response', ProgramErrorResolve, self.program_error_response_cb)
+            '/art/brain/program/error_response',
+            ProgramErrorResolve,
+            self.program_error_response_cb)
 
-        self.as_learning_request = actionlib.SimpleActionServer("/art/brain/learning_request", LearningRequestAction,
-                                                                execute_cb=self.learning_request_cb, auto_start=True)
+        self.as_learning_request = actionlib.SimpleActionServer(
+            "/art/brain/learning_request",
+            LearningRequestAction,
+            execute_cb=self.learning_request_cb,
+            auto_start=True)
 
         # self.srv_program_pause = rospy.Service(/art/brain/program/pause', Empty, self.program_pause_cb)
         # self.srv_program_resume = rospy.Service(/art/brain/program/resume',
         # Empty, self.program_resume_cb)
 
         self.state_manager = InterfaceStateManager(
-            InterfaceState.BRAIN_ID, cb=self.interface_state_manager_cb)  # TODO callback?
+            InterfaceState.BRAIN_ID,
+            cb=self.interface_state_manager_cb)  # TODO callback?
         self.state_manager.set_system_state(
             InterfaceState.STATE_INITIALIZING)
 
@@ -157,7 +163,9 @@ class ArtBrain(object):
         self.ph = ProgramHelper()
 
         self.objects_sub = rospy.Subscriber(
-            "/art/object_detector/object_filtered", InstancesArray, self.objects_cb)
+            "/art/object_detector/object_filtered",
+            InstancesArray,
+            self.objects_cb)
 
         # TODO use this topic instead of system_state in InterfaceState (duplication) ??
         # TODO move (pub/sub) to InterfaceStateManager?
@@ -199,8 +207,8 @@ class ArtBrain(object):
             rospy.wait_for_service('/art/interface/touchtable/calibrate')
             rospy.loginfo(
                 'Get /art/interface/touchtable/calibrate service')
-            self.calibrate_table_srv_client = ArtBrainUtils.create_service_client('/art/interface/touchtable/calibrate',
-                                                                                  Empty)
+            self.calibrate_table_srv_client = ArtBrainUtils.create_service_client(
+                '/art/interface/touchtable/calibrate', Empty)
 
             attempt = 1
             rospy.sleep(1)
@@ -226,7 +234,7 @@ class ArtBrain(object):
     #                                       STATES
     # ***************************************************************************************
 
-    def state_init_ros(self,  event):
+    def state_init_ros(self, event):
         rospy.loginfo("state_init_ros")
         self.fsm.init_done()
 
@@ -273,9 +281,12 @@ class ArtBrain(object):
                            error=ArtBrainErrors.ERROR_NO_INSTRUCTION)
             return
 
-        rospy.logdebug(
-            'Program id: ' + str(self.ph.get_program_id()) + ', item id: ' + str(self.instruction.id) +
-            ', item type: ' + str(self.instruction.type))
+        rospy.logdebug('Program id: ' +
+                       str(self.ph.get_program_id()) +
+                       ', item id: ' +
+                       str(self.instruction.id) +
+                       ', item type: ' +
+                       str(self.instruction.type))
 
         instructions = {
             ProgramItem.GET_READY: self.fsm.get_ready,
@@ -310,8 +321,9 @@ class ArtBrain(object):
             self.state_manager.update_program_item(
                 self.ph.get_program_id(), self.block_id, self.instruction)
             return
-        self.state_manager.update_program_item(self.ph.get_program_id(), self.block_id, self.instruction,
-                                               {"SELECTED_OBJECT_ID": obj.object_id})
+        self.state_manager.update_program_item(
+            self.ph.get_program_id(), self.block_id, self.instruction, {
+                "SELECTED_OBJECT_ID": obj.object_id})
         gripper = self.get_gripper(obj=obj)
         if not self.check_gripper_for_pick(gripper):
             return
@@ -360,8 +372,9 @@ class ArtBrain(object):
             self.state_manager.update_program_item(
                 self.ph.get_program_id(), self.block_id, self.instruction)
             return
-        self.state_manager.update_program_item(self.ph.get_program_id(), self.block_id, self.instruction,
-                                               {"SELECTED_OBJECT_ID": obj.object_id})
+        self.state_manager.update_program_item(
+            self.ph.get_program_id(), self.block_id, self.instruction, {
+                "SELECTED_OBJECT_ID": obj.object_id})
         gripper = self.get_gripper(obj=obj)
         if not self.check_gripper_for_pick(gripper):
             return
@@ -390,20 +403,27 @@ class ArtBrain(object):
             return
         else:
             if len(self.instruction.ref_id) < 1:
-                self.fsm.error(severity=InterfaceState.ERROR,
-                               error=ArtBrainErrors.ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE)
+                self.fsm.error(
+                    severity=InterfaceState.ERROR,
+                    error=ArtBrainErrors.ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE)
                 self.state_manager.update_program_item(
                     self.ph.get_program_id(), self.block_id, self.instruction)
                 return
             rospy.logdebug(self.instruction)
             gripper = self.get_gripper_by_pick_instruction_id(
                 self.instruction.ref_id)
+            if gripper is None:
+                self.fsm.error(severity=InterfaceState.WARNING,
+                               error=ArtBrainErrors.ERROR_PLACE_FAILED)
             # TODO what to do if gripper is None?
             self.check_gripper_for_place(gripper)
+            if gripper is None:
+                return
             if gripper.holding_object is None:
                 rospy.logerr("Robot is not holding selected object")
-                self.fsm.error(severity=InterfaceState.WARNING,
-                               error=ArtBrainErrors.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
+                self.fsm.error(
+                    severity=InterfaceState.WARNING,
+                    error=ArtBrainErrors.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
                 self.state_manager.update_program_item(
                     self.ph.get_program_id(), self.block_id, self.instruction)
                 return
@@ -501,6 +521,7 @@ class ArtBrain(object):
             error = ArtBrainErrors.ERROR_UNKNOWN
         rospy.logerr("Error: " + str(error))
         self.state_manager.set_error(severity, error)
+        self.state_manager.set_error(0, 0)
         if severity == InterfaceState.SEVERE:
             # handle
             self.fsm.program_error_shutdown()
@@ -516,6 +537,8 @@ class ArtBrain(object):
                 rospy.logwarn("Object is missing")
             elif error == ArtBrainErrors.ERROR_PICK_FAILED:
                 rospy.logwarn("Pick failed")
+                self.left_gripper.get_ready_client.call()
+                self.right_gripper.get_ready_client.call()
             rospy.logwarn("Waiting for user response")
 
             return
@@ -720,7 +743,8 @@ class ArtBrain(object):
             elif self.gripper_usage == ArtGripper.GRIPPER_RIGHT:
                 return self.right_gripper
 
-        if self.tf_listener.frameExists("/base_link") and self.tf_listener.frameExists(self.objects.header.frame_id):
+        if self.tf_listener.frameExists(
+                "/base_link") and self.tf_listener.frameExists(self.objects.header.frame_id):
             if pick_pose is not None:
                 transformed_pose = self.tf_listener.transformPose(
                     '/base_link', pick_pose)
@@ -737,7 +761,10 @@ class ArtBrain(object):
                         # exact time does not matter in this case
                         obj_pose.header.stamp = rospy.Time(0)
                         self.tf_listener.waitForTransform(
-                            '/base_link', obj_pose.header.frame_id, obj_pose.header.stamp, rospy.Duration(1))
+                            '/base_link',
+                            obj_pose.header.frame_id,
+                            obj_pose.header.stamp,
+                            rospy.Duration(1))
                         obj_pose = self.tf_listener.transformPose(
                             '/base_link', obj_pose)
                         if obj_pose.pose.position.y < 0:
@@ -813,8 +840,12 @@ class ArtBrain(object):
         if not self.check_gripper(gripper):
             return False
         if gripper.holding_object is not None:
-            rospy.logwarn("Pick: gripper " + gripper.name +
-                          " already holding an object (" + gripper.holding_object.object_id + ")")
+            rospy.logwarn(
+                "Pick: gripper " +
+                gripper.name +
+                " already holding an object (" +
+                gripper.holding_object.object_id +
+                ")")
             self.fsm.error(severity=InterfaceState.WARNING,
                            error=ArtBrainErrors.ERROR_OBJECT_IN_GRIPPER)
             return False
@@ -825,7 +856,7 @@ class ArtBrain(object):
     #                                     ROS COMMUNICATION
     # ***************************************************************************************
 
-    def program_start_cb(self,  req):
+    def program_start_cb(self, req):
 
         resp = startProgramResponse()
 
@@ -966,7 +997,7 @@ class ArtBrain(object):
     def table_calibrating_cb(self, req):
         self.table_calibrating = req.data
 
-    def system_calibrated_cb(self,  req):
+    def system_calibrated_cb(self, req):
         self.system_calibrated = req.data
 
     def get_object_max_width(self, obj):
@@ -996,7 +1027,7 @@ class ArtBrain(object):
             result.success = False
             result.message = "Not in learning mode!"
         rospy.loginfo("Learning_request goal: " + str(goal.request))
-        rospy.sleep(2)
+
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
 
         if goal.request == LearningRequestGoal.GET_READY:
