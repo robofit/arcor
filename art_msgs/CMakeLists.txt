@@ -20,8 +20,8 @@ add_message_files(
   ObjectType.msg
   InstancesArray.msg
   ObjectsCentroids.msg
-  UserStatus.msg
-  UserActivity.msg
+  UserStatus.msg # deprecated
+  UserActivity.msg # deprecated
   SystemState.msg
   SceneLabel.msg
   ProgramItem.msg
@@ -31,6 +31,8 @@ add_message_files(
   InterfaceState.msg
   KeyValue.msg
   Touch.msg
+  User.msg
+  UserArray.msg
 )
 
 add_service_files(
