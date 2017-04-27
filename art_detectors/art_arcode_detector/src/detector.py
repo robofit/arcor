@@ -16,9 +16,9 @@ class ArCodeDetector:
 
     def __init__(self):
 
-        self.ar_code_sub = rospy.Subscriber("/art/object_detector/ar_pose_marker", AlvarMarkers, self.ar_code_cb)
+        self.ar_code_sub = rospy.Subscriber("ar_pose_marker", AlvarMarkers, self.ar_code_cb)
         self.detected_objects_pub = rospy.Publisher("/art/object_detector/object", InstancesArray, queue_size=10)
-        self.visualize_pub = rospy.Publisher("object_detector/visualize_objects", Marker, queue_size=10)
+        self.visualize_pub = rospy.Publisher("art/object_detector/visualize_objects", Marker, queue_size=10)
 
         # TODO make a timer clearing this cache from time to time
         self.objects_cache = {}
@@ -156,7 +156,7 @@ class ArCodeDetector:
         self.visualize_pub.publish(marker)
 
 if __name__ == '__main__':
-    rospy.init_node('art_arcode_detector')
+    rospy.init_node('art_arcode_detector2')
     # rospy.init_node('art_arcode_detector', log_level=rospy.DEBUG)
     try:
         rospy.wait_for_service('/art/db/object_type/get')

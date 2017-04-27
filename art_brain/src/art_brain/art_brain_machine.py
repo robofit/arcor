@@ -1,5 +1,5 @@
-#from transitions import Machine
-#from transitions.extensions import GraphMachine as Machine
+# from transitions import Machine
+# from transitions.extensions import GraphMachine as Machine
 from transitions.extensions import LockedMachine as Machine
 
 from transitions import State
@@ -264,5 +264,5 @@ class ArtBrainMachine(object):
         # self.machine.add_transition('done_pick_place', 'learning_pick_from_feeder', 'learning_pick_place')
         # self.machine.add_transition('error', 'learning_pick_from_feeder', 'learning_step_error')
 
-        #self.graph.draw('my_state_diagram.png', prog='dot')
+        # self.graph.draw('my_state_diagram.png', prog='dot')
         # return

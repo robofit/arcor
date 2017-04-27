@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+
+    <include file="$(find art_bringup)/launch/nucs.launch"/>
+    <include file="$(find art_bringup)/launch/table.launch"/>
+    <!-- TODO robot -->
+
+</launch>
