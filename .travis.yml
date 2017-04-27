@@ -117,15 +117,14 @@ before_script:
   - rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
 
 # install other package dependencies using script
-  - cd ~/catkin_ws/src/artable
+  - cd $CI_SOURCE_PATH
   - chmod +x install_dependencies.sh
   - ./install_dependencies.sh
   
 
 # Compile and test.
 script:
-  - cd ~/catkin_ws
-  - catkin_lint src/artable/
+  - catkin_lint $CI_SOURCE_PATH
   - catkin_make_isolated --install
   - catkin_make_isolated --make-args test
 
