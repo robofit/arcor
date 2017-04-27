@@ -110,7 +110,7 @@ before_script:
   - wstool init
   - if [[ -f $ROSINSTALL_FILE ]] ; then wstool merge $ROSINSTALL_FILE ; fi
   # package depdencies: install using rosdep.
-  - wstool merge artable/artable.rosinstall
+  - wstool merge ar-table-itable/artable.rosinstall
   - wstool up
   - cd ~/catkin_ws
    # kind of hack - rosdep installs mongodb which asks for something...
