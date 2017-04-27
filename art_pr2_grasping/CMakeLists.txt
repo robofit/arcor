@@ -49,6 +49,6 @@ roslint_cpp()
 roslint_add_test()
 
 if (CATKIN_ENABLE_TESTING)
-  roslaunch_add_file_check(launch)
+  roslaunch_add_file_check(launch DEPENDENCIES ${catkin_EXPORTED_TARGETS})
 #  add_rostest(tests/grasping.test)
 endif()
