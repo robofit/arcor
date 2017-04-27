@@ -66,7 +66,8 @@ env:
 addons:
   hosts:
     - artable-n1
-    - rosserver
+    - artable-n2
+    - pr1027
 
 ################################################################################
 
@@ -108,10 +109,9 @@ before_script:
   - cd ~/catkin_ws/src
   - wstool init
   - if [[ -f $ROSINSTALL_FILE ]] ; then wstool merge $ROSINSTALL_FILE ; fi
-  - wstool up
   # package depdencies: install using rosdep.
-  - cd ~/catkin_ws/src/ar-table-itable
-  - git submodule update --init
+  - wstool merge artable/artable.rosinstall
+  - wstool up
   - cd ~/catkin_ws
    # kind of hack - rosdep installs mongodb which asks for something...
   - sudo apt-get remove -y mongodb mongodb-10gen
@@ -119,7 +119,7 @@ before_script:
   - rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
 
 # install other package dependencies using script
-  - cd ~/catkin_ws/src/ar-table-itable
+  - cd ~/catkin_ws/src/artable
   - chmod +x install_dependencies.sh
   - ./install_dependencies.sh
   
@@ -127,7 +127,7 @@ before_script:
 # Compile and test.
 script:
   - cd ~/catkin_ws
-  - catkin_lint src/ar-table-itable/
+  - catkin_lint src/artable/
   - catkin_make_isolated --install
   - catkin_make_isolated --make-args test
 
