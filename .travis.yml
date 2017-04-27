@@ -124,6 +124,7 @@ before_script:
 
 # Compile and test.
 script:
+  - cd ~/catkin_ws/
   - catkin_lint $CI_SOURCE_PATH
   - catkin_make_isolated --install
   - catkin_make_isolated --make-args test
