@@ -89,18 +89,16 @@ class tracker:
         if self.target_frame == header.frame_id:
             return ps
 
-        if not self.listener.waitForTransform(self.target_frame, header.frame_id, header.stamp, rospy.Duration(4.0)):
-
-            rospy.logwarn("Transform between " + self.target_frame + " and " + header.frame_id + " not available!")
-            return None
+        self.listener.waitForTransform(self.target_frame, header.frame_id, header.stamp, rospy.Duration(4.0))
 
         try:
 
             ps = self.listener.transformPose(self.target_frame, ps)
 
         except tf.Exception:
-
+		
             rospy.logerr("TF exception")
+			rospy.logwarn("Transform between " + self.target_frame + " and " + header.frame_id + " not available!")
             return None
 
         return ps
