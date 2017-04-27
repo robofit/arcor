@@ -109,7 +109,7 @@ before_script:
   - cd ~/catkin_ws/src
   - wstool init
   - wstool merge $CI_SOURCE_PATH/dependencies.rosinstall
-  -wstool up
+  - wstool up
   # package depdencies: install using rosdep.
   - cd ~/catkin_ws
    # kind of hack - rosdep installs mongodb which asks for something...
