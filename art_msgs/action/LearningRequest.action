@@ -1,0 +1,12 @@
+# this action is used by iterfaces (+ brain) in order to get robot ready for learning of current ProgramItem
+
+uint16 request
+
+uint16 GET_READY=0 # prepare robot for learning current item
+uint16 EXECUTE_ITEM=1 # test programmed item
+uint16 DONE=2 # learning
+---
+bool success
+string message
+---
+uint16 progress # percents
