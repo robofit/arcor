@@ -8,7 +8,7 @@ import numpy as np
 
 
 # "tracking" of static objects
-class tracker:
+class ArtSimpleTracker:
 
     def __init__(self, target_frame="/marker"):
 
@@ -176,7 +176,7 @@ class tracker:
 if __name__ == '__main__':
     try:
         rospy.init_node('simple_tracker')
-        tr = tracker()
+        tr = ArtSimpleTracker()
         rospy.spin()
     except rospy.ROSInterruptException:
         print "program interrupted before completion"
