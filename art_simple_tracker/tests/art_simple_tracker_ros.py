@@ -49,7 +49,7 @@ class TestSimpleTrackerRos(unittest.TestCase):
         self.addTypeEqualityFunc(Pose, self.pose_equal)
         self.assertEquals(pose.pose, pose2, "test_pose_equal")
 
-   
+
 if __name__ == '__main__':
 
     rospy.init_node('art_simple_tracker_test_node')
