@@ -91,11 +91,11 @@ class ArtSimpleTracker:
         if self.target_frame == header.frame_id:
             return ps
 
-        self.listener.waitForTransform(
-            self.target_frame, header.frame_id, header.stamp, rospy.Duration(4.0))
-
         try:
+            self.listener.waitForTransform(
+                self.target_frame, header.frame_id, header.stamp, rospy.Duration(4.0))
 
+        
             ps = self.listener.transformPose(self.target_frame, ps)
 
         except tf.Exception:
