@@ -6,7 +6,10 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   roslint
   roslaunch
+  rostest
 )
+
+catkin_python_setup()
 
 catkin_package(CATKIN_DEPENDS art_msgs)
 
@@ -20,10 +23,11 @@ roslint_add_test()
 
 if (CATKIN_ENABLE_TESTING)
   roslaunch_add_file_check(launch)
+  add_rostest(tests/art_simple_tracker_ros.test)
 endif()
 
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
 
-catkin_install_python(PROGRAMS src/tracker.py
+catkin_install_python(PROGRAMS src/art_simple_tracker/tracker.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
