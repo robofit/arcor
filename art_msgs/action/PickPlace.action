@@ -1,0 +1,23 @@
+string object # object id / type
+geometry_msgs/PoseStamped pose
+float32 z_axis_angle_increment # 0 -> place with exactly given orientation, i.e. 1.57 -> object can be place rotated 90deg around z-axis
+bool keep_orientation
+uint16 operation
+
+uint16 RESET=0 # clear all collision objects / grasped object topics, try to close grippers and check their state
+uint16 GET_READY=1 # default posture
+
+uint16 PICK_OBJECT_ID=100 # object (id)
+uint16 PICK_FROM_FEEDER=101 # object (type)
+
+uint16 PLACE_TO_POSE=200
+---
+uint16 result
+uint16 SUCCESS=0
+uint16 FAILURE=1 # todo indicate which operation failed?
+uint16 BUSY=2 # hand already holds object
+uint16 DROPPED=3 # object was dropped
+uint16 BAD_REQUEST=4
+string message
+---
+uint16 attempt

@@ -9,11 +9,6 @@ ARTable - vision of a near future workspace, where human and robot may safely an
 The video below shows how operator uses touch sensitive table and augmented reality interface to set parameters of a program consisting of two pick and place tasks. For each task, the operator sets object type to be picked up, area from which objects of that type should be picked and location on the table where the robot (PR2) should place them.
 
 [![ARTable video](https://i.ytimg.com/vi/M_KxpIJo1LA/0.jpg)](https://youtu.be/M_KxpIJo1LA)
-
-This is ARTable main repository. Related repositories:
- - https://github.com/robofit/ar-table-common
- - https://github.com/robofit/ar-table-pr2
- - https://github.com/robofit/ar-table-handheld
  
 
 ### System overview
