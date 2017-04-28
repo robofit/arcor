@@ -1,0 +1,4 @@
+# for empty ids, all known program headers should be returned
+uint16[] ids
+---
+ProgramHeader[] headers
