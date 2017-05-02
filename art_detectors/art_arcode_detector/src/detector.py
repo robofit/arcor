@@ -38,7 +38,7 @@ class ArCodeDetector:
 
             # list of allowed object ids
             # TODO load from param
-            if aid not in [4, 5, 3, 21]: 
+            if aid not in [4, 5, 3, 21, 26, 31]: 
                 continue
 
             if aid not in self.objects_cache:
