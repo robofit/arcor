@@ -3,7 +3,11 @@
     <include file="$(find art_calibration)/launch/pr2_indiv.launch" />
     <include file="$(find art_calibration)/launch/table_indiv_no_kinect.launch" />
     
-
+    <arg name="x_offset" default="0.1"/>
+    <arg name="y_offset" default="0"/>
+    <arg name="z_offset" default="0"/>
+    
+     <node name="static_tf_marker" pkg="tf" type="static_transform_publisher" args="$(arg x_offset) $(arg y_offset) $(arg z_offset) 0 0 0 /marker /marker_detected 100" />
     <node name="art_calibration" pkg="art_calibration" type="calibration.py" respawn="false" output="screen"/>
 
 </launch>
