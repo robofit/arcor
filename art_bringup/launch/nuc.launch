@@ -24,7 +24,7 @@
       <arg name="respawn" value="false"/>
     </include>
     
-    <include ns="/art/$(arg machine_name)" file="$(find art_arcode_detector)/launch/ar_code_detector.launch">
+    <include ns="/art/$(arg machine_name)" file="$(find art_arcode_detector)/launch/ar_code_detector_bundle.launch">
       <arg name="machine" value="$(arg machine_name)"/>
       <arg name="cam_image_topic" value="kinect2/hd/image_color"/>
       <arg name="cam_info_topic" value="kinect2/hd/camera_info"/>

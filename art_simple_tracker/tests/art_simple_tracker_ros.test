@@ -1,0 +1,17 @@
+<launch>
+
+
+  
+    <include file="$(find art_simple_tracker)/launch/art_simple_tracker.launch" />
+
+    <node name="static_tf_marker" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 /world /marker 100" />
+    <node name="static_tf_camera" pkg="tf" type="static_transform_publisher" args="1 0 0 0 0 0 /world /camera 100" />
+
+    <test test-name="test_simple_tracker_ros" pkg="art_simple_tracker" type="art_simple_tracker_ros.py" retry="2">
+
+
+    </test>
+
+  
+
+</launch>
