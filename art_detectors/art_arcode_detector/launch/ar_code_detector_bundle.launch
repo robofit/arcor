@@ -11,7 +11,7 @@
 
 	<arg name="output_frame" default="/marker" />
 	<!--arg name="bundle_files" default="/home/artable/catkin_ws/src/ar-table-itable/art_detectors/art_arcode_detector/bundles/truthTableLeg.xml"  /-->
-	<arg name="bundle_files" default="$(find art_arcode_detector)/bundles/truthTableLeg.xml"  />
+	<arg name="bundle_files" default="$(find art_arcode_detector)/bundles/truthTableLeg.xml $(find art_arcode_detector)/bundles/profile26.xml $(find art_arcode_detector)/bundles/profile31.xml"  />
 	<node machine="$(arg machine)" name="ar_track_alvar_bundle_objects" pkg="ar_track_alvar" type="findMarkerBundlesNoKinect" respawn="false" output="screen" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame) $(arg bundle_files)" >
 	<remap from="ar_pose_marker" to="ar_pose_marker_objects"/>
 	</node>
