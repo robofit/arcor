@@ -46,7 +46,7 @@ class ArCodeDetector:
                 # TODO AR code ID / object type assignment should be done somewhere...
                 # type "profile_20_60" is just for example (used in art_db/test_db.py)
 
-                if aid = 21:
+                if aid == 21:
                     object_type = self.art.get_object_type("profile_20_60_longer")
                 else:
                     object_type = self.art.get_object_type("profile_20_60")
