@@ -436,7 +436,7 @@ class ArtBrain(object):
                 self.fsm.done(success=True)
                 return
             else:
-                gripper.get_ready_clinet.call()
+                gripper.get_ready_client()
                 self.fsm.error(severity=InterfaceState.WARNING,
                                error=ArtBrainErrors.ERROR_PLACE_FAILED)
                 return
