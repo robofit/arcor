@@ -526,23 +526,25 @@ class ArtBrain(object):
             # handle
             self.fsm.program_error_shutdown()
             return
-            pass
+
         elif severity == InterfaceState.ERROR:
             self.fsm.program_error_fatal()
             return
-            pass
+
         elif severity == InterfaceState.WARNING:
             if error == ArtBrainErrors.ERROR_OBJECT_MISSING or \
                error == ArtBrainErrors.ERROR_OBJECT_MISSING_IN_POLYGON:
                 rospy.logwarn("Object is missing")
             elif error == ArtBrainErrors.ERROR_PICK_FAILED:
                 rospy.logwarn("Pick failed")
-                self.left_gripper.get_ready_client.call()
-                self.right_gripper.get_ready_client.call()
+                self.left_gripper.get_ready()
+                self.left_gripper.re_init()
+                self.right_gripper.get_ready()
+                self.right_gripper.re_init()
             rospy.logwarn("Waiting for user response")
 
             return
-            pass
+
         elif severity == InterfaceState.INFO:
             (self.block_id, item_id) = self.ph.get_id_on_failure(
                 self.block_id, self.instruction.id)
@@ -811,7 +813,7 @@ class ArtBrain(object):
     def check_gripper(self, gripper):
         if gripper is None:
             rospy.logerr("No gripper!")
-            self.fsm.error(severity=InterfaceState.ERROR,
+            self.fsm.error(severity=InterfaceState.SEVERE,
                            error=ArtBrainErrors.ERROR_NO_GRIPPER_AVAILABLE)
             return False
 
@@ -819,6 +821,12 @@ class ArtBrain(object):
             rospy.logerr("No pick place client!")
             self.fsm.error(severity=InterfaceState.SEVERE,
                            error=ArtBrainErrors.ERROR_GRIPPER_PP_CLIENT_MISSING)
+            return False
+
+        if not gripper.pp_client.wait_for_server(rospy.Duration(2)):
+            rospy.logerr("Pick place server is not running!")
+            self.fsm.error(severity=InterfaceState.WARNING,
+                           error=ArtBrainErrors.ERROR_PICK_PLACE_SERVER_NOT_READY)
             return False
 
         return True
