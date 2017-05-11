@@ -96,7 +96,7 @@ class SquareItem(Item):
 
         self.scene_items = scene_items
         self.square_changed = square_changed
-        self.space = 0.005   # pripocitava sa k bbox objektu, cize v skutocnosti je medzera medzi objektami 'space', ale mezdi objektom a krabicou len 'space'/2
+        self.space = 0.02   # pripocitava sa k bbox objektu, cize v skutocnosti je medzera medzi objektami 'space', ale mezdi objektom a krabicou len 'space'/2
         # self.object_side_length_x = self.horizontal_item.bbox.dimensions[0] + self.space
         # self.object_side_length_y = self.horizontal_item.bbox.dimensions[1] + self.space
         self.object_side_length_x = self.object_type.bbox.dimensions[0] + self.space
@@ -214,7 +214,7 @@ class SquareItem(Item):
         self.point_changed(True, self.last_corner)
 
     def minus_clicked(self, btn):
-        if self.space >= 0.01:
+        if self.space > 0.02:
             self.space -= 0.01
             self.point_changed(True, self.last_corner)
 
