@@ -19,7 +19,7 @@ class PlaceItem(ObjectItem):
 
     """
 
-    def __init__(self, scene,  caption,  x, y, object_type,  object_id=None,  yaw=0,  place_pose_changed=None,  selected=False, fixed=False, txt=True, rot=True, rot_point=None, rotation_changed=None):
+    def __init__(self, scene,  caption, x, y, object_type,  object_id=None,  yaw=0,  place_pose_changed=None,  selected=False, fixed=False, txt=True, rot=True, rot_point=None, rotation_changed=None):
 
         self.in_collision = False
         self.caption = caption
@@ -33,7 +33,7 @@ class PlaceItem(ObjectItem):
         self.update_text()
         self.fixed = fixed
         self.place_pose_changed = place_pose_changed
-        self.rotation_changed=rotation_changed
+        self.rotation_changed = rotation_changed
         if not self.fixed:
             self.set_color(QtCore.Qt.white)
             if self.rot:

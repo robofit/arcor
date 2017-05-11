@@ -316,28 +316,28 @@ def main(args):
     p.type = ProgramItem.WAIT_FOR_USER
     pb.items.append(deepcopy(p))
 
-    p = ProgramItem()
-    p.id = 3
-    p.on_success = 4
-    p.on_failure = 0
-    p.type = ProgramItem.PICK_OBJECT_ID
-    p.object.append("3")
-    pf = PoseStamped()
-    pf.header.frame_id = "marker"
-    p.pose.append(pf)
-    pb.items.append(deepcopy(p))
-
     # p = ProgramItem()
     # p.id = 3
     # p.on_success = 4
     # p.on_failure = 0
-    # p.type = ProgramItem.PICK_FROM_POLYGON
-    # p.object.append("")
-    # p.object.append("profile_20_60")
-    # pp = PolygonStamped()
-    # pp.header.frame_id = "marker"
-    # p.polygon.append(pp)
+    # p.type = ProgramItem.PICK_OBJECT_ID
+    # p.object.append("3")
+    # pf = PoseStamped()
+    # pf.header.frame_id = "marker"
+    # p.pose.append(pf)
     # pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 3
+    p.on_success = 4
+    p.on_failure = 0
+    p.type = ProgramItem.PICK_FROM_POLYGON
+    p.object.append("")
+    p.object.append("profile_20_60")
+    pp = PolygonStamped()
+    pp.header.frame_id = "marker"
+    p.polygon.append(pp)
+    pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 4
