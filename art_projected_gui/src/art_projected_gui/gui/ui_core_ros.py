@@ -320,7 +320,7 @@ class UICoreRos(UICore):
                     self.program_vis.get_current_item().object[0] = ref_msg.object[
                         0]  # nastavime objekt aktualneho itemu
                     # self.select_object_type(ref_msg.object[0])
-
+                self.notif(translate("UICoreRos", "Going to place object into grid"))
                 self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
                                 0.075, object_type, it.pose, grid_points=conversions.get_pick_polygon_points(it),
                                 square_changed=self.square_changed, fixed=True)
@@ -437,7 +437,7 @@ class UICoreRos(UICore):
                 object_type = self.art.get_object_type(ref_msg.object[0])
                 self.program_vis.get_current_item().object[0] = ref_msg.object[0]  # nastavime objekt aktualneho itemu
                 # self.select_object_type(ref_msg.object[0])
-
+            self.notif(translate("UICoreRos", "Place grid"))
             self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
                             0.075, object_type, msg.pose, grid_points=conversions.get_pick_polygon_points(msg), square_changed=self.square_changed, fixed=read_only)
 
