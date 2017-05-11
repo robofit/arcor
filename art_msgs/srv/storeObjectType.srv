@@ -1,0 +1,4 @@
+ObjectType object_type
+---
+bool success
+string error

@@ -5,6 +5,7 @@ from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, ProgramIte
 import rospy
 from art_projected_gui.helpers import conversions
 from art_msgs.srv import NotifyUserRequest
+# import time
 
 
 class customGraphicsView(QtGui.QGraphicsView):
@@ -40,7 +41,7 @@ class UICore(QtCore.QObject):
         view (QGraphicsView): To show content of the scene in debug window.
     """
 
-    def __init__(self, x, y, width, height, rpm,  scene_server_port):
+    def __init__(self, x, y, width, height, rpm, scene_server_port):
         """
         Args:
             x (float): x coordinate of the scene's origin (in world coordinate system, meters).
@@ -64,9 +65,11 @@ class UICore(QtCore.QObject):
         self.scene = QtGui.QGraphicsScene(0, 0, int(w), int(h))
         self.scene.rpm = rpm
         self.scene.setBackgroundBrush(QtCore.Qt.black)
-        # self.scene.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex) # should be good for dynamic scenes
+        # self.scene.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex) # should
+        # be good for dynamic scenes
 
-        self.bottom_label = LabelItem(self.scene, 0.2, 0.05, self.width - 0.4, 0.05)
+        self.bottom_label = LabelItem(
+            self.scene, 0.2, 0.05, self.width - 0.4, 0.05)
 
         self.selected_object_ids = []
         self.selected_object_types = []
@@ -76,46 +79,48 @@ class UICore(QtCore.QObject):
         self.view.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
         self.view.setStyleSheet("QGraphicsView { border-style: none; }")
 
-        QtCore.QObject.connect(self, QtCore.SIGNAL('send_scene'), self.send_to_clients_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL(
+            'send_scene'), self.send_to_clients_evt)
 
         self.tcpServer = QtNetwork.QTcpServer(self)
         if not self.tcpServer.listen(port=self.port):
 
-            rospy.logerr('Failed to start scene TCP server on port ' + str(self.port))
+            rospy.logerr(
+                'Failed to start scene TCP server on port ' + str(self.port))
 
         self.tcpServer.newConnection.connect(self.new_connection)
         self.connections = []
 
-        self.last_scene_update = None
-        self.scene.changed.connect(self.scene_changed)
+        self.scene_timer = QtCore.QTimer()
+        self.connect(
+            self.scene_timer,
+            QtCore.SIGNAL('timeout()'),
+            self.send_to_clients_evt)
+        self.scene_timer.start(1.0 / 15 * 1000)
 
     def new_connection(self):
 
         rospy.loginfo('Some projector node just connected.')
         self.connections.append(self.tcpServer.nextPendingConnection())
-        self.connections[-1].setSocketOption(QtNetwork.QAbstractSocket.LowDelayOption, 1)
+        self.connections[-1].setSocketOption(
+            QtNetwork.QAbstractSocket.LowDelayOption, 1)
         self.emit(QtCore.SIGNAL('send_scene'), self.connections[-1])
         # TODO deal with disconnected clients!
         # self.connections[-1].disconnected.connect(clientConnection.deleteLater)
 
     def send_to_clients_evt(self, client=None):
 
-        # if all connections are sending scene image, there is no need to render the new one
-        if client is None:
+        # start = time.time()
 
-            for con in self.connections:
-
-                if con.bytesToWrite() == 0:
-                    break
-
-            else:
-                return
-
-        # TODO try to use Format_RGB16 - BMP is anyway converted to 32bits (send raw data instead)
-        pix = QtGui.QImage(self.scene.width(), self.scene.height(), QtGui.QImage.Format_ARGB32_Premultiplied)
+        pix = QtGui.QImage(
+            self.scene.width(),
+            self.scene.height(),
+            QtGui.QImage.Format_RGB888)
         painter = QtGui.QPainter(pix)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
         self.scene.render(painter)
         painter.end()
+        pix = pix.mirrored()
 
         block = QtCore.QByteArray()
         out = QtCore.QDataStream(block, QtCore.QIODevice.WriteOnly)
@@ -125,8 +130,8 @@ class UICore(QtCore.QObject):
         img = QtCore.QByteArray()
         buffer = QtCore.QBuffer(img)
         buffer.open(QtCore.QIODevice.WriteOnly)
-        pix.save(buffer, "BMP")
-        out << QtCore.qCompress(img, 1)  # this seem to be much faster than using PNG compression
+        pix.save(buffer, "JPG", 95)
+        out << img
 
         out.device().seek(0)
         out.writeUInt32(block.size() - 4)
@@ -137,25 +142,27 @@ class UICore(QtCore.QObject):
 
             for con in self.connections:
 
-                if con.bytesToWrite() > 0:
-                    return
                 con.write(block)
 
         else:
 
             client.write(block)
 
+        # end = time.time()
+        # rospy.logdebug("Image sent in: " + str(end-start))
+
     def scene_changed(self, rects):
 
         if len(rects) == 0:
             return
-        # TODO Publish only changes? How to accumulate them (to be able to send it only at certain fps)?
+        # TODO Publish only changes? How to accumulate them (to be able to send
+        # it only at certain fps)?
 
         now = rospy.Time.now()
         if self.last_scene_update is None:
             self.last_scene_update = now
         else:
-            if now - self.last_scene_update < rospy.Duration(1.0 / 20):
+            if now - self.last_scene_update < rospy.Duration(1.0 / 10):
                 return
 
         # print 1.0/(now - self.last_scene_update).to_sec()
@@ -163,7 +170,8 @@ class UICore(QtCore.QObject):
 
         self.emit(QtCore.SIGNAL('send_scene'))
 
-    def notif(self, msg, min_duration=3.0, temp=False, message_type=NotifyUserRequest.INFO):
+    def notif(self, msg, min_duration=3.0, temp=False,
+              message_type=NotifyUserRequest.INFO):
         """Display message (notification) to the user.
 
         Args:
@@ -183,7 +191,8 @@ class UICore(QtCore.QObject):
         else:
             log_func("Notification: " + msg)
 
-        self.bottom_label.add_msg(msg, message_type,  rospy.Duration(min_duration), temp)
+        self.bottom_label.add_msg(
+            msg, message_type, rospy.Duration(min_duration), temp)
 
     def debug_view(self):
         """Show window with scene - for debugging purposes."""
@@ -194,7 +203,7 @@ class UICore(QtCore.QObject):
         """Generator to filter content of scene_items array."""
 
         for el in self.scene.items():
-            if type(el) is itype:  # TODO option for 'isinstance' ??
+            if type(el) == itype:
                 yield el
 
     def remove_scene_items_by_type(self, itype):
@@ -204,7 +213,7 @@ class UICore(QtCore.QObject):
 
         for it in self.scene.items():
 
-            if type(it) is not itype:
+            if type(it) != itype:
                 continue
             its.append(it)
 
@@ -212,7 +221,7 @@ class UICore(QtCore.QObject):
 
             self.scene.removeItem(it)
 
-    def add_object(self, object_id, object_type, x, y, yaw,  sel_cb=None):
+    def add_object(self, object_id, object_type, x, y, yaw, sel_cb=None):
         """Adds object to the scene.
 
         Args:
@@ -222,7 +231,7 @@ class UICore(QtCore.QObject):
             sel_cb (method): Callback which gets called one the object is selected.
         """
 
-        obj = ObjectItem(self.scene, object_id, object_type, x, y, yaw,  sel_cb)
+        obj = ObjectItem(self.scene, object_id, object_type, x, y, yaw, sel_cb)
 
         if object_id in self.selected_object_ids or object_type.name in self.selected_object_types:
 
@@ -294,7 +303,8 @@ class UICore(QtCore.QObject):
 
         return None
 
-    def add_place(self, caption,  pose_stamped, object_type,  object_id=None,  place_cb=None, fixed=False):
+    def add_place(self, caption, pose_stamped, object_type,
+                  object_id=None, place_cb=None, fixed=False):
 
         # TODO check frame_id in pose_stamped and transform if needed
         PlaceItem(
@@ -307,11 +317,18 @@ class UICore(QtCore.QObject):
             place_pose_changed=place_cb,
             fixed=fixed,
             yaw=conversions.quaternion2yaw(pose_stamped.pose.orientation)
-            )
+        )
 
-    def add_polygon(self, caption, obj_coords=[], poly_points=[], polygon_changed=None, fixed=False):
+    def add_polygon(self, caption, obj_coords=[], poly_points=[],
+                    polygon_changed=None, fixed=False):
 
-        PolygonItem(self.scene, caption, obj_coords, poly_points, polygon_changed, fixed)
+        PolygonItem(
+            self.scene,
+            caption,
+            obj_coords,
+            poly_points,
+            polygon_changed,
+            fixed)
 
     def add_square(self, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points=[], square_changed=None, fixed=False):
 

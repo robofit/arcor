@@ -8,7 +8,7 @@ from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import Pose
 from art_msgs.msg import InterfaceState
 
-from enum import Enum  # sudo pip install enum34
+from enum import IntEnum  # sudo pip install enum34
 
 
 class ArtBrainUtils(object):
@@ -137,7 +137,7 @@ class ArtGripper(object):
         self.holding_object = None
 
 
-class ArtBrainErrors(Enum):
+class ArtBrainErrors(IntEnum):
     ERROR_NOT_IMPLEMENTED = 1
     ERROR_NOT_EXECUTING_PROGRAM = 2
     ERROR_NO_INSTRUCTION = 3

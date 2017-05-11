@@ -1,0 +1,82 @@
+base_link: 'base_footprint'
+
+# discretization to search for grasps
+linear_discretization: 0.01
+angular_discretization: 0.39269908169872415480  # 22.5 deg/16 steps in 360 deg
+
+# dont produce grasps too near to an object's edge
+edge_holdoff: 0.02
+
+# =====================================================
+left_arm:
+    end_effector_name: 'left_gripper'  #ee group name FIXME: moveit group name, not eef name?!?
+
+    #actuated joints in end effector    FIXME
+    joints : ['l_gripper_motor_screw_joint',
+        'l_gripper_l_finger_joint',
+        'l_gripper_r_finger_joint',
+        'l_gripper_r_finger_tip_joint',
+        'l_gripper_l_finger_tip_joint']
+
+    #open position
+    pregrasp_posture : [1.0, 0.477, 0.477, 0.477, 0.477]
+    pregrasp_time_from_start : 25.0  # TODO ???
+    pregrasp_opening: 0.085
+
+    #close position
+    grasp_posture : [0.0, 0.002, 0.002, 0.002, 0.002]
+    grasp_time_from_start : 25.0
+
+    postplace_posture : [1.0, 0.477, 0.477, 0.477, 0.477]
+    postplace_time_from_start : 25.0
+
+    #desired pose from end effector to grasp - [x,y,z]
+    # TODO where is the eef here? At the groups parent link?
+    # Then this is from there to tool frame
+    grasp_pose_to_eef : [-0.18, 0, 0]
+
+    #desired pose from end effector to grasp - [r, p, y]
+    grasp_pose_to_eef_rotation : [0, 0, 0]
+
+    end_effector_parent_link: 'l_wrist_roll_link'
+
+    # how deep can the grasp pose go into an object
+    grasp_depth: 0.05
+    approach_retreat_desired_dist: 0.1
+    approach_retreat_min_dist: 0.05
+
+# =====================================================
+right_arm:
+    end_effector_name: 'right_gripper'  #ee group name
+
+    #actuated joints in end effector
+    #joints : ['r_gripper_joint']
+    joints : ['r_gripper_motor_screw_joint',
+        'r_gripper_l_finger_joint',
+        'r_gripper_r_finger_joint',
+        'r_gripper_r_finger_tip_joint',
+        'r_gripper_l_finger_tip_joint']
+
+    #open position
+    pregrasp_posture : [1.0, 0.477, 0.477, 0.477, 0.477]
+    pregrasp_time_from_start : 25.0
+    pregrasp_opening: 0.085
+
+    #close position
+    grasp_posture : [0.0, 0.002, 0.002, 0.002, 0.002]
+    grasp_time_from_start : 25.0
+
+    postplace_posture : [1.0, 0.477, 0.477, 0.477, 0.477]
+    postplace_time_from_start : 25.0
+
+    #desired pose from end effector to grasp - [x,y,z]
+    grasp_pose_to_eef : [-0.18, 0, 0]
+
+    #desired pose from end effector to grasp - [r, p, y]
+    grasp_pose_to_eef_rotation : [0, 0, 0]
+
+    end_effector_parent_link: 'r_wrist_roll_link'
+
+    grasp_depth: 0.05
+    approach_retreat_desired_dist: 0.1
+    approach_retreat_min_dist: 0.05

@@ -20,13 +20,16 @@ class ObjectItem(Item):
 
     """
 
-    def __init__(self, scene, object_id, object_type, x, y, yaw,  sel_cb=None, selected=False):
+    def __init__(self, scene, object_id, object_type, x,
+                 y, yaw, sel_cb=None, selected=False):
 
         self.object_id = object_id
         self.selected = selected
         self.sel_cb = sel_cb
-        self.object_type = object_type  # TODO check bbox type and use rectangle (used now) / ellipse, consider other angles
-        self.inflate = 1.0
+        # TODO check bbox type and use rectangle (used now) / ellipse, consider
+        # other angles
+        self.object_type = object_type
+        self.inflate = 1.2
         self.hover_ratio = 1.1
         self.def_color = QtCore.Qt.gray
 
@@ -34,7 +37,7 @@ class ObjectItem(Item):
 
         super(ObjectItem, self).__init__(scene, x, y)
 
-        self.desc = DescItem(scene, 0,  0, self)
+        self.desc = DescItem(scene, 0, 0, self)
         self.desc.setFlag(QtGui.QGraphicsItem.ItemIgnoresTransformations)
 
         self.update_text()
@@ -56,12 +59,21 @@ class ObjectItem(Item):
 
         if self.desc is not None:
 
-            # make upper left corner of description aligned with left extent of the (possibly rotated) object bounding box (highlight area)
-            self.desc.setPos(self.mapFromScene(self.x()-self.sceneBoundingRect().width()/2,  self.y()+self.sceneBoundingRect().height()/2 + self.m2pix(0.01)))
+            # make upper left corner of description aligned with left extent of
+            # the (possibly rotated) object bounding box (highlight area)
+            self.desc.setPos(
+                self.mapFromScene(
+                    self.x() -
+                    self.sceneBoundingRect().width() /
+                    2,
+                    self.y() +
+                    self.sceneBoundingRect().height() /
+                    2 +
+                    self.m2pix(0.01)))
 
-    def set_pos(self, x, y, parent_coords=False,  yaw=None):
+    def set_pos(self, x, y, parent_coords=False, yaw=None):
 
-        super(ObjectItem, self).set_pos(x, y,  parent_coords,  yaw)
+        super(ObjectItem, self).set_pos(x, y, parent_coords, yaw)
         self._update_desc_pos()
         self.update_text()
 
@@ -75,7 +87,8 @@ class ObjectItem(Item):
 
         if self.hover:
 
-            desc += "\n" + translate("ObjectItem", "TYPE: ") + self.object_type.name
+            desc += "\n" + translate("ObjectItem",
+                                     "TYPE: ") + self.object_type.name
             desc += "\n" + self.get_pos_str()
 
         self.desc.set_content(desc)
@@ -91,8 +104,10 @@ class ObjectItem(Item):
 
             return QtCore.QRectF()
 
-        lx = self.hover_ratio*self.inflate*self.m2pix(self.object_type.bbox.dimensions[0])
-        ly = self.hover_ratio*self.inflate*self.m2pix(self.object_type.bbox.dimensions[1])
+        lx = self.hover_ratio * self.inflate * \
+            self.m2pix(self.object_type.bbox.dimensions[0])
+        ly = self.hover_ratio * self.inflate * \
+            self.m2pix(self.object_type.bbox.dimensions[1])
         p = 1.0
         return QtCore.QRectF(-lx / 2 - p, -ly / 2 - p, lx + 2 * p, ly + 2 * p)
 
@@ -104,8 +119,8 @@ class ObjectItem(Item):
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
-        lx = self.inflate*self.m2pix(self.object_type.bbox.dimensions[0])
-        ly = self.inflate*self.m2pix(self.object_type.bbox.dimensions[1])
+        lx = self.inflate * self.m2pix(self.object_type.bbox.dimensions[0])
+        ly = self.inflate * self.m2pix(self.object_type.bbox.dimensions[1])
 
         rr = 10
 
@@ -114,25 +129,29 @@ class ObjectItem(Item):
             painter.setBrush(QtCore.Qt.green)
             painter.setPen(QtCore.Qt.green)
 
-            painter.drawRoundedRect(-lx/2*self.hover_ratio,  -ly/2*self.hover_ratio,  lx*self.hover_ratio,  ly*self.hover_ratio,  rr, rr,  QtCore.Qt.RelativeSize)
+            painter.drawRoundedRect(-lx / 2 * self.hover_ratio, -ly / 2 * self.hover_ratio,
+                                    lx * self.hover_ratio, ly * self.hover_ratio, rr, rr, QtCore.Qt.RelativeSize)
 
         elif self.hover:
 
             painter.setBrush(QtCore.Qt.gray)
             painter.setPen(QtCore.Qt.gray)
 
-            painter.drawRoundedRect(-lx/2*self.hover_ratio,  -ly/2*self.hover_ratio,  lx*self.hover_ratio,  ly*self.hover_ratio,  rr, rr,  QtCore.Qt.RelativeSize)
+            painter.drawRoundedRect(-lx / 2 * self.hover_ratio, -ly / 2 * self.hover_ratio,
+                                    lx * self.hover_ratio, ly * self.hover_ratio, rr, rr, QtCore.Qt.RelativeSize)
 
         painter.setBrush(self.def_color)
         painter.setPen(self.def_color)
 
-        painter.drawRoundedRect(-lx/2,  -ly/2,  lx,  ly,  rr, rr,  QtCore.Qt.RelativeSize)
+        painter.drawRoundedRect(-lx / 2, -ly / 2, lx,
+                                ly, rr, rr, QtCore.Qt.RelativeSize)
 
         fr = 1.0 - (self.hover_ratio - 1.0)  # fill ratio
 
         painter.setBrush(QtCore.Qt.black)
         painter.setPen(QtCore.Qt.black)
-        painter.drawRoundedRect(-lx/2*fr,  -ly/2*fr,  lx*fr,  ly*fr,  rr, rr,  QtCore.Qt.RelativeSize)
+        painter.drawRoundedRect(-lx / 2 * fr, -ly / 2 * fr,
+                                lx * fr, ly * fr, rr, rr, QtCore.Qt.RelativeSize)
 
     def cursor_press(self):
 
