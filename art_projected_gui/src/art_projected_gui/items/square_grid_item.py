@@ -6,6 +6,8 @@ from art_projected_gui.items import PlaceItem, ButtonItem, ObjectItem
 from desc_item import DescItem
 from math import modf
 from geometry_msgs.msg import PoseStamped
+# from art_msgs.msg import ObjectType
+# from shape_msgs.msg import SolidPrimitive
 from helpers import conversions
 
 translate = QtCore.QCoreApplication.translate
@@ -84,10 +86,21 @@ class SquareItem(Item):
         self.scn = scene
         self.caption = caption
         self.object_type = object_type
+
+        # self.horizontal_item = ObjectType()
+        # self.horizontal_item.name = "horizontal"
+        # self.horizontal_item.bbox.type = SolidPrimitive.BOX
+        # self.horizontal_item.bbox.dimensions.append(self.object_type.bbox.dimensions[2])
+        # self.horizontal_item.bbox.dimensions.append(self.object_type.bbox.dimensions[1])
+        # self.horizontal_item.bbox.dimensions.append(self.object_type.bbox.dimensions[0])
+
         self.scene_items = scene_items
         self.square_changed = square_changed
         self.space = 0.005   # pripocitava sa k bbox objektu, cize v skutocnosti je medzera medzi objektami 'space', ale mezdi objektom a krabicou len 'space'/2
-        self.object_side_length = self.object_type.bbox.dimensions[0] + self.space
+        # self.object_side_length_x = self.horizontal_item.bbox.dimensions[0] + self.space
+        # self.object_side_length_y = self.horizontal_item.bbox.dimensions[1] + self.space
+        self.object_side_length_x = self.object_type.bbox.dimensions[0] + self.space
+        self.object_side_length_y = self.object_type.bbox.dimensions[1] + self.space
         self.poses = poses
 
         self.square = QtGui.QPolygon()
@@ -139,6 +152,7 @@ class SquareItem(Item):
                     "Object",
                     pose.pose.position.x,
                     pose.pose.position.y,
+                    # self.horizontal_item,
                     self.object_type,
                     None,
                     place_pose_changed=None,
@@ -161,6 +175,7 @@ class SquareItem(Item):
                     "Object",
                     pose.pose.position.x,
                     pose.pose.position.y,
+                    # self.horizontal_item,
                     self.object_type,
                     None,
                     place_pose_changed=None,
@@ -247,7 +262,6 @@ class SquareItem(Item):
 
         # update of bounding rect
         self.update_bound()
-        self.object_side_length = self.object_type.bbox.dimensions[0] + self.space
         for pt in self.pts:
             if (pt.get_corner() == "BR") and pt.get_changed():
                 self.find_corner("TR").setPos(pt.x(), self.find_corner("TR").y())
@@ -278,20 +292,24 @@ class SquareItem(Item):
 
         if corner != "":
 
-            self.object_side_length = self.object_type.bbox.dimensions[0] + self.space
-            width_count = int(modf(round(((self.max[0] - self.min[0]) / self.object_side_length), 5))[1])
-            height_count = int(modf(round(((self.max[1] - self.min[1]) / self.object_side_length), 5))[1])
+            # self.object_side_length_x = self.horizontal_item.bbox.dimensions[0] + self.space
+            # self.object_side_length_y = self.horizontal_item.bbox.dimensions[1] + self.space
+            self.object_side_length_x = self.object_type.bbox.dimensions[0] + self.space
+            self.object_side_length_y = self.object_type.bbox.dimensions[1] + self.space
+
+            width_count = int(modf(round(((self.max[0] - self.min[0]) / self.object_side_length_x), 5))[1])
+            height_count = int(modf(round(((self.max[1] - self.min[1]) / self.object_side_length_y), 5))[1])
             if self.previous_width != width_count or self.previous_height != height_count:
                 ps = PoseStamped()
                 if corner == "BR" or corner == "TR":
-                    ps.pose.position.x = self.pom_min[0] + self.object_side_length/2
+                    ps.pose.position.x = self.pom_min[0] + self.object_side_length_x/2
                 else:
-                    ps.pose.position.x = self.pom_max[0] - self.object_side_length/2
+                    ps.pose.position.x = self.pom_max[0] - self.object_side_length_x/2
 
                 if corner == "BR" or corner == "BL":
-                    ps.pose.position.y = self.pom_max[1] - self.object_side_length/2
+                    ps.pose.position.y = self.pom_max[1] - self.object_side_length_y/2
                 else:
-                    ps.pose.position.y = self.pom_min[1] + self.object_side_length/2
+                    ps.pose.position.y = self.pom_min[1] + self.object_side_length_y/2
                 ps.pose.orientation.w = 1.0
 
                 if self.items:
@@ -329,6 +347,7 @@ class SquareItem(Item):
                             "Object",
                             ps.pose.position.x,
                             ps.pose.position.y,
+                            # self.horizontal_item,
                             self.object_type,
                             None,
                             place_pose_changed=None,
@@ -344,18 +363,18 @@ class SquareItem(Item):
                         self.items.append(it)
 
                         if corner == "BR" or corner == "TR":
-                            ps.pose.position.x += self.object_side_length  # BR TR
+                            ps.pose.position.x += self.object_side_length_x  # BR TR
                         else:
-                            ps.pose.position.x -= self.object_side_length  # TL BL
+                            ps.pose.position.x -= self.object_side_length_x  # TL BL
                     if corner == "BR" or corner == "TR":
-                        ps.pose.position.x = self.pom_min[0] + self.object_side_length/2    # BR a TR
+                        ps.pose.position.x = self.pom_min[0] + self.object_side_length_x/2    # BR a TR
                     else:
-                        ps.pose.position.x = self.pom_max[0] - self.object_side_length/2  # TL BL
+                        ps.pose.position.x = self.pom_max[0] - self.object_side_length_x/2  # TL BL
 
                     if corner == "BR" or corner == "BL":
-                        ps.pose.position.y -= self.object_side_length    # BR BL
+                        ps.pose.position.y -= self.object_side_length_y    # BR BL
                     else:
-                        ps.pose.position.y += self.object_side_length  # TL TR
+                        ps.pose.position.y += self.object_side_length_y  # TL TR
                 self.previous_width = width_count
                 self.previous_height = height_count
 
