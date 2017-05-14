@@ -8,7 +8,7 @@ from math import modf
 from geometry_msgs.msg import PoseStamped
 # from art_msgs.msg import ObjectType
 # from shape_msgs.msg import SolidPrimitive
-from helpers import conversions
+from art_projected_gui.helpers import conversions
 
 translate = QtCore.QCoreApplication.translate
 
@@ -100,7 +100,7 @@ class SquareItem(Item):
         # self.object_side_length_x = self.horizontal_item.bbox.dimensions[0] + self.space
         # self.object_side_length_y = self.horizontal_item.bbox.dimensions[1] + self.space
         self.object_side_length_x = self.object_type.bbox.dimensions[0] + self.space
-        self.object_side_length_y = self.object_type.bbox.dimensions[1] + self.space
+        self.object_side_length_y = self.object_type.bbox.dimensions[2] + self.space
         self.poses = poses
 
         self.square = QtGui.QPolygon()
@@ -295,7 +295,7 @@ class SquareItem(Item):
             # self.object_side_length_x = self.horizontal_item.bbox.dimensions[0] + self.space
             # self.object_side_length_y = self.horizontal_item.bbox.dimensions[1] + self.space
             self.object_side_length_x = self.object_type.bbox.dimensions[0] + self.space
-            self.object_side_length_y = self.object_type.bbox.dimensions[1] + self.space
+            self.object_side_length_y = self.object_type.bbox.dimensions[2] + self.space
 
             width_count = int(modf(round(((self.max[0] - self.min[0]) / self.object_side_length_x), 5))[1])
             height_count = int(modf(round(((self.max[1] - self.min[1]) / self.object_side_length_y), 5))[1])

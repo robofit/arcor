@@ -5,6 +5,7 @@ import rospy
 import time
 import copy
 import sys
+import math
 
 import actionlib
 from art_msgs.msg import LocalizeAgainstUMFAction, LocalizeAgainstUMFGoal, LocalizeAgainstUMFResult
@@ -738,13 +739,15 @@ class ArtBrain(object):
             return False
         # TODO how to decide between 180 and 90 deg?
         # allow object to be rotated by 90 deg around z axis
-        goal.z_axis_angle_increment = 3.14 / 2
+        goal.z_axis_angle_increment = 3.14
 
         goal.pose = place
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.header.frame_id = self.objects.header.frame_id
         # TODO: how to deal with this?
         goal.pose.pose.position.z = 0.1  # + obj.bbox.dimensions[2]/2
+        goal.pose.pose.orientation.x = math.sqrt(0.5)
+        goal.pose.pose.orientation.w = math.sqrt(0.5)
         rospy.loginfo("Place pose: " + str(goal.pose))
         gripper.pp_client.send_goal(goal)
         gripper.pp_client.wait_for_result()
