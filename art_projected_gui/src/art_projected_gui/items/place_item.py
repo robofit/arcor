@@ -19,7 +19,7 @@ class PlaceItem(ObjectItem):
 
     """
 
-    def __init__(self, scene,  caption, x, y, object_type,  object_id=None,  yaw=0,  place_pose_changed=None,  selected=False, fixed=False, txt=True, rot=True, rot_point=None, rotation_changed=None, horizontal=False):
+    def __init__(self, scene,  caption, x, y, object_type,  object_id=None,  yaw=0,  place_pose_changed=None,  selected=False, fixed=False, txt=True, rot=True, rot_point=None, rotation_changed=None, parent=None, horizontal=False):
 
         self.in_collision = False
         self.caption = caption
@@ -28,7 +28,7 @@ class PlaceItem(ObjectItem):
         self.rot_point = rot_point
         self.other_items = []
 
-        super(PlaceItem, self).__init__(scene, object_id, object_type,  x, y,  yaw, horizontal=horizontal)
+        super(PlaceItem, self).__init__(scene, object_id, object_type,  x, y,  yaw, parent=parent, horizontal=horizontal)
 
         self.update_text()
         self.fixed = fixed

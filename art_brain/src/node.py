@@ -447,7 +447,6 @@ class ArtBrain(object):
 
     def state_place_to_grid(self, event):
         rospy.loginfo('state_place_to_grid')
-        grid = ArtBrainUtils.get_place_grid(self.instruction)
         pose = ArtBrainUtils.get_place_pose(self.instruction)
         self.state_manager.update_program_item(
             self.ph.get_program_id(), self.block_id, self.instruction)

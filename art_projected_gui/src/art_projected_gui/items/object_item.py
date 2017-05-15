@@ -21,7 +21,7 @@ class ObjectItem(Item):
     """
 
     def __init__(self, scene, object_id, object_type, x,
-                 y, yaw, sel_cb=None, selected=False, horizontal=False):
+                 y, yaw, sel_cb=None, selected=False, parent=None, horizontal=False):
 
         self.object_id = object_id
         self.selected = selected
@@ -36,7 +36,7 @@ class ObjectItem(Item):
 
         self.desc = None
 
-        super(ObjectItem, self).__init__(scene, x, y)
+        super(ObjectItem, self).__init__(scene, x, y, parent=parent)
 
         self.desc = DescItem(scene, 0, 0, self)
         self.desc.setFlag(QtGui.QGraphicsItem.ItemIgnoresTransformations)

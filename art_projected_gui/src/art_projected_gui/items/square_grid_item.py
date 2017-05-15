@@ -150,6 +150,7 @@ class SquareItem(Item):
                     fixed=True,
                     yaw=conversions.quaternion2yaw(pose.pose.orientation),
                     txt=False,
+                    parent=self,
                     horizontal=True
                 )
                 self.items.append(it)
@@ -176,6 +177,7 @@ class SquareItem(Item):
                     rot=rot,
                     rot_point=rot_point,
                     rotation_changed=self.items_rotation_changed,
+                    parent=self,
                     horizontal=True
                 )
                 it.update_point()
