@@ -96,7 +96,7 @@ class SquareItem(Item):
 
         self.scene_items = scene_items
         self.square_changed = square_changed
-        self.space = 0.02   # pripocitava sa k bbox objektu, cize v skutocnosti je medzera medzi objektami 'space', ale mezdi objektom a krabicou len 'space'/2
+        self.space = 0.05   # pripocitava sa k bbox objektu, cize v skutocnosti je medzera medzi objektami 'space', ale mezdi objektom a krabicou len 'space'/2
         # self.object_side_length_x = self.horizontal_item.bbox.dimensions[0] + self.space
         # self.object_side_length_y = self.horizontal_item.bbox.dimensions[1] + self.space
         self.object_side_length_x = self.object_type.bbox.dimensions[0] + self.space
@@ -158,7 +158,8 @@ class SquareItem(Item):
                     place_pose_changed=None,
                     fixed=True,
                     yaw=conversions.quaternion2yaw(pose.pose.orientation),
-                    txt=False
+                    txt=False,
+                    horizontal=True
                 )
                 self.items.append(it)
         else:
@@ -184,7 +185,8 @@ class SquareItem(Item):
                     txt=False,
                     rot=rot,
                     rot_point=rot_point,
-                    rotation_changed=self.items_rotation_changed
+                    rotation_changed=self.items_rotation_changed,
+                    horizontal=True
                 )
                 it.update_point()
                 self.items.append(it)
@@ -356,7 +358,8 @@ class SquareItem(Item):
                             txt=False,
                             rot=rot,
                             rot_point=rot_point,
-                            rotation_changed=self.items_rotation_changed
+                            rotation_changed=self.items_rotation_changed,
+                            horizontal=True
                         )
                         it.setRotation(rotation)
                         it.update_point()

@@ -21,11 +21,12 @@ class ObjectItem(Item):
     """
 
     def __init__(self, scene, object_id, object_type, x,
-                 y, yaw, sel_cb=None, selected=False):
+                 y, yaw, sel_cb=None, selected=False, horizontal=False):
 
         self.object_id = object_id
         self.selected = selected
         self.sel_cb = sel_cb
+        self.horizontal = horizontal
         # TODO check bbox type and use rectangle (used now) / ellipse, consider
         # other angles
         self.object_type = object_type
@@ -106,8 +107,12 @@ class ObjectItem(Item):
 
         lx = self.hover_ratio * self.inflate * \
             self.m2pix(self.object_type.bbox.dimensions[0])
-        ly = self.hover_ratio * self.inflate * \
-            self.m2pix(self.object_type.bbox.dimensions[1])
+        if not self.horizontal:
+            ly = self.hover_ratio * self.inflate * \
+                self.m2pix(self.object_type.bbox.dimensions[1])
+        else:
+            ly = self.hover_ratio * self.inflate * \
+                 self.m2pix(self.object_type.bbox.dimensions[2])
         p = 1.0
         return QtCore.QRectF(-lx / 2 - p, -ly / 2 - p, lx + 2 * p, ly + 2 * p)
 
@@ -120,7 +125,10 @@ class ObjectItem(Item):
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
         lx = self.inflate * self.m2pix(self.object_type.bbox.dimensions[0])
-        ly = self.inflate * self.m2pix(self.object_type.bbox.dimensions[1])
+        if not self.horizontal:
+            ly = self.inflate * self.m2pix(self.object_type.bbox.dimensions[1])
+        else:
+            ly = self.inflate * self.m2pix(self.object_type.bbox.dimensions[2])
 
         rr = 10
 
