@@ -87,18 +87,10 @@ class SquareItem(Item):
         self.caption = caption
         self.object_type = object_type
 
-        # self.horizontal_item = ObjectType()
-        # self.horizontal_item.name = "horizontal"
-        # self.horizontal_item.bbox.type = SolidPrimitive.BOX
-        # self.horizontal_item.bbox.dimensions.append(self.object_type.bbox.dimensions[2])
-        # self.horizontal_item.bbox.dimensions.append(self.object_type.bbox.dimensions[1])
-        # self.horizontal_item.bbox.dimensions.append(self.object_type.bbox.dimensions[0])
-
         self.scene_items = scene_items
         self.square_changed = square_changed
         self.space = 0.05   # pripocitava sa k bbox objektu, cize v skutocnosti je medzera medzi objektami 'space', ale mezdi objektom a krabicou len 'space'/2
-        # self.object_side_length_x = self.horizontal_item.bbox.dimensions[0] + self.space
-        # self.object_side_length_y = self.horizontal_item.bbox.dimensions[1] + self.space
+
         self.object_side_length_x = self.object_type.bbox.dimensions[0] + self.space
         self.object_side_length_y = self.object_type.bbox.dimensions[2] + self.space
         self.poses = poses
@@ -152,7 +144,6 @@ class SquareItem(Item):
                     "Object",
                     pose.pose.position.x,
                     pose.pose.position.y,
-                    # self.horizontal_item,
                     self.object_type,
                     None,
                     place_pose_changed=None,
@@ -176,7 +167,6 @@ class SquareItem(Item):
                     "Object",
                     pose.pose.position.x,
                     pose.pose.position.y,
-                    # self.horizontal_item,
                     self.object_type,
                     None,
                     place_pose_changed=None,
@@ -294,8 +284,6 @@ class SquareItem(Item):
 
         if corner != "":
 
-            # self.object_side_length_x = self.horizontal_item.bbox.dimensions[0] + self.space
-            # self.object_side_length_y = self.horizontal_item.bbox.dimensions[1] + self.space
             self.object_side_length_x = self.object_type.bbox.dimensions[0] + self.space
             self.object_side_length_y = self.object_type.bbox.dimensions[2] + self.space
 
@@ -349,7 +337,6 @@ class SquareItem(Item):
                             "Object",
                             ps.pose.position.x,
                             ps.pose.position.y,
-                            # self.horizontal_item,
                             self.object_type,
                             None,
                             place_pose_changed=None,
