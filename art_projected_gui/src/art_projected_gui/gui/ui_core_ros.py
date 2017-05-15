@@ -866,6 +866,8 @@ class UICoreRos(UICore):
 
         self.program_vis.set_place_grid(pts)    # ulozenie bodov do ProgramItem zpravy
         self.program_vis.set_place_poses(poses)
+        self.state_manager.update_program_item(self.ph.get_program_id(
+        ), self.program_vis.block_id, self.program_vis.get_current_item())
 
     def object_selected(self, id, selected):
 
