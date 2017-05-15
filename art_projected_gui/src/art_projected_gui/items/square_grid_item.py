@@ -287,19 +287,19 @@ class SquareItem(Item):
             self.object_side_length_x = self.object_type.bbox.dimensions[0] + self.space
             self.object_side_length_y = self.object_type.bbox.dimensions[2] + self.space
 
-            width_count = int(modf(round(((self.max[0] - self.min[0]) / self.object_side_length_x), 5))[1])
-            height_count = int(modf(round(((self.max[1] - self.min[1]) / self.object_side_length_y), 5))[1])
+            width_count = int(modf(round((((self.max[0] - self.min[0]) - self.space) / self.object_side_length_x), 5))[1])
+            height_count = int(modf(round((((self.max[1] - self.min[1]) - self.space) / self.object_side_length_y), 5))[1])
             if self.previous_width != width_count or self.previous_height != height_count:
                 ps = PoseStamped()
                 if corner == "BR" or corner == "TR":
-                    ps.pose.position.x = self.pom_min[0] + self.object_side_length_x/2
+                    ps.pose.position.x = self.pom_min[0] + self.space/2 + self.object_side_length_x/2
                 else:
-                    ps.pose.position.x = self.pom_max[0] - self.object_side_length_x/2
+                    ps.pose.position.x = self.pom_max[0] - self.space/2 - self.object_side_length_x/2
 
                 if corner == "BR" or corner == "BL":
-                    ps.pose.position.y = self.pom_max[1] - self.object_side_length_y/2
+                    ps.pose.position.y = self.pom_max[1] - self.space/2 - self.object_side_length_y/2
                 else:
-                    ps.pose.position.y = self.pom_min[1] + self.object_side_length_y/2
+                    ps.pose.position.y = self.pom_min[1] + self.space/2 + self.object_side_length_y/2
                 ps.pose.orientation.w = 1.0
 
                 if self.items:
@@ -357,14 +357,14 @@ class SquareItem(Item):
                         else:
                             ps.pose.position.x -= self.object_side_length_x  # TL BL
                     if corner == "BR" or corner == "TR":
-                        ps.pose.position.x = self.pom_min[0] + self.object_side_length_x/2    # BR a TR
+                        ps.pose.position.x = self.pom_min[0] + self.space/2 + self.object_side_length_x/2  # BR a TR
                     else:
-                        ps.pose.position.x = self.pom_max[0] - self.object_side_length_x/2  # TL BL
+                        ps.pose.position.x = self.pom_max[0] - self.space/2 - self.object_side_length_x/2  # TL BL
 
                     if corner == "BR" or corner == "BL":
-                        ps.pose.position.y -= self.object_side_length_y    # BR BL
+                        ps.pose.position.y -= self.object_side_length_y + self.space/2   # BR BL
                     else:
-                        ps.pose.position.y += self.object_side_length_y  # TL TR
+                        ps.pose.position.y += self.object_side_length_y + self.space/2  # TL TR
                 self.previous_width = width_count
                 self.previous_height = height_count
 
@@ -381,20 +381,20 @@ class SquareItem(Item):
 
             # upravuje rozmiestnenie objektov v gride, aby boli cca rovnako daleko od stran gridu
             if self.items:
-                new_object_length_x = (self.pom_max[0] - self.pom_min[0]) / self.previous_width
-                new_object_length_y = (self.pom_max[1] - self.pom_min[1]) / self.previous_height
+                new_object_length_x = ((self.pom_max[0] - self.pom_min[0]) - self.space) / self.previous_width
+                new_object_length_y = ((self.pom_max[1] - self.pom_min[1]) - self.space) / self.previous_height
 
                 for i, it in enumerate(self.items):
                     if self.last_corner == "BR" or self.last_corner == "TR":
-                        new_x = self.pom_min[0] + new_object_length_x / 2 + new_object_length_x * (i % self.previous_width)
+                        new_x = self.pom_min[0] + self.space/2 + new_object_length_x / 2 + new_object_length_x * (i % self.previous_width)
                     else:
-                        new_x = self.pom_max[0] - new_object_length_x / 2 - new_object_length_x * (i % self.previous_width)
+                        new_x = self.pom_max[0] - self.space/2 - new_object_length_x / 2 - new_object_length_x * (i % self.previous_width)
 
                     if self.last_corner == "BR" or self.last_corner == "BL":
-                        new_y = self.pom_max[1] - new_object_length_y / 2 - new_object_length_y * (
+                        new_y = self.pom_max[1] - self.space/2 - new_object_length_y / 2 - new_object_length_y * (
                         i / self.previous_width)
                     else:
-                        new_y = self.pom_min[1] + new_object_length_y / 2 + new_object_length_y * (
+                        new_y = self.pom_min[1] + self.space/2 + new_object_length_y / 2 + new_object_length_y * (
                         i / self.previous_width)
                     it.set_pos(new_x, new_y)
                     it.update_point()   # nutne updatnut do povodnej polohy, lebo ked sa pohne s objektom, tak sa pohne zaroven s bodom na rotovanie
