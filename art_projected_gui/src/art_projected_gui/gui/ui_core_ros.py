@@ -398,7 +398,7 @@ class UICoreRos(UICore):
 
             elif it.type == ProgIt.PLACE_TO_GRID:
 
-                ref_msg = self.program_vis.get_ref_item()  # ziskanie referencneho itemu
+                ref_msg = self.program_vis.get_ref_item(it.ref_id)  # ziskanie referencneho itemu
 
                 if ref_msg.type == ProgIt.PICK_OBJECT_ID:
 
@@ -531,7 +531,7 @@ class UICoreRos(UICore):
 
         elif msg.type == ProgIt.PLACE_TO_GRID:
 
-            ref_msg = self.program_vis.get_ref_item()  # ziskanie referencneho itemu
+            ref_msg = self.program_vis.get_ref_item(msg.ref_id)  # ziskanie referencneho itemu
 
             if ref_msg.type == ProgIt.PICK_OBJECT_ID:
 

@@ -36,7 +36,6 @@ class ProgramItem(Item):
 
         self.block_id = None
         self.item_id = None
-        self.ref_id = [3]
 
         self.block_learned = False
         self.program_learned = False
@@ -168,13 +167,12 @@ class ProgramItem(Item):
 
         self.update()
 
-    def set_active(self, block_id, item_id, ref_id):
+    def set_active(self, block_id, item_id):
 
         old_block_id = self.block_id
 
         self.block_id = block_id
         self.item_id = item_id
-        self.ref_id = ref_id
 
         if not self.readonly:
 
@@ -662,11 +660,11 @@ class ProgramItem(Item):
 
         return None
 
-    def get_ref_item(self):
+    def get_ref_item(self, ref_id=None):
 
-        if (self.block_id is not None and self.ref_id):
+        if (self.block_id is not None and ref_id is not None):
 
-            return self.ph.get_item_msg(self.block_id, self.ref_id[0])
+            return self.ph.get_item_msg(self.block_id, ref_id[0])
         return None
 
 
