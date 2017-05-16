@@ -158,12 +158,20 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
     geometry_msgs::PoseStamped pps = pose_stamped;
 
     // Orientation
-    Eigen::Quaterniond quat(Eigen::AngleAxis<double>(static_cast<double>(angle),
-                                                     Eigen::Vector3d::UnitZ()));
-    pps.pose.orientation.x = quat.x();
+    //Eigen::Quaterniond quat(Eigen::AngleAxis<double>(static_cast<double>(angle),
+    //                                                 Eigen::Vector3d::UnitZ()));
+    tf::Quaternion tfq2 = tf::createQuaternionFromYaw(angle);
+    //tf::quaternionEigenToTF(quat, tfq2);
+    
+    tf::Quaternion tfq1;
+    tf::quaternionMsgToTF(pps.pose.orientation, tfq1);
+    
+    tf::quaternionTFToMsg(tfq1 * tfq2, pps.pose.orientation);
+                                                     
+    /*pps.pose.orientation.x = quat.x();
     pps.pose.orientation.y = quat.y();
     pps.pose.orientation.z = quat.z();
-    pps.pose.orientation.w = quat.w();
+    pps.pose.orientation.w = quat.w();*/
 
     // Create new place location
     moveit_msgs::PlaceLocation place_loc;
