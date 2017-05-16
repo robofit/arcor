@@ -348,6 +348,7 @@ class SquareItem(Item):
                             rot=rot,
                             rot_point=rot_point,
                             rotation_changed=self.items_rotation_changed,
+                            parent=self,
                             horizontal=True
                         )
                         it.setRotation(rotation)
