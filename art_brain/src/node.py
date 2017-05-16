@@ -332,7 +332,7 @@ class ArtBrain(object):
         if not self.check_gripper_for_pick(gripper):
             return
 
-        if self.pick_object_by_id(obj, gripper, only_top=True):
+        if self.pick_object_by_id(obj, gripper, pick_only_y_axis=True):
             gripper.holding_object = obj
             gripper.last_pick_instruction_id = self.instruction.id
             self.fsm.done(success=True)
