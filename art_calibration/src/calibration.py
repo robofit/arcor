@@ -17,7 +17,7 @@ class ArtCalibration(object):
 
         self.cells = []
 
-        for cell in rospy.get_param("cells", ["n1","n2"]):
+        for cell in rospy.get_param("cells", ["n1", "n2"]):
 
             self.cells.append(ArtCellCalibration(cell, '/art/' + cell + '/ar_pose_marker',
                                                  '/' + cell + '_kinect2_link', '/marker_detected'))

@@ -14,7 +14,8 @@ class ArtCellCalibration(object):
         self.cell_id = cell_id
         self.markers_topic = markers_topic
         self.calibrated = None
-        self.positions = [None, None, None, None]
+        self.positions = [np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f'),
+                          np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f')]
 
         self.cell_frame = cell_frame
         self.world_frame = world_frame
