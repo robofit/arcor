@@ -260,7 +260,7 @@ std::string artPr2Grasping::getPlanningFrame()
 
 bool artPr2Grasping::hasGraspedObject() { return grasped_object_; }
 
-bool artPr2Grasping::pick(const std::string& object_id, bool pick_only_y_axis=false)
+bool artPr2Grasping::pick(const std::string& object_id)
 {
   if (hasGraspedObject())
   {
