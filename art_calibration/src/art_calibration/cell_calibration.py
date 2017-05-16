@@ -6,6 +6,7 @@ from tf import TransformBroadcaster, transformations
 import rospy
 from geometry_msgs.msg import Transform
 from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
+from std_msgs.msg import Bool
 
 
 class ArtCellCalibration(object):
@@ -14,15 +15,31 @@ class ArtCellCalibration(object):
         self.cell_id = cell_id
         self.markers_topic = markers_topic
         self.calibrated = None
-        self.positions = [np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f'),
-                          np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f')]
+        self.positions = [None, None, None, None]
 
         self.cell_frame = cell_frame
         self.world_frame = world_frame
         self.transformation = Transform()
 
         self.markers_sub = rospy.Subscriber(self.markers_topic, AlvarMarkers, self.markers_cb, queue_size=1)
+        self.marker_detection_enable_publisher = rospy.Publisher("/art/" +
+                                                                 self.cell_id +
+                                                                 "/ar_track_alvar_bundle_objects/enable_detection",
+                                                                 Bool,
+                                                                 queue_size=1,
+                                                                 latch=True)
+        self.start_marker_detection()
         rospy.loginfo("Cell: " + str(self.cell_id) + " ready")
+
+    def stop_marker_detection(self):
+        detect = Bool
+        detect.data = False
+        self.marker_detection_enable_publisher.publish(detect)
+
+    def start_marker_detection(self):
+        detect = Bool
+        detect.data = True
+        self.marker_detection_enable_publisher.publish(detect)
 
     def calibrate(self):
         rospy.loginfo("Cell: " + str(self.cell_id) + " trying to calibrate")
@@ -34,6 +51,11 @@ class ArtCellCalibration(object):
                                                                          0,
                                                                          self.positions[3])
         if point is None or m is None:
+            if point is None:
+                rospy.logerr("Origin was not computed!")
+            elif m is None:
+                rospy.logerr("Transformation matrix was not computed!")
+            self.reset_markers_searching()  # let's try to get new positions of markers
             return
 
         self.transformation.rotation = ArtCalibrationHelper.normalize_vector(transformations.quaternion_from_matrix(m))
@@ -47,6 +69,10 @@ class ArtCellCalibration(object):
             return None
 
         return self.transformation
+
+    def reset_markers_searching(self):
+        self.start_marker_detection()
+        self.positions = [None, None, None, None]
 
     def markers_cb(self, markers):
         if self.calibrated:
@@ -65,4 +91,5 @@ class ArtCellCalibration(object):
             else:
                 all_markers = False
         if all_markers:
+            self.stop_marker_detection()
             self.calibrate()

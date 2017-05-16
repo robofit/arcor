@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import numpy as np
-from art_utils import ArtCalibrationHelper, ArtCellCalibration
+from art_utils import ArtCalibrationHelper
+from . import ArtCellCalibration
 from tf import TransformBroadcaster, transformations
 import rospy
 from geometry_msgs.msg import Transform, PointStamped
@@ -18,6 +19,13 @@ class ArtRobotCalibration(ArtCellCalibration):
         self.robot_state = 0
         self.robot_looking_for_id = 10
         self.count = 0
+
+    def reset_markers_searching(self):
+        self.positions = [None, None, None, None]
+        self.robot_looking_for_id = 10
+        self.robot_state = 0
+        self.count = 0
+        self.start_marker_detection()
 
     def markers_cb(self, markers):
         if self.calibrated:
@@ -37,6 +45,7 @@ class ArtRobotCalibration(ArtCellCalibration):
             rospy.sleep(5)
             self.robot_state = 2
         elif self.robot_state == 2 and self.robot_looking_for_id > 20:
+            self.stop_marker_detection()
             self.calibrate()
 
         if self.robot_looking_for_id == 12:
