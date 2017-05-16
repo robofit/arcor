@@ -7,6 +7,7 @@ import rospy
 from geometry_msgs.msg import Transform
 from art_calibration import ArtCellCalibration, ArtRobotCalibration
 from std_msgs.msg import Bool
+from art_msgs.srv import RecalibrateCell, RecalibrateCellRequest, RecalibrateCellResponse
 
 
 class ArtCalibration(object):
@@ -28,8 +29,22 @@ class ArtCalibration(object):
         self.calibrated.data = False
         self.calibrated_sended = False
         self.calibrated_pub.publish(self.calibrated)
+        self.recalibrate_cell_service = rospy.Service("/art/system/calibrate_cell", RecalibrateCell)
 
         self.broadcaster = TransformBroadcaster()
+
+    def recalibrate_cell_cb(self, req):
+        resp = RecalibrateCellResponse()
+        resp.success = False
+        cell_name = req.cell_name
+        for cell in self.cells:
+            if cell.cell_name == cell_name:
+                cell.reset_markers_searching()
+                resp.success = True
+                break
+        else:
+            resp.error = "Unknown cell"
+        return resp
 
     def publish_calibration(self):
         calibrated = True
