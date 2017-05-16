@@ -2,6 +2,7 @@ string object # object id / type
 geometry_msgs/PoseStamped pose
 float32 z_axis_angle_increment # 0 -> place with exactly given orientation, i.e. 1.57 -> object can be place rotated 90deg around z-axis
 bool keep_orientation
+bool pick_only_y_axis
 uint16 operation
 
 uint16 RESET=0 # clear all collision objects / grasped object topics, try to close grippers and check their state

@@ -103,7 +103,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
       tries--;
       as_->publishFeedback(f);
 
-      grasped = pick(goal->object);  // todo flag if it make sense to try again
+      grasped = pick(goal->object, goal->pick_only_y_axis);  // todo flag if it make sense to try again
       // (type of failure)
       if (grasped)
         break;

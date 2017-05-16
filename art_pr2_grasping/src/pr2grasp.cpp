@@ -260,7 +260,7 @@ std::string artPr2Grasping::getPlanningFrame()
 
 bool artPr2Grasping::hasGraspedObject() { return grasped_object_; }
 
-bool artPr2Grasping::pick(const std::string& object_id)
+bool artPr2Grasping::pick(const std::string& object_id, bool pick_only_y_axis=false)
 {
   if (hasGraspedObject())
   {
@@ -296,7 +296,7 @@ bool artPr2Grasping::pick(const std::string& object_id)
   // objects_[id].bb.dimensions[2]);
 
   if (!simple_grasps_->generateShapeGrasps(obj.type.bbox, true, true, p,
-                                           grasp_data_, grasps))
+                                           grasp_data_, grasps, pick_only_y_axis))
   {
     ROS_ERROR_NAMED(group_name_, "No grasps found.");
     return false;

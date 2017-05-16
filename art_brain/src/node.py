@@ -383,7 +383,7 @@ class ArtBrain(object):
         if not self.check_gripper_for_pick(gripper):
             return
 
-        if self.pick_object_by_id(obj, gripper):
+        if self.pick_object_by_id(obj, gripper, pick_only_y_axis=True):
             gripper.holding_object = obj
             gripper.last_pick_instruction_id = self.instruction.id
             self.fsm.done()
@@ -471,7 +471,7 @@ class ArtBrain(object):
                                error=ArtBrainMachine.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
                 return
 
-            if self.place_object(gripper.holding_object, pose[0], gripper):
+            if self.place_object(gripper.holding_object, pose[0], gripper, pick_only_y_axis=True):
                 # self.instruction.pose = pose[1:]
                 self.instruction.pose.pop(0)
                 gripper.holding_object = None
@@ -687,13 +687,13 @@ class ArtBrain(object):
     #                                     MANIPULATION
     # ***************************************************************************************
 
-    def pick_object_by_id(self, obj, gripper, only_top=False):
+    def pick_object_by_id(self, obj, gripper, pick_only_y_axis=False):
 
         goal = PickPlaceGoal()
         goal.object = obj.object_id
         goal.operation = goal.PICK_OBJECT_ID
         goal.keep_orientation = False
-        goal.pick_from_top = only_top
+        goal.pick_only_y_axis = pick_only_y_axis
         rospy.loginfo("Picking object with ID: " + str(obj.object_id))
         gripper.pp_client.send_goal(goal)
         gripper.pp_client.wait_for_result()
@@ -729,7 +729,7 @@ class ArtBrain(object):
         else:
             return False
 
-    def place_object(self, obj, place, gripper):
+    def place_object(self, obj, place, gripper, pick_only_y_axis=False):
         rospy.logdebug(obj)
         goal = PickPlaceGoal()
         goal.operation = goal.PLACE_TO_POSE
@@ -738,15 +738,20 @@ class ArtBrain(object):
             return False
         # TODO how to decide between 180 and 90 deg?
         # allow object to be rotated by 90 deg around z axis
-        goal.z_axis_angle_increment = 3.14
+        if not pick_only_y_axis:
+            goal.z_axis_angle_increment = 3.14 / 2
+        else:
+            goal.z_axis_angle_increment = 3.14
 
         goal.pose = place
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.header.frame_id = self.objects.header.frame_id
         # TODO: how to deal with this?
         goal.pose.pose.position.z = 0.1  # + obj.bbox.dimensions[2]/2
-        goal.pose.pose.orientation.x = math.sqrt(0.5)
-        goal.pose.pose.orientation.w = math.sqrt(0.5)
+
+        if pick_only_y_axis:
+            goal.pose.pose.orientation.x = math.sqrt(0.5)
+            goal.pose.pose.orientation.w = math.sqrt(0.5)
         rospy.loginfo("Place pose: " + str(goal.pose))
         gripper.pp_client.send_goal(goal)
         gripper.pp_client.wait_for_result()
