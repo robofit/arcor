@@ -6,8 +6,8 @@
 	<arg name="max_new_marker_error" default="0.08" />
 	<arg name="max_track_error" default="0.2" />
 
-	<arg name="cam_image_topic" default="/art/n2/kinect2/hd/image_color" />
-	<arg name="cam_info_topic" default="/art/n2/kinect2/hd/camera_info" />
+	<arg name="cam_image_topic" default="kinect2/hd/image_color" />
+	<arg name="cam_info_topic" default="kinect2/hd/camera_info" />
 
 	<arg name="output_frame" default="/marker" />
 	<!--arg name="bundle_files" default="/home/artable/catkin_ws/src/ar-table-itable/art_detectors/art_arcode_detector/bundles/truthTableLeg.xml"  /-->
