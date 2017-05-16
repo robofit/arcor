@@ -13,13 +13,13 @@ from art_msgs.srv import RecalibrateCell, RecalibrateCellRequest, RecalibrateCel
 class ArtCalibration(object):
 
     def __init__(self):
-        self.robot_calibration = ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
-                                                     '/odom_combined', '/marker_detected')
 
         self.cells = []
 
-        for cell in rospy.get_param("cells", ["n1", "n2"]):
+        self.cells.append(ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
+                                              '/odom_combined', '/marker_detected'))
 
+        for cell in rospy.get_param("cells", ["n1", "n2"]):
             self.cells.append(ArtCellCalibration(cell, '/art/' + cell + '/ar_pose_marker',
                                                  '/' + cell + '_kinect2_link', '/marker_detected'))
 
@@ -29,7 +29,8 @@ class ArtCalibration(object):
         self.calibrated.data = False
         self.calibrated_sended = False
         self.calibrated_pub.publish(self.calibrated)
-        self.recalibrate_cell_service = rospy.Service("/art/system/calibrate_cell", RecalibrateCell)
+        self.recalibrate_cell_service = rospy.Service("/art/system/calibrate_cell", RecalibrateCell,
+                                                      self.recalibrate_cell_cb)
 
         self.broadcaster = TransformBroadcaster()
 
@@ -48,14 +49,6 @@ class ArtCalibration(object):
 
     def publish_calibration(self):
         calibrated = True
-        if self.robot_calibration.calibrated:
-            tr = self.robot_calibration.get_transform()
-            self.broadcaster.sendTransform(tr.translation, tr.rotation,
-                                           rospy.Time.now(), self.robot_calibration.world_frame,
-                                           self.robot_calibration.robot_frame)
-
-        else:
-            calibrated = True
 
         for cell in self.cells:
             if cell.calibrated:

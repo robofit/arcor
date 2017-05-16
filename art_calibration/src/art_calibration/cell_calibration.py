@@ -32,12 +32,12 @@ class ArtCellCalibration(object):
         rospy.loginfo("Cell: " + str(self.cell_id) + " ready")
 
     def stop_marker_detection(self):
-        detect = Bool
+        detect = Bool()
         detect.data = False
         self.marker_detection_enable_publisher.publish(detect)
 
     def start_marker_detection(self):
-        detect = Bool
+        detect = Bool()
         detect.data = True
         self.marker_detection_enable_publisher.publish(detect)
 
