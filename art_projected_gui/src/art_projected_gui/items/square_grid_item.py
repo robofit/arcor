@@ -17,6 +17,7 @@ translate = QtCore.QCoreApplication.translate
 '''
 class SquarePointItem(Item):
 
+    # Konstruktor triedy SquarePointItem
     def __init__(self,  scene, x, y,  parent, corner, fixed, changed=False):
 
         self.outline_diameter = 0.025
@@ -28,24 +29,39 @@ class SquarePointItem(Item):
 
         self.fixed = fixed
 
+    '''
+        Metoda vracia typ rohu (napr. BR).
+    '''
     def get_corner(self):
 
         return self.corner
 
+    '''
+        Metoda nastavuje atribut changed.
+    '''
     def set_changed(self, changed):
 
         self.changed = changed
 
+    '''
+        Metoda vracia atribut changed.
+    '''
     def get_changed(self):
 
         return self.changed
 
+    '''
+        Metoda definuje vonkajsie hranicu objektu ako pravouholnik.
+    '''
     def boundingRect(self):
 
         es = self.m2pix(self.outline_diameter*1.8)
 
         return QtCore.QRectF(-es/2, -es/2, es, es)
 
+    '''
+         Metoda vracia tvar rohu ako QPainterPath.
+    '''
     def shape(self):
 
         path = QtGui.QPainterPath()
@@ -53,15 +69,24 @@ class SquarePointItem(Item):
         path.addEllipse(QtCore.QPoint(0,  0),  es/2,  es/2)
         return path
 
+    '''
+        Metoda nastavuje atribut changed a vola rodicovsku metodu point_changed(), ked sa pohne s rohom.
+    '''
     def item_moved(self):
 
         self.changed = True
         self.parentItem().point_changed()
 
+    '''
+        Metoda vola rodicovsku metodu point_changed, ked sa pusti roh.
+    '''
     def cursor_release(self):
 
         self.parentItem().point_changed(True)
 
+    '''
+        Metoda vykresluje roh.
+    '''
     def paint(self, painter, option, widget):
 
         painter.setClipRect(option.exposedRect)
@@ -85,10 +110,10 @@ class SquarePointItem(Item):
     Trieda implementuje vykreslovanie gridu. Zaistuje vykreslenie objektov v gride, tlacitok, popisku pod gridom.
     Implementuje funkcionalitu gridu - zvacsovanie/zmensovanie gridu, rotaciu objektov v gride, zmenu medzery medzi
     objektami, rovnomerne rozmiestnenie v gride.
-
 '''
 class SquareItem(Item):
 
+    # Konstruktor triedy SquareItem
     def __init__(self,  scene, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points, scene_items, square_changed=None, fixed=False):
 
         self.scn = scene
@@ -204,6 +229,9 @@ class SquareItem(Item):
         self.update_bound()
         self.update()
 
+    '''
+        Metoda aktualizuje text pod gridom.
+    '''
     def update_text(self):
 
         if self.desc is None:
@@ -212,15 +240,26 @@ class SquareItem(Item):
         desc = self.caption
         self.desc.set_content(desc)
 
+    '''
+        Metoda, ktora sa vola po stlaceni tlacitka +
+        a zvysuje medzeru medzi objektami a krabicou, objektami a objektami.
+    '''
     def plus_clicked(self, btn):
         self.space += 0.01
         self.point_changed(True, self.last_corner)
 
+    '''
+        Metoda, ktora sa vola po stlaceni tlacitka -
+        a zmensuje medzeru medzi objektami a krabicou, objektami a objektami.
+    '''
     def minus_clicked(self, btn):
         if self.space > 0.02:
             self.space -= 0.01
             self.point_changed(True, self.last_corner)
 
+    '''
+        Metoda aktualizuje ohranicujuci pravouholnik.
+    '''
     def update_bound(self):
 
         self.min[0] = self.pix2m(self.pts[0].x())
@@ -247,12 +286,20 @@ class SquareItem(Item):
         self.pom_min = [min(self.orig_x), min(self.orig_y)]
         self.pom_max = [max(self.orig_x), max(self.orig_y)]
 
+    '''
+        Metoda vracia hladany roh.
+    '''
     def find_corner(self, corner):
         for pt in self.pts:
             if pt.get_corner() == corner:
                 return pt
         return None
 
+    '''
+        Metoda pre vykreslovanie gridu a objektov v nom. Je volana vzdy, ked sa pohne s niektorym rohom.
+        Rovnomerne rozmiestnuje objekty v gride, kontroluje ci nie su v kolizii.
+        Zaistuje ukladanie poloh bodov a gridu do spravy ProgramItem.
+    '''
     def point_changed(self,  finished=False, corner=""):
 
         if self.fixed:
@@ -428,6 +475,9 @@ class SquareItem(Item):
 
         self.update()
 
+    '''
+        Metoda vracia body gridu.
+    '''
     def get_square_points(self):
 
         pts = []
@@ -438,6 +488,11 @@ class SquareItem(Item):
 
         return pts
 
+    '''
+        Metoda, ktora sa vola po pusteni gridu.
+        Zaistuje ukladanie novych poloh bodov a objektov do spravy ProgramItem.
+        Kontroluje ci sa presunutim nedostali objekty do kolizie s niecim v scene.
+    '''
     def cursor_release(self):
 
         if self.fixed:
@@ -460,20 +515,32 @@ class SquareItem(Item):
 
         pass
 
+    '''
+        Metoda zaistuje ulozenie novych poloh (resp. orientacie) objektov po rotacii.
+    '''
     def items_rotation_changed(self, items):
 
         self.square_changed(self.get_square_points(), items)  # ulozenie bodov do ProgramItem zpravy
 
+    '''
+        Metoda vracia tvar gridu ako QPainterPath.
+    '''
     def shape(self):
 
         path = QtGui.QPainterPath()
         path.addPolygon(QtGui.QPolygonF(self.square))
         return path
 
+    '''
+        Metoda definuje vonkajsie hranicu objektu ako pravouholnik.
+    '''
     def boundingRect(self):
 
         return QtCore.QRectF(self.m2pix(self.min[0])-2.5,  self.m2pix(self.min[1])-2.5, self.m2pix(self.max[0]-self.min[0])+5, self.m2pix(self.max[1]-self.min[1])+5)
 
+    '''
+        Metoda nastavujuca farbu, typ, hrubku ciar gridu a nasledne ho vykresluje.
+    '''
     def paint(self, painter, option, widget):
 
         painter.setClipRect(option.exposedRect)
