@@ -12,6 +12,9 @@ from art_projected_gui.helpers import conversions
 
 translate = QtCore.QCoreApplication.translate
 
+'''
+    Trieda vykresluje rohy gridu. Pokial sa s niektorym z rohov pohne, tak informuje rodica.
+'''
 class SquarePointItem(Item):
 
     def __init__(self,  scene, x, y,  parent, corner, fixed, changed=False):
@@ -67,7 +70,7 @@ class SquarePointItem(Item):
         es = self.m2pix(self.outline_diameter)
 
         if self.hover and not self.fixed:
-            # TODO coordinates
+
             painter.setBrush(QtCore.Qt.gray)
             painter.setPen(QtCore.Qt.gray)
             painter.drawEllipse(QtCore.QPoint(0,  0), es/2*1.8, es/2*1.8)
@@ -78,7 +81,12 @@ class SquarePointItem(Item):
         painter.drawEllipse(QtCore.QPoint(0,  0), es/2, es/2)
 
 
+'''
+    Trieda implementuje vykreslovanie gridu. Zaistuje vykreslenie objektov v gride, tlacitok, popisku pod gridom.
+    Implementuje funkcionalitu gridu - zvacsovanie/zmensovanie gridu, rotaciu objektov v gride, zmenu medzery medzi
+    objektami, rovnomerne rozmiestnenie v gride.
 
+'''
 class SquareItem(Item):
 
     def __init__(self,  scene, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points, scene_items, square_changed=None, fixed=False):
@@ -89,7 +97,7 @@ class SquareItem(Item):
 
         self.scene_items = scene_items
         self.square_changed = square_changed
-        self.space = 0.05   # pripocitava sa k bbox objektu, cize v skutocnosti je medzera medzi objektami 'space', ale mezdi objektom a krabicou len 'space'/2
+        self.space = 0.05   # pripocitava sa k bbox objektu
 
         self.object_side_length_x = self.object_type.bbox.dimensions[0] + self.space
         self.object_side_length_y = self.object_type.bbox.dimensions[2] + self.space
@@ -138,6 +146,7 @@ class SquareItem(Item):
         self.pts.append(SquarePointItem(scene, self.min[0], self.max[1], self, "TL", self.fixed))  # top-left corner
 
         if len(poses) > 0 and self.fixed:
+            # vykresluje fixne objekty
             for pose in poses:
                 it = PlaceItem(
                     self.scn,
@@ -155,6 +164,7 @@ class SquareItem(Item):
                 )
                 self.items.append(it)
         else:
+            # vykresluje upravitelne objekty
             for i, pose in enumerate(poses):
                 rot_point = None  # sluzi na ulozenie xy suradnic pre umiestnenie bodu na rotovanie objektov v gride
                 if i == 0:
@@ -185,9 +195,8 @@ class SquareItem(Item):
 
             if self.items:
                 self.items[0].set_other_items(self.items[1:])   # riesi rotaciu objektov (preda sa pole objektov prvemu objektu, s ktorym ked sa rotuje, rotuje aj s ostatnymi)
-                self.plus_btn.setEnabled(True)  # mozno zvacsovat space
-                self.minus_btn.setEnabled(True)  # mozno zmensovat space
-
+                self.plus_btn.setEnabled(True)  # uz mozno zvacsovat space
+                self.minus_btn.setEnabled(True)  # uz mozno zmensovat space
 
         if self.square_changed is not None:
             self.square_changed(self.get_square_points(), self.items)   # ulozenie bodov do ProgramItem zpravy
@@ -237,7 +246,6 @@ class SquareItem(Item):
 
         self.pom_min = [min(self.orig_x), min(self.orig_y)]
         self.pom_max = [max(self.orig_x), max(self.orig_y)]
-
 
     def find_corner(self, corner):
         for pt in self.pts:
@@ -371,9 +379,6 @@ class SquareItem(Item):
                 self.previous_width = width_count
                 self.previous_height = height_count
 
-                # for it in self.items:   # kontrola ci nie je kolizia (az po vykresleni vsetkych, lebo inak by prvy bol biely)
-                #     it.item_moved()
-
             self.last_corner = corner
 
             # riesi rotaciu objektov (preda sa pole objektov prvemu objektu, s ktorym ked sa rotuje, rotuje aj s ostatnymi)
@@ -403,8 +408,6 @@ class SquareItem(Item):
                     it.update_point()   # nutne updatnut do povodnej polohy, lebo ked sa pohne s objektom, tak sa pohne zaroven s bodom na rotovanie
 
                 for it in self.items:   # nutne, aby sa pozrelo ci su este stale v kolizii
-                    # if it.collidesWithPath(self.shape()):
-                    #     print "Ano"
                     it.item_moved()
 
             self.plus_btn.setEnabled(True)  # uz mozno zvacsovat space
@@ -422,7 +425,6 @@ class SquareItem(Item):
                 self.square_changed(self.get_square_points(), [])  # ulozenie bodov do ProgramItem zpravy
             else:
                 self.square_changed(self.get_square_points(), self.items)  # ulozenie bodov do ProgramItem zpravy
-
 
         self.update()
 

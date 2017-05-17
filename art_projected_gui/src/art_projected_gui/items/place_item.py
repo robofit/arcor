@@ -95,7 +95,7 @@ class PlaceItem(ObjectItem):
         if self.other_items:    # zaroven nastavovat novu rotaciu vsetkym ostatnym objektom v gride
             for it in self.other_items:
                 it.setRotation(self.rotation())
-                # it.item_moved()   # ked to je tu, tak to prilis laguje
+
 
         self._update_desc_pos()
 
