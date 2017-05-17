@@ -23,7 +23,7 @@ class ArtCalibration(object):
             self.cells.append(ArtCellCalibration(cell, '/art/' + cell + '/ar_pose_marker',
                                                  '/' + cell + '_kinect2_link', '/marker_detected'))
 
-        self.calibrated_pub = rospy.Publisher('system_calibrated', Bool,
+        self.calibrated_pub = rospy.Publisher('/art/system/calibrated', Bool,
                                               queue_size=10, latch=True)
         self.calibrated = Bool()
         self.calibrated.data = False

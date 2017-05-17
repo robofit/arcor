@@ -126,7 +126,7 @@ class ArtBrain(object):
         self.table_calibrating_sub = rospy.Subscriber(
             "/art/interface/touchtable/calibrating", Bool, self.table_calibrating_cb)
         self.system_calibrated_sub = rospy.Subscriber(
-            "/system_calibrated", Bool, self.system_calibrated_cb)
+            "/art/system/calibrated", Bool, self.system_calibrated_cb)
 
         self.srv_program_start = rospy.Service(
             '/art/brain/program/start', startProgram, self.program_start_cb)
@@ -473,8 +473,8 @@ class ArtBrain(object):
             self.ph.get_program_id(), self.block_id, self.instruction)
         # TODO: call some service to set PR2 to ready position
         # TODO handle if it fails
-        self.right_gripper.get_ready_client.call()
-        self.left_gripper.get_ready_client.call()
+        self.right_gripper.get_ready()
+        self.left_gripper.get_ready()
         self.fsm.done(success=True)
 
     def state_program_load_instruction(self, event):
