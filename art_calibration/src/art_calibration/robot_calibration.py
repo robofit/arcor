@@ -15,13 +15,13 @@ class ArtRobotCalibration(ArtCellCalibration):
         super(ArtRobotCalibration, self).__init__(robot_id, markers_topic, world_frame, robot_frame)
 
         self.head_look_at_pub = rospy.Publisher(look_at_topic,  PointStamped,  queue_size=1)
-
+        self.positions = [np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f')]
         self.robot_state = 0
         self.robot_looking_for_id = 10
         self.count = 0
 
     def reset_markers_searching(self):
-        self.positions = [None, None, None, None]
+        self.positions = [np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f')]
         self.robot_looking_for_id = 10
         self.robot_state = 0
         self.count = 0

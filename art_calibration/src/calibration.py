@@ -39,7 +39,7 @@ class ArtCalibration(object):
         resp.success = False
         cell_name = req.cell_name
         for cell in self.cells:
-            if cell.cell_name == cell_name:
+            if cell.cell_id == cell_name:
                 cell.reset_markers_searching()
                 resp.success = True
                 break
