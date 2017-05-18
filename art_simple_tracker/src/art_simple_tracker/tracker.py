@@ -8,14 +8,16 @@ import numpy as np
 
 
 # "tracking" of static objects
-class tracker:
+class ArtSimpleTracker:
 
     def __init__(self, target_frame="/marker"):
 
         self.target_frame = target_frame
         self.listener = tf.TransformListener()
-        self.sub = rospy.Subscriber("/art/object_detector/object", InstancesArray, self.cb, queue_size=10)
-        self.pub = rospy.Publisher("/art/object_detector/object_filtered", InstancesArray, queue_size=10, latch=True)
+        self.sub = rospy.Subscriber(
+            "/art/object_detector/object", InstancesArray, self.cb, queue_size=10)
+        self.pub = rospy.Publisher(
+            "/art/object_detector/object_filtered", InstancesArray, queue_size=10, latch=True)
         self.timer = rospy.Timer(rospy.Duration(1.0), self.timer_cb)
         self.objects = {}
 
@@ -73,11 +75,11 @@ class tracker:
         v = (q.x, q.y, q.z, q.w)
         mag2 = sum(n * n for n in v)
         if abs(mag2 - 1.0) > tolerance:
-                mag = sqrt(mag2)
-                q.x /= mag
-                q.y /= mag
-                q.z /= mag
-                q.w /= mag
+            mag = sqrt(mag2)
+            q.x /= mag
+            q.y /= mag
+            q.z /= mag
+            q.w /= mag
         return q
 
     def transform(self, header, pose):
@@ -89,18 +91,17 @@ class tracker:
         if self.target_frame == header.frame_id:
             return ps
 
-        if not self.listener.waitForTransform(self.target_frame, header.frame_id, header.stamp, rospy.Duration(4.0)):
-
-            rospy.logwarn("Transform between " + self.target_frame + " and " + header.frame_id + " not available!")
-            return None
-
         try:
+            self.listener.waitForTransform(
+                self.target_frame, header.frame_id, header.stamp, rospy.Duration(4.0))
 
             ps = self.listener.transformPose(self.target_frame, ps)
 
         except tf.Exception:
 
             rospy.logerr("TF exception")
+            rospy.logwarn("Transform between " + self.target_frame +
+                          " and " + header.frame_id + " not available!")
             return None
 
         return ps
@@ -109,7 +110,8 @@ class tracker:
 
         return [q.x, q.y, q.z, q.w]
 
-    # here we assume that quaternions are close (object is static) -> averaging should be fine
+    # here we assume that quaternions are close (object is static) ->
+    # averaging should be fine
     def filterPose(self, old, new):
 
         p = Pose()
@@ -117,19 +119,26 @@ class tracker:
         # check for q == -q and correct
         if (np.dot(self.q2a(old.orientation), self.q2a(new.orientation))) < 0.0:
 
-                new.orientation.x *= -1.0
-                new.orientation.y *= -1.0
-                new.orientation.z *= -1.0
-                new.orientation.w *= -1.0
+            new.orientation.x *= -1.0
+            new.orientation.y *= -1.0
+            new.orientation.z *= -1.0
+            new.orientation.w *= -1.0
 
-        p.position.x = (1.0 - self.ap)*old.position.x + self.ap*new.position.x
-        p.position.y = (1.0 - self.ap)*old.position.y + self.ap*new.position.y
-        p.position.z = (1.0 - self.ap)*old.position.z + self.ap*new.position.z
+        p.position.x = (1.0 - self.ap) * old.position.x + \
+            self.ap * new.position.x
+        p.position.y = (1.0 - self.ap) * old.position.y + \
+            self.ap * new.position.y
+        p.position.z = (1.0 - self.ap) * old.position.z + \
+            self.ap * new.position.z
 
-        p.orientation.x = (1.0 - self.ao)*old.orientation.x + self.ao*new.orientation.x
-        p.orientation.y = (1.0 - self.ao)*old.orientation.y + self.ao*new.orientation.y
-        p.orientation.z = (1.0 - self.ao)*old.orientation.z + self.ao*new.orientation.z
-        p.orientation.w = (1.0 - self.ao)*old.orientation.w + self.ao*new.orientation.w
+        p.orientation.x = (1.0 - self.ao) * \
+            old.orientation.x + self.ao * new.orientation.x
+        p.orientation.y = (1.0 - self.ao) * \
+            old.orientation.y + self.ao * new.orientation.y
+        p.orientation.z = (1.0 - self.ao) * \
+            old.orientation.z + self.ao * new.orientation.z
+        p.orientation.w = (1.0 - self.ao) * \
+            old.orientation.w + self.ao * new.orientation.w
 
         return p
 
@@ -150,7 +159,8 @@ class tracker:
                 self.objects[inst.object_id]["object_type"] = inst.object_type
                 self.objects[inst.object_id]["cnt"] += 1
                 self.objects[inst.object_id]["pose"].header = ps.header
-                self.objects[inst.object_id]["pose"].pose = self.filterPose(self.objects[inst.object_id]["pose"].pose, ps.pose)
+                self.objects[inst.object_id]["pose"].pose = self.filterPose(
+                    self.objects[inst.object_id]["pose"].pose, ps.pose)
 
             else:
 
@@ -163,9 +173,9 @@ class tracker:
                 self.objects[inst.object_id] = obj
 
 if __name__ == '__main__':
-        try:
-                rospy.init_node('simple_tracker')
-                tr = tracker()
-                rospy.spin()
-        except rospy.ROSInterruptException:
-                print "program interrupted before completion"
+    try:
+        rospy.init_node('simple_tracker')
+        tr = ArtSimpleTracker()
+        rospy.spin()
+    except rospy.ROSInterruptException:
+        print "program interrupted before completion"

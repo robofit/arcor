@@ -419,8 +419,8 @@ class Projector(QtGui.QWidget):
 
         # if not self.projectors_calibrated:
 
-         #   rospy.logwarn('Some projector is not calibrated yet')
-         #   return None
+        #    rospy.logwarn('Some projector is not calibrated yet')
+        #    return None
 
         rospy.loginfo('Starting calibration')
         self.calibrating = True

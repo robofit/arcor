@@ -1,5 +1,7 @@
 - git: {local-name: moveit_simple_grasps, uri: 'https://github.com/dornhege/moveit_simple_grasps.git', version: hydro-devel}
 - git: {local-name: moveit_visual_tools, uri: 'https://github.com/zdenekm/moveit_visual_tools.git', version: pub-coll-obj}
 - git: {local-name: rviz_visual_tools, uri: 'https://github.com/davetcoleman/rviz_visual_tools.git', version: tags/1.5.0}
-- git: {local-name: moveit_pr2, uri: 'https://github.com/robofit/moveit_pr2.git', version: indigo-devel}
-- git: {local-name: pr2_common, uri: 'https://github.com/robofit/pr2_common.git', version: indigo-devel}
+# disabled as there are some strange dependencies
+# - git: {local-name: moveit_pr2, uri: 'https://github.com/robofit/moveit_pr2.git', version: indigo-devel}
+# disabled as pr2_description test fails
+#- git: {local-name: pr2_common, uri: 'https://github.com/robofit/pr2_common.git', version: indigo-devel}
