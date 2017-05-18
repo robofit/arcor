@@ -296,7 +296,8 @@ class ArtBrain(object):
             self.fsm.error(severity=InterfaceState.SEVERE,
                            error=ArtBrainErrors.ERROR_NO_INSTRUCTION)
             return
-
+        if not self.check_robot():
+            return
         rospy.logdebug('Program id: ' +
                        str(self.ph.get_program_id()) +
                        ', item id: ' +
@@ -329,11 +330,14 @@ class ArtBrain(object):
 
     def state_pick_from_polygon(self, event):
         rospy.loginfo('state_pick_from_polygon')
+        if not self.check_robot():
+            return
         self.pick_object_from_polygon(self.instruction)
 
     def state_pick_from_feeder(self, event):
         rospy.loginfo('state_pick_from_feeder')
-
+        if not self.check_robot():
+            return
         obj = ArtBrainUtils.get_pick_obj_from_feeder(self.instruction)
         if obj is None:
             self.fsm.error(severity=InterfaceState.ERROR,
@@ -358,6 +362,8 @@ class ArtBrain(object):
             self.done(success=False)
 
     def state_pick_object_id(self, event):
+        if not self.check_robot():
+                return
         rospy.loginfo('state_pick_object_id')
         obj = ArtBrainUtils.get_pick_obj(self.instruction, self.objects)
         if obj is None or obj.object_id is None:
@@ -385,11 +391,13 @@ class ArtBrain(object):
 
     def state_place_to_pose(self, event):
         rospy.loginfo('state_place_to_pose')
+        if not self.check_robot():
+            return
         self.place_object_to_pose(self.instruction)
 
     def state_wait_for_user(self, event):
         rospy.loginfo('state_wait_for_user')
-
+    
         self.state_manager.update_program_item(
             self.ph.get_program_id(), self.block_id, self.instruction)
 
@@ -415,6 +423,8 @@ class ArtBrain(object):
 
     def state_get_ready(self, event):
         rospy.loginfo('state_get_ready')
+        if not self.check_robot():
+            return
         self.state_manager.update_program_item(
             self.ph.get_program_id(), self.block_id, self.instruction)
         # TODO: call some service to set PR2 to ready position
@@ -454,6 +464,9 @@ class ArtBrain(object):
 
     def state_program_paused(self, event):
         rospy.loginfo('state_program_paused')
+        self.state_manager.set_system_state(
+            InterfaceState.STATE_PROGRAM_STOPPED)
+        self.state_manager.send()
         self.program_paused = True
         self.program_pause_request = False
 
@@ -787,6 +800,8 @@ class ArtBrain(object):
         self.fsm.program_start()
 
     def program_resume_timer_cb(self, event):
+        self.state_manager.set_system_state(
+                InterfaceState.STATE_PROGRAM_RUNNING)
         self.fsm.resume()
 
     def program_try_again_timer_cb(self, event):
@@ -808,6 +823,14 @@ class ArtBrain(object):
     def is_everything_calibrated(self, event=None):
 
         return self.table_calibrated and self.system_calibrated
+        
+    def check_robot(self):
+        if self.motors_halted:
+            self.fsm.error(severity=InterfaceState.WARNING,
+                           error=ArtBrainErrors.ERROR_ROBOT_HALTED)
+            return False
+        else:
+            return True
 
     def get_gripper(self, obj=None, pick_pose=None):
 
