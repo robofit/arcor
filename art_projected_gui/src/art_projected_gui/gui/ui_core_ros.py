@@ -265,13 +265,15 @@ class UICoreRos(UICore):
             self.emergency_stoped = False
             self.stop_btn.set_caption("STOP")
             self.stop_btn.set_background_color(QtCore.Qt.red)
+            self.notif(translate("UICoreRos", "Reseting motors"), temp=True)
         else:
             self.emergency_stop_srv.call()
             self.emergency_stoped = True
             self.stop_btn.set_caption("RUN")
             self.stop_btn.set_background_color(QtCore.Qt.green)
+            self.notif(translate("UICoreRos", "Emergency stop pressed"), temp=True)
         # TODO
-        self.notif(translate("UICoreRos", "Emergency stop pressed"), temp=True)
+        
 
     def program_error_dialog_cb(self, idx):
 
