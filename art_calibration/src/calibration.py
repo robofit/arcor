@@ -13,14 +13,14 @@ class ArtCalibration(object):
 
     def __init__(self):
         self.robot_calibration = ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
-                                                     '/odom_combined', '/marker')
+                                                     '/odom_combined', '/marker_detected')
 
         self.cells = []
 
-        for cell in rospy.get_param("cells", ["n1", "n2"]):
+        for cell in rospy.get_param("cells", ["n2"]):
 
             self.cells.append(ArtCellCalibration(cell, '/art/' + cell + '/ar_pose_marker',
-                                                 '/' + cell + '_kinect2_link', '/marker'))
+                                                 '/' + cell + '_kinect2_link', '/marker_detected'))
 
         self.calibrated_pub = rospy.Publisher('system_calibrated', Bool,
                                               queue_size=10, latch=True)
