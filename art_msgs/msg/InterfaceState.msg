@@ -37,6 +37,7 @@ int32 INFO = 4  # let user know about what happened, but continue in program/lea
 int32 error_code
 
 int32 ERROR_UNKNOWN = 0
+int32 ERROR_ROBOT_HALTED = 1001
 
 # program errors
 int32 ERROR_OBJECT_MISSING = 1101
