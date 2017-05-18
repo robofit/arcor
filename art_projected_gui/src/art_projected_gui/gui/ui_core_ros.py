@@ -12,6 +12,7 @@ from art_utils import InterfaceStateManager,  ArtApiHelper, ProgramHelper
 from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse,  NotifyUser,  NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest
 from std_msgs.msg import Empty,  Bool
 from std_srvs.srv import Trigger,  TriggerRequest
+from std_srvs.srv import Empty as EmptyService
 from geometry_msgs.msg import PoseStamped
 import actionlib
 
@@ -88,11 +89,11 @@ class UICoreRos(UICore):
         TouchTableItem(self.scene, '/art/interface/touchtable/touch',
                        list(self.get_scene_items_by_type(PoseStampedCursorItem)))
 
-        stop_btn = ButtonItem(self.scene, 0, 0, "STOP",
+        self.stop_btn = ButtonItem(self.scene, 0, 0, "STOP",
                               None, self.stop_btn_clicked, 2.0, QtCore.Qt.red)
-        stop_btn.setPos(self.scene.width() - stop_btn.boundingRect().width() -
-                        40, self.scene.height() - stop_btn.boundingRect().height() - 60)
-        stop_btn.set_enabled(True)
+        self.stop_btn.setPos(self.scene.width() - self.stop_btn.boundingRect().width() -
+                        300, self.scene.height() - self.stop_btn.boundingRect().height() - 60)
+        self.stop_btn.set_enabled(True)
 
         self.projectors = []
 
@@ -115,12 +116,20 @@ class UICoreRos(UICore):
             '/art/brain/learning/start', Trigger)  # TODO wait for service? where?
         self.stop_learning_srv = rospy.ServiceProxy(
             '/art/brain/learning/stop', Trigger)  # TODO wait for service? where?
+            
+        self.emergency_stop_srv = rospy.ServiceProxy(
+            '/pr2_ethercat/halt_motors', EmptyService)  # TODO wait for service? where?
+            
+        self.emergency_stop_reset_srv = rospy.ServiceProxy(
+            '/pr2_ethercat/reset_motors', EmptyService)  # TODO wait for service? where?    
 
         self.program_error_resolve_srv = rospy.ServiceProxy(
             '/art/brain/program/error_response', ProgramErrorResolve)  # TODO wait for service? where?
         self.program_error_dialog = None
 
         self.grasp_dialog = None
+        
+        self.emergency_stoped = False
 
     def touch_calibration_points_evt(self, pts):
 
@@ -251,7 +260,16 @@ class UICoreRos(UICore):
         self.projectors.append(ProjectorHelper(proj_id))
 
     def stop_btn_clicked(self, btn):
-
+        if self.emergency_stoped:
+            self.emergency_stop_reset_srv.call()
+            self.emergency_stoped = False
+            self.stop_btn.set_caption("STOP")
+            self.stop_btn.set_background_color(QtCore.Qt.red)
+        else:
+            self.emergency_stop_srv.call()
+            self.emergency_stoped = True
+            self.stop_btn.set_caption("RUN")
+            self.stop_btn.set_background_color(QtCore.Qt.green)
         # TODO
         self.notif(translate("UICoreRos", "Emergency stop pressed"), temp=True)
 
