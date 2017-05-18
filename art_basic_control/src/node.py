@@ -87,10 +87,10 @@ class ArtBasicControl:
 
     def gripper_pose_timer_cb(self, event):
 
-        self.publish_gripper_pose("l_gripper_tool_frame",  self.left_gripper_pose_pub)
-        self.publish_gripper_pose("r_gripper_tool_frame",  self.right_gripper_pose_pub)
+        self.publish_gripper_pose("l_gripper_tool_frame", self.left_gripper_pose_pub)
+        self.publish_gripper_pose("r_gripper_tool_frame", self.right_gripper_pose_pub)
 
-    def left_interaction_on_cb(self,  req):
+    def left_interaction_on_cb(self, req):
 
         if self.left_arm_mann:
             rospy.logerr('Left arm already in interactive mode')
@@ -105,7 +105,7 @@ class ArtBasicControl:
 
         return EmptyResponse()
 
-    def left_interaction_off_cb(self,  req):
+    def left_interaction_off_cb(self, req):
 
         if not self.left_arm_mann:
             rospy.logerr('Left arm already in normal mode')
@@ -120,7 +120,46 @@ class ArtBasicControl:
 
         return EmptyResponse()
 
-    def left_interaction_get_ready_cb(self,  req):
+    def move(self, group, target="", pose=None):
+
+        assert target != "" or pose is not None
+
+        # group.set_workspace([minX, minY, minZ, maxX, maxY, maxZ])
+
+        if pose is not None:
+            group.set_pose_target(pose)
+            pt = PointStamped()
+            pt.header = pose.header
+            pt.point = pose.pose.position
+            self.look_at_cb(pt)
+        else:
+
+            group.set_named_target(target)
+
+            # TODO how to get end ef. pose from named target?
+            pt = PointStamped()
+            pt.header.frame_id = "base_link"
+            pt.point.x = 0.75
+            pt.point.y = -0.1
+            pt.point.z = 0.8
+            self.look_at_cb(pt)
+
+        group.allow_looking(False)
+        group.allow_replanning(False)
+        group.set_num_planning_attempts(1)
+
+        cnt = 3
+
+        while cnt > 0:
+
+            if group.go(wait=True):
+                return True
+
+            rospy.sleep(1)
+
+        return False
+
+    def left_interaction_get_ready_cb(self, req):
 
         resp = TriggerResponse()
 
@@ -129,14 +168,11 @@ class ArtBasicControl:
             resp.success = False
         else:
 
-            self.group_left.set_named_target("tuck_left_arm")
-            self.group_left.plan()
-            self.group_left.go(wait=True)
-            resp.success = True
+            resp.success = self.move(self.group_left, target="tuck_left_arm")
 
         return resp
 
-    def left_interaction_move_to_user_cb(self,  req):
+    def left_interaction_move_to_user_cb(self, req):
 
         resp = TriggerResponse()
 
@@ -152,14 +188,11 @@ class ArtBasicControl:
             pose.header.frame_id = "base_link"
 
             # pose_transformed = self.tf_listener.transformPose(pose, self.group_left.get_planning_frame())
-            self.group_left.set_pose_target(pose)
-            self.group_left.plan()
-            self.group_left.go(wait=True)
-            resp.success = True
+            resp.success = self.move(self.group_left, pose=pose)
 
         return resp
 
-    def right_interaction_on_cb(self,  req):
+    def right_interaction_on_cb(self, req):
 
         if self.right_arm_mann:
             rospy.logerr('Right arm already in interactive mode')
@@ -174,7 +207,7 @@ class ArtBasicControl:
 
         return EmptyResponse()
 
-    def right_interaction_off_cb(self,  req):
+    def right_interaction_off_cb(self, req):
 
         if not self.right_arm_mann:
             rospy.logerr('Right arm already in normal mode')
@@ -197,10 +230,8 @@ class ArtBasicControl:
             rospy.logerr('Right arm in interactive mode')
             resp.success = False
         else:
-            self.group_right.set_named_target("tuck_right_arm")
-            plan1 = self.group_right.plan()
-            self.group_right.go(wait=True)
-            resp.success = True
+
+            resp.success = self.move(self.group_right, target="tuck_right_arm")
 
         return resp
 
@@ -218,10 +249,7 @@ class ArtBasicControl:
             pose.pose.position.z = 1.2
             pose.pose.orientation.w = 1
             pose.header.frame_id = "base_link"
-            self.group_right.set_pose_target(pose)
-            plan1 = self.group_right.plan()
-            self.group_right.go(wait=True)
-            resp.success = True
+            resp.success = self.move(self.group_right, pose=pose)
 
         return resp
 
