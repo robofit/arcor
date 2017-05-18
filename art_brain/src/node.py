@@ -98,6 +98,8 @@ class ArtBrain(object):
         self.table_calibrating = False
         self.cells_calibrated = False
         self.system_calibrated = False
+        self.motors_halted = True
+        self.initialized = False
 
         self.learning_block_id = None
         self.learning_item_id = None
@@ -130,6 +132,8 @@ class ArtBrain(object):
             "/art/interface/touchtable/calibrating", Bool, self.table_calibrating_cb)
         self.system_calibrated_sub = rospy.Subscriber(
             "/art/system/calibrated", Bool, self.system_calibrated_cb)
+        self.motors_halted_sub = rospy.Subscriber(
+            "/pr2_ethercat/motors_halted", Bool, self.motors_halted_cb)
 
         self.srv_program_start = rospy.Service(
             '/art/brain/program/start', startProgram, self.program_start_cb)
@@ -236,6 +240,7 @@ class ArtBrain(object):
             rospy.loginfo("Waiting for calibration")
             r.sleep()
 
+        self.initialized = True
         self.fsm.init()
 
     # ***************************************************************************************
@@ -574,9 +579,8 @@ class ArtBrain(object):
     def state_learning_place_to_pose_run(self, event):
         rospy.loginfo('state_learning_place_to_pose_run')
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
-        self.place_object_to_pose(instruction, update_state_manager=False)
-
-
+        self.place_object_to_pose(instruction, update_state_manager=False, get_ready_after_place=True)
+        
     def state_learning_wait(self, event):
         rospy.loginfo('state_learning_wait')
         pass
@@ -585,6 +589,10 @@ class ArtBrain(object):
         rospy.loginfo('state_learning_step_error')
         severity = event.kwargs.get('severity', InterfaceState.SEVERE)
         error = event.kwargs.get('error', None)
+        rospy.loginfo(severity)
+        rospy.loginfo(error)
+        self.state_manager.set_error(InterfaceState.INFO, error)
+        self.state_manager.set_error(0, 0)
         if error is None:
             pass
             # TODO: kill brain
@@ -594,7 +602,7 @@ class ArtBrain(object):
         elif severity == InterfaceState.ERROR:
             pass
         elif severity == InterfaceState.WARNING:
-            '''if error == ArtBrainErrors.ERROR_OBJECT_MISSING or \
+            if error == ArtBrainErrors.ERROR_OBJECT_MISSING or \
                error == ArtBrainErrors.ERROR_OBJECT_MISSING_IN_POLYGON:
                 rospy.logwarn("Object is missing")
             elif error == ArtBrainErrors.ERROR_PICK_FAILED:
@@ -602,7 +610,7 @@ class ArtBrain(object):
                 self.left_gripper.get_ready()
                 self.left_gripper.re_init()
                 self.right_gripper.get_ready()
-                self.right_gripper.re_init()'''
+                self.right_gripper.re_init()
 
         elif severity == InterfaceState.INFO:
 
@@ -692,7 +700,7 @@ class ArtBrain(object):
         else:
             return False
 
-    def place_object_to_pose(self, instruction, update_state_manager=True):
+    def place_object_to_pose(self, instruction, update_state_manager=True, get_ready_after_place=False):
         pose = ArtBrainUtils.get_place_pose(instruction)
 
         # TODO place pose
@@ -736,10 +744,12 @@ class ArtBrain(object):
             if self.place_object(gripper.holding_object, pose[0], gripper):
                 gripper.holding_object = None
                 # gripper.last_pick_instruction_id = self.instruction.id
+                if get_ready_after_place:
+                    gripper.get_ready()
                 self.fsm.done(success=True)
                 return
             else:
-                gripper.get_ready_client()
+                gripper.get_ready()
                 self.fsm.error(severity=InterfaceState.WARNING,
                                error=ArtBrainErrors.ERROR_PLACE_FAILED)
                 return
@@ -1081,6 +1091,20 @@ class ArtBrain(object):
             # if self.is_learning_pick_from_feeder():
         '''
         pass
+        
+    def motors_halted_cb(self, req):
+        if not self.initialized:
+            return
+        if self.motors_halted and not req.data:
+            if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
+                self.left_gripper.get_ready()
+            elif self.gripper_usage == ArtGripper.GRIPPER_RIGHT:
+                self.right_gripper.get_ready()
+            elif self.gripper_usage == ArtGripper.GRIPPER_BOTH:
+                self.left_gripper.get_ready()
+                self.right_gripper.get_ready()
+        self.motors_halted = req.data
+        
 
     def user_status_cb(self, req):
         self.user_id = req.user_id
