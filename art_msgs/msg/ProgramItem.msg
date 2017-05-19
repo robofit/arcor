@@ -19,10 +19,12 @@ uint16 WAIT_UNTIL_USER_FINISHES=51
 uint16 PICK_FROM_POLYGON=100 # polygon, object (type)
 uint16 PICK_FROM_FEEDER=101 # pose, object (type)
 uint16 PICK_OBJECT_ID=102 # object (ID)
+uint16 PICK_TOOL=103
 
 # manipulation - place
 uint16 PLACE_TO_POSE=200 # pose, object from ProgramItem.id == ref_id
 uint16 PLACE_TO_GRID=201
+uint16 PLACE_TOOL=202
 
 # path following
 uint16 PATH_THROUGH_POINTS=300
