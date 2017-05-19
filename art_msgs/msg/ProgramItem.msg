@@ -24,6 +24,21 @@ uint16 PICK_OBJECT_ID=102 # object (ID)
 uint16 PLACE_TO_POSE=200 # pose, object from ProgramItem.id == ref_id
 uint16 PLACE_TO_GRID=201
 
+# path following
+uint16 PATH_THROUGH_POINTS=300
+uint16 PATH_THROUGH_TRAJECTORY=301
+
+# welding
+uint16 WELDING_POINTS=400
+uint16 WELDING_SEAM=401
+
+# glueing
+# TODO
+
+# drilling/screwing
+uint14 DRILL_POINTS = 600
+
+
 # -----------------------------------------------------
 # OPERATION PARAMETERS
 # -----------------------------------------------------
@@ -32,6 +47,7 @@ string[] object # id or type
 geometry_msgs/PoseStamped[] pose
 geometry_msgs/PolygonStamped[] polygon
 uint16[] ref_id # reference to another instruction
+KeyValue[] flags
 
 # -----------------------------------------------------
 # OTHER STUFF
