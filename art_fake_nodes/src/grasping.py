@@ -20,8 +20,8 @@ class FakeGrasping:
                                          execute_cb=self.pick_place_right_cb)
         self.server = None
         self.objects = self.ALWAYS
-        self.grasp = self.RANDOM
-        self.place = self.RANDOM
+        self.grasp = self.ALWAYS
+        self.place = self.ALWAYS
         self.object_randomness = 0.8  # 80% of time object is known
         self.grasp_randomness = 0.4
         self.place_randomness = 0.4
