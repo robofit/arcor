@@ -6,7 +6,7 @@ import rospy
 from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt, LearningRequestAction, LearningRequestGoal
 from fsm import FSM
 from transitions import MachineError
-from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, TouchPointsItem, LabelItem, TouchTableItem, ProgramListItem, ProgramItem, DialogItem
+from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, TouchPointsItem, LabelItem, TouchTableItem, ProgramListItem, ProgramItem, DialogItem, PolygonItem
 from art_projected_gui.helpers import ProjectorHelper, conversions, error_strings
 from art_utils import InterfaceStateManager, ArtApiHelper, ProgramHelper
 from art_msgs.srv import TouchCalibrationPoints, TouchCalibrationPointsResponse, NotifyUser, NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest
@@ -911,18 +911,24 @@ class UICoreRos(UICore):
 
         elif msg.type == ProgIt.PICK_FROM_POLYGON:
 
-            poly_points = []
+            if obj.object_type.name not in self.selected_object_types:
 
-            self.program_vis.set_object(obj.object_type.name)
-            self.select_object_type(obj.object_type.name)
+                self.remove_scene_items_by_type(PolygonItem)
 
-            for obj in self.get_scene_items_by_type(ObjectItem):
-                poly_points.append(obj.get_pos())
+                poly_points = []
 
-            self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
-                             poly_points, polygon_changed=self.polygon_changed)
-            self.notif(
-                translate("UICoreRos", "Check and adjust pick polygon"), temp=True)
+                self.program_vis.set_object(obj.object_type.name)
+                self.select_object_type(obj.object_type.name)
+
+                for ob in self.get_scene_items_by_type(ObjectItem):
+                    if ob.object_type.name != obj.object_type.name:
+                        continue
+                    poly_points.append(ob.get_pos())
+
+                self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
+                                 poly_points, polygon_changed=self.polygon_changed)
+                self.notif(
+                    translate("UICoreRos", "Check and adjust pick polygon"), temp=True)
 
         self.state_manager.update_program_item(self.ph.get_program_id(
         ), self.program_vis.block_id, self.program_vis.get_current_item())
