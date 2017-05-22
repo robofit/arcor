@@ -5,6 +5,7 @@ import tf
 from geometry_msgs.msg import Pose, PoseStamped
 from math import sqrt
 import numpy as np
+import math
 
 
 # "tracking" of static objects
@@ -22,21 +23,21 @@ class ArtSimpleTracker:
         self.objects = {}
 
         # should be in (0,1)
-        self.ap = 0.25  # filtering coeficient - position
-        self.ao = 0.1  # filtering coeficient - orientation
+        self.ap = 0.5  # filtering coeficient - position
+        self.ao = 0.5  # filtering coeficient - orientation
 
         self.min_cnt = 5  # publish object after it has been seen x times at least
-        self.max_age = rospy.Duration(5)
+        self.max_age = rospy.Duration(3)
 
     def timer_cb(self, event):
 
+        now = rospy.Time.now()
+
         ia = InstancesArray()
         ia.header.frame_id = self.target_frame
-        ia.header.stamp = rospy.Time.now()
+        ia.header.stamp = now
 
         objects_to_prune = []
-
-        now = rospy.Time.now()
 
         for k, v in self.objects.iteritems():
 
@@ -146,6 +147,9 @@ class ArtSimpleTracker:
 
         for inst in msg.instances:
 
+            if math.isnan(inst.pose.position.x) or math.isnan(inst.pose.position.y) or math.isnan(inst.pose.position.z):
+                return
+
             ps = self.transform(msg.header, inst.pose)
 
             if ps is None:
@@ -156,11 +160,12 @@ class ArtSimpleTracker:
 
                 rospy.logdebug("Updating object: " + inst.object_id)
 
-                self.objects[inst.object_id]["object_type"] = inst.object_type
-                self.objects[inst.object_id]["cnt"] += 1
-                self.objects[inst.object_id]["pose"].header = ps.header
-                self.objects[inst.object_id]["pose"].pose = self.filterPose(
-                    self.objects[inst.object_id]["pose"].pose, ps.pose)
+                obj = self.objects[inst.object_id]
+
+                obj["object_type"] = inst.object_type
+                obj["cnt"] += 1
+                obj["pose"].header = ps.header
+                obj["pose"].pose = self.filterPose(obj["pose"].pose, ps.pose)
 
             else:
 
@@ -172,10 +177,11 @@ class ArtSimpleTracker:
 
                 self.objects[inst.object_id] = obj
 
+
 if __name__ == '__main__':
     try:
         rospy.init_node('simple_tracker')
-        tr = ArtSimpleTracker()
+        ArtSimpleTracker()
         rospy.spin()
     except rospy.ROSInterruptException:
         print "program interrupted before completion"
