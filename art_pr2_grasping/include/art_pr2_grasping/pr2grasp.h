@@ -57,7 +57,7 @@ protected:
   boost::shared_ptr<TObjectInfo> grasped_object_;
 
   float getGripperValue();
-  
+
   void look_at(const geometry_msgs::PoseStamped& ps);
 
 public:
