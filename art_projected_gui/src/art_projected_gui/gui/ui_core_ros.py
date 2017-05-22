@@ -90,9 +90,9 @@ class UICoreRos(UICore):
                        list(self.get_scene_items_by_type(PoseStampedCursorItem)))
 
         self.stop_btn = ButtonItem(self.scene, 0, 0, "STOP",
-                              None, self.stop_btn_clicked, 2.0, QtCore.Qt.red)
+                                   None, self.stop_btn_clicked, 2.0, QtCore.Qt.red)
         self.stop_btn.setPos(self.scene.width() - self.stop_btn.boundingRect().width() -
-                        300, self.scene.height() - self.stop_btn.boundingRect().height() - 60)
+                             300, self.scene.height() - self.stop_btn.boundingRect().height() - 60)
         self.stop_btn.set_enabled(True)
 
         self.projectors = []
@@ -116,19 +116,19 @@ class UICoreRos(UICore):
             '/art/brain/learning/start', Trigger)  # TODO wait for service? where?
         self.stop_learning_srv = rospy.ServiceProxy(
             '/art/brain/learning/stop', Trigger)  # TODO wait for service? where?
-            
+
         self.emergency_stop_srv = rospy.ServiceProxy(
             '/pr2_ethercat/halt_motors', EmptyService)  # TODO wait for service? where?
-            
+
         self.emergency_stop_reset_srv = rospy.ServiceProxy(
-            '/pr2_ethercat/reset_motors', EmptyService)  # TODO wait for service? where?    
+            '/pr2_ethercat/reset_motors', EmptyService)  # TODO wait for service? where?
 
         self.program_error_resolve_srv = rospy.ServiceProxy(
             '/art/brain/program/error_response', ProgramErrorResolve)  # TODO wait for service? where?
         self.program_error_dialog = None
 
         self.grasp_dialog = None
-        
+
         self.emergency_stoped = False
 
     def touch_calibration_points_evt(self, pts):
@@ -271,9 +271,9 @@ class UICoreRos(UICore):
             self.emergency_stoped = True
             self.stop_btn.set_caption("RUN")
             self.stop_btn.set_background_color(QtCore.Qt.green)
-            self.notif(translate("UICoreRos", "Emergency stop pressed"), temp=True)
+            self.notif(
+                translate("UICoreRos", "Emergency stop pressed"), temp=True)
         # TODO
-        
 
     def program_error_dialog_cb(self, idx):
 
