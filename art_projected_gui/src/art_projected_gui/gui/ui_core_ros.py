@@ -6,12 +6,12 @@ import rospy
 from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt, LearningRequestAction, LearningRequestGoal
 from fsm import FSM
 from transitions import MachineError
-from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem,  ProgramItem, DialogItem
-from art_projected_gui.helpers import ProjectorHelper,  conversions, error_strings
-from art_utils import InterfaceStateManager,  ArtApiHelper, ProgramHelper
-from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse,  NotifyUser,  NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest
-from std_msgs.msg import Empty,  Bool
-from std_srvs.srv import Trigger,  TriggerRequest
+from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, TouchPointsItem, LabelItem, TouchTableItem, ProgramListItem, ProgramItem, DialogItem
+from art_projected_gui.helpers import ProjectorHelper, conversions, error_strings
+from art_utils import InterfaceStateManager, ArtApiHelper, ProgramHelper
+from art_msgs.srv import TouchCalibrationPoints, TouchCalibrationPointsResponse, NotifyUser, NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest
+from std_msgs.msg import Empty, Bool
+from std_srvs.srv import Trigger, TriggerRequest, TriggerResponse
 from std_srvs.srv import Empty as EmptyService
 from geometry_msgs.msg import PoseStamped
 import actionlib
@@ -220,11 +220,6 @@ class UICoreRos(UICore):
         rospy.loginfo("Waiting for ART services...")
         self.art.wait_for_api()
 
-        if len(self.projectors) > 0:
-            rospy.loginfo("Waiting for projector nodes...")
-            for proj in self.projectors:
-                proj.wait_until_available()
-
         rospy.loginfo("Ready! Starting state machine.")
 
         # TODO move this to ArtApiHelper ??
@@ -239,7 +234,42 @@ class UICoreRos(UICore):
         self.notify_user_srv = rospy.Service(
             '/art/interface/projected_gui/notify_user', NotifyUser, self.notify_user_srv_cb)
 
-        self.fsm.tr_start()
+        proj_calib = True
+
+        if len(self.projectors) > 0:
+            rospy.loginfo("Waiting for projector nodes...")
+            for proj in self.projectors:
+                proj.wait_until_available()
+                if not proj.is_calibrated():
+                    proj_calib = False
+
+        if proj_calib:
+
+            rospy.loginfo('Projectors already calibrated.')
+            self.projectors_calibrated_pub.publish(True)
+            self.fsm.tr_projectors_calibrated()
+
+        else:
+
+            rospy.loginfo('Projectors not calibrated yet - waiting for command...')
+
+        self.projector_calib_srv = rospy.Service(
+            '/art/interface/projected_gui/calibrate_projectors', Trigger, self.calibrate_projectors_cb)
+
+    def calibrate_projectors_cb(self, req):
+
+        resp = TriggerResponse()
+        resp.success = True
+
+        if self.fsm.state == "calibrate_projectors":
+
+            resp.message = "Calibration is already running."
+
+        else:
+
+            self.fsm.tr_start()
+
+        return resp
 
     def notify_user_srv_cb(self, req):
 
@@ -309,7 +339,8 @@ class UICoreRos(UICore):
             self.clear_all()
             self.notif(
                 translate("UICoreRos", "The program is done."), temp=True)
-            self.fsm.tr_program_finished()
+            if state.system_state == InterfaceState.STATE_PROGRAM_FINISHED:
+                self.fsm.tr_program_finished()
 
         elif state.system_state == InterfaceState.STATE_LEARNING:
 

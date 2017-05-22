@@ -20,6 +20,7 @@ class FSM(Machine):
         # trigger, source, destination
         self.add_transition('tr_start', 'initial', 'calibrate_projectors', after='cb_start_calibration')
         self.add_transition('tr_projectors_calibrated', 'calibrate_projectors', 'waiting_for_user', after='cb_waiting_for_user')
+        self.add_transition('tr_projectors_calibrated', 'initial', 'waiting_for_user', after='cb_waiting_for_user')
         self.add_transition('tr_user_present', 'waiting_for_user', 'waiting_for_user_calibration', after="cb_waiting_for_user_calibration")
         self.add_transition('tr_user_calibrated', 'waiting_for_user_calibration', 'program_selection', after='cb_program_selection')
         self.add_transition('tr_program_edit', 'program_selection', 'learning', after="cb_learning")
@@ -65,6 +66,7 @@ def main():
 
     fsm = FSM()
     fsm.draw_graph()
+
 
 if __name__ == '__main__':
     try:

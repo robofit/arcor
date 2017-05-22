@@ -2,7 +2,7 @@
 
 import rospy
 from std_msgs.msg import Bool
-from std_srvs.srv import Empty
+from std_srvs.srv import Trigger
 
 
 class ProjectorHelper():
@@ -17,7 +17,7 @@ class ProjectorHelper():
         self.proj_ns = "/art/" + proj_id + "/projector/"
 
         self.calib_sub = rospy.Subscriber(self.proj_ns + "calibrated", Bool, self.calib_cb, queue_size=10)
-        self.srv_calibrate = rospy.ServiceProxy(self.proj_ns + "calibrate", Empty)
+        self.srv_calibrate = rospy.ServiceProxy(self.proj_ns + "calibrate", Trigger)
 
     def wait_until_available(self):
 
@@ -42,13 +42,13 @@ class ProjectorHelper():
         self.calibrating = True
 
         try:
-            self.srv_calibrate()
+            ret = self.srv_calibrate()
         except rospy.ServiceException:
             self.calibrating = False
             self.calibrated_cb = None
             return False
 
-        return True
+        return ret.success
 
     def is_calibrated(self):
 
