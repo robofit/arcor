@@ -47,6 +47,7 @@ add_service_files(
     NotifyUser.srv
     ProgramErrorResolve.srv
     SelectArm.srv
+    RecalibrateCell.srv
 )
 
 generate_messages(

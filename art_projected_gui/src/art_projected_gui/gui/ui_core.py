@@ -79,9 +79,6 @@ class UICore(QtCore.QObject):
         self.view.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
         self.view.setStyleSheet("QGraphicsView { border-style: none; }")
 
-        QtCore.QObject.connect(self, QtCore.SIGNAL(
-            'send_scene'), self.send_to_clients_evt)
-
         self.tcpServer = QtNetwork.QTcpServer(self)
         if not self.tcpServer.listen(port=self.port):
 
@@ -104,7 +101,7 @@ class UICore(QtCore.QObject):
         self.connections.append(self.tcpServer.nextPendingConnection())
         self.connections[-1].setSocketOption(
             QtNetwork.QAbstractSocket.LowDelayOption, 1)
-        self.emit(QtCore.SIGNAL('send_scene'), self.connections[-1])
+
         # TODO deal with disconnected clients!
         # self.connections[-1].disconnected.connect(clientConnection.deleteLater)
 
@@ -150,25 +147,6 @@ class UICore(QtCore.QObject):
 
         # end = time.time()
         # rospy.logdebug("Image sent in: " + str(end-start))
-
-    def scene_changed(self, rects):
-
-        if len(rects) == 0:
-            return
-        # TODO Publish only changes? How to accumulate them (to be able to send
-        # it only at certain fps)?
-
-        now = rospy.Time.now()
-        if self.last_scene_update is None:
-            self.last_scene_update = now
-        else:
-            if now - self.last_scene_update < rospy.Duration(1.0 / 10):
-                return
-
-        # print 1.0/(now - self.last_scene_update).to_sec()
-        self.last_scene_update = now
-
-        self.emit(QtCore.SIGNAL('send_scene'))
 
     def notif(self, msg, min_duration=3.0, temp=False,
               message_type=NotifyUserRequest.INFO):

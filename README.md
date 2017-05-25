@@ -1,6 +1,6 @@
 # ar-table-itable
 
-[![Build Status](https://travis-ci.org/robofit/ar-table-itable.svg)](https://travis-ci.org/robofit/ar-table-itable)
+[![Build Status](https://travis-ci.org/robofit/artable.svg)](https://travis-ci.org/robofit/artable)
 
 ARTable - vision of a near future workspace, where human and robot may safely and effectively collaborate. Our main focus is on human-robot interaction and especially on robot programming - to make it feasible for any ordinary skilled worker. Currently, the system uses pointing gestures and touch sensitive table as an input and augmented reality as an feedback (projected user interface).
 

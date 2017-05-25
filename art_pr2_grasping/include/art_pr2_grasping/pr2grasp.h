@@ -15,6 +15,7 @@
 #include <moveit_simple_grasps/grasp_filter.h>
 #include "art_pr2_grasping/objects.h"
 #include <std_msgs/String.h>
+#include <geometry_msgs/PointStamped.h>
 #include <pr2_controllers_msgs/JointControllerState.h>
 
 // adapted from
@@ -38,6 +39,7 @@ private:
   planning_scene_monitor::PlanningSceneMonitorPtr planning_scene_monitor_;
 
   ros::Publisher grasped_object_pub_;
+  ros::Publisher look_at_pub_;
 
   boost::shared_ptr<tf::TransformListener> tfl_;
 
@@ -55,6 +57,8 @@ protected:
   boost::shared_ptr<TObjectInfo> grasped_object_;
 
   float getGripperValue();
+
+  void look_at(const geometry_msgs::PoseStamped& ps);
 
 public:
   artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl,
