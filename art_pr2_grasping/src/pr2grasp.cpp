@@ -33,8 +33,8 @@ artPr2Grasping::artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl,
 
   move_group_.reset(new move_group_interface::MoveGroup(group_name_));
   move_group_->setPlanningTime(30.0);
-  move_group_->allowLooking(true);
-  move_group_->allowReplanning(true);
+  move_group_->allowLooking(false);
+  move_group_->allowReplanning(false);
   move_group_->setGoalTolerance(0.005);
   move_group_->setPlannerId("RRTConnectkConfigDefault");
 
@@ -67,6 +67,9 @@ artPr2Grasping::artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl,
 
   grasped_object_pub_ = nh_.advertise<std_msgs::String>(
       "/art/pr2/" + group_name_ + "/grasped_object", 1, true);
+
+  look_at_pub_ = nh_.advertise<geometry_msgs::PointStamped>(
+      "/art/pr2/look_at", 10);
 
   publishObject();
 }
@@ -124,6 +127,15 @@ bool artPr2Grasping::getReady()
   return true;
 }
 
+void artPr2Grasping::look_at(const geometry_msgs::PoseStamped& ps)
+{
+    geometry_msgs::PointStamped pt;
+    pt.header = ps.header;
+    pt.point = ps.pose.position;
+
+    look_at_pub_.publish(pt);
+}
+
 bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
                            double z_axis_angle_increment, bool keep_orientation)
 {
@@ -139,6 +151,8 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
   pose_stamped.pose = ps;
   pose_stamped.header.frame_id = getPlanningFrame();
   pose_stamped.header.stamp = ros::Time::now();
+
+  look_at(pose_stamped);
 
   shape_msgs::SolidPrimitive bb = grasped_object_->type.bbox;
 
@@ -317,6 +331,8 @@ bool artPr2Grasping::pick(const std::string& object_id)
     ROS_ERROR_NAMED(group_name_, "No feasible grasps found.");
     return false;
   }
+
+  look_at(p);
 
   // visualization only - takes time
   /*if (!groups_[group]->visual_tools_->publishAnimatedGrasps(grasps,
