@@ -15,6 +15,8 @@ class ArtBrainMachine(object):
                     'state_program_init'], on_exit=[]),
               State(name='program_run', on_enter=[
                     'state_program_run'], on_exit=[]),
+              State(name='program_paused', on_enter=[
+                  'state_program_paused'], on_exit=[]),
 
               # basic instructions
               State(name='get_ready', on_enter=[
@@ -59,9 +61,18 @@ class ArtBrainMachine(object):
               State(name='learning_pick_object_id', on_enter=[
                     'state_learning_pick_object_id'], on_exit=[]),
 
+              State(name='learning_pick_from_polygon_run', on_enter=[
+                    'state_learning_pick_from_polygon_run'], on_exit=[]),
+              State(name='learning_pick_from_feeder_run', on_enter=['state_learning_pick_from_feeder_run'],
+                    on_exit=[]),
+              State(name='learning_pick_object_id_run', on_enter=[
+                    'state_learning_pick_object_id_run'], on_exit=[]),
+
               # learning placing
               State(name='learning_place_to_pose', on_enter=[
                     'state_learning_place_to_pose'], on_exit=[]),
+              State(name='learning_place_to_pose_run', on_enter=[
+                    'state_learning_place_to_pose_run'], on_exit=[]),
 
               State(name='learning_wait', on_enter=[
                     'state_learning_wait'], on_exit=[]),
@@ -147,6 +158,10 @@ class ArtBrainMachine(object):
             'done', 'program_finished',  'waiting_for_action')
         self.machine.add_transition(
             'finished', 'program_run', 'program_finished')
+        self.machine.add_transition(
+            'pause', 'program_load_instruction', 'program_paused')
+        self.machine.add_transition(
+            'resume', 'program_paused', 'program_run')
 
         # get ready instruction
         self.machine.add_transition('get_ready', 'program_run', 'get_ready')
@@ -217,7 +232,6 @@ class ArtBrainMachine(object):
             'done', 'learning_done', 'waiting_for_action')
         self.machine.add_transition(
             'learning_done', 'learning_run', 'learning_done')
-
         # learning pick_from_polygon
         self.machine.add_transition(
             'pick_from_polygon', 'learning_run', 'learning_pick_from_polygon')
@@ -225,6 +239,12 @@ class ArtBrainMachine(object):
             'done', 'learning_pick_from_polygon', 'learning_step_done')
         self.machine.add_transition(
             'error', 'learning_pick_from_polygon', 'learning_step_error')
+        self.machine.add_transition(
+            'pick_from_polygon_run', 'learning_run', 'learning_pick_from_polygon_run')
+        self.machine.add_transition(
+            'done', 'learning_pick_from_polygon_run', 'learning_run')
+        self.machine.add_transition(
+            'error', 'learning_pick_from_polygon_run', 'learning_step_error')
 
         # learning pick_from_feeder
         self.machine.add_transition(
@@ -233,12 +253,24 @@ class ArtBrainMachine(object):
             'done', 'learning_pick_from_feeder', 'learning_step_done')
         self.machine.add_transition(
             'error', 'learning_pick_from_feeder', 'learning_step_error')
+        self.machine.add_transition(
+            'pick_from_feeder_run', 'learning_run', 'learning_pick_from_feeder_run')
+        self.machine.add_transition(
+            'done', 'learning_pick_from_feeder_run', 'learning_run')
+        self.machine.add_transition(
+            'error', 'learning_pick_from_feeder_run', 'learning_step_error')
 
         # learning pick_object_id
         self.machine.add_transition(
             'pick_object_id', 'learning_run', 'learning_pick_object_id')
         self.machine.add_transition(
             'done', 'learning_pick_object_id', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_pick_object_id', 'learning_step_error')
+        self.machine.add_transition(
+            'pick_object_id_run', 'learning_run', 'learning_pick_object_id_run')
+        self.machine.add_transition(
+            'done', 'learning_pick_object_id_run', 'learning_run')
         self.machine.add_transition(
             'error', 'learning_pick_object_id', 'learning_step_error')
 
@@ -249,6 +281,12 @@ class ArtBrainMachine(object):
             'done', 'learning_place_to_pose', 'learning_step_done')
         self.machine.add_transition(
             'error', 'learning_place_to_pose', 'learning_step_error')
+        self.machine.add_transition(
+            'place_to_pose_run', 'learning_run', 'learning_place_to_pose_run')
+        self.machine.add_transition(
+            'done', 'learning_place_to_pose_run', 'learning_run')
+        self.machine.add_transition(
+            'error', 'learning_place_to_pose_run', 'learning_step_error')
 
         # learning wait
         self.machine.add_transition('wait', 'learning_run', 'learning_wait')

@@ -7,6 +7,8 @@
   <arg name="rgb_frame_id" default="/head_mount_kinect_rgb_optical_frame" />
   <arg name="depth_frame_id" default="/head_mount_kinect_ir_optical_frame" />
 
+  <param name="/kinect_head/driver/data_skip" value="2" />
+
   <!-- device_id can have the following formats:
          "B00367707227042B": Use device with given serial number
          "#1"              : Use first device found
