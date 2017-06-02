@@ -26,6 +26,7 @@ class ArtArmNavigationActionServer(object):
                                                 JointTrajectoryAction)
         rospy.loginfo('Waiting for joint trajectory action')
         self.jta.wait_for_server()
+        rospy.loginfo('Got it')
         self.joint_state_sub = rospy.Subscriber("/joint_states", JointState, self.js_cb, queue_size=1)
         self.angles = None
 
@@ -58,18 +59,26 @@ class ArtArmNavigationActionServer(object):
         self.group.go(wait=True)
 
     def touch_point(self, pose, drill_duration):
+        rospy.loginfo("Touch point in")
         pre_touch_pose = copy.deepcopy(pose)
         pre_touch_pose.pose.position.z += 0.1  # 10cm above desired pose
         self.group.set_pose_target(pre_touch_pose)
+        rospy.loginfo("Touch point go1")
         self.group.go(wait=True)
         self.group.set_pose_target(pose)
+        rospy.loginfo("Touch point go2")
         self.group.go(wait=True)
         rospy.sleep(1)
         self.rotate_gripper(drill_duration)
         self.group.set_pose_target(pre_touch_pose)
+        rospy.loginfo("Touch point go3")
         self.group.go(wait=True)
+        rospy.loginfo("Touch point out")
 
     def rotate_gripper(self, duration):
+        rospy.loginfo("rotate in, duration = " + str(duration))
+        if duration == 0:
+            return
         goal = JointTrajectoryGoal()
         goal.trajectory.joint_names = self.joint_names
 
@@ -82,10 +91,12 @@ class ArtArmNavigationActionServer(object):
             point.positions = angles
             point.time_from_start = rospy.Duration(1 / rate * i)
             goal.trajectory.points.append(copy.deepcopy(point))
-        self.jta.send_goal_and_wait(goal)
+        rospy.loginfo("rotate send goal")
+        self.jta.send_goal(goal)
+        rospy.sleep(duration+1)
+        rospy.loginfo("rotate out")
 
     def js_cb(self, data):
-        rospy.loginfo("new joints")
         self.angles = [0]*7
         positions = zip(data.name, data.position)
         for name, position in positions:

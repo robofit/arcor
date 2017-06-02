@@ -62,6 +62,9 @@ class ArtBrain(object):
         self.fsm.state_pick_object_id = self.state_pick_object_id
         self.fsm.state_place_to_pose = self.state_place_to_pose
         self.fsm.state_path_through_points = self.state_path_through_points
+        self.fsm.state_welding_points = self.state_welding_points
+        self.fsm.state_welding_seam = self.state_welding_seam
+        self.fsm.state_drill_points = self.state_drill_points
         self.fsm.state_program_error = self.state_program_error
         self.fsm.state_program_paused = self.state_program_paused
         self.fsm.state_program_finished = self.state_program_finished
