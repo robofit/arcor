@@ -40,6 +40,16 @@ class ArtBrainMachine(object):
               State(name='place_to_pose', on_enter=[
                     'state_place_to_pose'], on_exit=[]),
 
+              # manipulation
+              State(name='path_through_points', on_enter=[
+                  'state_path_through_points'], on_exit=[]),
+              State(name='welding_points', on_enter=[
+                  'state_welding_points'], on_exit=[]),
+              State(name='welding_seam', on_enter=[
+                  'state_welding_seam'], on_exit=[]),
+              State(name='drill_points', on_enter=[
+                  'state_drill_points'], on_exit=[]),
+
               State(name='program_error', on_enter=[
                     'state_program_error'], on_exit=[]),
               State(name='program_finished', on_enter=[
@@ -81,40 +91,6 @@ class ArtBrainMachine(object):
               State(name='learning_step_error', on_enter=[
                     'state_learning_step_error'], on_exit=[]),
               State(name='learning_done', on_enter=['state_learning_done'], on_exit=[])]
-
-    '''    # program and learning error severities
-    SEVERE = 0  # fatal, immediately shut down
-    ERROR = 1  # cannot continue in current program
-    WARNING = 2  # ask user what to do
-    INFO = 3  # let user know about what happened, but continue in program execution
-
-    # program errors
-    ERROR_NOT_IMPLEMENTED = 0
-    ERROR_NOT_EXECUTING_PROGRAM = 1
-    ERROR_NO_INSTRUCTION = 2
-    ERROR_NO_PROGRAM_HELPER = 3
-
-    ERROR_OBJECT_MISSING = 100
-    ERROR_OBJECT_MISSING_IN_POLYGON = 101
-    ERROR_OBJECT_NOT_DEFINED = 102
-
-    ERROR_GRIPPER_PP_CLIENT_MISSING = 201
-    ERROR_NO_GRIPPER_AVAILABLE = 202
-    ERROR_OBJECT_IN_GRIPPER = 203
-    ERROR_NO_OBJECT_IN_GRIPPER = 204
-    ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT = 205
-
-    ERROR_PICK_FAILED = 301
-    ERROR_PICK_POSE_NOT_SELECTED = 302
-
-    ERROR_PLACE_POSE_NOT_DEFINED = 401
-    ERROR_PLACE_FAILED = 402
-    ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE = 403
-
-    # Learning errors
-    ERROR_LEARNING_NOT_IMPLEMENTED = 0
-
-    ERROR_LEARNING_GRIPPER_NOT_DEFINED = 100'''
 
     def __init__(self):
         self.name = 'brain'
@@ -199,6 +175,38 @@ class ArtBrainMachine(object):
             'done',  'place_to_pose',  'program_load_instruction')
         self.machine.add_transition(
             'error',  'place_to_pose',  'program_error')
+
+        # path through poses instruction
+        self.machine.add_transition(
+            'path_through_points', 'program_run', 'path_through_points')
+        self.machine.add_transition(
+            'done', 'path_through_points', 'program_load_instruction')
+        self.machine.add_transition(
+            'error', 'path_through_points', 'program_error')
+
+        # path through poses instruction
+        self.machine.add_transition(
+            'welding_points', 'program_run', 'welding_points')
+        self.machine.add_transition(
+            'done', 'welding_points', 'program_load_instruction')
+        self.machine.add_transition(
+            'error', 'welding_points', 'program_error')
+
+        # path through poses instruction
+        self.machine.add_transition(
+            'welding_seam', 'program_run', 'welding_seam')
+        self.machine.add_transition(
+            'done', 'welding_seam', 'program_load_instruction')
+        self.machine.add_transition(
+            'error', 'welding_seam', 'program_error')
+
+        # path through poses instruction
+        self.machine.add_transition(
+            'drill_points', 'program_run', 'drill_points')
+        self.machine.add_transition(
+            'done', 'drill_points', 'program_load_instruction')
+        self.machine.add_transition(
+            'error', 'drill_points', 'program_error')
 
         # wait instruction
         self.machine.add_transition(
