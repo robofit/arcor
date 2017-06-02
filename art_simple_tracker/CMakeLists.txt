@@ -23,7 +23,7 @@ roslint_add_test()
 
 if (CATKIN_ENABLE_TESTING)
   roslaunch_add_file_check(launch)
-  add_rostest(tests/art_simple_tracker_ros.test)
+  # add_rostest(tests/art_simple_tracker_ros.test)
 endif()
 
 install(DIRECTORY launch/
