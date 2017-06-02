@@ -38,7 +38,7 @@ uint16 WELDING_SEAM=401
 # TODO
 
 # drilling/screwing
-uint14 DRILL_POINTS = 600
+uint16 DRILL_POINTS = 600
 
 
 # -----------------------------------------------------

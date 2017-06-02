@@ -61,6 +61,7 @@ class ArtBrain(object):
         self.fsm.state_pick_from_feeder = self.state_pick_from_feeder
         self.fsm.state_pick_object_id = self.state_pick_object_id
         self.fsm.state_place_to_pose = self.state_place_to_pose
+        self.fsm.state_path_through_points = self.state_path_through_points
         self.fsm.state_program_error = self.state_program_error
         self.fsm.state_program_paused = self.state_program_paused
         self.fsm.state_program_finished = self.state_program_finished
@@ -160,10 +161,6 @@ class ArtBrain(object):
             LearningRequestAction,
             execute_cb=self.learning_request_cb,
             auto_start=True)
-
-        # self.srv_program_pause = rospy.Service(/art/brain/program/pause', Empty, self.program_pause_cb)
-        # self.srv_program_resume = rospy.Service(/art/brain/program/resume',
-        # Empty, self.program_resume_cb)
 
         self.state_manager = InterfaceStateManager(
             InterfaceState.BRAIN_ID,
@@ -311,6 +308,10 @@ class ArtBrain(object):
             ProgramItem.PICK_FROM_FEEDER: self.fsm.pick_from_feeder,
             ProgramItem.PICK_OBJECT_ID: self.fsm.pick_object_id,
             ProgramItem.PLACE_TO_POSE: self.fsm.place_to_pose,
+            ProgramItem.PATH_THROUGH_POINTS: self.fsm.path_through_points,
+            ProgramItem.WELDING_POINTS: self.fsm.welding_points,
+            ProgramItem.WELDING_SEAM: self.fsm.welding_seam,
+            ProgramItem.DRILL_POINTS: self.fsm.drill_points,
             ProgramItem.WAIT_FOR_USER: self.fsm.wait_for_user,
             ProgramItem.WAIT_UNTIL_USER_FINISHES: self.fsm.wait_until_user_finishes,
         }
@@ -394,6 +395,50 @@ class ArtBrain(object):
         if not self.check_robot():
             return
         self.place_object_to_pose(self.instruction)
+
+    def state_path_through_points(self, event):
+        rospy.loginfo('state_path_through_points')
+        if not self.check_robot():
+            return
+        gripper = self.get_gripper_path_following()
+        if gripper.move_through_poses(self.instruction.pose):
+            self.fsm.done()
+        else:
+            # TODO: error
+            return
+
+    def state_welding_points(self, event):
+        rospy.loginfo('state_welding_points')
+        if not self.check_robot():
+            return
+        gripper = self.get_gripper_path_following()  # TODO:
+        if gripper.touch_poses(self.instruction.pose):
+            self.fsm.done()
+        else:
+            # TODO: error
+            return
+
+    def state_welding_seam(self, event):
+        rospy.loginfo('state_welding_seam')
+        if not self.check_robot():
+            return
+        gripper = self.get_gripper_path_following()  # TODO:
+        if gripper.move_through_poses(self.instruction.pose):
+            self.fsm.done()
+        else:
+            # TODO: error
+            return
+
+    def state_drill_points(self, event):
+        rospy.loginfo('state_drill_points')
+        if not self.check_robot():
+            return
+        gripper = self.get_gripper_path_following()  # TODO:
+        if gripper.touch_poses(self.instruction.pose, drill_duration=5):
+            self.fsm.done()
+        else:
+            # TODO: error
+            return
 
     def state_wait_for_user(self, event):
         rospy.loginfo('state_wait_for_user')
@@ -782,7 +827,7 @@ class ArtBrain(object):
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.header.frame_id = self.objects.header.frame_id
         # TODO: how to deal with this?
-        goal.pose.pose.position.z = 0.1  # + obj.bbox.dimensions[2]/2
+        goal.pose.pose.position.z = obj.bbox.dimensions[2]/2
         rospy.loginfo("Place pose: " + str(goal.pose))
         gripper.pp_client.send_goal(goal)
         gripper.pp_client.wait_for_result()
@@ -886,6 +931,15 @@ class ArtBrain(object):
             return self.right_gripper
         else:
             return None
+
+    def get_gripper_path_following(self):
+        if not self.gripper_usage == ArtGripper.GRIPPER_BOTH:
+            if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
+                return self.left_gripper
+            elif self.gripper_usage == ArtGripper.GRIPPER_RIGHT:
+                return self.right_gripper
+        else:
+            return self.right_gripper
 
     def check_place_pose(self, place_pose, obj):
         w1 = self.get_object_max_width(obj)
