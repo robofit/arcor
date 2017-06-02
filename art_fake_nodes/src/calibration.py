@@ -24,7 +24,7 @@ class FakeCalibration:
         self.touch_calibrated_pub = rospy.Publisher('/art/interface/touchtable/calibrated',
                                                     Bool, queue_size=10, latch=True)
 
-        self.system_calibrated = rospy.Publisher('/system_calibrated',
+        self.system_calibrated = rospy.Publisher('/art/system/calibrated',
                                                  Bool, queue_size=10, latch=True)
 
         tr, fa = Bool(), Bool()
