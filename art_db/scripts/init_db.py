@@ -320,7 +320,7 @@ def main(args):
     pf.header.frame_id = "marker"
     pf.pose.position.x = 0.4
     pf.pose.position.y = 0.4
-    pf.pose.position.z = 0.25
+    pf.pose.position.z = 0.30
     pf.pose.orientation.x = -0.707
     pf.pose.orientation.y = 0
     pf.pose.orientation.z = 0.707
@@ -365,7 +365,7 @@ def main(args):
     pf.header.frame_id = "marker"
     pf.pose.position.x = 0.4
     pf.pose.position.y = 0.4
-    pf.pose.position.z = 0.25
+    pf.pose.position.z = 0.30
     pf.pose.orientation.x = -0.707
     pf.pose.orientation.y = 0
     pf.pose.orientation.z = 0.707
@@ -410,7 +410,7 @@ def main(args):
     pf.header.frame_id = "marker"
     pf.pose.position.x = 0.4
     pf.pose.position.y = 0.4
-    pf.pose.position.z = 0.25
+    pf.pose.position.z = 0.30
     pf.pose.orientation.x = -0.707
     pf.pose.orientation.y = 0
     pf.pose.orientation.z = 0.707
