@@ -7,33 +7,32 @@ from math import sqrt
 import numpy as np
 from scipy.spatial import distance
 import threading
+from tf import transformations
+from math import pi, cos, sin, atan2
 
 
 # TODO publish TF
-
-def normalize(q, tolerance=0.00001):
-    v = (q.x, q.y, q.z, q.w)
-    mag2 = sum(n * n for n in v)
-    if abs(mag2 - 1.0) > tolerance:
-        mag = sqrt(mag2)
-        q.x /= mag
-        q.y /= mag
-        q.z /= mag
-        q.w /= mag
-    return q
-
 
 def q2a(q):
     return [q.x, q.y, q.z, q.w]
 
 
-class TrackedObject:
-    def __init__(self, target_frame, tfl, inst):
+def a2q(q, arr):
+    q.x = arr[0]
+    q.y = arr[1]
+    q.z = arr[2]
+    q.w = arr[3]
 
-        self.inst = inst
+
+class TrackedObject:
+    def __init__(self, target_frame, tfl, object_id, object_type):
+
+        self.object_id = object_id
+        self.object_type = object_type
         self.tfl = tfl
         self.target_frame = target_frame
         self.max_dist = 2.0
+        self.min_dist = 0.3
         self.min_meas_cnt = 5
         self.new = True
 
@@ -43,21 +42,11 @@ class TrackedObject:
 
         dist = distance.euclidean((0, 0, 0), (ps.pose.position.x, ps.pose.position.y, ps.pose.position.z))
 
-        if dist > self.max_dist:
+        if dist > self.max_dist or dist < self.min_dist:
             return
 
         if ps.header.frame_id not in self.meas:
             self.meas[ps.header.frame_id] = []
-
-        if len(self.meas[ps.header.frame_id]) > 0:
-
-            ops = self.meas[ps.header.frame_id][-1][1]
-
-            if (np.dot(q2a(ops.pose.orientation), q2a(ps.pose.orientation))) < 0.0:
-                ps.pose.orientation.x *= -1.0
-                ps.pose.orientation.y *= -1.0
-                ps.pose.orientation.z *= -1.0
-                ps.pose.orientation.w *= -1.0
 
         try:
 
@@ -68,7 +57,7 @@ class TrackedObject:
             rospy.logwarn("Transform between " + self.target_frame +
                           " and " + ps.header.frame_id + " not available!")
 
-    def prune_meas(self, now):
+    def prune_meas(self, now, max_age):
 
         frames_to_delete = []
 
@@ -79,7 +68,7 @@ class TrackedObject:
 
             for idx in range(0, len(val)):
 
-                if (now - val[idx][1].header.stamp) > rospy.Duration(1.0):
+                if (now - val[idx][1].header.stamp) > max_age:
                     idx_to_delete.append(idx)
 
             val = [x for i, x in enumerate(val) if i not in idx_to_delete]
@@ -92,56 +81,91 @@ class TrackedObject:
         for frame_id in frames_to_delete:
             del self.meas[frame_id]
 
-    def get_inst(self):
+    @property
+    def inst(self):
+
+        inst = ObjInstance()
+        inst.object_id = self.object_id
+        inst.object_type = self.object_type
 
         w = []
 
         px = []
         py = []
         pz = []
-        ox = []
-        oy = []
-        oz = []
-        ow = []
+
+        r = []
+        p = []
+        y = []
 
         for frame_id, val in self.meas.iteritems():
 
-            dist = []
+            if len(val) < 2:
+                continue
 
-            for v in val:
-                dist.append(v[0])
+            for idx in range(0, len(val)):
 
-            adist = np.mean(dist)
+                v = val[idx]
 
-            for v in val:
-                w.append(1.0 / (adist ** 2))
+                # distance normalized to 0, 1
+                d = (v[0] - self.min_dist) / (self.max_dist - self.min_dist)
+
+                # weight based on distance from object to sensor
+                w_dist = (1.0 - d) ** 2  # (0, 1)
+
+                # newer detections are more interesting
+                w_age = (float(idx) / (len(val) - 1)) / 2 + 0.5  # (0.5, 1)
+
+                w.append(w_dist * w_age)
 
                 px.append(v[1].pose.position.x)
                 py.append(v[1].pose.position.y)
                 pz.append(v[1].pose.position.z)
 
-                ox.append(v[1].pose.orientation.x)
-                oy.append(v[1].pose.orientation.y)
-                oz.append(v[1].pose.orientation.z)
-                ow.append(v[1].pose.orientation.w)
+                rpy = transformations.euler_from_quaternion(q2a(v[1].pose.orientation))
+
+                r.append([cos(rpy[0]), sin(rpy[0])])
+                p.append([cos(rpy[1]), sin(rpy[1])])
+                y.append([cos(rpy[2]), sin(rpy[2])])
 
         if len(w) < self.min_meas_cnt:
             return None
 
-        self.inst.pose.position.x = np.average(px, weights=w)
-        self.inst.pose.position.y = np.average(py, weights=w)
-        self.inst.pose.position.z = np.average(pz, weights=w)
+        inst.pose.position.x = np.average(px, weights=w)
+        inst.pose.position.y = np.average(py, weights=w)
+        inst.pose.position.z = np.average(pz, weights=w)
 
-        # here we assume that quaternions are close (object is static) ->
-        # averaging should be fine
-        self.inst.pose.orientation.x = np.average(ox, weights=w)
-        self.inst.pose.orientation.y = np.average(oy, weights=w)
-        self.inst.pose.orientation.z = np.average(oz, weights=w)
-        self.inst.pose.orientation.w = np.average(ow, weights=w)
+        ar = np.average(r, axis=0, weights=w)
+        ap = np.average(p, axis=0, weights=w)
+        ay = np.average(y, axis=0, weights=w)
 
-        self.inst.pose.orientation = normalize(self.inst.pose.orientation)
+        fr = atan2(ar[1], ar[0])
+        fp = atan2(ap[1], ap[0])
+        fy = atan2(ay[1], ay[0])
 
-        return self.inst
+        cur_rpy = [fr, fp, fy]
+
+        # TODO hysteresis!
+        # TODO is there a smarter way how to do it?
+        # "fix" roll and pitch so they are only 0, 90, 180 or 270 degrees
+        # yaw (in table coordinates) may stay as it is
+        for i in range(0, 2):
+
+            if cur_rpy[i] < 0.0:
+                cur_rpy[i] = 2 * pi + cur_rpy[i]
+
+            if cur_rpy[i] >= 7 * pi / 4 or cur_rpy[i] < pi / 4:
+                cur_rpy[i] = 0.0
+            elif cur_rpy[i] >= pi / 4 and cur_rpy[i] < 3 * pi / 4:
+                cur_rpy[i] = pi / 2
+            elif cur_rpy[i] >= 3 * pi / 4 and cur_rpy[i] < 5 * pi / 4:
+                cur_rpy[i] = pi
+            elif cur_rpy[i] >= 5 * pi / 4 and cur_rpy[i] < 7 * pi / 4:
+                cur_rpy[i] = 3 * pi / 2
+
+        a2q(inst.pose.orientation, transformations.quaternion_from_euler(*cur_rpy))
+
+        return inst
 
     def transform(self, ps):
 
@@ -163,7 +187,20 @@ class ArtSimpleTracker:
         self.pub = rospy.Publisher(
             "/art/object_detector/object_filtered", InstancesArray, queue_size=10, latch=True)
         self.timer = rospy.Timer(rospy.Duration(0.5), self.timer_cb)
+        self.meas_max_age = rospy.Duration(5.0)
+        self.prune_timer = rospy.Timer(self.meas_max_age, self.prune_timer_cb)
         self.objects = {}
+        self.br = tf.TransformBroadcaster()
+
+    def prune_timer_cb(self, event):
+
+        with self.lock:
+
+            now = rospy.Time.now()
+
+            for k, v in self.objects.iteritems():
+
+                v.prune_meas(now, self.meas_max_age)
 
     def timer_cb(self, event):
 
@@ -177,9 +214,7 @@ class ArtSimpleTracker:
 
             for k, v in self.objects.iteritems():
 
-                v.prune_meas(ia.header.stamp)
-
-                inst = v.get_inst()
+                inst = v.inst
 
                 if inst is None:  # new object might not have enough measurements yet
 
@@ -197,6 +232,9 @@ class ArtSimpleTracker:
                     ia.new_objects.append(k)
 
                 ia.instances.append(inst)
+
+                self.br.sendTransform((inst.pose.position.x, inst.pose.position.y, inst.pose.position.z),
+                                      q2a(inst.pose.orientation), ia.header.stamp, "object_id_" + inst.object_id, self.target_frame)
 
             for obj_id in objects_to_delete:
                 del self.objects[obj_id]
@@ -220,7 +258,8 @@ class ArtSimpleTracker:
                 else:
 
                     rospy.loginfo("Adding new object: " + inst.object_id)
-                    self.objects[inst.object_id] = TrackedObject(self.target_frame, self.tfl, inst)
+                    self.objects[inst.object_id] = TrackedObject(self.target_frame, self.tfl, inst.object_id,
+                                                                 inst.object_type)
 
                 ps = PoseStamped()
                 ps.header = msg.header

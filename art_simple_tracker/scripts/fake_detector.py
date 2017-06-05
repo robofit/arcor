@@ -5,10 +5,20 @@ from art_msgs.msg import ObjInstance, InstancesArray
 import time
 import sys
 import random
+from tf import transformations
+from math import pi
+
+
+def a2q(q, arr):
+
+    q.x = arr[0]
+    q.y = arr[1]
+    q.z = arr[2]
+    q.w = arr[3]
 
 
 class FakeDetector:
-    def __init__(self, obj_id, frame_id, pos, noise):
+    def __init__(self, obj_id, frame_id, pos, rpy, noise):
         self.object_publisher = rospy.Publisher('/art/object_detector/object',
                                                 InstancesArray, queue_size=10, latch=True)
 
@@ -20,10 +30,14 @@ class FakeDetector:
         self.obj.object_id = obj_id
         self.obj.object_type = "profile_20_60"
 
-        self.obj.pose.orientation.x = 0
-        self.obj.pose.orientation.y = 0
-        self.obj.pose.orientation.z = 0
-        self.obj.pose.orientation.w = 1
+        angles = list(rpy)
+
+        for idx in range(0, len(angles)):
+
+            angles[idx] = angles[idx] / 360.0 * 2 * pi
+
+        # TODO apply noise also to orientation
+        a2q(self.obj.pose.orientation, transformations.quaternion_from_euler(*angles))
 
         self.timer = rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 
@@ -48,9 +62,10 @@ if __name__ == '__main__':
 
     try:
         pos = (float(sys.argv[3]), float(sys.argv[4]), float(sys.argv[5]))
-        FakeDetector(sys.argv[1], sys.argv[2], pos, float(sys.argv[6]))
+        rpy = (float(sys.argv[6]), float(sys.argv[7]), float(sys.argv[8]))
+        FakeDetector(sys.argv[1], sys.argv[2], pos, rpy, float(sys.argv[9]))
         rospy.spin()
     except rospy.ROSInterruptException:
         pass
     except IndexError:
-        print "Arguments: obj_id frame_id x y z noise"
+        print "Arguments: obj_id frame_id x y z r p y noise"
