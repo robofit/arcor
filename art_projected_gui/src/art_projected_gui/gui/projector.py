@@ -15,6 +15,8 @@ from image_geometry import PinholeCameraModel
 from geometry_msgs.msg import PointStamped, Pose, PoseArray
 import tf
 import ast
+
+
 # import time
 
 # TODO create ProjectorROS (to separate QT / ROS stuff)
@@ -23,7 +25,6 @@ import ast
 
 
 class Projector(QtGui.QWidget):
-
     def __init__(self):
 
         super(Projector, self).__init__()
@@ -81,7 +82,8 @@ class Projector(QtGui.QWidget):
         self.tcpSocket.error.connect(self.on_error)
 
         self.projectors_calibrated_sub = rospy.Subscriber(
-            '/art/interface/projected_gui/app/projectors_calibrated', Bool, self.projectors_calibrated_cb, queue_size=10)
+            '/art/interface/projected_gui/app/projectors_calibrated', Bool, self.projectors_calibrated_cb,
+            queue_size=10)
         self.projectors_calibrated = False
 
         self.srv_calibrate = rospy.Service(
@@ -110,13 +112,13 @@ class Projector(QtGui.QWidget):
             self.init_map_from_matrix(np.matrix(ast.literal_eval(h_matrix)))
         else:
             self.calibrated_pub.publish(self.is_calibrated())
-            
+
         self.connect()
 
     def init_map_from_matrix(self, m):
 
         rospy.loginfo("Building map from calibration matrix...")
-        
+
         self.maps_ready = False
 
         Hd = self.height()
@@ -129,7 +131,6 @@ class Projector(QtGui.QWidget):
 
         for y in range(0, int(Hd - 1)):
             for x in range(0, int(Wd - 1)):
-
                 self.map_x.itemset(
                     (y, x), (m[0, 0] * x + m[0, 1] * y + m[0, 2]) / (m[2, 0] * x + m[2, 1] * y + m[2, 2]))
                 self.map_y.itemset(
@@ -203,7 +204,6 @@ class Projector(QtGui.QWidget):
 
             # 16ms
             if not pix.loadFromData(ba, "JPG"):
-
                 rospy.logerr("Failed to load image from received data")
                 return
 
@@ -252,10 +252,10 @@ class Projector(QtGui.QWidget):
         cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
 
         ret, corners = cv2.findChessboardCorners(
-            cv_img, (9, 6), None, flags=cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_FILTER_QUADS | cv2.CALIB_CB_NORMALIZE_IMAGE)
+            cv_img, (9, 6), None,
+            flags=cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_FILTER_QUADS | cv2.CALIB_CB_NORMALIZE_IMAGE)
 
         if not ret:
-
             rospy.logerr("Could not find chessboard corners")
             return False
 
@@ -323,7 +323,6 @@ class Projector(QtGui.QWidget):
         # generate requested table coordinates
         for y in range(0, 6):
             for x in range(0, 9):
-
                 px = 2 * box_size + x * box_size + dx
                 py = 2 * box_size + y * box_size + dy
 
@@ -337,7 +336,7 @@ class Projector(QtGui.QWidget):
         self.emit(QtCore.SIGNAL('show_pix_label'), False)  # hide chessboard
         self.calibrating = False
         self.calibrated = True
-        self.calibrated_pub.publish(self.is_calibrated())   
+        self.calibrated_pub.publish(self.is_calibrated())
 
         # store homography matrix to parameter server
         s = str(h_matrix.tolist())
@@ -360,7 +359,7 @@ class Projector(QtGui.QWidget):
     def sync_cb(self, image, cam_info, depth):
 
         self.timeout_timer.shutdown()
-        
+
         try:
             self.tfl.waitForTransform(self.world_frame, image.header.frame_id, rospy.Time(0), rospy.Duration(0.1))
         except tf.Exception:
@@ -376,7 +375,7 @@ class Projector(QtGui.QWidget):
         else:
 
             self.calibration_attempts += 1
-            
+
             rospy.logerr('Calibration failed, attempt: ' + str(self.calibration_attempts))
 
             if self.calibration_attempts < 10:
@@ -394,7 +393,7 @@ class Projector(QtGui.QWidget):
             self.tfl = None
 
     def show_chessboard_evt(self):
-        
+
         if self.pix_label.isVisible():
             return
 
