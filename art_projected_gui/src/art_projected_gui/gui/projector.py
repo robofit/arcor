@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 import qimage2ndarray
 from std_msgs.msg import Bool
-from std_srvs.srv import Empty, EmptyResponse
+from std_srvs.srv import Empty, EmptyResponse, Trigger, TriggerResponse
 import message_filters
 from image_geometry import PinholeCameraModel
 from geometry_msgs.msg import PointStamped, Pose, PoseArray
@@ -84,7 +84,7 @@ class Projector(QtGui.QWidget):
         self.projectors_calibrated = False
 
         self.srv_calibrate = rospy.Service(
-            "~calibrate", Empty, self.calibrate_srv_cb)
+            "~calibrate", Trigger, self.calibrate_srv_cb)
         self.corners_pub = rospy.Publisher(
             "~corners", PoseArray, queue_size=10, latch=True)
 
@@ -436,7 +436,7 @@ class Projector(QtGui.QWidget):
         else:
             self.tfl_delay_timer_cb()
 
-        return EmptyResponse()
+        return TriggerResponse()
 
     def is_calibrated(self):
 
