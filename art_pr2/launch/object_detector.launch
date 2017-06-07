@@ -2,9 +2,9 @@
 <launch>
 
   <include ns="/art/pr2" file="$(find art_arcode_detector)/launch/ar_code_detector_bundle.launch">
-    <arg name="cam_image_topic" value="/kinect_head/rgb/image_color"/>
-    <arg name="cam_info_topic" value="/kinect_head/rgb/camera_info"/>
-    <arg name="output_frame" value="/head_mount_kinect_rgb_optical_frame"/>
+    <arg name="cam_image_topic" value="/prosilica/image_raw"/>
+    <arg name="cam_info_topic" value="/prosilica/camera_info"/>
+    <arg name="output_frame" value="/high_def_optical_frame"/>
   </include>
 
 </launch>
