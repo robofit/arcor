@@ -1,8 +1,9 @@
 <launch>
-        <machine name="localhost" address="localhost" default="true" />
-        <arg name="machine" default="localhost"/>	
 
-        <arg name="marker_size" default="2.77" />
+    <machine name="localhost" address="localhost" default="true" />
+    <arg name="machine" default="localhost"/>
+
+    <arg name="marker_size" default="2.77" />
 	<arg name="max_new_marker_error" default="0.08" />
 	<arg name="max_track_error" default="0.2" />
 
@@ -18,6 +19,6 @@
 
 	<node machine="$(arg machine)" name="ar_code_detector_bundle" pkg="art_arcode_detector" type="detector.py" output="screen" >
         <remap from="ar_pose_marker" to="ar_pose_marker_objects"/>
-        </node>
+    </node>
 
 </launch>

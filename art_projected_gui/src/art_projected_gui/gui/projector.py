@@ -9,12 +9,14 @@ import cv2
 import numpy as np
 import qimage2ndarray
 from std_msgs.msg import Bool
-from std_srvs.srv import Empty, EmptyResponse, Trigger, TriggerResponse
+from std_srvs.srv import Trigger, TriggerResponse
 import message_filters
 from image_geometry import PinholeCameraModel
 from geometry_msgs.msg import PointStamped, Pose, PoseArray
 import tf
 import ast
+
+
 # import time
 
 # TODO create ProjectorROS (to separate QT / ROS stuff)
@@ -52,6 +54,7 @@ class Projector(QtGui.QWidget):
         self.checkerboard_img = QtGui.QPixmap(img_path + "/pattern.png")
         self.calibrating = False
         self.calibrated = False
+        self.maps_ready = False
 
         desktop = QtGui.QDesktopWidget()
         geometry = desktop.screenGeometry(self.screen)
@@ -80,7 +83,8 @@ class Projector(QtGui.QWidget):
         self.tcpSocket.error.connect(self.on_error)
 
         self.projectors_calibrated_sub = rospy.Subscriber(
-            '/art/interface/projected_gui/app/projectors_calibrated', Bool, self.projectors_calibrated_cb, queue_size=10)
+            '/art/interface/projected_gui/app/projectors_calibrated', Bool, self.projectors_calibrated_cb,
+            queue_size=10)
         self.projectors_calibrated = False
 
         self.srv_calibrate = rospy.Service(
@@ -107,13 +111,16 @@ class Projector(QtGui.QWidget):
             self.calibrated = True
             self.calibrated_pub.publish(self.is_calibrated())
             self.init_map_from_matrix(np.matrix(ast.literal_eval(h_matrix)))
-            self.connect()
         else:
             self.calibrated_pub.publish(self.is_calibrated())
+
+        self.connect()
 
     def init_map_from_matrix(self, m):
 
         rospy.loginfo("Building map from calibration matrix...")
+
+        self.maps_ready = False
 
         Hd = self.height()
         Wd = self.width()
@@ -125,7 +132,6 @@ class Projector(QtGui.QWidget):
 
         for y in range(0, int(Hd - 1)):
             for x in range(0, int(Wd - 1)):
-
                 self.map_x.itemset(
                     (y, x), (m[0, 0] * x + m[0, 1] * y + m[0, 2]) / (m[2, 0] * x + m[2, 1] * y + m[2, 2]))
                 self.map_y.itemset(
@@ -133,6 +139,7 @@ class Projector(QtGui.QWidget):
 
         self.map_x, self.map_y = cv2.convertMaps(
             self.map_x, self.map_y, cv2.CV_16SC2)
+        self.maps_ready = True
         rospy.loginfo("Done!")
 
     def show_pix_label_evt(self, show):
@@ -164,7 +171,7 @@ class Projector(QtGui.QWidget):
 
     def on_error(self):
 
-        rospy.logdebug("socket error")
+        rospy.logerr("socket error")
         QtCore.QTimer.singleShot(0, self.connect)
 
     def getScene(self):
@@ -198,11 +205,10 @@ class Projector(QtGui.QWidget):
 
             # 16ms
             if not pix.loadFromData(ba, "JPG"):
-
                 rospy.logerr("Failed to load image from received data")
                 return
 
-            if not self.is_calibrated() or self.calibrating or not self.projectors_calibrated:
+            if self.calibrating or not self.projectors_calibrated or not self.maps_ready:
                 return
 
             # 3ms
@@ -247,10 +253,10 @@ class Projector(QtGui.QWidget):
         cv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2GRAY)
 
         ret, corners = cv2.findChessboardCorners(
-            cv_img, (9, 6), None, flags=cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_FILTER_QUADS | cv2.CALIB_CB_NORMALIZE_IMAGE)
+            cv_img, (9, 6), None,
+            flags=cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_FILTER_QUADS | cv2.CALIB_CB_NORMALIZE_IMAGE)
 
         if not ret:
-
             rospy.logerr("Could not find chessboard corners")
             return False
 
@@ -291,7 +297,7 @@ class Projector(QtGui.QWidget):
             try:
                 ps = self.tfl.transformPoint(self.world_frame, ps)
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                rospy.logerr("can't get transform")
+                rospy.logerr("Can't get transform")
                 return False
 
             pp = Pose()
@@ -318,7 +324,6 @@ class Projector(QtGui.QWidget):
         # generate requested table coordinates
         for y in range(0, 6):
             for x in range(0, 9):
-
                 px = 2 * box_size + x * box_size + dx
                 py = 2 * box_size + y * box_size + dy
 
@@ -329,16 +334,17 @@ class Projector(QtGui.QWidget):
 
         h_matrix = np.matrix(h)
 
-        self.emit(QtCore.SIGNAL('show_pix_label'), False)
+        self.emit(QtCore.SIGNAL('show_pix_label'), False)  # hide chessboard
         self.calibrating = False
+        self.calibrated = True
         self.calibrated_pub.publish(self.is_calibrated())
-
-        self.init_map_from_matrix(h_matrix)
-        # self.h_matrix = np.matrix([[1,  0,  0], [0,  1,  0], [0,  0, 1.0]])
 
         # store homography matrix to parameter server
         s = str(h_matrix.tolist())
         rospy.set_param("~calibration_matrix", s)
+
+        self.init_map_from_matrix(h_matrix)
+        # self.h_matrix = np.matrix([[1,  0,  0], [0,  1,  0], [0,  0, 1.0]])
 
         return True
 
@@ -355,6 +361,14 @@ class Projector(QtGui.QWidget):
 
         self.timeout_timer.shutdown()
 
+        try:
+            self.tfl.waitForTransform(self.world_frame, image.header.frame_id, rospy.Time(0), rospy.Duration(0.1))
+        except tf.Exception:
+            rospy.logwarn("Waiting for transform...")
+            return
+
+        self.emit(QtCore.SIGNAL('show_chessboard'))
+
         if self.calibrate(image, cam_info, depth):
 
             rospy.loginfo('Calibrated')
@@ -363,22 +377,26 @@ class Projector(QtGui.QWidget):
 
             self.calibration_attempts += 1
 
+            rospy.logerr('Calibration failed, attempt: ' + str(self.calibration_attempts))
+
             if self.calibration_attempts < 10:
                 self.timeout_timer = rospy.Timer(rospy.Duration(
                     3.0), self.timeout_timer_cb, oneshot=True)
                 return
 
-            rospy.logerr('Calibration failed')
+            rospy.logerr('Giving up.')
             self.calibrating = False
             self.emit(QtCore.SIGNAL('show_pix_label'), False)
             self.calibrated_pub.publish(self.is_calibrated())
 
         self.shutdown_ts()
         if self.is_calibrated():
-            self.connect()
             self.tfl = None
 
     def show_chessboard_evt(self):
+
+        if self.pix_label.isVisible():
+            return
 
         rat = 1.0  # TODO make checkerboard smaller and smaller if it cannot be detected
         self.pix_label.show()
@@ -387,7 +405,7 @@ class Projector(QtGui.QWidget):
 
     def timeout_timer_cb(self, evt):
 
-        rospy.logerr("Timeout - no message arrived.")
+        rospy.logerr("Timeout - no message arrived or transformation is not available.")
         self.shutdown_ts()
         self.calibrated_pub.publish(self.is_calibrated())
         self.calibrating = False
@@ -411,20 +429,20 @@ class Projector(QtGui.QWidget):
         self.timeout_timer = rospy.Timer(rospy.Duration(
             3.0), self.timeout_timer_cb, oneshot=True)
 
-    def calibrate_srv_cb(self, req):  # TODO Trigger service
+    def calibrate_srv_cb(self, req):
+
+        resp = TriggerResponse()
+        resp.success = True
 
         if self.calibrating:
-            rospy.logwarn('Calibration already running')
-            return None
-
-        # if not self.projectors_calibrated:
-
-        #    rospy.logwarn('Some projector is not calibrated yet')
-        #    return None
+            msg = 'Calibration already running'
+            rospy.logwarn(msg)
+            resp.message = msg
+            resp.success = False
+            return resp
 
         rospy.loginfo('Starting calibration')
         self.calibrating = True
-        self.emit(QtCore.SIGNAL('show_chessboard'))
 
         self.calibration_attempts = 0
 
@@ -436,7 +454,7 @@ class Projector(QtGui.QWidget):
         else:
             self.tfl_delay_timer_cb()
 
-        return TriggerResponse()
+        return resp
 
     def is_calibrated(self):
 
@@ -445,5 +463,3 @@ class Projector(QtGui.QWidget):
     def on_resize(self, event):
 
         self.pix_label.resize(self.size())
-
-        rospy.loginfo("resize")
