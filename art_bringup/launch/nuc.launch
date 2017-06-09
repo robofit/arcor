@@ -30,6 +30,7 @@
       <arg name="machine" value="$(arg machine_name)"/>
       <arg name="cam_image_topic" value="kinect2/hd/image_color"/>
       <arg name="cam_info_topic" value="kinect2/hd/camera_info"/>
+      <arg name="output_frame" value="$(arg machine_name)_kinect2_rgb_optical_frame"/>
     </include>
     
 </launch>
