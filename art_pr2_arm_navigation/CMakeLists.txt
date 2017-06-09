@@ -22,7 +22,6 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
-include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
