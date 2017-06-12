@@ -153,7 +153,7 @@ class ArtBrain(object):
             '/art/brain/program/resume', Trigger, self.program_resume_cb)
 
         self.srv_learning_start = rospy.Service(
-            '/art/brain/learning/start', Trigger, self.learning_start_cb)
+            '/art/brain/learning/start', startProgram, self.learning_start_cb)
         self.srv_learning_stop = rospy.Service(
             '/art/brain/learning/stop', Trigger, self.learning_stop_cb)
 
@@ -601,7 +601,6 @@ class ArtBrain(object):
 
     def state_learning_run(self, event):
         rospy.loginfo('state_learning_run')
-        pass
 
     def state_learning_pick_from_polygon(self, event):
         rospy.loginfo('state_learning_pick_from_polygon')
@@ -1133,20 +1132,24 @@ class ArtBrain(object):
         return resp
 
     def learning_start_cb(self, req):
-        resp = TriggerResponse()
+        resp = startProgramResponse()
+        resp.success = False
+
         if not self.is_everything_calibrated():
-            resp.success = False
-            resp.message = 'Something is not calibrated'
+
+            resp.error = 'Something is not calibrated'
             rospy.loginfo('Something is not calibrated')
             return resp
 
         if not self.fsm.is_waiting_for_action():
-            resp.success = False
-            resp.message = 'Not ready for learning start!'
+
+            resp.error = 'Not ready for learning start!'
             rospy.loginfo('Not ready for learning start!')
             return resp
 
         rospy.loginfo('Starting learning')
+        self.state_manager.state.program_id = req.program_id
+        self.state_manager.set_system_state(InterfaceState.STATE_LEARNING)
         resp.success = True
         self.fsm.learning_start()
         return resp
@@ -1257,7 +1260,12 @@ class ArtBrain(object):
 
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
 
+        self.state_manager.state.edit_enabled = False
+
         if goal.request == LearningRequestGoal.GET_READY:
+
+            self.state_manager.state.edit_enabled = True
+
             if self.fsm.is_learning_run:
                 if instruction.type == instruction.PICK_OBJECT_ID:
                     self.fsm.pick_object_id()
@@ -1278,6 +1286,9 @@ class ArtBrain(object):
                 return
                 # TODO: handle error
         elif goal.request == LearningRequestGoal.EXECUTE_ITEM:
+
+            # TODO let ui(s) know that item is being executed
+
             # self.fsm.error(severity=InterfaceState.INFO,
             #                error=InterfaceState.ERROR_LEARNING_NOT_IMPLEMENTED)
             if self.fsm.is_learning_run:
@@ -1305,6 +1316,7 @@ class ArtBrain(object):
             self.fsm.done()
             pass
 
+        self.state_manager.send()
         result.success = True
         self.as_learning_request.set_succeeded(result)
 

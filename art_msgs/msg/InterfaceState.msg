@@ -25,6 +25,8 @@ uint16 block_id
 ProgramItem program_current_item
 KeyValue[] flags # flags associated to program_current_item (e.g. selected object id when doing type-based manipulation)
 
+bool edit_enabled
+
 int32 error_severity
 
 # program and learning error severities
