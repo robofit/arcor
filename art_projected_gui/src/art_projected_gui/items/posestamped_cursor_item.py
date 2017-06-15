@@ -53,7 +53,7 @@ class PoseStampedCursorItem(Item):
 
         self.helper = PoseStampedCursorItemHelper(topic, world_frame, self.cb)
 
-        self.setZValue(200)
+        self.setZValue(400)
 
         self.last_pt = None
 
@@ -64,11 +64,11 @@ class PoseStampedCursorItem(Item):
     # for debugging purposes
     def mouseDoubleClickEvent(self, evt):
 
-        self.handle_pt(self.pos(), True,  True)
+        self.handle_pt(self.pos(), True, True)
 
     def mouseMoveEvent(self, event):
 
-        self.handle_pt(self.pos(),  True,  False)
+        self.handle_pt(self.pos(), True, False)
 
         super(Item, self).mouseMoveEvent(event)
 
@@ -97,7 +97,7 @@ class PoseStampedCursorItem(Item):
         if not self.isEnabled():
             return
 
-        (x,  y) = self.m2pix(msg.pose.position.x + self.offset[0],  msg.pose.position.y + self.offset[1])
+        (x, y) = self.m2pix(msg.pose.position.x + self.offset[0], msg.pose.position.y + self.offset[1])
 
         self.fx = 0.7 * self.fx + 0.3 * x
         self.fy = 0.7 * self.fy + 0.3 * y
@@ -119,7 +119,7 @@ class PoseStampedCursorItem(Item):
 
             for it in self.scene().items():
 
-                if not isinstance(it,  Item):  # TODO skip item not derived from Item
+                if not isinstance(it, Item):  # TODO skip item not derived from Item
                     continue
 
                 if not it.isVisible():
@@ -131,7 +131,7 @@ class PoseStampedCursorItem(Item):
                 if self.pointed_item is None and self.collidesWithItem(it):
 
                     parent = it.parentItem()
-                    if not isinstance(it,  ButtonItem) and it.fixed and parent is not None and isinstance(parent, Item) and not parent.fixed:
+                    if not isinstance(it, ButtonItem) and it.fixed and parent is not None and isinstance(parent, Item) and not parent.fixed:
 
                         it = it.parentItem()
 
@@ -151,7 +151,7 @@ class PoseStampedCursorItem(Item):
                     self.pointed_item_clicked = False
                     my_pos = self.get_pos()
                     it_pos = self.pointed_item.get_pos()
-                    self.offset = (it_pos[0]-my_pos[0], it_pos[1]-my_pos[1])
+                    self.offset = (it_pos[0] - my_pos[0], it_pos[1] - my_pos[1])
                     click = False
 
                 else:
@@ -179,8 +179,8 @@ class PoseStampedCursorItem(Item):
 
                     self.pointed_item_clicked = True
 
-                (x,  y) = self.pix2m(pt.x(), pt.y())
-                self.pointed_item.set_pos(x+self.offset[0], y+self.offset[1])
+                (x, y) = self.pix2m(pt.x(), pt.y())
+                self.pointed_item.set_pos(x + self.offset[0], y + self.offset[1])
                 self.pointed_item.item_moved()
 
                 if mm > 5:

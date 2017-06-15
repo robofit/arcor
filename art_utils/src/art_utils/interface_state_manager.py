@@ -39,10 +39,19 @@ class InterfaceStateManager(object):
         if self.cb is not None:
             self.cb(self.state, msg, flags)
 
-        # TODO system_state brat v potaz jen od brainu?
-        self.state = msg
+        if self.interface_id != InterfaceState.BRAIN_ID:
 
-        if self.interface_id == InterfaceState.BRAIN_ID:
+            self.state = msg
+
+        else:
+
+            # don't want to modify system_state, error_severity, error_code
+
+            self.state.timestamp = msg.timestamp
+            self.state.program_id = msg.program_id
+            self.state.block_id = msg.block_id
+            self.state.program_current_item = msg.program_current_item
+            self.state.flags = msg.flags
 
             self.send()
 

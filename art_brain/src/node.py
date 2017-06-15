@@ -556,7 +556,7 @@ class ArtBrain(object):
             error = ArtBrainErrors.ERROR_UNKNOWN
         rospy.logerr("Error: " + str(error))
         self.state_manager.set_error(severity, error)
-        self.state_manager.set_error(0, 0)
+
         if severity == InterfaceState.SEVERE:
             # handle
             self.fsm.program_error_shutdown()

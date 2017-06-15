@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from art_msgs.msg import Program,  ProgramItem
+from art_msgs.msg import Program, ProgramItem
 from geometry_msgs.msg import Pose, Polygon
 
 
@@ -19,9 +19,9 @@ class ProgramHelper():
         self._cache = {}
         self._prog = None
 
-    def load(self, prog,  template=False):
+    def load(self, prog, template=False):
 
-        if not isinstance(prog,  Program):
+        if not isinstance(prog, Program):
             rospy.logerr("Invalid argument. Should be Program message.")
             return False
 
@@ -32,7 +32,7 @@ class ProgramHelper():
             rospy.logerr("Program with zero blocks!")
             return False
 
-        for block_idx in range(0,  len(prog.blocks)):
+        for block_idx in range(0, len(prog.blocks)):
 
             block = prog.blocks[block_idx]
 
@@ -58,7 +58,7 @@ class ProgramHelper():
                 rospy.logerr("Block with zero items!")
                 return False
 
-            for item_idx in range(0,  len(block.items)):
+            for item_idx in range(0, len(block.items)):
 
                 item = block.items[item_idx]
 
@@ -81,7 +81,7 @@ class ProgramHelper():
         self._cache = cache
 
         # now the cache is done, let's make some simple checks
-        for k,  v in cache.iteritems():
+        for k, v in cache.iteritems():
 
             # TODO refactor into separate method check_item
             # 0 means jump to the end
@@ -95,7 +95,7 @@ class ProgramHelper():
                 rospy.logerr("Block id: " + str(k) + " has invalid on_success: " + str(v["on_success"]))
                 return False
 
-            for kk,  vv in v["items"].iteritems():
+            for kk, vv in v["items"].iteritems():
 
                 # 0 means jump to the end
                 if vv["on_success"] != 0 and vv["on_success"] not in cache[k]["items"]:
@@ -119,13 +119,13 @@ class ProgramHelper():
                         return False
 
                 # at least one 'object' mandatory for following types
-                if item.type in [ProgramItem.PICK_FROM_POLYGON,  ProgramItem.PICK_FROM_FEEDER,  ProgramItem.PICK_OBJECT_ID] and len(item.object) == 0:
+                if item.type in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID] and len(item.object) == 0:
 
                     rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has zero size of 'object' array!")
                     return False
 
                 # at least one 'pose' mandatory for following types
-                if item.type in [ProgramItem.PICK_FROM_FEEDER,  ProgramItem.PLACE_TO_POSE] and len(item.pose) == 0:
+                if item.type in [ProgramItem.PICK_FROM_FEEDER, ProgramItem.PLACE_TO_POSE] and len(item.pose) == 0:
 
                     rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has zero size of 'pose' array!")
                     return False
@@ -148,7 +148,7 @@ class ProgramHelper():
 
                         ref_msg = self.get_item_msg(k, ref_id)
 
-                        if ref_msg.type not in [ProgramItem.PICK_FROM_POLYGON,  ProgramItem.PICK_FROM_FEEDER,  ProgramItem.PICK_OBJECT_ID]:
+                        if ref_msg.type not in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID]:
 
                             rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has ref_id which is not PICK_*!")
                             return False
@@ -156,7 +156,7 @@ class ProgramHelper():
                 # TODO refactor into separate method
                 if template:
 
-                    for i in range(0,  len(item.object)):
+                    for i in range(0, len(item.object)):
                         item.object[i] = ""
 
                     # for stamped types we want to keep header (frame_id)
@@ -176,7 +176,7 @@ class ProgramHelper():
 
         return self._prog.header.id
 
-    def get_block_msg(self,  block_id):
+    def get_block_msg(self, block_id):
 
         block_idx = self._cache[block_id]["idx"]
         return self._prog.blocks[block_idx]
@@ -191,27 +191,39 @@ class ProgramHelper():
 
     def get_first_block_id(self):
 
-        return min(self._cache,  key=self._cache.get)
+        return min(self._cache, key=self._cache.get)
 
     def get_first_item_id(self, block_id=None):
 
         if block_id is None:
             block_id = self.get_first_block_id()
         items = self._cache[block_id]["items"]
-        item_id = min(items,  key=items.get)
-        return (block_id,  item_id)
+        item_id = min(items, key=items.get)
+        return (block_id, item_id)
 
-    def get_item_msg(self,  block_id,  item_id):
+    def get_item_msg(self, block_id, item_id):
 
         block_idx = self._cache[block_id]["idx"]
         item_idx = self._cache[block_id]["items"][item_id]["idx"]
         return self._prog.blocks[block_idx].items[item_idx]
 
-    def _get_block_on(self,  block_id, what):
+    def set_item_msg(self, block_id, msg):
+
+        block_idx = self._cache[block_id]["idx"]
+        item_idx = self._cache[block_id]["items"][msg.id]["idx"]
+
+        omsg = self._prog.blocks[block_idx].items[item_idx]
+
+        if omsg.on_success != msg.on_success or omsg.on_failure != msg.on_failure:
+            raise ValueError("Attempt to change program structure!")
+
+        self._prog.blocks[block_idx].items[item_idx] = msg
+
+    def _get_block_on(self, block_id, what):
 
         return self._cache[block_id][what]
 
-    def _get_item_on(self,  block_id,  item_id,  what):
+    def _get_item_on(self, block_id, item_id, what):
 
         item_id_on = self._cache[block_id]["items"][item_id][what]
 
@@ -222,7 +234,7 @@ class ProgramHelper():
 
             if next_block_id == 0:
 
-                return (0,  0)  # end of program
+                return (0, 0)  # end of program
 
             return self.get_first_item_id(next_block_id)
 
@@ -230,19 +242,19 @@ class ProgramHelper():
 
             return (block_id, item_id_on)
 
-    def get_id_on_success(self,  block_id,  item_id):
+    def get_id_on_success(self, block_id, item_id):
 
-        return self._get_item_on(block_id,  item_id,  "on_success")
+        return self._get_item_on(block_id, item_id, "on_success")
 
-    def get_id_on_failure(self,  block_id,  item_id):
+    def get_id_on_failure(self, block_id, item_id):
 
-        return self._get_item_on(block_id,  item_id,  "on_failure")
+        return self._get_item_on(block_id, item_id, "on_failure")
 
-    def get_block_on_success(self,  block_id):
+    def get_block_on_success(self, block_id):
 
         return self._get_block_on(block_id, "on_success")
 
-    def get_block_on_failure(self,  block_id):
+    def get_block_on_failure(self, block_id):
 
         return self._get_block_on(block_id, "on_failure")
 
@@ -253,7 +265,7 @@ class ProgramHelper():
 
     def item_requires_learning(self, block_id, item_id):
 
-        return self.get_item_type(block_id,  item_id) in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID, ProgramItem.PLACE_TO_POSE]
+        return self.get_item_type(block_id, item_id) in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID, ProgramItem.PLACE_TO_POSE]
 
     def is_pose_set(self, block_id, item_id):
 
@@ -333,7 +345,7 @@ class ProgramHelper():
 
     def item_learned(self, block_id, item_id):
 
-        if not self.item_requires_learning(block_id,  item_id):
+        if not self.item_requires_learning(block_id, item_id):
             return None
 
         msg = self.get_item_msg(block_id, item_id)

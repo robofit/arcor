@@ -10,7 +10,7 @@ translate = QtCore.QCoreApplication.translate
 
 class DialogItem(Item):
 
-    def __init__(self, scene, x, y, caption,  answers, done_cb):
+    def __init__(self, scene, x, y, caption, answers, done_cb):
 
         self.w = 0
         self.h = 0
@@ -21,12 +21,12 @@ class DialogItem(Item):
         self.done_cb = done_cb
         self.fixed = False
 
-        self.desc = DescItem(scene, 0,  0, self)
+        self.desc = DescItem(scene, 0, 0, self)
         self.desc.set_content(caption)
 
         self.items = []
 
-        self.w = (len(answers)+1)*self.sp
+        self.w = (len(answers) + 1) * self.sp
 
         for answer in answers:
 
@@ -35,14 +35,15 @@ class DialogItem(Item):
             self.w += btn._width()
 
         y = self.sp
-        self._place_childs_horizontally(y,  self.sp,  [self.desc])
+        self._place_childs_horizontally(y, self.sp, [self.desc])
         y += self.desc._height() + self.sp
-        self._place_childs_horizontally(y,  self.sp,  self.items)
+        self._place_childs_horizontally(y, self.sp, self.items)
         y += self.items[0]._height()
         y += self.sp
 
         self.h = y
         self.update()
+        self.setZValue(300)
 
     def answer_cb(self, btn):
 

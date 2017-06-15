@@ -9,7 +9,7 @@ from art_projected_gui.helpers import ProjectorHelper, conversions, error_string
 from art_utils import InterfaceStateManager, ArtApiHelper, ProgramHelper
 from art_msgs.srv import TouchCalibrationPoints, TouchCalibrationPointsResponse, NotifyUser, NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest, startProgram, startProgramRequest
 from std_msgs.msg import Empty, Bool
-from std_srvs.srv import Trigger, TriggerRequest, TriggerResponse
+from std_srvs.srv import Trigger, TriggerResponse
 from std_srvs.srv import Empty as EmptyService
 from geometry_msgs.msg import PoseStamped
 import actionlib
@@ -103,6 +103,15 @@ class UICoreRos(UICore):
             '/art/brain/learning/start', startProgram)  # TODO wait for service? where?
         self.stop_learning_srv = rospy.ServiceProxy(
             '/art/brain/learning/stop', Trigger)  # TODO wait for service? where?
+
+        self.program_pause_srv = rospy.ServiceProxy(
+            '/art/brain/program/pause', Trigger)
+
+        self.program_resume_srv = rospy.ServiceProxy(
+            '/art/brain/program/resume', Trigger)
+
+        self.program_stop_srv = rospy.ServiceProxy(
+            '/art/brain/program/stop', Trigger)
 
         self.emergency_stop_srv = rospy.ServiceProxy(
             '/pr2_ethercat/halt_motors', EmptyService)  # TODO wait for service? where?
@@ -305,17 +314,21 @@ class UICoreRos(UICore):
 
     def interface_state_evt(self, old_state, state, flags):
 
+        system_state_changed = old_state.system_state != state.system_state
+
+        if system_state_changed:
+            self.clear_all(True)
+
+        if state.error_severity == InterfaceState.NONE and self.program_error_dialog is not None:
+
+            # hide dialog
+            self.scene.removeItem(self.program_error_dialog)
+            self.program_error_dialog = None
+
         # display info/warning/error if there is any - only once (on change)
         if state.error_severity != old_state.error_severity:
 
-            if state.error_severity == InterfaceState.NONE:
-
-                # hide dialog
-                if self.program_error_dialog is not None:
-                    self.scene.removeItem(self.program_error_dialog)
-                    self.program_error_dialog = None
-
-            elif state.error_severity == InterfaceState.INFO:
+            if state.error_severity == InterfaceState.INFO:
 
                 self.notif(translate("UICoreRos", "Error occurred: ") +
                            error_strings.get_error_string(state.error_code), temp=True)
@@ -342,13 +355,7 @@ class UICoreRos(UICore):
                                                        ],
                                                        self.program_error_dialog_cb)
 
-            # TODO what to do with SEVERE and INFO?
-
-        system_state_changed = old_state.system_state != state.system_state
-
-        if system_state_changed:
-
-            self.clear_all()
+            # TODO what to do with SEVERE?
 
         if state.system_state == InterfaceState.STATE_PROGRAM_FINISHED:
 
@@ -367,7 +374,7 @@ class UICoreRos(UICore):
 
             self.state_learning(old_state, state, flags, system_state_changed)
 
-        elif state.system_state == InterfaceState.STATE_PROGRAM_RUNNING:
+        elif state.system_state in [InterfaceState.STATE_PROGRAM_RUNNING, InterfaceState.STATE_PROGRAM_STOPPED]:
 
             self.state_running(old_state, state, flags, system_state_changed)
 
@@ -380,8 +387,6 @@ class UICoreRos(UICore):
 
         if system_state_changed:
 
-            self.clear_all()
-
             if not self.ph.load(self.art.load_program(state.program_id)):
 
                 self.notif(
@@ -390,11 +395,25 @@ class UICoreRos(UICore):
                 # TODO what to do?
                 return
 
-            self.show_program_vis(readonly=True)
+            stopped = state.system_state == InterfaceState.STATE_PROGRAM_STOPPED
+
+            self.show_program_vis(readonly=True, stopped=stopped)
+
+            if stopped:
+                self.notif(
+                    translate("UICoreRos", "Program paused."), temp=True)
+
+            if not stopped and old_state.system_state == InterfaceState.STATE_PROGRAM_STOPPED:
+                self.notif(
+                    translate("UICoreRos", "Program resumed."), temp=True)
 
         # ignore not valid states
         if state.block_id == 0 or state.program_current_item.id == 0:
+            rospy.logerr("Invalid state!")
             return
+
+        # TODO if the item id is same - do rather update then clear + add everything?
+        self.clear_all()
 
         self.program_vis.set_active(
             state.block_id, state.program_current_item.id)
@@ -426,10 +445,11 @@ class UICoreRos(UICore):
                 self.select_object(obj_id)
 
                 obj = self.get_object(obj_id)  # TODO notif - object type
-                self.notif(
-                    translate("UICoreRos", "Going to pick object ID ") + obj_id + translate("UICoreRos",
-                                                                                            " of type ") + obj.object_type.name + translate(
-                        "UICoreRos", " from polygon."))
+                if obj is not None:
+                    self.notif(
+                        translate("UICoreRos", "Going to pick object ID ") + obj_id + translate("UICoreRos",
+                                                                                                " of type ") + obj.object_type.name + translate(
+                            "UICoreRos", " from polygon."))
 
             self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
                              poly_points=conversions.get_pick_polygon_points(it), fixed=True)
@@ -460,41 +480,106 @@ class UICoreRos(UICore):
                 self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),
                                it.pose[0], obj.object_type, obj_id, fixed=True)
 
-    def show_program_vis(self, readonly=False):
+    def show_program_vis(self, readonly=False, stopped=False):
 
-        rospy.logdebug("Showing ProgramItem with readonly=" + str(readonly))
+        rospy.logdebug("Showing ProgramItem with readonly=" + str(readonly) + ", stopped=" + str(stopped))
         self.program_vis = ProgramItem(self.scene, self.last_prog_pos[0], self.last_prog_pos[1], self.ph, done_cb=self.learning_done_cb,
                                        item_switched_cb=self.active_item_switched,
-                                       learning_request_cb=self.learning_request_cb)
+                                       learning_request_cb=self.learning_request_cb, stopped=stopped, pause_cb=self.pause_cb, cancel_cb=self.cancel_cb)
 
         self.program_vis.set_readonly(readonly)
 
-    def clear_all(self):
+    def pause_cb(self):
+
+        if self.state_manager.state.system_state == InterfaceState.STATE_PROGRAM_STOPPED:
+
+            # TODO call trigger service method
+            try:
+                resp = self.program_resume_srv()
+            except rospy.ServiceException:
+                pass
+
+            if resp is not None and resp.success:
+                return True
+            else:
+                self.notif(
+                    translate("UICoreRos", "Failed to resume program."), temp=True)
+                return False
+
+        elif self.state_manager.state.system_state == InterfaceState.STATE_PROGRAM_RUNNING:
+
+            try:
+                resp = self.program_pause_srv()
+            except rospy.ServiceException:
+                pass
+
+            if resp is not None and resp.success:
+                self.notif(
+                    translate("UICoreRos", "Program paused."), temp=True)
+                return True
+
+            else:
+
+                self.notif(
+                    translate("UICoreRos", "Failed to pause program."), temp=True)
+                return True
+
+        else:
+
+            rospy.logdebug("Attempt to pause/resume program in strange state: " + str(self.state_manager.state.system_state))
+            return False
+
+    def cancel_cb(self):
+
+        if self.state_manager.state.system_state in [InterfaceState.STATE_PROGRAM_RUNNING, InterfaceState.STATE_PROGRAM_STOPPED]:
+
+            try:
+                resp = self.program_stop_srv()
+            except rospy.ServiceException:
+                pass
+
+            if resp is not None and resp.success:
+                self.notif(
+                    translate("UICoreRos", "Program stopped."), temp=True)
+                return True
+
+            else:
+
+                self.notif(
+                    translate("UICoreRos", "Failed to stop program."), temp=True)
+                return True
+
+        else:
+
+            rospy.logdebug("Attempt to stop program in strange state: " + str(self.state_manager.state.system_state))
+            return False
+
+    def clear_all(self, include_dialogs=False):
 
         rospy.logdebug("Clear all")
 
         super(UICoreRos, self).clear_all()
 
-        for it in [self.program_list, self.program_vis]:
+        if include_dialogs:
 
-            if it is None:
-                continue
-            try:
-                self.last_prog_pos = it.get_pos()
-            except AttributeError:
-                pass
-            break
+            for it in [self.program_list, self.program_vis]:
 
-        for it in [self.grasp_dialog, self.program_vis, self.program_list]:
+                if it is None:
+                    continue
+                try:
+                    self.last_prog_pos = it.get_pos()
+                except AttributeError:
+                    pass
+                break
 
-            if it is None:
-                continue
-            self.remove_scene_items_by_type(type(it))
-            it = None
+            for it in [self.program_error_dialog, self.grasp_dialog, self.program_vis, self.program_list]:
+
+                if it is None:
+                    continue
+                self.remove_scene_items_by_type(type(it))
+                it = None
 
     def state_learning(self, old_state, state, flags, system_state_changed):
-
-        print (old_state, state)
 
         if system_state_changed:
 
@@ -508,12 +593,19 @@ class UICoreRos(UICore):
                 # TODO what to do?
                 return
 
+            if state.block_id != 0 and state.program_current_item.id != 0:
+
+                # there may be unsaved changes - let's use ProgramItem from brain
+                self.ph.set_item_msg(state.block_id, state.program_current_item)
+
             self.show_program_vis()
 
-            if state.block_id == 0 or state.program_current_item.id == 0:
-                return
+        if state.block_id == 0 or state.program_current_item.id == 0:
+            rospy.logerr("Invalid state!")
+            return
 
-        print (old_state.timestamp, state.timestamp)
+        if old_state.block_id != state.block_id or old_state.program_current_item.id != state.program_current_item.id:
+            self.clear_all()
 
         # TODO overit funkcnost - pokud ma state novejsi timestamp nez nas - ulozit ProgramItem
         if old_state.timestamp == rospy.Time(0) or old_state.timestamp - state.timestamp > rospy.Duration(0):
@@ -521,7 +613,7 @@ class UICoreRos(UICore):
             rospy.logdebug('Got state with newer timestamp!')
             item = self.ph.get_item_msg(state.block_id, state.program_current_item.id)
             item = state.program_current_item
-            super(UICoreRos, self).clear_all()
+            self.clear_all()
 
             self.learning_vis(state.block_id, state.program_current_item.id, not state.edit_enabled)
 
@@ -530,6 +622,8 @@ class UICoreRos(UICore):
         if not self.ph.item_requires_learning(block_id, item_id):
             self.notif(translate("UICoreRos", "Item has no parameters."))
             return
+
+        self.program_vis.editing_item = not read_only
 
         # TODO Edit/Done button not visible when there is work in progress!
         if block_id != self.program_vis.block_id or item_id != self.program_vis.item_id:
@@ -630,7 +724,7 @@ class UICoreRos(UICore):
         rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) +
                        ", active item ID: " + str((block_id, item_id)))
 
-        super(UICoreRos, self).clear_all()
+        self.clear_all()
 
         if item_id is None:
             # TODO hlaska
@@ -763,9 +857,6 @@ class UICoreRos(UICore):
 
             rospy.logwarn("Failed to stop learning mode.")
             return
-
-        # self.clear_all()
-        # self.show_program_list()
 
     def program_selected_cb(self, prog_id, run=False, template=False):
 
