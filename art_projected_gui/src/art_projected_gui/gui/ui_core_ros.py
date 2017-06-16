@@ -253,7 +253,7 @@ class UICoreRos(UICore):
         resp.success = True
 
         # call to start_projector_calibration is blocking
-        self.proj_calib_timer = rospy.Timer(rospy.Duration(0.0), self.start_projector_calibration, oneshot=True)
+        self.proj_calib_timer = rospy.Timer(rospy.Duration(0.001), self.start_projector_calibration, oneshot=True)
 
         return resp
 
@@ -317,6 +317,7 @@ class UICoreRos(UICore):
         system_state_changed = old_state.system_state != state.system_state
 
         if system_state_changed:
+            rospy.logdebug("New system state: " + str(state.system_state) + ", was: " + str(old_state.system_state))
             self.clear_all(True)
 
         if state.error_severity == InterfaceState.NONE and self.program_error_dialog is not None:
@@ -776,7 +777,7 @@ class UICoreRos(UICore):
             rospy.logerr('Calibration failed for projector: ' + proj.proj_id)
             proj.calibrate(self.calib_done_cb)
 
-    def start_projector_calibration(self):
+    def start_projector_calibration(self, evt):
 
         if len(self.projectors) == 0:
 
