@@ -1322,7 +1322,7 @@ class ArtBrain(object):
 
 
 if __name__ == '__main__':
-    rospy.init_node('new_art_brain', log_level=rospy.DEBUG)
+    rospy.init_node('art_brain_node', log_level=rospy.DEBUG)
 
     try:
         node = ArtBrain()
