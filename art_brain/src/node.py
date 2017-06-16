@@ -849,7 +849,7 @@ class ArtBrain(object):
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.header.frame_id = self.objects.header.frame_id
         # TODO: how to deal with this?
-        goal.pose.pose.position.z = 0.05  # obj.bbox.dimensions[2]/2
+        goal.pose.pose.position.z = 0.09  # obj.bbox.dimensions[2]/2
         rospy.loginfo("Place pose: " + str(goal.pose))
         gripper.pp_client.send_goal(goal)
         gripper.pp_client.wait_for_result()
@@ -1198,6 +1198,8 @@ class ArtBrain(object):
     def motors_halted_cb(self, req):
         if not self.initialized:
             return
+        rospy.loginfo(str(req.data))
+        self.motors_halted = req.data
         if self.motors_halted and not req.data:
             if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
                 self.left_gripper.get_ready()
@@ -1206,7 +1208,6 @@ class ArtBrain(object):
             elif self.gripper_usage == ArtGripper.GRIPPER_BOTH:
                 self.left_gripper.get_ready()
                 self.right_gripper.get_ready()
-        self.motors_halted = req.data
 
     def projectors_calibrated_cb(self, msg):
 
@@ -1322,7 +1323,7 @@ class ArtBrain(object):
 
 
 if __name__ == '__main__':
-    rospy.init_node('new_art_brain', log_level=rospy.DEBUG)
+    rospy.init_node('art_brain_node', log_level=rospy.DEBUG)
 
     try:
         node = ArtBrain()
