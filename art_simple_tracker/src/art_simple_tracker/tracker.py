@@ -231,9 +231,6 @@ class ArtSimpleTracker:
                     v.new = False
                     ia.new_objects.append(k)
 
-                # TODO remove this - temporal fix
-                inst.pose.position.z = 0.08
-
                 ia.instances.append(inst)
 
                 self.br.sendTransform((inst.pose.position.x, inst.pose.position.y, inst.pose.position.z),

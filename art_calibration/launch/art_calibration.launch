@@ -1,7 +1,7 @@
 <launch>
 
     <include file="$(find art_calibration)/launch/pr2_indiv.launch" />
-    <include file="$(find art_calibration)/launch/table_indiv_no_kinect.launch" />
+    <!--include file="$(find art_calibration)/launch/table_indiv_no_kinect.launch" /-->
     
     <arg name="x_offset" default="0.15"/>
     <arg name="y_offset" default="0.06"/>
