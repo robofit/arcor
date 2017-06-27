@@ -5,7 +5,7 @@ from geometry_msgs.msg import Quaternion
 
 def yaw2quaternion(yaw):
 
-    quaternion = tf.transformations.quaternion_from_euler(0, 0, yaw/360.0*2*pi)
+    quaternion = tf.transformations.quaternion_from_euler(0, 0, yaw / 360.0 * 2 * pi)
     q = Quaternion()
 
     q.x = quaternion[0]
@@ -18,14 +18,34 @@ def yaw2quaternion(yaw):
 
 def quaternion2yaw(q):
 
-        quaternion = (
-            q.x,
-            q.y,
-            q.z,
-            q.w)
+    quaternion = (
+        q.x,
+        q.y,
+        q.z,
+        q.w)
 
-        euler = tf.transformations.euler_from_quaternion(quaternion)
-        return euler[2]/(2*pi)*360
+    euler = tf.transformations.euler_from_quaternion(quaternion)
+    return euler[2] / (2 * pi) * 360
+
+
+def quaternion2rpy(q):
+
+    quaternion = (
+        q.x,
+        q.y,
+        q.z,
+        q.w)
+
+    euler = list(tf.transformations.euler_from_quaternion(quaternion))
+
+    for idx in range(0, len(euler)):
+
+        euler[idx] = euler[idx] / (2 * pi) * 360
+
+        if euler[idx] > 180:
+            euler[idx] -= 180
+
+    return euler
 
 
 def get_pick_polygon_points(msg):

@@ -11,7 +11,7 @@ class DescItem(Item):
         self.text = ""
         self.scale = 1.0
 
-        super(DescItem, self).__init__(scene, x, y, parent)
+        super(DescItem, self).__init__(scene, x, y, parent=parent)
 
     def boundingRect(self):
 

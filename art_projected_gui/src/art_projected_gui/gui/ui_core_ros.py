@@ -980,12 +980,13 @@ class UICoreRos(UICore):
             obj = self.get_object(inst.object_id)
 
             if obj:
-                obj.set_pos(inst.pose.position.x, inst.pose.position.y,
-                            yaw=conversions.quaternion2yaw(inst.pose.orientation))
+                obj.set_pos(inst.pose.position.x, inst.pose.position.y, inst.pose.position.z)
+                obj.set_orientation(conversions.quaternion2rpy(inst.pose.orientation))
+                # yaw=conversions.quaternion2yaw(inst.pose.orientation))
             else:
 
                 obj_type = self.art.get_object_type(inst.object_type)
-                self.add_object(inst.object_id, obj_type, inst.pose.position.x, inst.pose.position.y,
+                self.add_object(inst.object_id, obj_type, inst.pose.position.x, inst.pose.position.y, inst.pose.position.z,
                                 conversions.quaternion2yaw(inst.pose.orientation), self.object_selected)
                 self.notif(translate("UICoreRos", "New object") +
                            " ID=" + str(inst.object_id), temp=True)

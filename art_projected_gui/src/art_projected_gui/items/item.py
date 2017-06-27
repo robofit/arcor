@@ -8,7 +8,7 @@ import rospy
 
 class Item(QtGui.QGraphicsItem):
 
-    def __init__(self, scene, x, y, parent=None):
+    def __init__(self, scene, x, y, z=0, parent=None):
 
         super(Item, self).__init__(parent=parent, scene=scene)
 
@@ -18,6 +18,7 @@ class Item(QtGui.QGraphicsItem):
         self.cursor_press_at = rospy.Time(0)
         self.default_font = 'Arial'
         self.last_pointed = rospy.Time(0)
+        self.pos = (x, y, z)  # position in meters
 
         self.setVisible(True)
         # self.setAcceptHoverEvents(True)
@@ -25,49 +26,53 @@ class Item(QtGui.QGraphicsItem):
         self.setActive(True)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
 
-        self.set_pos(x, y)
+        self.set_pos(x, y, z)
 
     def get_font_size(self, f=1.0):
 
         return 8 / 1280.0 * self.scene().rpm * f
 
-    def m2pix(self, x,  y=None):
+    def m2pix(self, x, y=None):
 
         if y is None:
             return x * self.scene().rpm
 
-        return (self.m2pix(x),  self.scene().height() - self.m2pix(y))
+        return (self.m2pix(x), self.scene().height() - self.m2pix(y))
 
-    def pix2m(self, x,  y=None):
+    def pix2m(self, x, y=None):
 
         if y is None:
             return x / self.scene().rpm
 
-        return (self.pix2m(x),  self.pix2m(self.scene().height() - y))
+        return (self.pix2m(x), self.pix2m(self.scene().height() - y))
 
     # world coordinates to scene coords - y has to be inverted
-    def set_pos(self, x, y, parent_coords=False,  yaw=None):
+    def set_pos(self, x, y, z=0, parent_coords=False, yaw=None):
 
-        (px,  py) = self.m2pix(x,  y)
+        self.pos = (x, y, z)
+
+        (px, py) = self.m2pix(x, y)
 
         # we usually want to work with scene/world coordinates
         if self.parentItem() and not parent_coords:
 
-            self.setPos(self.parentItem().mapFromScene(px,  py))
+            self.setPos(self.parentItem().mapFromScene(px, py))
 
         else:
 
-            self.setPos(px,  py)
+            self.setPos(px, py)
 
         if yaw is not None:
             self.setRotation(-yaw)
 
     def get_pos(self, pixels=False):
 
+        # TODO return self.pos ?
+
         pos = self.scenePos()
 
         if not pixels:
-            return self.pix2m(pos.x(),  pos.y())
+            return self.pix2m(pos.x(), pos.y())
         else:
             return (pos.x(), pos.y())
 
@@ -110,7 +115,7 @@ class Item(QtGui.QGraphicsItem):
                 items[idx].setPos(items[idx - 1].x() +
                                   items[idx - 1]._width() + inner_space, y)
 
-    def set_enabled(self, state,  also_set_visibility=False):
+    def set_enabled(self, state, also_set_visibility=False):
 
         self.setEnabled(state)
         if also_set_visibility:
