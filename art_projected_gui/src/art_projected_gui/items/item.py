@@ -2,11 +2,16 @@
 
 from PyQt4 import QtGui, QtCore
 import rospy
+from art_projected_gui.helpers import conversions
 
 # spolecny predek vseho ve scene
 
 
 class Item(QtGui.QGraphicsItem):
+
+    X = 0
+    Y = 1
+    Z = 2
 
     def __init__(self, scene, x, y, z=0, parent=None):
 
@@ -18,7 +23,7 @@ class Item(QtGui.QGraphicsItem):
         self.cursor_press_at = rospy.Time(0)
         self.default_font = 'Arial'
         self.last_pointed = rospy.Time(0)
-        self.pos = (x, y, z)  # position in meters
+        self.position = [x, y, z]  # position in meters
 
         self.setVisible(True)
         # self.setAcceptHoverEvents(True)
@@ -47,9 +52,12 @@ class Item(QtGui.QGraphicsItem):
         return (self.pix2m(x), self.pix2m(self.scene().height() - y))
 
     # world coordinates to scene coords - y has to be inverted
-    def set_pos(self, x, y, z=0, parent_coords=False, yaw=None):
+    def set_pos(self, x, y, z=None, parent_coords=False, yaw=None):
 
-        self.pos = (x, y, z)
+        self.position[0] = x
+        self.position[1] = y
+        if z is not None:
+            self.position[2] = z
 
         (px, py) = self.m2pix(x, y)
 
@@ -78,9 +86,7 @@ class Item(QtGui.QGraphicsItem):
 
     def get_pos_str(self):
 
-        (x, y) = self.get_pos()
-        # TODO fixed width format
-        return "[X: " + str(round(x, 3)).ljust(5, '0') + ", Y: " + str(round(y, 3)).ljust(5, '0') + "]"
+        return conversions.pos2str(self.position)
 
     def _width(self):
 

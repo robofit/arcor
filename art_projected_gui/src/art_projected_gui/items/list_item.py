@@ -18,7 +18,7 @@ class ListItem(Item):
 
         self.item_selected_cb = item_selected_cb
 
-        super(ListItem, self).__init__(scene, x, y, parent)
+        super(ListItem, self).__init__(scene, x, y, parent=parent)
 
         self.w = self.m2pix(w)
         self.h = self.m2pix(0.2)
@@ -42,7 +42,7 @@ class ListItem(Item):
         self.down_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Down"), self, self.down_btn_cb, width=w, image_path=icons_path + "arrow-down.svg")
 
-        self.up_btn.setPos(0,  0)
+        self.up_btn.setPos(0, 0)
         self.down_btn.setPos(0, self.h - self.down_btn.boundingRect().height())
 
         self.set_current_idx(min(1, len(self.items) - 1))
@@ -79,7 +79,7 @@ class ListItem(Item):
 
         return self.middle_item_idx
 
-    def set_current_idx(self,  idx, select=False):
+    def set_current_idx(self, idx, select=False):
 
         if select:
 

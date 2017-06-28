@@ -238,8 +238,8 @@ class ProgramItem(Item):
 
             if self.ph.is_pose_set(block_id, item_id):
 
-                text += "\n" + "x=" + str(round(item.pose[0].pose.position.x, 2)) + ", y=" + str(round(
-                    item.pose[0].pose.position.y, 2)) + ", z=" + str(round(item.pose[0].pose.position.z, 2))
+                text += "\n" + conversions.pos2str(
+                    (item.pose[0].pose.position.x, item.pose[0].pose.position.y, item.pose[0].pose.position.z))
 
             else:
 
@@ -285,12 +285,11 @@ class ProgramItem(Item):
 
             if self.ph.is_pose_set(block_id, item_id):
 
-                text += "\n" + "x=" + str(round(item.pose[0].pose.position.x, 2)) + ", y=" + str(
-                    round(item.pose[0].pose.position.y, 2))
+                text += "\n" + conversions.pos2str((item.pose[0].pose.position.x, item.pose[0].pose.position.y, item.pose[0].pose.position.z))
 
             else:
 
-                text += "\n" + "x=??, y=??"
+                text += "\n" + "X: ??, Y: ??, Z: ??"
 
         return text
 
@@ -543,13 +542,14 @@ class ProgramItem(Item):
 
         return QtCore.QRectF(0, 0, self.w, self.h)
 
-    def set_place_pose(self, x, y, yaw):
+    def set_place_pose(self, place):
 
         msg = self.get_current_item()
 
-        msg.pose[0].pose.position.x = x
-        msg.pose[0].pose.position.y = y
-        msg.pose[0].pose.orientation = conversions.yaw2quaternion(yaw)
+        msg.pose[0].pose.position.x = place.position[0]
+        msg.pose[0].pose.position.y = place.position[1]
+        msg.pose[0].pose.position.z = place.position[2]
+        msg.pose[0].pose.orientation = conversions.a2q(place.quaternion)
 
         self._update_item()
 

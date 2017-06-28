@@ -744,11 +744,11 @@ class UICoreRos(UICore):
         ps.pose.orientation.w = 1.0
         return ps
 
-    def place_pose_changed(self, pos, yaw):
+    def place_pose_changed(self, place):
 
         if self.program_vis.editing_item:
 
-            self.program_vis.set_place_pose(pos[0], pos[1], yaw)
+            self.program_vis.set_place_pose(place)
             self.state_manager.update_program_item(self.ph.get_program_id(
             ), self.program_vis.block_id, self.program_vis.get_current_item())
 
@@ -981,13 +981,12 @@ class UICoreRos(UICore):
 
             if obj:
                 obj.set_pos(inst.pose.position.x, inst.pose.position.y, inst.pose.position.z)
-                obj.set_orientation(conversions.quaternion2rpy(inst.pose.orientation))
-                # yaw=conversions.quaternion2yaw(inst.pose.orientation))
+                obj.set_orientation(conversions.q2a(inst.pose.orientation))
             else:
 
                 obj_type = self.art.get_object_type(inst.object_type)
                 self.add_object(inst.object_id, obj_type, inst.pose.position.x, inst.pose.position.y, inst.pose.position.z,
-                                conversions.quaternion2yaw(inst.pose.orientation), self.object_selected)
+                                conversions.q2a(inst.pose.orientation), self.object_selected)
                 self.notif(translate("UICoreRos", "New object") +
                            " ID=" + str(inst.object_id), temp=True)
 

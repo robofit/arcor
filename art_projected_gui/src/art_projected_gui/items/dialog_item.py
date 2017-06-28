@@ -10,12 +10,12 @@ translate = QtCore.QCoreApplication.translate
 
 class DialogItem(Item):
 
-    def __init__(self, scene, x, y, caption, answers, done_cb):
+    def __init__(self, scene, x, y, caption, answers, done_cb, parent=None):
 
         self.w = 0
         self.h = 0
 
-        super(DialogItem, self).__init__(scene, x, y)
+        super(DialogItem, self).__init__(scene, x, y, parent=parent)
 
         self.sp = self.m2pix(0.01)
         self.done_cb = done_cb

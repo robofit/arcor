@@ -199,7 +199,7 @@ class UICore(QtCore.QObject):
 
             self.scene.removeItem(it)
 
-    def add_object(self, object_id, object_type, x, y, z, yaw, sel_cb=None):
+    def add_object(self, object_id, object_type, x, y, z, quaternion, sel_cb=None):
         """Adds object to the scene.
 
         Args:
@@ -209,7 +209,7 @@ class UICore(QtCore.QObject):
             sel_cb (method): Callback which gets called one the object is selected.
         """
 
-        obj = ObjectItem(self.scene, object_id, object_type, x, y, z, yaw, sel_cb)
+        obj = ObjectItem(self.scene, object_id, object_type, x, y, z, quaternion, sel_cb)
 
         if object_id in self.selected_object_ids or object_type.name in self.selected_object_types:
 
@@ -290,11 +290,12 @@ class UICore(QtCore.QObject):
             caption,
             pose_stamped.pose.position.x,
             pose_stamped.pose.position.y,
+            pose_stamped.pose.position.z,
+            conversions.q2a(pose_stamped.pose.orientation),
             object_type,
             object_id,
             place_pose_changed=place_cb,
-            fixed=fixed,
-            yaw=conversions.quaternion2yaw(pose_stamped.pose.orientation)
+            fixed=fixed
         )
 
     def add_polygon(self, caption, obj_coords=[], poly_points=[],

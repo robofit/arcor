@@ -11,6 +11,7 @@ from desc_item import DescItem
 import math
 import numpy as np
 import tf
+from art_projected_gui.helpers import conversions
 
 translate = QtCore.QCoreApplication.translate
 
@@ -24,7 +25,7 @@ class ObjectItem(Item):
     """
 
     def __init__(self, scene, object_id, object_type, x,
-                 y, z, yaw, sel_cb=None, selected=False):
+                 y, z, quaternion=(0, 0, 0, 1), sel_cb=None, selected=False):
 
         self.object_id = object_id
         self.selected = selected
@@ -33,13 +34,13 @@ class ObjectItem(Item):
         # other angles
         self.object_type = object_type
         self.inflate = 0.01
-        self.hover_ratio = 1.1
         self.def_color = QtCore.Qt.gray
         self.lx = 0
         self.ly = 0
 
         self.desc = None
-        self.rpy = (0, 0, 0)
+        self.quaternion = (0, 0, 0, 1)
+        self.on_table = False
 
         super(ObjectItem, self).__init__(scene, x, y, z)
 
@@ -48,7 +49,7 @@ class ObjectItem(Item):
 
         self.update_text()
 
-        self.setRotation(yaw)
+        self.set_orientation(quaternion)
 
         if selected:
             self.set_selected()
@@ -77,58 +78,65 @@ class ObjectItem(Item):
                     2 +
                     self.m2pix(0.01)))
 
-    def set_pos(self, x, y, z, parent_coords=False):
+    def set_pos(self, x, y, z=None, parent_coords=False):
 
         super(ObjectItem, self).set_pos(x, y, z, parent_coords)
         self._update_desc_pos()
         self.update_text()
 
-        # TODO consider BB size + orientation
-        if z > 0.08:
-            self.set_enabled(False, True)
-        else:
-            self.set_enabled(True, True)
+    def get_yaw_axis(self):
 
-    def set_orientation(self, rpy):
+        ax = ((1, 0, 0), (0, 1, 0), (0, 0, 1))
 
-        self.rpy = rpy
+        for idx in range(0, len(ax)):
 
-        # if (self.rpy[0] == 0 or self.rpy[0] == 180) and self.rpy[1] == 0:
-        if (abs(self.rpy[0]) < 45 or abs(self.rpy[0]) > 135) and abs(self.rpy[1]) < 45:
+            res = conversions.qv_mult(self.quaternion, ax[idx])
 
-            # bez rotace kolem osy X nebo Y (nastojato)
+            # TODO euclid dist
+            if conversions.is_close(res[0], 0, abs_tol=0.1) and conversions.is_close(res[1], 0, abs_tol=0.1):
+
+                return idx
+
+        return -1
+
+    def set_orientation(self, q):
+
+        self.quaternion = q
+
+        ax = self.get_yaw_axis()
+
+        if ax == ObjectItem.Z:
+
             self.lx = self.m2pix(self.inflate + self.object_type.bbox.dimensions[0])
             self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[1])
 
+            sres = conversions.qv_mult(self.quaternion, (1, 0, 0))
+            angle = math.atan2(sres[1], sres[0])
+
+            self.on_table = self.position[2] < self.object_type.bbox.dimensions[2] + 0.05
+
+        elif ax in [ObjectItem.X, ObjectItem.Y]:
+
+            res = conversions.qv_mult(self.quaternion, (0, 0, 1))
+
+            self.lx = self.m2pix(self.inflate + self.object_type.bbox.dimensions[2])
+
+            # TODO use correct dimension (x/y) - now let's assume that x and y dimensions are same
+            self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[1])
+
+            angle = math.atan2(res[1], res[0])
+
+            self.on_table = self.position[2] < self.object_type.bbox.dimensions[0] + 0.05
+
         else:
 
-            # let's assume that x/y dimensions are the same
-            self.lx = self.m2pix(self.inflate + self.object_type.bbox.dimensions[1])
-            self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[2])
+            self.set_enabled(False, True)
+            return
 
-        # if (45 < abs(self.rpy[0]) < 135 and -45 < self.rpy[0] < 45) or (-45 < abs(self.rpy[0]) < 45 and -45 < abs(self.rpy[1]) < 45):
+        self.setRotation(-angle / (math.pi * 2) * 360)
 
-            # self.setRotation(-self.rpy[2])
-
-        # else:
-
-        # https://stackoverflow.com/questions/5782658/extracting-yaw-from-a-quaternion
-
-        q = tf.transformations.quaternion_from_euler(*self.rpy)
-
-        q[0] = 0.0
-        q[1] = 0.0
-
-        mag = math.sqrt(q[2] * q[2] + q[3] * q[3])
-        q[2] /= mag
-        q[3] /= mag
-
-        # rpy = tf.transformations.euler_from_quaternion(q)
-        # ang = rpy[2]
-
-        ang = 2 * math.acos(q[3])
-
-        print ang / (2 * 3.14) * 360
+        # TODO if not on table - display somewhere list of detected objects or what?
+        self.set_enabled(self.on_table, True)
 
         self.update()
 
@@ -159,14 +167,15 @@ class ObjectItem(Item):
 
             return QtCore.QRectF()
 
-        lx = self.hover_ratio * self.lx
-        ly = self.hover_ratio * self.ly
-        p = 1.0
-        return QtCore.QRectF(-lx / 2 - p, -ly / 2 - p, lx + 2 * p, ly + 2 * p)
+        p = 10.0
+        return QtCore.QRectF(-self.lx / 2 - p, -self.ly / 2 - p, self.lx + 2 * p, self.ly + 2 * p)
 
     def paint(self, painter, option, widget):
 
         if not self.scene():
+            return
+
+        if not self.on_table:
             return
 
         painter.setClipRect(option.exposedRect)
@@ -174,34 +183,22 @@ class ObjectItem(Item):
 
         rr = 10
 
+        painter.setBrush(QtCore.Qt.NoBrush)
+        pen = QtGui.QPen(self.def_color, 5, QtCore.Qt.SolidLine, QtCore.Qt.RoundCap)
+
         if self.selected:
 
-            painter.setBrush(QtCore.Qt.green)
-            painter.setPen(QtCore.Qt.green)
-
-            painter.drawRoundedRect(-self.lx / 2 * self.hover_ratio, -self.ly / 2 * self.hover_ratio,
-                                    self.lx * self.hover_ratio, self.ly * self.hover_ratio, rr, rr, QtCore.Qt.RelativeSize)
+            pen.setColor(QtCore.Qt.green)
+            pen.setWidth(10)
 
         elif self.hover:
 
-            painter.setBrush(QtCore.Qt.gray)
-            painter.setPen(QtCore.Qt.gray)
+            pen.setWidth(10)
 
-            painter.drawRoundedRect(-self.lx / 2 * self.hover_ratio, -self.ly / 2 * self.hover_ratio,
-                                    self.lx * self.hover_ratio, self.ly * self.hover_ratio, rr, rr, QtCore.Qt.RelativeSize)
-
-        painter.setBrush(self.def_color)
-        painter.setPen(self.def_color)
+        painter.setPen(pen)
 
         painter.drawRoundedRect(-self.lx / 2, -self.ly / 2, self.lx,
                                 self.ly, rr, rr, QtCore.Qt.RelativeSize)
-
-        fr = 1.0 - (self.hover_ratio - 1.0)  # fill ratio
-
-        painter.setBrush(QtCore.Qt.black)
-        painter.setPen(QtCore.Qt.black)
-        painter.drawRoundedRect(-self.lx / 2 * fr, -self.ly / 2 * fr,
-                                self.lx * fr, self.ly * fr, rr, rr, QtCore.Qt.RelativeSize)
 
     def cursor_press(self):
 
