@@ -37,7 +37,7 @@ class DescItem(Item):
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
-        if self.parentItem().hover:
+        if self.parentItem() and self.parentItem().hover:
 
             painter.setBrush(QtCore.Qt.white)
             painter.setPen(QtCore.Qt.white)

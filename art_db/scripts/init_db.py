@@ -432,9 +432,9 @@ def main(args):
     ot = ObjectType()
     ot.name = "profile_20_60"
     ot.bbox.type = SolidPrimitive.BOX
-    ot.bbox.dimensions.append(0.05)
-    ot.bbox.dimensions.append(0.05)
-    ot.bbox.dimensions.append(0.16)
+    ot.bbox.dimensions.append(0.04)
+    ot.bbox.dimensions.append(0.04)
+    ot.bbox.dimensions.append(0.13)
 
     store_object_type(ot)
 
