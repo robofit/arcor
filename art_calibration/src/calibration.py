@@ -7,46 +7,56 @@ import rospy
 from geometry_msgs.msg import Transform
 from art_calibration import ArtRobotCalibration, ArtCellCalibration
 from std_msgs.msg import Bool
+from art_msgs.srv import RecalibrateCell, RecalibrateCellRequest, RecalibrateCellResponse
 
 
 class ArtCalibration(object):
 
     def __init__(self):
-        self.robot_calibration = ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
-                                                     '/odom_combined', '/marker')
 
         self.cells = []
 
+        self.cells.append(ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
+                                              '/odom_combined', '/marker_detected'))
+
         for cell in rospy.get_param("cells", ["n1", "n2"]):
-
             self.cells.append(ArtCellCalibration(cell, '/art/' + cell + '/ar_pose_marker',
-                                                 '/' + cell + '_kinect2_link', '/marker'))
+                                                 '/' + cell + '_kinect2_link', '/marker_detected'))
 
-        self.calibrated_pub = rospy.Publisher('system_calibrated', Bool,
+        self.calibrated_pub = rospy.Publisher('/art/system/calibrated', Bool,
                                               queue_size=10, latch=True)
         self.calibrated = Bool()
         self.calibrated.data = False
         self.calibrated_sended = False
         self.calibrated_pub.publish(self.calibrated)
+        self.recalibrate_cell_service = rospy.Service("/art/system/calibrate_cell", RecalibrateCell,
+                                                      self.recalibrate_cell_cb)
 
         self.broadcaster = TransformBroadcaster()
 
+    def recalibrate_cell_cb(self, req):
+        resp = RecalibrateCellResponse()
+        resp.success = False
+        cell_name = req.cell_name
+        for cell in self.cells:
+            if cell.cell_id == cell_name:
+                cell.reset_markers_searching()
+                resp.success = True
+                break
+        else:
+            resp.error = "Unknown cell"
+        return resp
+
     def publish_calibration(self):
         calibrated = True
-        if self.robot_calibration.calibrated:
-            tr = self.robot_calibration.get_transform()
-            self.broadcaster.sendTransform(tr.translation, tr.rotation,
-                                           rospy.Time.now(), self.robot_calibration.world_frame,
-                                           self.robot_calibration.robot_frame)
 
-        else:
-            calibrated = True
+        time = rospy.Time.now() + rospy.Duration(1.0 / 30)
 
         for cell in self.cells:
             if cell.calibrated:
                 tr = cell.get_transform()
                 self.broadcaster.sendTransform(tr.translation, tr.rotation,
-                                               rospy.Time.now(), cell.world_frame,
+                                               time, cell.world_frame,
                                                cell.cell_frame)
 
             else:

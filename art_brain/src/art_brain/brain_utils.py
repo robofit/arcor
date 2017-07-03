@@ -2,7 +2,8 @@ import matplotlib.path as mplPath
 import numpy as np
 import rospy
 import actionlib
-from art_msgs.msg import PickPlaceAction, ObjInstance
+from art_msgs.msg import PickPlaceAction, ObjInstance, ArmNavigationAction, \
+    ArmNavigationGoal, ArmNavigationFeedback, ArmNavigationResult
 import copy
 from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import Pose
@@ -114,8 +115,16 @@ class ArtGripper(object):
     def __init__(self, name):
         self.name = name
         self.pp_client_name = "/art/pr2/" + name + "/pp"
+        self.manip_client_name = "/art/pr2/" + name + "/manipulation"
         self.pp_client = actionlib.SimpleActionClient(
             self.pp_client_name, PickPlaceAction)
+        self.manip_client = actionlib.SimpleActionClient(
+            self.manip_client_name, ArmNavigationAction)
+        rospy.loginfo("Waiting for " + str(name) + "'s gripper pick&place action client")
+        self.pp_client.wait_for_server()
+        rospy.loginfo("Waiting for " + str(name) + "'s gripper manipulation action client")
+        self.manip_client.wait_for_server()
+        rospy.loginfo("got it")
         self.holding_object = None
         self.last_pick_instruction_id = None
         self.group_name = name
@@ -131,6 +140,43 @@ class ArtGripper(object):
     def re_init(self):
         self.last_pick_instruction_id = None
         self.holding_object = None
+
+    def get_ready(self):
+        self.get_ready_client.call()
+
+    def move_to_user(self):
+        self.move_to_user_client.call()
+
+    def interaction_on(self):
+        self.interaction_on_client.call()
+
+    def interaction_off(self):
+        self.interaction_off()
+
+    def move_through_poses(self, poses):
+        goal = ArmNavigationGoal()
+        goal.operation = goal.MOVE_THROUGH_POSES
+        goal.poses = poses
+        self.manip_client.send_goal(goal)
+        rospy.sleep(1)
+        self.manip_client.wait_for_result()
+        if self.manip_client.get_result().result == ArmNavigationResult.SUCCESS:
+            return True
+        else:
+            return False
+
+    def touch_poses(self, poses, drill_duration=0):
+        goal = ArmNavigationGoal()
+        goal.operation = goal.TOUCH_POSES
+        goal.drill_duration = drill_duration
+        goal.poses = poses
+        self.manip_client.send_goal(goal)
+        rospy.sleep(1)
+        self.manip_client.wait_for_result()
+        if self.manip_client.get_result().result == ArmNavigationResult.SUCCESS:
+            return True
+        else:
+            return False
 
 
 class ArtBrainErrors(IntEnum):
@@ -148,10 +194,12 @@ class ArtBrainErrors(IntEnum):
     ERROR_LEARNING_NOT_IMPLEMENTED = 101
     ERROR_LEARNING_GRIPPER_NOT_DEFINED = 102
 
+    ERROR_ROBOT_HALTED = InterfaceState.ERROR_ROBOT_HALTED
     ERROR_OBJECT_MISSING = InterfaceState.ERROR_OBJECT_MISSING
     ERROR_OBJECT_MISSING_IN_POLYGON = InterfaceState.ERROR_OBJECT_MISSING_IN_POLYGON
     ERROR_NO_GRIPPER_AVAILABLE = InterfaceState.ERROR_NO_GRIPPER_AVAILABLE
     ERROR_OBJECT_IN_GRIPPER = InterfaceState.ERROR_OBJECT_IN_GRIPPER
     ERROR_NO_OBJECT_IN_GRIPPER = InterfaceState.ERROR_NO_OBJECT_IN_GRIPPER
     ERROR_PICK_FAILED = InterfaceState.ERROR_PICK_FAILED
+    ERROR_PICK_PLACE_SERVER_NOT_READY = InterfaceState.ERROR_PICK_PLACE_SERVER_NOT_READY
     ERROR_PLACE_FAILED = InterfaceState.ERROR_PLACE_FAILED

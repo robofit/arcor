@@ -37,13 +37,9 @@ from art_brain.art_brain_machine import ArtBrainMachine
 # !!!!!!!!!!!!!!sudo pip install enum34
 
 # pause/resume programu
-# manequin mod pro gravitation feeder
-# při pick object zkontrolovat pick_pose a pripadně použít
 # používat obě ramena robota -> done, otestovat na stole
 # při place zkontrolovat place pose (jestli tam není jiný objekt) -> done, otestovat na stole
-# při nepovedené operaci se zeptat usera jestli má zopakovat instrukci, pokračovat nebo skončit
-# action na začátku učení instrukce
-# action na konci učení instrukce
+
 # action pro provedení naučené instrukce
 
 # update_state_manager - automaticky volat z machine
@@ -67,7 +63,12 @@ class ArtBrain(object):
         self.fsm.state_pick_object_id = self.state_pick_object_id
         self.fsm.state_place_to_pose = self.state_place_to_pose
         self.fsm.state_place_to_grid = self.state_place_to_grid
+        self.fsm.state_path_through_points = self.state_path_through_points
+        self.fsm.state_welding_points = self.state_welding_points
+        self.fsm.state_welding_seam = self.state_welding_seam
+        self.fsm.state_drill_points = self.state_drill_points
         self.fsm.state_program_error = self.state_program_error
+        self.fsm.state_program_paused = self.state_program_paused
         self.fsm.state_program_finished = self.state_program_finished
         self.fsm.state_program_load_instruction = self.state_program_load_instruction
         self.fsm.state_learning_init = self.state_learning_init
@@ -77,6 +78,10 @@ class ArtBrain(object):
         self.fsm.state_learning_pick_object_id = self.state_learning_pick_object_id
         self.fsm.state_learning_place_to_pose = self.state_learning_place_to_pose
         self.fsm.state_learning_place_to_grid = self.state_learning_place_to_grid
+        self.fsm.state_learning_pick_from_polygon_run = self.state_learning_pick_from_polygon_run
+        self.fsm.state_learning_pick_from_feeder_run = self.state_learning_pick_from_feeder_run
+        self.fsm.state_learning_pick_object_id_run = self.state_learning_pick_object_id_run
+        self.fsm.state_learning_place_to_pose_run = self.state_learning_place_to_pose_run
         self.fsm.state_learning_wait = self.state_learning_wait
         self.fsm.state_learning_step_done = self.state_learning_step_done
         self.fsm.state_learning_step_error = self.state_learning_step_error
@@ -88,6 +93,8 @@ class ArtBrain(object):
         self.user_id = 0
         self.objects = InstancesArray()
         self.executing_program = False
+        self.program_paused = False
+        self.program_pause_request = False
         self.learning = False
         self.instruction = None
         self.holding_object_left = None
@@ -98,6 +105,9 @@ class ArtBrain(object):
         self.table_calibrating = False
         self.cells_calibrated = False
         self.system_calibrated = False
+        self.motors_halted = True
+        self.initialized = False
+        self.projectors_calibrated = False
 
         self.learning_block_id = None
         self.learning_item_id = None
@@ -129,12 +139,21 @@ class ArtBrain(object):
         self.table_calibrating_sub = rospy.Subscriber(
             "/art/interface/touchtable/calibrating", Bool, self.table_calibrating_cb)
         self.system_calibrated_sub = rospy.Subscriber(
-            "/system_calibrated", Bool, self.system_calibrated_cb)
+            "/art/system/calibrated", Bool, self.system_calibrated_cb)
+        self.motors_halted_sub = rospy.Subscriber(
+            "/pr2_ethercat/motors_halted", Bool, self.motors_halted_cb)
+        self.projectors_calibrated_sub = rospy.Subscriber(
+            "/art/interface/projected_gui/app/projectors_calibrated", Bool, self.projectors_calibrated_cb)
 
         self.srv_program_start = rospy.Service(
             '/art/brain/program/start', startProgram, self.program_start_cb)
         self.srv_program_stop = rospy.Service(
-            '/art/brain/program/stop', Empty, self.program_stop_cb)
+            '/art/brain/program/stop', Trigger, self.program_stop_cb)
+
+        self.srv_program_pause = rospy.Service(
+            '/art/brain/program/pause', Trigger, self.program_pause_cb)
+        self.srv_program_resume = rospy.Service(
+            '/art/brain/program/resume', Trigger, self.program_resume_cb)
 
         self.srv_learning_start = rospy.Service(
             '/art/brain/learning/start', Trigger, self.learning_start_cb)
@@ -151,10 +170,6 @@ class ArtBrain(object):
             LearningRequestAction,
             execute_cb=self.learning_request_cb,
             auto_start=True)
-
-        # self.srv_program_pause = rospy.Service(/art/brain/program/pause', Empty, self.program_pause_cb)
-        # self.srv_program_resume = rospy.Service(/art/brain/program/resume',
-        # Empty, self.program_resume_cb)
 
         self.state_manager = InterfaceStateManager(
             InterfaceState.BRAIN_ID,
@@ -204,6 +219,30 @@ class ArtBrain(object):
         # self.select_arm_srv_client = ArtBrainUtils.create_service_client(
         #    '/art/fuzzy/select_arm', SelectArm)
 
+        r = rospy.Rate(1)
+        while not self.system_calibrated:
+            if rospy.is_shutdown():
+                return
+            rospy.loginfo("Waiting for system calibration")
+            r.sleep()
+
+        self.calibrate_projectors_srv_client = ArtBrainUtils.create_service_client(
+            '/art/interface/projected_gui/calibrate_projectors', Trigger)
+
+        if not self.projectors_calibrated:
+
+            resp = self.calibrate_projectors_srv_client.call()
+
+            if not resp.success:
+
+                rospy.logerr("Failed to start projector calibration: " + resp.message)
+                # TODO what to do?
+
+            rospy.loginfo("Waiting for projectors to calibrate...")
+            while not self.projectors_calibrated:
+
+                rospy.sleep(1)
+
         if not self.table_calibrated:
             rospy.loginfo(
                 'Waiting for /art/interface/touchtable/calibrate service')
@@ -224,13 +263,7 @@ class ArtBrain(object):
                 while not self.table_calibrated and self.table_calibrating:
                     rospy.sleep(1)
 
-        r = rospy.Rate(1)
-        while not self.is_everything_calibrated():
-            if rospy.is_shutdown():
-                return
-            rospy.loginfo("Waiting for calibration")
-            r.sleep()
-
+        self.initialized = True
         self.fsm.init()
 
     # ***************************************************************************************
@@ -266,6 +299,8 @@ class ArtBrain(object):
         self.instruction = self.ph.get_item_msg(self.block_id, item_id)
 
         self.executing_program = True
+        self.program_paused = False
+        self.program_pause_request = False
         if self.left_gripper is not None:
             self.left_gripper.re_init
         if self.right_gripper is not None:
@@ -276,6 +311,7 @@ class ArtBrain(object):
 
     def state_program_run(self, event):
         rospy.loginfo('state_program_run')
+
         if not self.executing_program:
             self.finished()
             return
@@ -283,7 +319,8 @@ class ArtBrain(object):
             self.fsm.error(severity=InterfaceState.SEVERE,
                            error=ArtBrainErrors.ERROR_NO_INSTRUCTION)
             return
-
+        if not self.check_robot():
+            return
         rospy.logdebug('Program id: ' +
                        str(self.ph.get_program_id()) +
                        ', item id: ' +
@@ -298,6 +335,10 @@ class ArtBrain(object):
             ProgramItem.PICK_OBJECT_ID: self.fsm.pick_object_id,
             ProgramItem.PLACE_TO_POSE: self.fsm.place_to_pose,
             ProgramItem.PLACE_TO_GRID: self.fsm.place_to_grid,
+            ProgramItem.PATH_THROUGH_POINTS: self.fsm.path_through_points,
+            ProgramItem.WELDING_POINTS: self.fsm.welding_points,
+            ProgramItem.WELDING_SEAM: self.fsm.welding_seam,
+            ProgramItem.DRILL_POINTS: self.fsm.drill_points,
             ProgramItem.WAIT_FOR_USER: self.fsm.wait_for_user,
             ProgramItem.WAIT_UNTIL_USER_FINISHES: self.fsm.wait_until_user_finishes,
         }
@@ -310,40 +351,21 @@ class ArtBrain(object):
             return
         instruction_transition()
 
-        if not self.executing_program:
+        '''if not self.executing_program:
             self.fsm.error(severity=InterfaceState.SEVERE,
                            error=ArtBrainErrors.ERROR_NOT_EXECUTING_PROGRAM)
-            return
+            return'''
 
     def state_pick_from_polygon(self, event):
         rospy.loginfo('state_pick_from_polygon')
-        obj = ArtBrainUtils.get_pick_obj_from_polygon(
-            self.instruction, self.objects)
-        if obj is None or obj.object_id is None:
-            self.fsm.error(severity=InterfaceState.WARNING,
-                           error=ArtBrainErrors.ERROR_OBJECT_MISSING_IN_POLYGON)
-            self.state_manager.update_program_item(
-                self.ph.get_program_id(), self.block_id, self.instruction)
+        if not self.check_robot():
             return
-        self.state_manager.update_program_item(
-            self.ph.get_program_id(), self.block_id, self.instruction, {
-                "SELECTED_OBJECT_ID": obj.object_id})
-        gripper = self.get_gripper(obj=obj)
-        if not self.check_gripper_for_pick(gripper):
-            return
-
-        if self.pick_object_by_id(obj, gripper, pick_only_y_axis=True):
-            gripper.holding_object = obj
-            gripper.last_pick_instruction_id = self.instruction.id
-            self.fsm.done(success=True)
-
-        else:
-            self.fsm.error(severity=InterfaceState.WARNING,
-                           error=ArtBrainErrors.ERROR_PICK_FAILED)
+        self.pick_object_from_polygon(self.instruction)
 
     def state_pick_from_feeder(self, event):
         rospy.loginfo('state_pick_from_feeder')
-
+        if not self.check_robot():
+            return
         obj = ArtBrainUtils.get_pick_obj_from_feeder(self.instruction)
         if obj is None:
             self.fsm.error(severity=InterfaceState.ERROR,
@@ -368,6 +390,8 @@ class ArtBrain(object):
             self.done(success=False)
 
     def state_pick_object_id(self, event):
+        if not self.check_robot():
+            return
         rospy.loginfo('state_pick_object_id')
         obj = ArtBrainUtils.get_pick_obj(self.instruction, self.objects)
         if obj is None or obj.object_id is None:
@@ -395,55 +419,53 @@ class ArtBrain(object):
 
     def state_place_to_pose(self, event):
         rospy.loginfo('state_place_to_pose')
-        pose = ArtBrainUtils.get_place_pose(self.instruction)
-
-        # TODO place pose
-
-        if pose is None or len(pose) < 1:
-            self.fsm.error(severity=InterfaceState.ERROR,
-                           error=ArtBrainErrors.ERROR_PLACE_POSE_NOT_DEFINED)
-            self.state_manager.update_program_item(
-                self.ph.get_program_id(), self.block_id, self.instruction)
+        if not self.check_robot():
             return
+        self.place_object_to_pose(self.instruction)
+
+    def state_path_through_points(self, event):
+        rospy.loginfo('state_path_through_points')
+        if not self.check_robot():
+            return
+        gripper = self.get_gripper_path_following()
+        if gripper.move_through_poses(self.instruction.pose):
+            self.fsm.done()
         else:
-            if len(self.instruction.ref_id) < 1:
-                self.fsm.error(
-                    severity=InterfaceState.ERROR,
-                    error=ArtBrainErrors.ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE)
-                self.state_manager.update_program_item(
-                    self.ph.get_program_id(), self.block_id, self.instruction)
-                return
-            rospy.logdebug(self.instruction)
-            gripper = self.get_gripper_by_pick_instruction_id(
-                self.instruction.ref_id)
-            if gripper is None:
-                self.fsm.error(severity=InterfaceState.WARNING,
-                               error=ArtBrainErrors.ERROR_PLACE_FAILED)
-            # TODO what to do if gripper is None?
-            self.check_gripper_for_place(gripper)
-            if gripper is None:
-                return
-            if gripper.holding_object is None:
-                rospy.logerr("Robot is not holding selected object")
-                self.fsm.error(
-                    severity=InterfaceState.WARNING,
-                    error=ArtBrainErrors.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
-                self.state_manager.update_program_item(
-                    self.ph.get_program_id(), self.block_id, self.instruction)
-                return
-            self.state_manager.update_program_item(
-                self.ph.get_program_id(), self.block_id, self.instruction,
-                {"SELECTED_OBJECT_ID": gripper.holding_object.object_id})
-            if self.place_object(gripper.holding_object, pose[0], gripper):
-                gripper.holding_object = None
-                # gripper.last_pick_instruction_id = self.instruction.id
-                self.fsm.done(success=True)
-                return
-            else:
-                gripper.get_ready_clinet.call()
-                self.fsm.error(severity=InterfaceState.WARNING,
-                               error=ArtBrainErrors.ERROR_PLACE_FAILED)
-                return
+            # TODO: error
+            return
+
+    def state_welding_points(self, event):
+        rospy.loginfo('state_welding_points')
+        if not self.check_robot():
+            return
+        gripper = self.get_gripper_path_following()  # TODO:
+        if gripper.touch_poses(self.instruction.pose):
+            self.fsm.done()
+        else:
+            # TODO: error
+            return
+
+    def state_welding_seam(self, event):
+        rospy.loginfo('state_welding_seam')
+        if not self.check_robot():
+            return
+        gripper = self.get_gripper_path_following()  # TODO:
+        if gripper.move_through_poses(self.instruction.pose):
+            self.fsm.done()
+        else:
+            # TODO: error
+            return
+
+    def state_drill_points(self, event):
+        rospy.loginfo('state_drill_points')
+        if not self.check_robot():
+            return
+        gripper = self.get_gripper_path_following()  # TODO:
+        if gripper.touch_poses(self.instruction.pose, drill_duration=5):
+            self.fsm.done()
+        else:
+            # TODO: error
+            return
 
     def state_place_to_grid(self, event):
         rospy.loginfo('state_place_to_grid')
@@ -510,12 +532,14 @@ class ArtBrain(object):
 
     def state_get_ready(self, event):
         rospy.loginfo('state_get_ready')
+        if not self.check_robot():
+            return
         self.state_manager.update_program_item(
             self.ph.get_program_id(), self.block_id, self.instruction)
         # TODO: call some service to set PR2 to ready position
         # TODO handle if it fails
-        self.right_gripper.get_ready_client.call()
-        self.left_gripper.get_ready_client.call()
+        self.right_gripper.get_ready()
+        self.left_gripper.get_ready()
         self.fsm.done(success=True)
 
     def state_program_load_instruction(self, event):
@@ -542,7 +566,18 @@ class ArtBrain(object):
             self.executing_program = False
             self.fsm.error()
             return
+        if self.program_pause_request:
+            self.fsm.pause()
+            return
         self.fsm.done()
+
+    def state_program_paused(self, event):
+        rospy.loginfo('state_program_paused')
+        self.state_manager.set_system_state(
+            InterfaceState.STATE_PROGRAM_STOPPED)
+        self.state_manager.send()
+        self.program_paused = True
+        self.program_pause_request = False
 
     def state_program_finished(self, event):
         rospy.loginfo('state_program_finished')
@@ -567,23 +602,25 @@ class ArtBrain(object):
             # handle
             self.fsm.program_error_shutdown()
             return
-            pass
+
         elif severity == InterfaceState.ERROR:
             self.fsm.program_error_fatal()
             return
-            pass
+
         elif severity == InterfaceState.WARNING:
             if error == ArtBrainErrors.ERROR_OBJECT_MISSING or \
                error == ArtBrainErrors.ERROR_OBJECT_MISSING_IN_POLYGON:
                 rospy.logwarn("Object is missing")
             elif error == ArtBrainErrors.ERROR_PICK_FAILED:
                 rospy.logwarn("Pick failed")
-                self.left_gripper.get_ready_client.call()
-                self.right_gripper.get_ready_client.call()
+                self.left_gripper.get_ready()
+                self.left_gripper.re_init()
+                self.right_gripper.get_ready()
+                self.right_gripper.re_init()
             rospy.logwarn("Waiting for user response")
 
             return
-            pass
+
         elif severity == InterfaceState.INFO:
             (self.block_id, item_id) = self.ph.get_id_on_failure(
                 self.block_id, self.instruction.id)
@@ -609,8 +646,14 @@ class ArtBrain(object):
 
     def state_learning_pick_from_polygon(self, event):
         rospy.loginfo('state_learning_pick_from_polygon')
-        # i has nothing to do yet
+        # i have nothing to do yet
 
+        pass
+
+    def state_learning_pick_from_polygon_run(self, event):
+        rospy.loginfo('state_learning_pick_from_polygon_run')
+        instruction = self.state_manager.state.program_current_item  # type: ProgramItem
+        self.pick_object_from_polygon(instruction, update_state_manager=False)
         pass
 
     def state_learning_pick_from_feeder(self, event):
@@ -632,6 +675,11 @@ class ArtBrain(object):
                 "Can't change gripper interaction state: " + str(result.message))
             # TODO: check arm state, inform user
 
+    def state_learning_pick_from_feeder_run(self, event):
+        rospy.loginfo('state_learning_pick_from_feeder_run')
+        rospy.sleep(2)
+        self.fsm.done()
+
     def state_learning_pick_from_feeder_exit(self, event):
         rospy.loginfo("state_learning_pick_from_feeder_exit")
         self.left_gripper.interaction_off_client.call()
@@ -649,25 +697,48 @@ class ArtBrain(object):
         rospy.loginfo('state_learning_place_to_grid')
         pass
 
+    def state_learning_pick_object_id_run(self, event):
+        rospy.loginfo('state_learning_pick_object_id_run')
+        rospy.sleep(2)
+        self.fsm.done()
+
+    def state_learning_place_to_pose_run(self, event):
+        rospy.loginfo('state_learning_place_to_pose_run')
+        instruction = self.state_manager.state.program_current_item  # type: ProgramItem
+        self.place_object_to_pose(instruction, update_state_manager=False, get_ready_after_place=True)
+
     def state_learning_wait(self, event):
         rospy.loginfo('state_learning_wait')
         pass
 
     def state_learning_step_error(self, event):
         rospy.loginfo('state_learning_step_error')
-        severity = event.kwargs.get('severity', ArtBrainMachine.SEVERE)
+        severity = event.kwargs.get('severity', InterfaceState.SEVERE)
         error = event.kwargs.get('error', None)
+        rospy.loginfo(severity)
+        rospy.loginfo(error)
+        self.state_manager.set_error(InterfaceState.INFO, error)
+        self.state_manager.set_error(0, 0)
         if error is None:
             pass
             # TODO: kill brain
-        if severity == ArtBrainMachine.SEVERE:
+        if severity == InterfaceState.SEVERE:
             pass
             # TODO: kill brain
-        elif severity == ArtBrainMachine.ERROR:
+        elif severity == InterfaceState.ERROR:
             pass
-        elif severity == ArtBrainMachine.WARNING:
-            pass
-        elif severity == ArtBrainMachine.INFO:
+        elif severity == InterfaceState.WARNING:
+            if error == ArtBrainErrors.ERROR_OBJECT_MISSING or \
+               error == ArtBrainErrors.ERROR_OBJECT_MISSING_IN_POLYGON:
+                rospy.logwarn("Object is missing")
+            elif error == ArtBrainErrors.ERROR_PICK_FAILED:
+                rospy.logwarn("Pick failed")
+                self.left_gripper.get_ready()
+                self.left_gripper.re_init()
+                self.right_gripper.get_ready()
+                self.right_gripper.re_init()
+
+        elif severity == InterfaceState.INFO:
 
             pass
         pass
@@ -686,6 +757,33 @@ class ArtBrain(object):
     # ***************************************************************************************
     #                                     MANIPULATION
     # ***************************************************************************************
+
+    def pick_object_from_polygon(self, instruction, update_state_manager=True):
+        obj = ArtBrainUtils.get_pick_obj_from_polygon(
+            instruction, self.objects)
+        if obj is None or obj.object_id is None:
+            self.fsm.error(severity=InterfaceState.WARNING,
+                           error=ArtBrainErrors.ERROR_OBJECT_MISSING_IN_POLYGON)
+            if update_state_manager:
+                self.state_manager.update_program_item(
+                    self.ph.get_program_id(), self.block_id, instruction)
+            return
+        if update_state_manager:
+            self.state_manager.update_program_item(
+                self.ph.get_program_id(), self.block_id, instruction, {
+                    "SELECTED_OBJECT_ID": obj.object_id})
+        gripper = self.get_gripper(obj=obj)
+        if not self.check_gripper_for_pick(gripper):
+            return
+
+        if self.pick_object_by_id(obj, gripper, pick_only_y_axis=True):
+            gripper.holding_object = obj
+            gripper.last_pick_instruction_id = instruction.id
+            self.fsm.done(success=True)
+
+        else:
+            self.fsm.error(severity=InterfaceState.WARNING,
+                           error=ArtBrainErrors.ERROR_PICK_FAILED)
 
     def pick_object_by_id(self, obj, gripper, pick_only_y_axis=False):
 
@@ -729,6 +827,60 @@ class ArtBrain(object):
         else:
             return False
 
+    def place_object_to_pose(self, instruction, update_state_manager=True, get_ready_after_place=False):
+        pose = ArtBrainUtils.get_place_pose(instruction)
+
+        # TODO place pose
+
+        if pose is None or len(pose) < 1:
+            self.fsm.error(severity=InterfaceState.ERROR,
+                           error=ArtBrainErrors.ERROR_PLACE_POSE_NOT_DEFINED)
+            if update_state_manager:
+                self.state_manager.update_program_item(
+                    self.ph.get_program_id(), self.block_id, instruction)
+            return
+        else:
+            if len(instruction.ref_id) < 1:
+                self.fsm.error(
+                    severity=InterfaceState.ERROR,
+                    error=ArtBrainErrors.ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE)
+                if update_state_manager:
+                    self.state_manager.update_program_item(
+                        self.ph.get_program_id(), self.block_id, instruction)
+                return
+            rospy.logdebug(self.instruction)
+            gripper = self.get_gripper_by_pick_instruction_id(
+                instruction.ref_id)
+            rospy.loginfo("before check")
+            if not self.check_gripper_for_place(gripper):
+                return
+            rospy.loginfo("after check")
+            if gripper.holding_object is None:
+                rospy.logerr("Robot is not holding selected object")
+                self.fsm.error(
+                    severity=InterfaceState.WARNING,
+                    error=ArtBrainErrors.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
+                if update_state_manager:
+                    self.state_manager.update_program_item(
+                        self.ph.get_program_id(), self.block_id, instruction)
+                return
+            if update_state_manager:
+                self.state_manager.update_program_item(
+                    self.ph.get_program_id(), self.block_id, instruction,
+                    {"SELECTED_OBJECT_ID": gripper.holding_object.object_id})
+            if self.place_object(gripper.holding_object, pose[0], gripper):
+                gripper.holding_object = None
+                # gripper.last_pick_instruction_id = self.instruction.id
+                if get_ready_after_place:
+                    gripper.get_ready()
+                self.fsm.done(success=True)
+                return
+            else:
+                gripper.get_ready()
+                self.fsm.error(severity=InterfaceState.WARNING,
+                               error=ArtBrainErrors.ERROR_PLACE_FAILED)
+                return
+
     def place_object(self, obj, place, gripper, pick_only_y_axis=False):
         rospy.logdebug(obj)
         goal = PickPlaceGoal()
@@ -747,7 +899,7 @@ class ArtBrain(object):
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.header.frame_id = self.objects.header.frame_id
         # TODO: how to deal with this?
-        goal.pose.pose.position.z = 0.1  # + obj.bbox.dimensions[2]/2
+        goal.pose.pose.position.z = 0.05  # + obj.bbox.dimensions[2]/2
 
         if pick_only_y_axis:
             goal.pose.pose.orientation.x = math.sqrt(0.5)
@@ -768,6 +920,11 @@ class ArtBrain(object):
     def program_start_timer_cb(self, event):
         self.fsm.program_start()
 
+    def program_resume_timer_cb(self, event):
+        self.state_manager.set_system_state(
+            InterfaceState.STATE_PROGRAM_RUNNING)
+        self.fsm.resume()
+
     def program_try_again_timer_cb(self, event):
         self.fsm.try_again()
 
@@ -787,6 +944,14 @@ class ArtBrain(object):
     def is_everything_calibrated(self, event=None):
 
         return self.table_calibrated and self.system_calibrated
+
+    def check_robot(self):
+        if self.motors_halted:
+            self.fsm.error(severity=InterfaceState.WARNING,
+                           error=ArtBrainErrors.ERROR_ROBOT_HALTED)
+            return False
+        else:
+            return True
 
     def get_gripper(self, obj=None, pick_pose=None):
 
@@ -843,6 +1008,15 @@ class ArtBrain(object):
         else:
             return None
 
+    def get_gripper_path_following(self):
+        if not self.gripper_usage == ArtGripper.GRIPPER_BOTH:
+            if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
+                return self.left_gripper
+            elif self.gripper_usage == ArtGripper.GRIPPER_RIGHT:
+                return self.right_gripper
+        else:
+            return self.right_gripper
+
     def check_place_pose(self, place_pose, obj):
         w1 = self.get_object_max_width(obj)
         if w1 is None:
@@ -864,7 +1038,7 @@ class ArtBrain(object):
     def check_gripper(self, gripper):
         if gripper is None:
             rospy.logerr("No gripper!")
-            self.fsm.error(severity=InterfaceState.ERROR,
+            self.fsm.error(severity=InterfaceState.SEVERE,
                            error=ArtBrainErrors.ERROR_NO_GRIPPER_AVAILABLE)
             return False
 
@@ -872,6 +1046,12 @@ class ArtBrain(object):
             rospy.logerr("No pick place client!")
             self.fsm.error(severity=InterfaceState.SEVERE,
                            error=ArtBrainErrors.ERROR_GRIPPER_PP_CLIENT_MISSING)
+            return False
+
+        if not gripper.pp_client.wait_for_server(rospy.Duration(2)):
+            rospy.logerr("Pick place server is not running!")
+            self.fsm.error(severity=InterfaceState.WARNING,
+                           error=ArtBrainErrors.ERROR_PICK_PLACE_SERVER_NOT_READY)
             return False
 
         return True
@@ -884,7 +1064,7 @@ class ArtBrain(object):
             rospy.logwarn("Place: gripper " + gripper.name +
                           " is not holding object")
             self.fsm.error(severity=InterfaceState.WARNING,
-                           error=ArtBrainErrors.ERROR_OBJECT_IN_GRIPPER)
+                           error=ArtBrainErrors.ERROR_NO_OBJECT_IN_GRIPPER)
             return False
 
         return True
@@ -908,6 +1088,31 @@ class ArtBrain(object):
     # ***************************************************************************************
     #                                     ROS COMMUNICATION
     # ***************************************************************************************
+
+    def program_pause_cb(self, req):
+        resp = TriggerResponse()
+        resp.success = True
+        if not self.executing_program:
+            resp.success = False
+            resp.message = "Program si not running!"
+        else:
+            self.program_pause_request = True
+        return resp
+
+    def program_resume_cb(self, req):
+        resp = TriggerResponse()
+        resp.success = True
+        if not self.executing_program:
+            resp.success = False
+            resp.message = "Program si not running!"
+        elif not self.program_paused:
+            resp.success = False
+            resp.message = "Program is not paused"
+        else:
+            self.program_paused = False
+            rospy.Timer(rospy.Duration(
+                1), self.program_resume_timer_cb, oneshot=True)
+        return resp
 
     def program_start_cb(self, req):
 
@@ -948,11 +1153,16 @@ class ArtBrain(object):
         return resp
 
     def program_stop_cb(self, req):
+        resp = TriggerResponse()
+        resp.success = True
+        if self.executing_program:
+            rospy.loginfo('Stopping program')
+            self.executing_program = False
+        else:
+            resp.success = False
+            resp.message = "Program is not running"
 
-        rospy.loginfo('Stopping program')
-        self.executing_program = False
-
-        return EmptyResponse()
+        return resp
 
     def program_error_response_cb(self, req):
         resp = ProgramErrorResolveResponse()
@@ -1035,6 +1245,23 @@ class ArtBrain(object):
         '''
         pass
 
+    def motors_halted_cb(self, req):
+        if not self.initialized:
+            return
+        if self.motors_halted and not req.data:
+            if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
+                self.left_gripper.get_ready()
+            elif self.gripper_usage == ArtGripper.GRIPPER_RIGHT:
+                self.right_gripper.get_ready()
+            elif self.gripper_usage == ArtGripper.GRIPPER_BOTH:
+                self.left_gripper.get_ready()
+                self.right_gripper.get_ready()
+        self.motors_halted = req.data
+
+    def projectors_calibrated_cb(self, msg):
+
+        self.projectors_calibrated = msg.data
+
     def user_status_cb(self, req):
         self.user_id = req.user_id
 
@@ -1108,9 +1335,24 @@ class ArtBrain(object):
         elif goal.request == LearningRequestGoal.EXECUTE_ITEM:
             # self.fsm.error(severity=InterfaceState.INFO,
             #                error=InterfaceState.ERROR_LEARNING_NOT_IMPLEMENTED)
-            result.success = False
-            result.message = "Not implemented!"
-            self.as_learning_request.set_aborted(result)
+            if self.fsm.is_learning_run:
+                if instruction.type == instruction.PICK_OBJECT_ID:
+                    self.fsm.pick_object_id_run()
+                    pass
+                elif instruction.type == instruction.PICK_FROM_FEEDER:
+                    self.fsm.pick_from_feeder_run(gripper=self.left_gripper)
+                    # TODO: choose which gripper use
+                    # TODO: check if it worked
+                elif instruction.type == instruction.PICK_FROM_POLYGON:
+                    self.fsm.pick_from_polygon_run()
+                    pass
+                elif instruction.type == instruction.PLACE_TO_POSE:
+                    self.fsm.place_to_pose_run()
+            else:
+                result.success = False
+                result.message = "Not in learning state!"
+                self.as_learning_request.set_aborted(result)
+                return
             return
             pass
         elif goal.request == LearningRequestGoal.DONE:

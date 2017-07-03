@@ -6,6 +6,7 @@ from PyQt4 import QtCore
 translate = QtCore.QCoreApplication.translate
 
 error_dict = {
+    InterfaceState.ERROR_ROBOT_HALTED: translate("ErrorStrings", "Robot's motors halted."),
     InterfaceState.ERROR_UNKNOWN: translate("ErrorStrings", "Unknown error"),
     InterfaceState.ERROR_OBJECT_MISSING: translate("ErrorStrings", "Cannot find object"),
     InterfaceState.ERROR_OBJECT_MISSING_IN_POLYGON: translate("ErrorStrings", "There is no object left in the polygon"),

@@ -292,12 +292,12 @@ def main(args):
 
     # -------------------------------------------------------------------------------------------
     prog = Program()
-    prog.header.id = 1
-    prog.header.name = "Place to grid"
+    prog.header.id = 3
+    prog.header.name = "Welding seam"
 
     pb = ProgramBlock()
     pb.id = 1  # can't be zero
-    pb.name = "First Block"
+    pb.name = "First block"
     pb.on_success = 1
     pb.on_failure = 0
     prog.blocks.append(pb)
@@ -311,43 +311,116 @@ def main(args):
 
     p = ProgramItem()
     p.id = 2
-    p.on_success = 3
+    p.on_success = 2
     p.on_failure = 0
-    p.type = ProgramItem.WAIT_FOR_USER
+    p.type = ProgramItem.WELDING_SEAM
+    p.object.append("")
+    pf = PoseStamped()
+    pf.header.frame_id = "marker"
+    pf.pose.position.x = 0.4
+    pf.pose.position.y = 0.4
+    pf.pose.position.z = 0.30
+    pf.pose.orientation.x = -0.707
+    pf.pose.orientation.y = 0
+    pf.pose.orientation.z = 0.707
+    pf.pose.orientation.w = 0
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.5
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.y = 0.2
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.4
+    p.pose.append(deepcopy(pf))
     pb.items.append(deepcopy(p))
 
-    # p = ProgramItem()
-    # p.id = 3
-    # p.on_success = 4
-    # p.on_failure = 0
-    # p.type = ProgramItem.PICK_OBJECT_ID
-    # p.object.append("3")
-    # pf = PoseStamped()
-    # pf.header.frame_id = "marker"
-    # p.pose.append(pf)
-    # pb.items.append(deepcopy(p))
+    store_program(prog)
+
+    # -------------------------------------------------------------------------------------------
+    prog = Program()
+    prog.header.id = 4
+    prog.header.name = "Welding points"
+
+    pb = ProgramBlock()
+    pb.id = 1  # can't be zero
+    pb.name = "First block"
+    pb.on_success = 1
+    pb.on_failure = 0
+    prog.blocks.append(pb)
 
     p = ProgramItem()
-    p.id = 3
-    p.on_success = 4
+    p.id = 1
+    p.on_success = 2
     p.on_failure = 0
-    p.type = ProgramItem.PICK_FROM_POLYGON
-    p.object.append("")
-    p.object.append("profile_20_60")
-    pp = PolygonStamped()
-    pp.header.frame_id = "marker"
-    p.polygon.append(pp)
+    p.type = ProgramItem.GET_READY
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
-    p.id = 4
-    p.on_success = 3
+    p.id = 2
+    p.on_success = 2
     p.on_failure = 0
-    p.type = ProgramItem.PLACE_TO_GRID
+    p.type = ProgramItem.WELDING_POINTS
     p.object.append("")
-    pp = PolygonStamped()
-    p.polygon.append(pp)
-    p.ref_id.append(3)
+    pf = PoseStamped()
+    pf.header.frame_id = "marker"
+    pf.pose.position.x = 0.4
+    pf.pose.position.y = 0.4
+    pf.pose.position.z = 0.30
+    pf.pose.orientation.x = -0.707
+    pf.pose.orientation.y = 0
+    pf.pose.orientation.z = 0.707
+    pf.pose.orientation.w = 0
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.5
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.y = 0.2
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.4
+    p.pose.append(deepcopy(pf))
+    pb.items.append(deepcopy(p))
+
+    store_program(prog)
+
+    # -------------------------------------------------------------------------------------------
+    prog = Program()
+    prog.header.id = 5
+    prog.header.name = "Drill points"
+
+    pb = ProgramBlock()
+    pb.id = 1  # can't be zero
+    pb.name = "First block"
+    pb.on_success = 1
+    pb.on_failure = 0
+    prog.blocks.append(pb)
+
+    p = ProgramItem()
+    p.id = 1
+    p.on_success = 2
+    p.on_failure = 0
+    p.type = ProgramItem.GET_READY
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 2
+    p.on_success = 2
+    p.on_failure = 0
+    p.type = ProgramItem.DRILL_POINTS
+    p.object.append("")
+    pf = PoseStamped()
+    pf.header.frame_id = "marker"
+    pf.pose.position.x = 0.4
+    pf.pose.position.y = 0.4
+    pf.pose.position.z = 0.30
+    pf.pose.orientation.x = -0.707
+    pf.pose.orientation.y = 0
+    pf.pose.orientation.z = 0.707
+    pf.pose.orientation.w = 0
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.5
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.y = 0.2
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.4
+    p.pose.append(deepcopy(pf))
     pb.items.append(deepcopy(p))
 
     store_program(prog)

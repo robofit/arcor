@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_action_files(
   DIRECTORY action
   FILES PickPlace.action LocalizeAgainstUMF.action LearningRequest.action
+  ArmNavigation.action
 )
 
 add_message_files(
@@ -47,6 +48,7 @@ add_service_files(
     NotifyUser.srv
     ProgramErrorResolve.srv
     SelectArm.srv
+    RecalibrateCell.srv
 )
 
 generate_messages(
