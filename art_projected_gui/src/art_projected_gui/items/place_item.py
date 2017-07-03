@@ -44,6 +44,9 @@ class PlaceItem(ObjectItem):
                     self.point = PointItem(scene, self.rot_point[0], self.rot_point[1], self, self.point_changed)
         self.setZValue(50)
 
+    '''
+        Method which updates the position of attribute "rot_point" (instance of PointItem class).
+    '''
     def update_point(self):
 
         if self.rot_point is None:
@@ -92,7 +95,7 @@ class PlaceItem(ObjectItem):
         self.setRotation(angle)
         self.point.setRotation(-angle)
 
-        if self.other_items:    # zaroven nastavovat novu rotaciu vsetkym ostatnym objektom v gride
+        if self.other_items:    # changing rotation of every object in grid
             for it in self.other_items:
                 it.setRotation(self.rotation())
 
@@ -117,9 +120,9 @@ class PlaceItem(ObjectItem):
                         in_collision = True
                         break
                 if in_collision:
-                    self.rotation_changed([])  # v pripade ze su v kolizii, tak nechcem ulozit ich polohy, aby sa nesplnila podmienka
+                    self.rotation_changed([])  # in case of collision, new rotations of objects are NOT saved into the ProgramItem message
                 else:
-                    self.rotation_changed([self] + self.other_items)    # ulozenie novych rotacii objektov do ProgramItem spravy
+                    self.rotation_changed([self] + self.other_items)    # saving new rotations of objects into the ProgramItem message
             if self.place_pose_changed is not None:
                 self.place_pose_changed(self.get_pos(),  self.rotation())
 
@@ -138,5 +141,8 @@ class PlaceItem(ObjectItem):
             self.in_collision = False
             self.set_color(QtCore.Qt.white)
 
+    '''
+        Method which sets attribute "other_items".
+    '''
     def set_other_items(self, items):
         self.other_items = items

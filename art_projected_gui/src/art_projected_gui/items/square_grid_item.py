@@ -13,11 +13,11 @@ from art_projected_gui.helpers import conversions
 translate = QtCore.QCoreApplication.translate
 
 '''
-    Trieda vykresluje rohy gridu. Pokial sa s niektorym z rohov pohne, tak informuje rodica.
+    Class depicts grid corners. If some corner is moved, class informs its parent.
 '''
 class SquarePointItem(Item):
 
-    # Konstruktor triedy SquarePointItem
+    # Class constructor
     def __init__(self,  scene, x, y,  parent, corner, fixed, changed=False):
 
         self.outline_diameter = 0.025
@@ -30,28 +30,28 @@ class SquarePointItem(Item):
         self.fixed = fixed
 
     '''
-        Metoda vracia typ rohu (napr. BR).
+        Method returns type of the corner (e.g. BR = bottom-right)
     '''
     def get_corner(self):
 
         return self.corner
 
     '''
-        Metoda nastavuje atribut changed.
+        Method sets an attribute "changed".
     '''
     def set_changed(self, changed):
 
         self.changed = changed
 
     '''
-        Metoda vracia atribut changed.
+        Method returns an attribute "changed".
     '''
     def get_changed(self):
 
         return self.changed
 
     '''
-        Metoda definuje vonkajsie hranicu objektu ako pravouholnik.
+        Method defines the outer bounds of the item as a rectangle.
     '''
     def boundingRect(self):
 
@@ -60,7 +60,7 @@ class SquarePointItem(Item):
         return QtCore.QRectF(-es/2, -es/2, es, es)
 
     '''
-         Metoda vracia tvar rohu ako QPainterPath.
+         Method returns the shape of this corner as a QPainterPath in local coordinates.
     '''
     def shape(self):
 
@@ -71,6 +71,7 @@ class SquarePointItem(Item):
 
     '''
         Metoda nastavuje atribut changed a vola rodicovsku metodu point_changed(), ked sa pohne s rohom.
+        Method sets an attribute "changed" and calls parent's method "point_changed" when some corner is moved.
     '''
     def item_moved(self):
 
@@ -79,13 +80,14 @@ class SquarePointItem(Item):
 
     '''
         Metoda vola rodicovsku metodu point_changed, ked sa pusti roh.
+        Method calls parent's method "point_changed" when a corner is released.
     '''
     def cursor_release(self):
 
         self.parentItem().point_changed(True)
 
     '''
-        Metoda vykresluje roh.
+        Method paints the corner.
     '''
     def paint(self, painter, option, widget):
 
@@ -107,13 +109,13 @@ class SquarePointItem(Item):
 
 
 '''
-    Trieda implementuje vykreslovanie gridu. Zaistuje vykreslenie objektov v gride, tlacitok, popisku pod gridom.
-    Implementuje funkcionalitu gridu - zvacsovanie/zmensovanie gridu, rotaciu objektov v gride, zmenu medzery medzi
-    objektami, rovnomerne rozmiestnenie v gride.
+    Class draws a grid, objects in the grid, buttons and a text below this grid.
+    It implements grid's functionality such as increasing/decreasing grid proportions, rotation of objects in the grid,
+    changing spacing between objects and even distribution of objects in this grid.
 '''
 class SquareItem(Item):
 
-    # Konstruktor triedy SquareItem
+    # Class constructor
     def __init__(self,  scene, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points, scene_items, square_changed=None, fixed=False):
 
         self.scn = scene
@@ -122,7 +124,7 @@ class SquareItem(Item):
 
         self.scene_items = scene_items
         self.square_changed = square_changed
-        self.space = 0.05   # pripocitava sa k bbox objektu
+        self.space = 0.05   # is added to bbox of an object
 
         self.object_side_length_x = self.object_type.bbox.dimensions[0] + self.space
         self.object_side_length_y = self.object_type.bbox.dimensions[2] + self.space
@@ -139,8 +141,8 @@ class SquareItem(Item):
         if len(grid_points) == 0:
             self.min = [min_x, min_y]
             self.max = [min_x + square_width, min_y + square_height]
-            self.pom_min = self.min     # pre uchovanie povodnych hodnot, pretoze v update_bound sa y znehodnoti
-            self.pom_max = self.max     # a potrebujem povodne hodnoty k umiestnovaniu objektov v gride
+            self.pom_min = self.min     # to save original value because y is changed in update_bound
+            self.pom_max = self.max
         else:
             self.min = list(min(grid_points))
             self.max = list(max(grid_points))
@@ -171,7 +173,7 @@ class SquareItem(Item):
         self.pts.append(SquarePointItem(scene, self.min[0], self.max[1], self, "TL", self.fixed))  # top-left corner
 
         if len(poses) > 0 and self.fixed:
-            # vykresluje fixne objekty
+            # depicts fixed objects
             for pose in poses:
                 it = PlaceItem(
                     self.scn,
@@ -189,9 +191,9 @@ class SquareItem(Item):
                 )
                 self.items.append(it)
         else:
-            # vykresluje upravitelne objekty
+            # depicts editable objects
             for i, pose in enumerate(poses):
-                rot_point = None  # sluzi na ulozenie xy suradnic pre umiestnenie bodu na rotovanie objektov v gride
+                rot_point = None  # to save xy coordinates for rotation point (for rotating objects in a grid)
                 if i == 0:
                     rot = True
                     pom = self.find_corner("TL").get_pos()
@@ -219,18 +221,18 @@ class SquareItem(Item):
                 self.items.append(it)
 
             if self.items:
-                self.items[0].set_other_items(self.items[1:])   # riesi rotaciu objektov (preda sa pole objektov prvemu objektu, s ktorym ked sa rotuje, rotuje aj s ostatnymi)
-                self.plus_btn.setEnabled(True)  # uz mozno zvacsovat space
-                self.minus_btn.setEnabled(True)  # uz mozno zmensovat space
+                self.items[0].set_other_items(self.items[1:])   # rotation of all objects in a grid (list of all objects is handed over to the first object. When the first object is rotated, all objects are rotated)
+                self.plus_btn.setEnabled(True)
+                self.minus_btn.setEnabled(True)
 
         if self.square_changed is not None:
-            self.square_changed(self.get_square_points(), self.items)   # ulozenie bodov do ProgramItem zpravy
+            self.square_changed(self.get_square_points(), self.items)   # to save grid points and objects into the ProgramItem message
 
         self.update_bound()
         self.update()
 
     '''
-        Metoda aktualizuje text pod gridom.
+        Method updates text below the grid.
     '''
     def update_text(self):
 
@@ -241,16 +243,16 @@ class SquareItem(Item):
         self.desc.set_content(desc)
 
     '''
-        Metoda, ktora sa vola po stlaceni tlacitka +
-        a zvysuje medzeru medzi objektami a krabicou, objektami a objektami.
+        Method is called when "+" button is pushed. It increase spacing between objects and walls of the box,
+        and between objects.
     '''
     def plus_clicked(self, btn):
         self.space += 0.01
         self.point_changed(True, self.last_corner)
 
     '''
-        Metoda, ktora sa vola po stlaceni tlacitka -
-        a zmensuje medzeru medzi objektami a krabicou, objektami a objektami.
+        Method is called when "-" button is pushed. It decrease spacing between objects and walls of the box,
+        and between objects.
     '''
     def minus_clicked(self, btn):
         if self.space > 0.02:
@@ -258,7 +260,7 @@ class SquareItem(Item):
             self.point_changed(True, self.last_corner)
 
     '''
-        Metoda aktualizuje ohranicujuci pravouholnik.
+        Method updates the bounding rectangle.
     '''
     def update_bound(self):
 
@@ -287,7 +289,7 @@ class SquareItem(Item):
         self.pom_max = [max(self.orig_x), max(self.orig_y)]
 
     '''
-        Metoda vracia hladany roh.
+        Method returns a required corner.
     '''
     def find_corner(self, corner):
         for pt in self.pts:
@@ -299,6 +301,10 @@ class SquareItem(Item):
         Metoda pre vykreslovanie gridu a objektov v nom. Je volana vzdy, ked sa pohne s niektorym rohom.
         Rovnomerne rozmiestnuje objekty v gride, kontroluje ci nie su v kolizii.
         Zaistuje ukladanie poloh bodov a gridu do spravy ProgramItem.
+
+        Method depics the gird and objects in it. It is called, when some corner is moved.
+        It secures even distribution of objects in the grid, checks collisions.
+        Also secures saving grid points and positions of objects into the ProgramItem message.
     '''
     def point_changed(self,  finished=False, corner=""):
 
@@ -370,7 +376,7 @@ class SquareItem(Item):
 
                 for i in range(0, height_count):
                     for j in range(0, width_count):
-                        rot_point = None    # sluzi na ulozenie xy suradnic pre umiestnenie bodu na rotovanie objektov v gride
+                        rot_point = None    # to save xy coordinates for rotation point (for rotating objects in a grid)
                         if corner == "BR" and i == 0 and j == 0:
                             rot = True
                             pom = self.find_corner("TL").get_pos()
@@ -428,13 +434,13 @@ class SquareItem(Item):
 
             self.last_corner = corner
 
-            # riesi rotaciu objektov (preda sa pole objektov prvemu objektu, s ktorym ked sa rotuje, rotuje aj s ostatnymi)
+            # rotation of all objects in a grid (list of all objects is handed over to the first object. When the first object is rotated, all objects are rotated)
             if self.items:
                 self.items[0].set_other_items(self.items[1:])
 
         if finished and self.square_changed is not None:
 
-            # upravuje rozmiestnenie objektov v gride, aby boli cca rovnako daleko od stran gridu
+            # even distribution of objects in the grid
             if self.items:
                 new_object_length_x = ((self.pom_max[0] - self.pom_min[0]) - self.space) / self.previous_width
                 new_object_length_y = ((self.pom_max[1] - self.pom_min[1]) - self.space) / self.previous_height
@@ -452,31 +458,31 @@ class SquareItem(Item):
                         new_y = self.pom_min[1] + self.space/2 + new_object_length_y / 2 + new_object_length_y * (
                         i / self.previous_width)
                     it.set_pos(new_x, new_y)
-                    it.update_point()   # nutne updatnut do povodnej polohy, lebo ked sa pohne s objektom, tak sa pohne zaroven s bodom na rotovanie
+                    it.update_point()
 
-                for it in self.items:   # nutne, aby sa pozrelo ci su este stale v kolizii
+                for it in self.items:   # to check if there are still some collisions
                     it.item_moved()
 
-            self.plus_btn.setEnabled(True)  # uz mozno zvacsovat space
-            self.minus_btn.setEnabled(True)  # uz mozno zmensovat space
+            self.plus_btn.setEnabled(True)
+            self.minus_btn.setEnabled(True)
 
             if self.last_corner == "BR" or self.last_corner == "BL":
-                self.items.reverse()    # aby robot ukladal od najvzdialenejsieho radu, aby mu ulozene objekty nezavadzali
+                self.items.reverse()    # we want robot always to place object from furthest line
 
             in_collision = False
-            for it in self.items:   # kontrola ci nie su objekty v kolizii
+            for it in self.items:   # to check collisions
                 if it.in_collision:
                     in_collision = True
                     break
             if in_collision:
-                self.square_changed(self.get_square_points(), [])  # ulozenie bodov do ProgramItem zpravy
+                self.square_changed(self.get_square_points(), [])  # to save only grid points into the ProgramItem message
             else:
-                self.square_changed(self.get_square_points(), self.items)  # ulozenie bodov do ProgramItem zpravy
+                self.square_changed(self.get_square_points(), self.items)  # to save grid points and objects into the ProgramItem message
 
         self.update()
 
     '''
-        Metoda vracia body gridu.
+        Method returns grid points.
     '''
     def get_square_points(self):
 
@@ -489,41 +495,41 @@ class SquareItem(Item):
         return pts
 
     '''
-        Metoda, ktora sa vola po pusteni gridu.
-        Zaistuje ukladanie novych poloh bodov a objektov do spravy ProgramItem.
-        Kontroluje ci sa presunutim nedostali objekty do kolizie s niecim v scene.
+        Method which is called after releasing the grid.
+        It saves new positions of grid points and objects into the ProgramItem message.
+        It checks collisions between grid objects and scene objects.
     '''
     def cursor_release(self):
 
         if self.fixed:
             return
-        for it in self.items:   # kontrola ci po presune celeho gridu nie su objekty v kolizii s niecim v scene
+        for it in self.items:
             it.item_moved()
 
         if self.square_changed is not None:
             in_collision = False
-            for it in self.items:  # kontrola ci nie su objekty v kolizii
+            for it in self.items:  # to check collisions
                 if it.in_collision:
                     in_collision = True
                     break
             if in_collision:
-                self.square_changed(self.get_square_points(), [])  # ulozenie bodov do ProgramItem zpravy
+                self.square_changed(self.get_square_points(), [])  # to save only grid points into the ProgramItem message
             else:
-                self.square_changed(self.get_square_points(), self.items)  # ulozenie bodov do ProgramItem zpravy
+                self.square_changed(self.get_square_points(), self.items)  # to save grid points and objects into the ProgramItem message
 
     def cursor_press(self):
 
         pass
 
     '''
-        Metoda zaistuje ulozenie novych poloh (resp. orientacie) objektov po rotacii.
+        Method saves new rotations after rotating objects.
     '''
     def items_rotation_changed(self, items):
 
-        self.square_changed(self.get_square_points(), items)  # ulozenie bodov do ProgramItem zpravy
+        self.square_changed(self.get_square_points(), items)  # to save grid points and objects into the ProgramItem message
 
     '''
-        Metoda vracia tvar gridu ako QPainterPath.
+        Method returns the shape of this grid as a QPainterPath in local coordinates.
     '''
     def shape(self):
 
@@ -532,14 +538,14 @@ class SquareItem(Item):
         return path
 
     '''
-        Metoda definuje vonkajsie hranicu objektu ako pravouholnik.
+        Method defines the outer bounds of the item as a rectangle.
     '''
     def boundingRect(self):
 
         return QtCore.QRectF(self.m2pix(self.min[0])-2.5,  self.m2pix(self.min[1])-2.5, self.m2pix(self.max[0]-self.min[0])+5, self.m2pix(self.max[1]-self.min[1])+5)
 
     '''
-        Metoda nastavujuca farbu, typ, hrubku ciar gridu a nasledne ho vykresluje.
+        Method paints the grid.
     '''
     def paint(self, painter, option, widget):
 

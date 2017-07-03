@@ -330,6 +330,9 @@ class UICore(QtCore.QObject):
             polygon_changed,
             fixed)
 
+    '''
+        Method which creates instance of SquareItem class.
+    '''
     def add_square(self, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points=[], square_changed=None, fixed=False):
 
         SquareItem(self.scene, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points, self.scene.items,

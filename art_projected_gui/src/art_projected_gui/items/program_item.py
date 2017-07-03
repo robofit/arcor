@@ -562,6 +562,9 @@ class ProgramItem(Item):
 
         self._update_item()
 
+    '''
+        Method which saves place poses of all objects (in the grid) into the ProgramItem message.
+    '''
     def set_place_poses(self, poses):
 
         msg = self.get_current_item()
@@ -611,12 +614,13 @@ class ProgramItem(Item):
 
         self._update_item()
 
-    # Metoda ulozi 4 body SquareItem-u do place_grid v zprave ProgramItem
+    '''
+        Method which saves 4 points forming a grid into the ProgramItem message.
+    '''
     def set_place_grid(self, pts):
 
         msg = self.get_current_item()
 
-        # predchadzajuce body musime zmazat, aby sme tam nemali body predchadzajucej polohy gridu
         del msg.polygon[0].polygon.points[:]
 
         for pt in pts:
@@ -660,6 +664,9 @@ class ProgramItem(Item):
 
         return None
 
+    '''
+        Method which returns a reference item.
+    '''
     def get_ref_item(self, ref_id=None):
 
         if (self.block_id is not None and ref_id is not None):
