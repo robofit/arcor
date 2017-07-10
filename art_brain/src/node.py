@@ -964,6 +964,33 @@ class ArtBrain(object):
         else:
             return self.right_gripper
 
+    def get_gripper_welding_points(self):
+        if not self.gripper_usage == ArtGripper.GRIPPER_BOTH:
+            if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
+                return self.left_gripper
+            elif self.gripper_usage == ArtGripper.GRIPPER_RIGHT:
+                return self.right_gripper
+        else:
+            return self.right_gripper
+
+    def get_gripper_welding_seam(self):
+        if not self.gripper_usage == ArtGripper.GRIPPER_BOTH:
+            if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
+                return self.left_gripper
+            elif self.gripper_usage == ArtGripper.GRIPPER_RIGHT:
+                return self.right_gripper
+        else:
+            return self.right_gripper
+
+    def get_gripper_drill_points(self):
+        if not self.gripper_usage == ArtGripper.GRIPPER_BOTH:
+            if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
+                return self.left_gripper
+            elif self.gripper_usage == ArtGripper.GRIPPER_RIGHT:
+                return self.right_gripper
+        else:
+            return self.right_gripper
+
     def check_place_pose(self, place_pose, obj):
         w1 = self.get_object_max_width(obj)
         if w1 is None:
