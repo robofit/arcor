@@ -8,11 +8,18 @@ from geometry_msgs.msg import Transform
 from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
 from std_msgs.msg import Bool
 import ast
+from sensor_msgs.msg import PointCloud2
+import sensor_msgs.point_cloud2 as pc2
+import pcl
+import numpy as np
+from sensor_msgs.msg import PointField
 
 
 class ArtCellCalibration(object):
 
-    def __init__(self, cell_id, markers_topic, world_frame, cell_frame):
+    last_pc = None
+
+    def __init__(self, cell_id, markers_topic, world_frame, cell_frame, pc_topic):
         self.cell_id = cell_id
         self.markers_topic = markers_topic
         self.calibrated = None
@@ -31,6 +38,8 @@ class ArtCellCalibration(object):
                                                                  Bool,
                                                                  queue_size=1,
                                                                  latch=True)
+        self.pc_sub = rospy.Subscriber(pc_topic, PointCloud2, self.pc_cb, queue_size=1)
+        self.pc_pub = rospy.Publisher("/test", PointCloud2, queue_size=1)
 
         if m is not None:
 
@@ -91,6 +100,7 @@ class ArtCellCalibration(object):
     def reset_markers_searching(self):
         self.start_marker_detection()
         self.positions = [None, None, None, None]
+        self.calibrated = False
 
     def markers_cb(self, markers):
         if self.calibrated:
@@ -111,3 +121,25 @@ class ArtCellCalibration(object):
         if all_markers:
             self.stop_marker_detection()
             self.calibrate()
+
+    def pc_cb(self, pc):
+        p = pcl.PointCloud(np.array(list(pc2.read_points(pc, field_names=['x', 'y', 'z'],
+                                                         skip_nans=True)), dtype=np.float32))
+
+        seg = p.make_segmenter()  # type: pcl.Segmentation
+        seg.set_model_type(pcl.SACMODEL_PLANE)
+        seg.set_method_type(pcl.SAC_RANSAC)
+        seg.set_distance_threshold(0.1)
+        indices, model = seg.segment()
+        p = p.extract(indices)  # type: pcl.PointCloud
+        filter = p.make_voxel_grid_filter()  # type: pcl.VoxelGridFilter
+        filter.set_leaf_size(0.01, 0.01, 0.01)
+        p = filter.filter()
+
+        pcloud = pc2.create_cloud_xyz32(pc.header, p.to_list())
+        self.pc_pub.publish(pcloud)
+        self.last_pc = p
+
+
+
+

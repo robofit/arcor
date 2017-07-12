@@ -11,8 +11,8 @@ from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
 
 class ArtRobotCalibration(ArtCellCalibration):
 
-    def __init__(self, robot_id, markers_topic, world_frame,  robot_frame, look_at_topic='/art/pr2/look_at'):
-        super(ArtRobotCalibration, self).__init__(robot_id, markers_topic, world_frame, robot_frame)
+    def __init__(self, robot_id, markers_topic, world_frame,  robot_frame, pc_topic, look_at_topic='/art/pr2/look_at'):
+        super(ArtRobotCalibration, self).__init__(robot_id, markers_topic, world_frame, robot_frame, pc_topic)
 
         self.head_look_at_pub = rospy.Publisher(look_at_topic,  PointStamped,  queue_size=1)
         self.positions = [np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f')]
