@@ -6,12 +6,12 @@ import rospy
 from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt, LearningRequestAction, LearningRequestGoal
 from fsm import FSM
 from transitions import MachineError
-from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem,  TouchPointsItem,  LabelItem,  TouchTableItem, ProgramListItem,  ProgramItem, DialogItem
-from art_projected_gui.helpers import ProjectorHelper,  conversions, error_strings
-from art_utils import InterfaceStateManager,  ArtApiHelper, ProgramHelper
-from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsResponse,  NotifyUser,  NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest
-from std_msgs.msg import Empty,  Bool
-from std_srvs.srv import Trigger,  TriggerRequest
+from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, TouchPointsItem, LabelItem, TouchTableItem, ProgramListItem, ProgramItem, DialogItem, PolygonItem
+from art_projected_gui.helpers import ProjectorHelper, conversions, error_strings
+from art_utils import InterfaceStateManager, ArtApiHelper, ProgramHelper
+from art_msgs.srv import TouchCalibrationPoints, TouchCalibrationPointsResponse, NotifyUser, NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest
+from std_msgs.msg import Empty, Bool
+from std_srvs.srv import Trigger, TriggerRequest, TriggerResponse
 from std_srvs.srv import Empty as EmptyService
 from geometry_msgs.msg import PoseStamped
 import actionlib
@@ -90,9 +90,9 @@ class UICoreRos(UICore):
                        list(self.get_scene_items_by_type(PoseStampedCursorItem)))
 
         self.stop_btn = ButtonItem(self.scene, 0, 0, "STOP",
-                              None, self.stop_btn_clicked, 2.0, QtCore.Qt.red)
+                                   None, self.stop_btn_clicked, 2.0, QtCore.Qt.red)
         self.stop_btn.setPos(self.scene.width() - self.stop_btn.boundingRect().width() -
-                        300, self.scene.height() - self.stop_btn.boundingRect().height() - 60)
+                             300, self.scene.height() - self.stop_btn.boundingRect().height() - 60)
         self.stop_btn.set_enabled(True)
 
         self.projectors = []
@@ -116,19 +116,19 @@ class UICoreRos(UICore):
             '/art/brain/learning/start', Trigger)  # TODO wait for service? where?
         self.stop_learning_srv = rospy.ServiceProxy(
             '/art/brain/learning/stop', Trigger)  # TODO wait for service? where?
-            
+
         self.emergency_stop_srv = rospy.ServiceProxy(
             '/pr2_ethercat/halt_motors', EmptyService)  # TODO wait for service? where?
-            
+
         self.emergency_stop_reset_srv = rospy.ServiceProxy(
-            '/pr2_ethercat/reset_motors', EmptyService)  # TODO wait for service? where?    
+            '/pr2_ethercat/reset_motors', EmptyService)  # TODO wait for service? where?
 
         self.program_error_resolve_srv = rospy.ServiceProxy(
             '/art/brain/program/error_response', ProgramErrorResolve)  # TODO wait for service? where?
         self.program_error_dialog = None
 
         self.grasp_dialog = None
-        
+
         self.emergency_stoped = False
 
     def touch_calibration_points_evt(self, pts):
@@ -220,11 +220,6 @@ class UICoreRos(UICore):
         rospy.loginfo("Waiting for ART services...")
         self.art.wait_for_api()
 
-        if len(self.projectors) > 0:
-            rospy.loginfo("Waiting for projector nodes...")
-            for proj in self.projectors:
-                proj.wait_until_available()
-
         rospy.loginfo("Ready! Starting state machine.")
 
         # TODO move this to ArtApiHelper ??
@@ -239,7 +234,42 @@ class UICoreRos(UICore):
         self.notify_user_srv = rospy.Service(
             '/art/interface/projected_gui/notify_user', NotifyUser, self.notify_user_srv_cb)
 
-        self.fsm.tr_start()
+        proj_calib = True
+
+        if len(self.projectors) > 0:
+            rospy.loginfo("Waiting for projector nodes...")
+            for proj in self.projectors:
+                proj.wait_until_available()
+                if not proj.is_calibrated():
+                    proj_calib = False
+
+        if proj_calib:
+
+            rospy.loginfo('Projectors already calibrated.')
+            self.projectors_calibrated_pub.publish(True)
+            self.fsm.tr_projectors_calibrated()
+
+        else:
+
+            rospy.loginfo('Projectors not calibrated yet - waiting for command...')
+
+        self.projector_calib_srv = rospy.Service(
+            '/art/interface/projected_gui/calibrate_projectors', Trigger, self.calibrate_projectors_cb)
+
+    def calibrate_projectors_cb(self, req):
+
+        resp = TriggerResponse()
+        resp.success = True
+
+        if self.fsm.state == "calibrate_projectors":
+
+            resp.message = "Calibration is already running."
+
+        else:
+
+            self.fsm.tr_start()
+
+        return resp
 
     def notify_user_srv_cb(self, req):
 
@@ -271,9 +301,9 @@ class UICoreRos(UICore):
             self.emergency_stoped = True
             self.stop_btn.set_caption("RUN")
             self.stop_btn.set_background_color(QtCore.Qt.green)
-            self.notif(translate("UICoreRos", "Emergency stop pressed"), temp=True)
+            self.notif(
+                translate("UICoreRos", "Emergency stop pressed"), temp=True)
         # TODO
-        
 
     def program_error_dialog_cb(self, idx):
 
@@ -309,7 +339,8 @@ class UICoreRos(UICore):
             self.clear_all()
             self.notif(
                 translate("UICoreRos", "The program is done."), temp=True)
-            self.fsm.tr_program_finished()
+            if state.system_state == InterfaceState.STATE_PROGRAM_FINISHED:
+                self.fsm.tr_program_finished()
 
         elif state.system_state == InterfaceState.STATE_LEARNING:
 
@@ -880,18 +911,24 @@ class UICoreRos(UICore):
 
         elif msg.type == ProgIt.PICK_FROM_POLYGON:
 
-            poly_points = []
+            if obj.object_type.name not in self.selected_object_types:
 
-            self.program_vis.set_object(obj.object_type.name)
-            self.select_object_type(obj.object_type.name)
+                self.remove_scene_items_by_type(PolygonItem)
 
-            for obj in self.get_scene_items_by_type(ObjectItem):
-                poly_points.append(obj.get_pos())
+                poly_points = []
 
-            self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
-                             poly_points, polygon_changed=self.polygon_changed)
-            self.notif(
-                translate("UICoreRos", "Check and adjust pick polygon"), temp=True)
+                self.program_vis.set_object(obj.object_type.name)
+                self.select_object_type(obj.object_type.name)
+
+                for ob in self.get_scene_items_by_type(ObjectItem):
+                    if ob.object_type.name != obj.object_type.name:
+                        continue
+                    poly_points.append(ob.get_pos())
+
+                self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
+                                 poly_points, polygon_changed=self.polygon_changed)
+                self.notif(
+                    translate("UICoreRos", "Check and adjust pick polygon"), temp=True)
 
         self.state_manager.update_program_item(self.ph.get_program_id(
         ), self.program_vis.block_id, self.program_vis.get_current_item())

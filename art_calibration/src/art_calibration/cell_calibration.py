@@ -7,6 +7,7 @@ import rospy
 from geometry_msgs.msg import Transform
 from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
 from std_msgs.msg import Bool
+import ast
 
 
 class ArtCellCalibration(object):
@@ -21,6 +22,8 @@ class ArtCellCalibration(object):
         self.world_frame = world_frame
         self.transformation = Transform()
 
+        m = rospy.get_param("~" + self.cell_id + "/calibration_matrix", None)
+
         self.markers_sub = rospy.Subscriber(self.markers_topic, AlvarMarkers, self.markers_cb, queue_size=1)
         self.marker_detection_enable_publisher = rospy.Publisher("/art/" +
                                                                  self.cell_id +
@@ -28,8 +31,21 @@ class ArtCellCalibration(object):
                                                                  Bool,
                                                                  queue_size=1,
                                                                  latch=True)
-        self.start_marker_detection()
-        rospy.loginfo("Cell: " + str(self.cell_id) + " ready")
+
+        if m is not None:
+
+            m = np.matrix(ast.literal_eval(m))
+
+            self.transformation.rotation = ArtCalibrationHelper.normalize_vector(transformations.quaternion_from_matrix(m))
+            self.transformation.translation = transformations.translation_from_matrix(m)
+            self.calibrated = True
+            rospy.loginfo("Cell: " + str(self.cell_id) + " calibration loaded from param")
+            self.stop_marker_detection()
+
+        else:
+
+            self.start_marker_detection()
+            rospy.loginfo("Cell: " + str(self.cell_id) + " ready")
 
     def stop_marker_detection(self):
         detect = Bool()
@@ -57,6 +73,8 @@ class ArtCellCalibration(object):
                 rospy.logerr("Transformation matrix was not computed!")
             self.reset_markers_searching()  # let's try to get new positions of markers
             return
+
+        rospy.set_param("~" + self.cell_id + "/calibration_matrix", str(m.tolist()))
 
         self.transformation.rotation = ArtCalibrationHelper.normalize_vector(transformations.quaternion_from_matrix(m))
         self.transformation.translation = transformations.translation_from_matrix(m)

@@ -50,11 +50,13 @@ class ArtCalibration(object):
     def publish_calibration(self):
         calibrated = True
 
+        time = rospy.Time.now() + rospy.Duration(1.0 / 30)
+
         for cell in self.cells:
             if cell.calibrated:
                 tr = cell.get_transform()
                 self.broadcaster.sendTransform(tr.translation, tr.rotation,
-                                               rospy.Time.now(), cell.world_frame,
+                                               time, cell.world_frame,
                                                cell.cell_frame)
 
             else:

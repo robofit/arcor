@@ -291,6 +291,141 @@ def main(args):
     store_program(prog)
 
     # -------------------------------------------------------------------------------------------
+    prog = Program()
+    prog.header.id = 3
+    prog.header.name = "Welding seam"
+
+    pb = ProgramBlock()
+    pb.id = 1  # can't be zero
+    pb.name = "First block"
+    pb.on_success = 1
+    pb.on_failure = 0
+    prog.blocks.append(pb)
+
+    p = ProgramItem()
+    p.id = 1
+    p.on_success = 2
+    p.on_failure = 0
+    p.type = ProgramItem.GET_READY
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 2
+    p.on_success = 2
+    p.on_failure = 0
+    p.type = ProgramItem.WELDING_SEAM
+    p.object.append("")
+    pf = PoseStamped()
+    pf.header.frame_id = "marker"
+    pf.pose.position.x = 0.4
+    pf.pose.position.y = 0.4
+    pf.pose.position.z = 0.30
+    pf.pose.orientation.x = -0.707
+    pf.pose.orientation.y = 0
+    pf.pose.orientation.z = 0.707
+    pf.pose.orientation.w = 0
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.5
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.y = 0.2
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.4
+    p.pose.append(deepcopy(pf))
+    pb.items.append(deepcopy(p))
+
+    store_program(prog)
+
+    # -------------------------------------------------------------------------------------------
+    prog = Program()
+    prog.header.id = 4
+    prog.header.name = "Welding points"
+
+    pb = ProgramBlock()
+    pb.id = 1  # can't be zero
+    pb.name = "First block"
+    pb.on_success = 1
+    pb.on_failure = 0
+    prog.blocks.append(pb)
+
+    p = ProgramItem()
+    p.id = 1
+    p.on_success = 2
+    p.on_failure = 0
+    p.type = ProgramItem.GET_READY
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 2
+    p.on_success = 2
+    p.on_failure = 0
+    p.type = ProgramItem.WELDING_POINTS
+    p.object.append("")
+    pf = PoseStamped()
+    pf.header.frame_id = "marker"
+    pf.pose.position.x = 0.4
+    pf.pose.position.y = 0.4
+    pf.pose.position.z = 0.30
+    pf.pose.orientation.x = -0.707
+    pf.pose.orientation.y = 0
+    pf.pose.orientation.z = 0.707
+    pf.pose.orientation.w = 0
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.5
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.y = 0.2
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.4
+    p.pose.append(deepcopy(pf))
+    pb.items.append(deepcopy(p))
+
+    store_program(prog)
+
+    # -------------------------------------------------------------------------------------------
+    prog = Program()
+    prog.header.id = 5
+    prog.header.name = "Drill points"
+
+    pb = ProgramBlock()
+    pb.id = 1  # can't be zero
+    pb.name = "First block"
+    pb.on_success = 1
+    pb.on_failure = 0
+    prog.blocks.append(pb)
+
+    p = ProgramItem()
+    p.id = 1
+    p.on_success = 2
+    p.on_failure = 0
+    p.type = ProgramItem.GET_READY
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 2
+    p.on_success = 2
+    p.on_failure = 0
+    p.type = ProgramItem.DRILL_POINTS
+    p.object.append("")
+    pf = PoseStamped()
+    pf.header.frame_id = "marker"
+    pf.pose.position.x = 0.4
+    pf.pose.position.y = 0.4
+    pf.pose.position.z = 0.30
+    pf.pose.orientation.x = -0.707
+    pf.pose.orientation.y = 0
+    pf.pose.orientation.z = 0.707
+    pf.pose.orientation.w = 0
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.5
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.y = 0.2
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.4
+    p.pose.append(deepcopy(pf))
+    pb.items.append(deepcopy(p))
+
+    store_program(prog)
+
+    # -------------------------------------------------------------------------------------------
     # OBJECT TYPES
     # -------------------------------------------------------------------------------------------
 

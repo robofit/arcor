@@ -61,6 +61,10 @@ class ArtBrain(object):
         self.fsm.state_pick_from_feeder = self.state_pick_from_feeder
         self.fsm.state_pick_object_id = self.state_pick_object_id
         self.fsm.state_place_to_pose = self.state_place_to_pose
+        self.fsm.state_path_through_points = self.state_path_through_points
+        self.fsm.state_welding_points = self.state_welding_points
+        self.fsm.state_welding_seam = self.state_welding_seam
+        self.fsm.state_drill_points = self.state_drill_points
         self.fsm.state_program_error = self.state_program_error
         self.fsm.state_program_paused = self.state_program_paused
         self.fsm.state_program_finished = self.state_program_finished
@@ -100,6 +104,7 @@ class ArtBrain(object):
         self.system_calibrated = False
         self.motors_halted = True
         self.initialized = False
+        self.projectors_calibrated = False
 
         self.learning_block_id = None
         self.learning_item_id = None
@@ -134,6 +139,8 @@ class ArtBrain(object):
             "/art/system/calibrated", Bool, self.system_calibrated_cb)
         self.motors_halted_sub = rospy.Subscriber(
             "/pr2_ethercat/motors_halted", Bool, self.motors_halted_cb)
+        self.projectors_calibrated_sub = rospy.Subscriber(
+            "/art/interface/projected_gui/app/projectors_calibrated", Bool, self.projectors_calibrated_cb)
 
         self.srv_program_start = rospy.Service(
             '/art/brain/program/start', startProgram, self.program_start_cb)
@@ -160,10 +167,6 @@ class ArtBrain(object):
             LearningRequestAction,
             execute_cb=self.learning_request_cb,
             auto_start=True)
-
-        # self.srv_program_pause = rospy.Service(/art/brain/program/pause', Empty, self.program_pause_cb)
-        # self.srv_program_resume = rospy.Service(/art/brain/program/resume',
-        # Empty, self.program_resume_cb)
 
         self.state_manager = InterfaceStateManager(
             InterfaceState.BRAIN_ID,
@@ -213,6 +216,30 @@ class ArtBrain(object):
         # self.select_arm_srv_client = ArtBrainUtils.create_service_client(
         #    '/art/fuzzy/select_arm', SelectArm)
 
+        r = rospy.Rate(1)
+        while not self.system_calibrated:
+            if rospy.is_shutdown():
+                return
+            rospy.loginfo("Waiting for system calibration")
+            r.sleep()
+
+        self.calibrate_projectors_srv_client = ArtBrainUtils.create_service_client(
+            '/art/interface/projected_gui/calibrate_projectors', Trigger)
+
+        if not self.projectors_calibrated:
+
+            resp = self.calibrate_projectors_srv_client.call()
+
+            if not resp.success:
+
+                rospy.logerr("Failed to start projector calibration: " + resp.message)
+                # TODO what to do?
+
+            rospy.loginfo("Waiting for projectors to calibrate...")
+            while not self.projectors_calibrated:
+
+                rospy.sleep(1)
+
         if not self.table_calibrated:
             rospy.loginfo(
                 'Waiting for /art/interface/touchtable/calibrate service')
@@ -232,13 +259,6 @@ class ArtBrain(object):
                 attempt += 1
                 while not self.table_calibrated and self.table_calibrating:
                     rospy.sleep(1)
-
-        r = rospy.Rate(1)
-        while not self.is_everything_calibrated():
-            if rospy.is_shutdown():
-                return
-            rospy.loginfo("Waiting for calibration")
-            r.sleep()
 
         self.initialized = True
         self.fsm.init()
@@ -311,6 +331,10 @@ class ArtBrain(object):
             ProgramItem.PICK_FROM_FEEDER: self.fsm.pick_from_feeder,
             ProgramItem.PICK_OBJECT_ID: self.fsm.pick_object_id,
             ProgramItem.PLACE_TO_POSE: self.fsm.place_to_pose,
+            ProgramItem.PATH_THROUGH_POINTS: self.fsm.path_through_points,
+            ProgramItem.WELDING_POINTS: self.fsm.welding_points,
+            ProgramItem.WELDING_SEAM: self.fsm.welding_seam,
+            ProgramItem.DRILL_POINTS: self.fsm.drill_points,
             ProgramItem.WAIT_FOR_USER: self.fsm.wait_for_user,
             ProgramItem.WAIT_UNTIL_USER_FINISHES: self.fsm.wait_until_user_finishes,
         }
@@ -363,7 +387,7 @@ class ArtBrain(object):
 
     def state_pick_object_id(self, event):
         if not self.check_robot():
-                return
+            return
         rospy.loginfo('state_pick_object_id')
         obj = ArtBrainUtils.get_pick_obj(self.instruction, self.objects)
         if obj is None or obj.object_id is None:
@@ -395,9 +419,53 @@ class ArtBrain(object):
             return
         self.place_object_to_pose(self.instruction)
 
+    def state_path_through_points(self, event):
+        rospy.loginfo('state_path_through_points')
+        if not self.check_robot():
+            return
+        gripper = self.get_gripper_path_following()
+        if gripper.move_through_poses(self.instruction.pose):
+            self.fsm.done()
+        else:
+            # TODO: error
+            return
+
+    def state_welding_points(self, event):
+        rospy.loginfo('state_welding_points')
+        if not self.check_robot():
+            return
+        gripper = self.get_gripper_path_following()  # TODO:
+        if gripper.touch_poses(self.instruction.pose):
+            self.fsm.done()
+        else:
+            # TODO: error
+            return
+
+    def state_welding_seam(self, event):
+        rospy.loginfo('state_welding_seam')
+        if not self.check_robot():
+            return
+        gripper = self.get_gripper_path_following()  # TODO:
+        if gripper.move_through_poses(self.instruction.pose):
+            self.fsm.done()
+        else:
+            # TODO: error
+            return
+
+    def state_drill_points(self, event):
+        rospy.loginfo('state_drill_points')
+        if not self.check_robot():
+            return
+        gripper = self.get_gripper_path_following()  # TODO:
+        if gripper.touch_poses(self.instruction.pose, drill_duration=5):
+            self.fsm.done()
+        else:
+            # TODO: error
+            return
+
     def state_wait_for_user(self, event):
         rospy.loginfo('state_wait_for_user')
-    
+
         self.state_manager.update_program_item(
             self.ph.get_program_id(), self.block_id, self.instruction)
 
@@ -593,7 +661,7 @@ class ArtBrain(object):
         rospy.loginfo('state_learning_place_to_pose_run')
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
         self.place_object_to_pose(instruction, update_state_manager=False, get_ready_after_place=True)
-        
+
     def state_learning_wait(self, event):
         rospy.loginfo('state_learning_wait')
         pass
@@ -782,7 +850,7 @@ class ArtBrain(object):
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.header.frame_id = self.objects.header.frame_id
         # TODO: how to deal with this?
-        goal.pose.pose.position.z = 0.1  # + obj.bbox.dimensions[2]/2
+        goal.pose.pose.position.z = 0.05  # obj.bbox.dimensions[2]/2
         rospy.loginfo("Place pose: " + str(goal.pose))
         gripper.pp_client.send_goal(goal)
         gripper.pp_client.wait_for_result()
@@ -801,7 +869,7 @@ class ArtBrain(object):
 
     def program_resume_timer_cb(self, event):
         self.state_manager.set_system_state(
-                InterfaceState.STATE_PROGRAM_RUNNING)
+            InterfaceState.STATE_PROGRAM_RUNNING)
         self.fsm.resume()
 
     def program_try_again_timer_cb(self, event):
@@ -823,7 +891,7 @@ class ArtBrain(object):
     def is_everything_calibrated(self, event=None):
 
         return self.table_calibrated and self.system_calibrated
-        
+
     def check_robot(self):
         if self.motors_halted:
             self.fsm.error(severity=InterfaceState.WARNING,
@@ -886,6 +954,42 @@ class ArtBrain(object):
             return self.right_gripper
         else:
             return None
+
+    def get_gripper_path_following(self):
+        if not self.gripper_usage == ArtGripper.GRIPPER_BOTH:
+            if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
+                return self.left_gripper
+            elif self.gripper_usage == ArtGripper.GRIPPER_RIGHT:
+                return self.right_gripper
+        else:
+            return self.right_gripper
+
+    def get_gripper_welding_points(self):
+        if not self.gripper_usage == ArtGripper.GRIPPER_BOTH:
+            if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
+                return self.left_gripper
+            elif self.gripper_usage == ArtGripper.GRIPPER_RIGHT:
+                return self.right_gripper
+        else:
+            return self.right_gripper
+
+    def get_gripper_welding_seam(self):
+        if not self.gripper_usage == ArtGripper.GRIPPER_BOTH:
+            if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
+                return self.left_gripper
+            elif self.gripper_usage == ArtGripper.GRIPPER_RIGHT:
+                return self.right_gripper
+        else:
+            return self.right_gripper
+
+    def get_gripper_drill_points(self):
+        if not self.gripper_usage == ArtGripper.GRIPPER_BOTH:
+            if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
+                return self.left_gripper
+            elif self.gripper_usage == ArtGripper.GRIPPER_RIGHT:
+                return self.right_gripper
+        else:
+            return self.right_gripper
 
     def check_place_pose(self, place_pose, obj):
         w1 = self.get_object_max_width(obj)
@@ -1114,7 +1218,7 @@ class ArtBrain(object):
             # if self.is_learning_pick_from_feeder():
         '''
         pass
-        
+
     def motors_halted_cb(self, req):
         if not self.initialized:
             return
@@ -1127,7 +1231,10 @@ class ArtBrain(object):
                 self.left_gripper.get_ready()
                 self.right_gripper.get_ready()
         self.motors_halted = req.data
-        
+
+    def projectors_calibrated_cb(self, msg):
+
+        self.projectors_calibrated = msg.data
 
     def user_status_cb(self, req):
         self.user_id = req.user_id

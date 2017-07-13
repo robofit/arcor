@@ -5,177 +5,272 @@ import tf
 from geometry_msgs.msg import Pose, PoseStamped
 from math import sqrt
 import numpy as np
+from scipy.spatial import distance
+import threading
+from tf import transformations
+from math import pi, cos, sin, atan2
+
+
+# TODO publish TF
+
+def q2a(q):
+    return [q.x, q.y, q.z, q.w]
+
+
+def a2q(q, arr):
+    q.x = arr[0]
+    q.y = arr[1]
+    q.z = arr[2]
+    q.w = arr[3]
+
+
+class TrackedObject:
+    def __init__(self, target_frame, tfl, object_id, object_type):
+
+        self.object_id = object_id
+        self.object_type = object_type
+        self.tfl = tfl
+        self.target_frame = target_frame
+        self.max_dist = 2.0
+        self.min_dist = 0.3
+        self.min_meas_cnt = 5
+        self.new = True
+
+        self.meas = {}
+
+    def add_meas(self, ps):
+
+        dist = distance.euclidean((0, 0, 0), (ps.pose.position.x, ps.pose.position.y, ps.pose.position.z))
+
+        if dist > self.max_dist or dist < self.min_dist:
+            return
+
+        if ps.header.frame_id not in self.meas:
+            self.meas[ps.header.frame_id] = []
+
+        try:
+
+            self.meas[ps.header.frame_id].append([dist, self.transform(ps)])
+
+        except tf.Exception:
+
+            rospy.logwarn("Transform between " + self.target_frame +
+                          " and " + ps.header.frame_id + " not available!")
+
+    def prune_meas(self, now, max_age):
+
+        frames_to_delete = []
+
+        # delete old measurements
+        for frame_id, val in self.meas.iteritems():
+
+            idx_to_delete = []
+
+            for idx in range(0, len(val)):
+
+                if (now - val[idx][1].header.stamp) > max_age:
+                    idx_to_delete.append(idx)
+
+            val = [x for i, x in enumerate(val) if i not in idx_to_delete]
+
+            if len(val) == 0:
+                frames_to_delete.append(frame_id)
+
+            self.meas[frame_id] = val
+
+        for frame_id in frames_to_delete:
+            del self.meas[frame_id]
+
+    @property
+    def inst(self):
+
+        inst = ObjInstance()
+        inst.object_id = self.object_id
+        inst.object_type = self.object_type
+
+        w = []
+
+        px = []
+        py = []
+        pz = []
+
+        r = []
+        p = []
+        y = []
+
+        for frame_id, val in self.meas.iteritems():
+
+            if len(val) < 2:
+                continue
+
+            for idx in range(0, len(val)):
+
+                v = val[idx]
+
+                # distance normalized to 0, 1
+                d = (v[0] - self.min_dist) / (self.max_dist - self.min_dist)
+
+                # weight based on distance from object to sensor
+                w_dist = (1.0 - d) ** 2  # (0, 1)
+
+                # newer detections are more interesting
+                w_age = (float(idx) / (len(val) - 1)) / 2 + 0.5  # (0.5, 1)
+
+                w.append(w_dist * w_age)
+
+                px.append(v[1].pose.position.x)
+                py.append(v[1].pose.position.y)
+                pz.append(v[1].pose.position.z)
+
+                rpy = transformations.euler_from_quaternion(q2a(v[1].pose.orientation))
+
+                r.append([cos(rpy[0]), sin(rpy[0])])
+                p.append([cos(rpy[1]), sin(rpy[1])])
+                y.append([cos(rpy[2]), sin(rpy[2])])
+
+        if len(w) < self.min_meas_cnt:
+            return None
+
+        inst.pose.position.x = np.average(px, weights=w)
+        inst.pose.position.y = np.average(py, weights=w)
+        inst.pose.position.z = np.average(pz, weights=w)
+
+        ar = np.average(r, axis=0, weights=w)
+        ap = np.average(p, axis=0, weights=w)
+        ay = np.average(y, axis=0, weights=w)
+
+        fr = atan2(ar[1], ar[0])
+        fp = atan2(ap[1], ap[0])
+        fy = atan2(ay[1], ay[0])
+
+        cur_rpy = [fr, fp, fy]
+
+        # TODO hysteresis!
+        # TODO is there a smarter way how to do it?
+        # "fix" roll and pitch so they are only 0, 90, 180 or 270 degrees
+        # yaw (in table coordinates) may stay as it is
+        for i in range(0, 2):
+
+            if cur_rpy[i] < 0.0:
+                cur_rpy[i] = 2 * pi + cur_rpy[i]
+
+            if cur_rpy[i] >= 7 * pi / 4 or cur_rpy[i] < pi / 4:
+                cur_rpy[i] = 0.0
+            elif cur_rpy[i] >= pi / 4 and cur_rpy[i] < 3 * pi / 4:
+                cur_rpy[i] = pi / 2
+            elif cur_rpy[i] >= 3 * pi / 4 and cur_rpy[i] < 5 * pi / 4:
+                cur_rpy[i] = pi
+            elif cur_rpy[i] >= 5 * pi / 4 and cur_rpy[i] < 7 * pi / 4:
+                cur_rpy[i] = 3 * pi / 2
+
+        a2q(inst.pose.orientation, transformations.quaternion_from_euler(*cur_rpy))
+
+        return inst
+
+    def transform(self, ps):
+
+        self.tfl.waitForTransform(
+            self.target_frame, ps.header.frame_id, ps.header.stamp, rospy.Duration(0.5))
+
+        return self.tfl.transformPose(self.target_frame, ps)
 
 
 # "tracking" of static objects
 class ArtSimpleTracker:
-
     def __init__(self, target_frame="/marker"):
 
         self.target_frame = target_frame
-        self.listener = tf.TransformListener()
+        self.tfl = tf.TransformListener()
+        self.lock = threading.Lock()
         self.sub = rospy.Subscriber(
             "/art/object_detector/object", InstancesArray, self.cb, queue_size=10)
         self.pub = rospy.Publisher(
             "/art/object_detector/object_filtered", InstancesArray, queue_size=10, latch=True)
-        self.timer = rospy.Timer(rospy.Duration(1.0), self.timer_cb)
+        self.timer = rospy.Timer(rospy.Duration(0.5), self.timer_cb)
+        self.meas_max_age = rospy.Duration(5.0)
+        self.prune_timer = rospy.Timer(self.meas_max_age, self.prune_timer_cb)
         self.objects = {}
+        self.br = tf.TransformBroadcaster()
 
-        # should be in (0,1)
-        self.ap = 0.25  # filtering coeficient - position
-        self.ao = 0.1  # filtering coeficient - orientation
+    def prune_timer_cb(self, event):
 
-        self.min_cnt = 5  # publish object after it has been seen x times at least
-        self.max_age = rospy.Duration(5)
+        with self.lock:
+
+            now = rospy.Time.now()
+
+            for k, v in self.objects.iteritems():
+
+                v.prune_meas(now, self.meas_max_age)
 
     def timer_cb(self, event):
 
-        ia = InstancesArray()
-        ia.header.frame_id = self.target_frame
-        ia.header.stamp = rospy.Time.now()
+        with self.lock:
 
-        objects_to_prune = []
+            ia = InstancesArray()
+            ia.header.frame_id = self.target_frame
+            ia.header.stamp = rospy.Time.now()
 
-        now = rospy.Time.now()
+            objects_to_delete = []
 
-        for k, v in self.objects.iteritems():
+            for k, v in self.objects.iteritems():
 
-            if (now - v["pose"].header.stamp) > self.max_age:
+                inst = v.inst
 
-                objects_to_prune.append(k)
-                ia.lost_objects.append(k)
-                continue
+                if inst is None:  # new object might not have enough measurements yet
 
-            if v["cnt"] < self.min_cnt:
-                continue
+                    # TODO fix it: this would keep objects which were detected only few times
+                    if not v.new:  # object is no longer detected
 
-            obj = ObjInstance()
-            obj.pose = v["pose"].pose
-            obj.pose.orientation = self.normalize(obj.pose.orientation)
-            obj.object_id = k
-            obj.object_type = v["object_type"]
-            ia.instances.append(obj)
+                        objects_to_delete.append(k)
+                        ia.lost_objects.append(k)
+                        continue
 
-            if v["cnt"] == self.min_cnt:
-                ia.new_objects.append(k)
+                    continue
 
-        # TODO also publish TF for each object???
-        self.pub.publish(ia)
+                if v.new:
+                    v.new = False
+                    ia.new_objects.append(k)
 
-        for k in objects_to_prune:
+                ia.instances.append(inst)
 
-            rospy.loginfo("Object " + k + " no longer visible")
-            del self.objects[k]
+                self.br.sendTransform((inst.pose.position.x, inst.pose.position.y, inst.pose.position.z),
+                                      q2a(inst.pose.orientation), ia.header.stamp, "object_id_" + inst.object_id, self.target_frame)
 
-        if len(objects_to_prune) > 0:
+            for obj_id in objects_to_delete:
+                del self.objects[obj_id]
 
-            rospy.loginfo("Pruned " + str(len(objects_to_prune)) + " objects")
-
-    def normalize(self, q, tolerance=0.00001):
-        v = (q.x, q.y, q.z, q.w)
-        mag2 = sum(n * n for n in v)
-        if abs(mag2 - 1.0) > tolerance:
-            mag = sqrt(mag2)
-            q.x /= mag
-            q.y /= mag
-            q.z /= mag
-            q.w /= mag
-        return q
-
-    def transform(self, header, pose):
-
-        ps = PoseStamped()
-        ps.header = header
-        ps.pose = pose
-
-        if self.target_frame == header.frame_id:
-            return ps
-
-        try:
-            self.listener.waitForTransform(
-                self.target_frame, header.frame_id, header.stamp, rospy.Duration(4.0))
-
-            ps = self.listener.transformPose(self.target_frame, ps)
-
-        except tf.Exception:
-
-            rospy.logerr("TF exception")
-            rospy.logwarn("Transform between " + self.target_frame +
-                          " and " + header.frame_id + " not available!")
-            return None
-
-        return ps
-
-    def q2a(self, q):
-
-        return [q.x, q.y, q.z, q.w]
-
-    # here we assume that quaternions are close (object is static) ->
-    # averaging should be fine
-    def filterPose(self, old, new):
-
-        p = Pose()
-
-        # check for q == -q and correct
-        if (np.dot(self.q2a(old.orientation), self.q2a(new.orientation))) < 0.0:
-
-            new.orientation.x *= -1.0
-            new.orientation.y *= -1.0
-            new.orientation.z *= -1.0
-            new.orientation.w *= -1.0
-
-        p.position.x = (1.0 - self.ap) * old.position.x + \
-            self.ap * new.position.x
-        p.position.y = (1.0 - self.ap) * old.position.y + \
-            self.ap * new.position.y
-        p.position.z = (1.0 - self.ap) * old.position.z + \
-            self.ap * new.position.z
-
-        p.orientation.x = (1.0 - self.ao) * \
-            old.orientation.x + self.ao * new.orientation.x
-        p.orientation.y = (1.0 - self.ao) * \
-            old.orientation.y + self.ao * new.orientation.y
-        p.orientation.z = (1.0 - self.ao) * \
-            old.orientation.z + self.ao * new.orientation.z
-        p.orientation.w = (1.0 - self.ao) * \
-            old.orientation.w + self.ao * new.orientation.w
-
-        return p
+            self.pub.publish(ia)
 
     def cb(self, msg):
 
-        for inst in msg.instances:
+        with self.lock:
 
-            ps = self.transform(msg.header, inst.pose)
-
-            if ps is None:
-
+            if msg.header.frame_id == self.target_frame:
+                rospy.logwarn_throttle(1.0, "Some detections are already in target frame!")
                 return
 
-            if inst.object_id in self.objects:
+            for inst in msg.instances:
 
-                rospy.logdebug("Updating object: " + inst.object_id)
+                if inst.object_id in self.objects:
 
-                self.objects[inst.object_id]["object_type"] = inst.object_type
-                self.objects[inst.object_id]["cnt"] += 1
-                self.objects[inst.object_id]["pose"].header = ps.header
-                self.objects[inst.object_id]["pose"].pose = self.filterPose(
-                    self.objects[inst.object_id]["pose"].pose, ps.pose)
+                    rospy.logdebug("Updating object: " + inst.object_id)
 
-            else:
+                else:
 
-                rospy.loginfo("Adding new object: " + inst.object_id)
+                    rospy.loginfo("Adding new object: " + inst.object_id)
+                    self.objects[inst.object_id] = TrackedObject(self.target_frame, self.tfl, inst.object_id,
+                                                                 inst.object_type)
 
-                obj = {}
-                obj["pose"] = ps
-                obj["cnt"] = 1
+                ps = PoseStamped()
+                ps.header = msg.header
+                ps.pose = inst.pose
+                self.objects[inst.object_id].add_meas(ps)
 
-                self.objects[inst.object_id] = obj
 
 if __name__ == '__main__':
     try:
         rospy.init_node('simple_tracker')
-        tr = ArtSimpleTracker()
+        ArtSimpleTracker()
         rospy.spin()
     except rospy.ROSInterruptException:
         print "program interrupted before completion"
