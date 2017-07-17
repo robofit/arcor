@@ -156,7 +156,7 @@ class ArtBrain(object):
             '/art/brain/program/resume', Trigger, self.program_resume_cb)
 
         self.srv_learning_start = rospy.Service(
-            '/art/brain/learning/start', Trigger, self.learning_start_cb)
+            '/art/brain/learning/start', startProgram, self.learning_start_cb)
         self.srv_learning_stop = rospy.Service(
             '/art/brain/learning/stop', Trigger, self.learning_stop_cb)
 
@@ -597,7 +597,7 @@ class ArtBrain(object):
             error = ArtBrainErrors.ERROR_UNKNOWN
         rospy.logerr("Error: " + str(error))
         self.state_manager.set_error(severity, error)
-        self.state_manager.set_error(0, 0)
+
         if severity == InterfaceState.SEVERE:
             # handle
             self.fsm.program_error_shutdown()
@@ -642,7 +642,6 @@ class ArtBrain(object):
 
     def state_learning_run(self, event):
         rospy.loginfo('state_learning_run')
-        pass
 
     def state_learning_pick_from_polygon(self, event):
         rospy.loginfo('state_learning_pick_from_polygon')
@@ -899,7 +898,7 @@ class ArtBrain(object):
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.header.frame_id = self.objects.header.frame_id
         # TODO: how to deal with this?
-        goal.pose.pose.position.z = 0.05  # + obj.bbox.dimensions[2]/2
+        goal.pose.pose.position.z = 0.09  # + obj.bbox.dimensions[2]/2
 
         if pick_only_y_axis:
             goal.pose.pose.orientation.x = math.sqrt(0.5)
@@ -1186,20 +1185,24 @@ class ArtBrain(object):
         return resp
 
     def learning_start_cb(self, req):
-        resp = TriggerResponse()
+        resp = startProgramResponse()
+        resp.success = False
+
         if not self.is_everything_calibrated():
-            resp.success = False
-            resp.message = 'Something is not calibrated'
+
+            resp.error = 'Something is not calibrated'
             rospy.loginfo('Something is not calibrated')
             return resp
 
         if not self.fsm.is_waiting_for_action():
-            resp.success = False
-            resp.message = 'Not ready for learning start!'
+
+            resp.error = 'Not ready for learning start!'
             rospy.loginfo('Not ready for learning start!')
             return resp
 
         rospy.loginfo('Starting learning')
+        self.state_manager.state.program_id = req.program_id
+        self.state_manager.set_system_state(InterfaceState.STATE_LEARNING)
         resp.success = True
         self.fsm.learning_start()
         return resp
@@ -1248,6 +1251,8 @@ class ArtBrain(object):
     def motors_halted_cb(self, req):
         if not self.initialized:
             return
+        rospy.loginfo(str(req.data))
+        self.motors_halted = req.data
         if self.motors_halted and not req.data:
             if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
                 self.left_gripper.get_ready()
@@ -1256,7 +1261,6 @@ class ArtBrain(object):
             elif self.gripper_usage == ArtGripper.GRIPPER_BOTH:
                 self.left_gripper.get_ready()
                 self.right_gripper.get_ready()
-        self.motors_halted = req.data
 
     def projectors_calibrated_cb(self, msg):
 
@@ -1310,7 +1314,12 @@ class ArtBrain(object):
 
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
 
+        self.state_manager.state.edit_enabled = False
+
         if goal.request == LearningRequestGoal.GET_READY:
+
+            self.state_manager.state.edit_enabled = True
+
             if self.fsm.is_learning_run:
                 if instruction.type == instruction.PICK_OBJECT_ID:
                     self.fsm.pick_object_id()
@@ -1333,6 +1342,9 @@ class ArtBrain(object):
                 return
                 # TODO: handle error
         elif goal.request == LearningRequestGoal.EXECUTE_ITEM:
+
+            # TODO let ui(s) know that item is being executed
+
             # self.fsm.error(severity=InterfaceState.INFO,
             #                error=InterfaceState.ERROR_LEARNING_NOT_IMPLEMENTED)
             if self.fsm.is_learning_run:
@@ -1360,12 +1372,13 @@ class ArtBrain(object):
             self.fsm.done()
             pass
 
+        self.state_manager.send()
         result.success = True
         self.as_learning_request.set_succeeded(result)
 
 
 if __name__ == '__main__':
-    rospy.init_node('new_art_brain', log_level=rospy.DEBUG)
+    rospy.init_node('art_brain_node', log_level=rospy.DEBUG)
 
     try:
         node = ArtBrain()

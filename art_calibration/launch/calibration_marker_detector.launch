@@ -2,7 +2,6 @@
 <launch>
 	<machine name="localhost" address="localhost" default="true" />
 
-    
     <arg name="machine" default="localhost"/>
     
     <arg name="marker_size" default="11.85" />
@@ -13,8 +12,6 @@
     <arg name="cam_info_topic" default="kinect2/hd/camera_info" />        
     <arg name="output_frame" default="/$(arg machine)_kinect2_link" />
 	
-    
-		
-    <node ns="/art/$(arg machine)" machine="$(arg machine)" name="ar_track_alvar_bundle" pkg="ar_track_alvar" type="individualMarkersNoKinect" respawn="false" output="screen" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame) 10 5" />
+    <node ns="/art/$(arg machine)" machine="$(arg machine)" name="ar_track_alvar_bundle_calibration" pkg="ar_track_alvar" type="individualMarkersNoKinect" respawn="false" output="screen" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame) 10 5" />
 </launch>
 

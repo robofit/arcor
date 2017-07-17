@@ -149,19 +149,19 @@ class TrackedObject:
         # TODO is there a smarter way how to do it?
         # "fix" roll and pitch so they are only 0, 90, 180 or 270 degrees
         # yaw (in table coordinates) may stay as it is
-        for i in range(0, 2):
-
-            if cur_rpy[i] < 0.0:
-                cur_rpy[i] = 2 * pi + cur_rpy[i]
-
-            if cur_rpy[i] >= 7 * pi / 4 or cur_rpy[i] < pi / 4:
-                cur_rpy[i] = 0.0
-            elif cur_rpy[i] >= pi / 4 and cur_rpy[i] < 3 * pi / 4:
-                cur_rpy[i] = pi / 2
-            elif cur_rpy[i] >= 3 * pi / 4 and cur_rpy[i] < 5 * pi / 4:
-                cur_rpy[i] = pi
-            elif cur_rpy[i] >= 5 * pi / 4 and cur_rpy[i] < 7 * pi / 4:
-                cur_rpy[i] = 3 * pi / 2
+#        for i in range(0, 2):
+#
+#            if cur_rpy[i] < 0.0:
+#                cur_rpy[i] = 2 * pi + cur_rpy[i]
+#
+#            if cur_rpy[i] >= 7 * pi / 4 or cur_rpy[i] < pi / 4:
+#                cur_rpy[i] = 0.0
+#            elif cur_rpy[i] >= pi / 4 and cur_rpy[i] < 3 * pi / 4:
+#                cur_rpy[i] = pi / 2
+#            elif cur_rpy[i] >= 3 * pi / 4 and cur_rpy[i] < 5 * pi / 4:
+#                cur_rpy[i] = pi
+#            elif cur_rpy[i] >= 5 * pi / 4 and cur_rpy[i] < 7 * pi / 4:
+#                cur_rpy[i] = 3 * pi / 2
 
         a2q(inst.pose.orientation, transformations.quaternion_from_euler(*cur_rpy))
 
@@ -186,8 +186,8 @@ class ArtSimpleTracker:
             "/art/object_detector/object", InstancesArray, self.cb, queue_size=10)
         self.pub = rospy.Publisher(
             "/art/object_detector/object_filtered", InstancesArray, queue_size=10, latch=True)
-        self.timer = rospy.Timer(rospy.Duration(0.5), self.timer_cb)
-        self.meas_max_age = rospy.Duration(5.0)
+        self.timer = rospy.Timer(rospy.Duration(0.1), self.timer_cb)
+        self.meas_max_age = rospy.Duration(2.0)
         self.prune_timer = rospy.Timer(self.meas_max_age, self.prune_timer_cb)
         self.objects = {}
         self.br = tf.TransformBroadcaster()

@@ -2,8 +2,8 @@
 
 import sys
 import rospy
-from art_msgs.msg import Program,  ProgramBlock, ProgramItem,  ObjectType
-from art_msgs.srv import storeProgram,   getObjectType,  storeObjectType
+from art_msgs.msg import Program, ProgramBlock, ProgramItem, ObjectType
+from art_msgs.srv import storeProgram, getObjectType, storeObjectType
 from shape_msgs.msg import SolidPrimitive
 from geometry_msgs.msg import PoseStamped, PolygonStamped, Point32
 from copy import deepcopy
@@ -17,7 +17,7 @@ def store_object_type(ot):
         store_object_srv = rospy.ServiceProxy(
             '/art/db/object_type/store', storeObjectType)
         resp = store_object_srv(ot)
-    except rospy.ServiceException, e:
+    except rospy.ServiceException as e:
         print "Service call failed: " + str(e)
         return
 
@@ -30,7 +30,7 @@ def store_program(prog):
         store_program_srv = rospy.ServiceProxy(
             '/art/db/program/store', storeProgram)
         resp = store_program_srv(program=prog)
-    except rospy.ServiceException, e:
+    except rospy.ServiceException as e:
         print "Service call failed: " + str(e)
         return
 
@@ -432,15 +432,16 @@ def main(args):
     ot = ObjectType()
     ot.name = "profile_20_60"
     ot.bbox.type = SolidPrimitive.BOX
-    ot.bbox.dimensions.append(0.05)
-    ot.bbox.dimensions.append(0.05)
-    ot.bbox.dimensions.append(0.16)
+    ot.bbox.dimensions.append(0.04)
+    ot.bbox.dimensions.append(0.04)
+    ot.bbox.dimensions.append(0.13)
 
     store_object_type(ot)
 
     ot.name = "profile_20_80"
 
     store_object_type(ot)
+
 
 if __name__ == '__main__':
     try:
