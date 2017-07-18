@@ -94,9 +94,16 @@ class ArtTouchDriver:
         ps.header.frame_id = self.target_frame
         ps.point.z = 0
 
-        self.ref_points = ((0.15, 0.1), (0.55, 0.1), (1.25, 0.1),
-                           (0.15, 0.25), (0.55, 0.25), (1.25, 0.25),
-                           (0.15, 0.55), (0.55, 0.55), (1.25, 0.55))
+        # x/y range (min, max)
+        x = (0.15, 1.25)
+        y = (0.1, 0.5)
+
+        xm = (x[0] + x[1]) / 2.0
+        ym = (y[0] + y[1]) / 2.0
+
+        self.ref_points = ((x[0], y[0]), (xm, y[0]), (x[1], y[0]),
+                           (x[0], ym), (xm, ym), (x[1], ym),
+                           (x[0], y[1]), (xm, y[1]), (x[1], y[1]))
 
         # self.ref_points += self.ref_points
 
