@@ -46,6 +46,7 @@ class ArtTouchDriver:
         self.touch_id = -1
         self.device = input.EventDevice()
         self.device.find(name=self.device_name)
+        self.target_frame = "marker"  # TODO parameter
 
         self.slots = []
         self.slot = None
@@ -97,7 +98,7 @@ class ArtTouchDriver:
         req = TouchCalibrationPointsRequest()
         ps = PointStamped()
         ps.header.stamp = rospy.Time.now()
-        ps.header.frame_id = "marker"
+        ps.header.frame_id = self.target_frame
         ps.point.z = 0
 
         self.ref_points = ((0.15, 0.1), (0.55, 0.1), (1.25, 0.1),
@@ -192,6 +193,8 @@ class ArtTouchDriver:
                     touch.touch = True
                     touch.id = self.slot.track_id
                     touch.point = PointStamped()
+                    touch.point.header.stamp = rospy.Time.now()
+                    touch.point.header.frame_id = self.target_frame
 
                     if self.calibrated:
 
