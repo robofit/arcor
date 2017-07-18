@@ -13,13 +13,18 @@ import sensor_msgs.point_cloud2 as pc2
 import pcl
 import numpy as np
 from sensor_msgs.msg import PointField
+from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
+from geometry_msgs.msg import Transform, TransformStamped, Vector3, Quaternion
+import tf
+from std_msgs.msg import Header
+import struct
 
 
 class ArtCellCalibration(object):
 
     last_pc = None
 
-    def __init__(self, cell_id, markers_topic, world_frame, cell_frame, pc_topic):
+    def __init__(self, cell_id, markers_topic, world_frame, cell_frame, main_cell_frame, pc_topic, tf_listener):
         self.cell_id = cell_id
         self.markers_topic = markers_topic
         self.calibrated = None
@@ -27,6 +32,8 @@ class ArtCellCalibration(object):
 
         self.cell_frame = cell_frame
         self.world_frame = world_frame
+        self.listener = tf_listener  # type: tf.TransformListener()
+        self.main_cell_frame = main_cell_frame
         self.transformation = Transform()
 
         m = rospy.get_param("~" + self.cell_id + "/calibration_matrix", None)
@@ -39,7 +46,7 @@ class ArtCellCalibration(object):
                                                                  queue_size=1,
                                                                  latch=True)
         self.pc_sub = rospy.Subscriber(pc_topic, PointCloud2, self.pc_cb, queue_size=1)
-        self.pc_pub = rospy.Publisher("/test", PointCloud2, queue_size=1)
+        self.pc_pub = rospy.Publisher("/test_" + str(cell_id), PointCloud2, queue_size=1)
 
         if m is not None:
 
@@ -123,7 +130,37 @@ class ArtCellCalibration(object):
             self.calibrate()
 
     def pc_cb(self, pc):
-        p = pcl.PointCloud(np.array(list(pc2.read_points(pc, field_names=['x', 'y', 'z'],
+        '''
+
+        :param pc:
+        :type pc: PointCloud2
+        :return:
+        '''
+
+        if self.cell_frame == self.main_cell_frame:
+            # if False:
+            transformed_cloud = pc
+        else:
+            p = pcl.PointCloud(np.array(list(pc2.read_points(pc, field_names=['x', 'y', 'z'],
+                                                             skip_nans=True)), dtype=np.float32))
+            pcloud = pc2.create_cloud_xyz32(pc.header, p.to_list())
+            try:
+                print self.cell_frame
+                print self.main_cell_frame
+                translation, rotation = self.listener.lookupTransform(self.world_frame, self.main_cell_frame, rospy.Time(0))
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                return
+            print rotation
+            transform = TransformStamped()
+            transform.transform.translation = Vector3(translation[0], translation[1], translation[2])
+            transform.transform.rotation = Quaternion(rotation[0], rotation[1], rotation[2], rotation[3])
+            transform.header.frame_id = self.main_cell_frame
+            transform.child_frame_id = self.world_frame
+            transformed_cloud = do_transform_cloud(pcloud, transform)
+
+            #transformed_cloud = self.listener.transformPointCloud(self.world_frame, pc)
+
+        p = pcl.PointCloud(np.array(list(pc2.read_points(transformed_cloud, field_names=['x', 'y', 'z'],
                                                          skip_nans=True)), dtype=np.float32))
 
         seg = p.make_segmenter()  # type: pcl.Segmentation
@@ -135,11 +172,10 @@ class ArtCellCalibration(object):
         filter = p.make_voxel_grid_filter()  # type: pcl.VoxelGridFilter
         filter.set_leaf_size(0.01, 0.01, 0.01)
         p = filter.filter()
-
-        pcloud = pc2.create_cloud_xyz32(pc.header, p.to_list())
+        h = Header()
+        h.stamp = pc.header.stamp
+        h.seq = pc.header.seq
+        h.frame_id = self.main_cell_frame
+        pcloud = pc2.create_cloud_xyz32(h, p.to_list())
         self.pc_pub.publish(pcloud)
         self.last_pc = p
-
-
-
-
