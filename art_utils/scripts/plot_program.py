@@ -41,6 +41,12 @@ def get_type_string(item):
     elif item.type == ProgramItem.WAIT_UNTIL_USER_FINISHES:
         return "Wait until user finishes"
 
+    elif item.type == ProgramItem.DRILL_POINTS:
+        return "Drill points" # TODO number of points?
+
+    elif item.type == ProgramItem.PLACE_TO_GRID:
+        return "Place to grid"
+
 
 def main(args):
 
