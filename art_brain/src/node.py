@@ -469,40 +469,9 @@ class ArtBrain(object):
 
     def state_place_to_grid(self, event):
         rospy.loginfo('state_place_to_grid')
-        pose = ArtBrainUtils.get_place_pose(self.instruction)
-        self.state_manager.update_program_item(
-            self.ph.get_program_id(), self.block_id, self.instruction)
-
-        if pose is None or len(pose) < 1:
-            self.fsm.error(severity=ArtBrainMachine.ERROR,
-                           error=ArtBrainMachine.ERROR_PLACE_POSE_NOT_DEFINED)
+        if not self.check_robot():
             return
-        else:
-            if len(self.instruction.ref_id) < 1:
-                self.fsm.error(severity=ArtBrainMachine.ERROR,
-                               error=ArtBrainMachine.ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE)
-                return
-
-            rospy.logdebug(self.instruction)
-            gripper = self.get_gripper_by_pick_instruction_id(
-                self.instruction.ref_id)
-            self.check_gripper_for_place(gripper)
-            if gripper.holding_object is None:
-                rospy.logerr("Robot is not holding selected object")
-                self.fsm.error(severity=ArtBrainMachine.WARNING,
-                               error=ArtBrainMachine.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
-                return
-
-            if self.place_object(gripper.holding_object, pose[0], gripper, pick_only_y_axis=True):
-                # self.instruction.pose = pose[1:]
-                self.instruction.pose.pop(0)
-                gripper.holding_object = None
-                self.fsm.done(success=True)
-                return
-            else:
-                self.fsm.error(severity=ArtBrainMachine.WARNING,
-                               error=ArtBrainMachine.ERROR_PLACE_FAILED)
-                return
+        self.place_object_to_grid(self.instruction)
 
     def state_wait_for_user(self, event):
         rospy.loginfo('state_wait_for_user')
@@ -870,6 +839,59 @@ class ArtBrain(object):
             if self.place_object(gripper.holding_object, pose[0], gripper):
                 gripper.holding_object = None
                 # gripper.last_pick_instruction_id = self.instruction.id
+                if get_ready_after_place:
+                    gripper.get_ready()
+                self.fsm.done(success=True)
+                return
+            else:
+                gripper.get_ready()
+                self.fsm.error(severity=InterfaceState.WARNING,
+                               error=ArtBrainErrors.ERROR_PLACE_FAILED)
+                return
+
+    def place_object_to_grid(self, instruction, update_state_manager=True, get_ready_after_place=False):
+
+        pose = ArtBrainUtils.get_place_pose(instruction)
+
+        if pose is None or len(pose) < 1:
+            self.fsm.error(severity=InterfaceState.ERROR,
+                           error=ArtBrainErrors.ERROR_NOT_ENOUGH_PLACE_POSES)
+            if update_state_manager:
+                self.state_manager.update_program_item(
+                    self.ph.get_program_id(), self.block_id, instruction)
+            return
+        else:
+            if len(instruction.ref_id) < 1:
+                self.fsm.error(
+                    severity=InterfaceState.ERROR,
+                    error=ArtBrainErrors.ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE)
+                if update_state_manager:
+                    self.state_manager.update_program_item(
+                        self.ph.get_program_id(), self.block_id, instruction)
+                return
+            rospy.logdebug(self.instruction)
+            gripper = self.get_gripper_by_pick_instruction_id(
+                instruction.ref_id)
+
+            if not self.check_gripper_for_place(gripper):
+                return
+
+            if gripper.holding_object is None:
+                rospy.logerr("Robot is not holding selected object")
+                self.fsm.error(
+                    severity=InterfaceState.WARNING,
+                    error=ArtBrainErrors.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
+                if update_state_manager:
+                    self.state_manager.update_program_item(
+                        self.ph.get_program_id(), self.block_id, instruction)
+                return
+            # if update_state_manager:
+            #     self.state_manager.update_program_item(
+            #         self.ph.get_program_id(), self.block_id, instruction,
+            #         {"SELECTED_OBJECT_ID": gripper.holding_object.object_id})
+            if self.place_object(gripper.holding_object, pose[0], gripper, pick_only_y_axis=True):
+                instruction.pose.pop(0)
+                gripper.holding_object = None
                 if get_ready_after_place:
                     gripper.get_ready()
                 self.fsm.done(success=True)
