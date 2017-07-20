@@ -50,7 +50,12 @@ class Dobot(threading.Thread):
 
     def run(self):
         while self.on:
-            self._get_pose()
+            try:
+                pass
+                self._get_pose()
+            except Exception as e:
+                print (e)
+                pass
             time.sleep(0.2)
 
     def close(self):
@@ -60,6 +65,7 @@ class Dobot(threading.Thread):
         if self.verbose:
             print('pydobot: %s closed' % self.ser.name)
         self.lock.release()
+
 
     def _send_command(self, msg):
         self.lock.acquire()
@@ -71,7 +77,7 @@ class Dobot(threading.Thread):
     def _send_message(self, msg):
         time.sleep(0.1)
         if self.verbose:
-            print('pydobot: >>', msg)
+            print('pydobot: >>' + str(msg))
         self.ser.write(msg.bytes())
 
     def _read_message(self):
@@ -80,9 +86,12 @@ class Dobot(threading.Thread):
         if len(b) > 0:
             msg = Message(b)
             if self.verbose:
-                print('pydobot: <<', msg)
+                print('pydobot: <<' + str(msg))
             return msg
         return
+
+    def get_pose(self):
+        return self._get_pose()
 
     def _get_pose(self):
         msg = Message()
