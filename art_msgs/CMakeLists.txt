@@ -49,6 +49,8 @@ add_service_files(
     ProgramErrorResolve.srv
     SelectArm.srv
     RecalibrateCell.srv
+    ObjectFlagSet.srv
+    ObjectFlagClear.srv
 )
 
 generate_messages(

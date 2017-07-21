@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 import rospy
 from art_msgs.msg import InstancesArray, ObjInstance
+from art_msgs.srv import ObjectFlagSetResponse, ObjectFlagSet, ObjectFlagClear, ObjectFlagClearResponse
 import tf
 from geometry_msgs.msg import Pose, PoseStamped
 from math import sqrt
@@ -37,6 +38,7 @@ class TrackedObject:
         self.new = True
 
         self.meas = {}
+        self.flags = {}
 
     def add_meas(self, ps):
 
@@ -165,6 +167,12 @@ class TrackedObject:
 
         a2q(inst.pose.orientation, transformations.quaternion_from_euler(*cur_rpy))
 
+        for (key, value) in self.flags.iteritems():
+            kv = KeyValue()
+            kv.key = key
+            kv.value = value
+            inst.flags.append(kv)
+
         return inst
 
     def transform(self, ps):
@@ -191,6 +199,48 @@ class ArtSimpleTracker:
         self.prune_timer = rospy.Timer(self.meas_max_age, self.prune_timer_cb)
         self.objects = {}
         self.br = tf.TransformBroadcaster()
+
+        self.srv_set_flag = rospy.Service('/art/object_detector/flag/set', ObjectFlagSet, self.srv_set_flag_cb)
+        self.srv_clear_flag = rospy.Service('/art/object_detector/flag/clear', ObjectFlagClear, self.srv_clear_flag_cb)
+
+    def srv_clear_flag_cb(self, req):
+
+        with self.lock:
+
+            resp = ObjectFlagClearResponse()
+
+            if req.object_id not in self.objects:
+
+                resp.success = False
+                resp.error = "Unknown object"
+                return resp
+
+            if req.key not in self.objects[req.object_id].flags:
+
+                resp.success = False
+                resp.error = "Unknown key"
+                return resp
+
+            del self.objects[req.object_id].flags[req.key]
+            resp.success = True
+            return resp
+
+    def srv_set_flag_cb(self, req):
+
+        with self.lock:
+
+            # TODO should flag be remembered even if object is lost and then detected again?
+            resp = ObjectFlagSetResponse()
+
+            if req.object_id not in self.objects:
+
+                resp.success = False
+                resp.error = "Unknown object"
+                return resp
+
+            self.objects[req.object_id].flags[req.flag.key] = req.flag.value
+            resp.success = True
+            return resp
 
     def prune_timer_cb(self, event):
 

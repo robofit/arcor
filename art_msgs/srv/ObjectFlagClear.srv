@@ -1,0 +1,5 @@
+string object_id
+string key
+---
+bool success
+string error
