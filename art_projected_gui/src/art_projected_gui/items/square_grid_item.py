@@ -4,6 +4,7 @@ from PyQt4 import QtGui, QtCore
 from item import Item
 from art_projected_gui.items import PlaceItem, ButtonItem, ObjectItem
 from desc_item import DescItem
+from dialog_item import DialogItem
 from math import modf
 from geometry_msgs.msg import PoseStamped
 # from art_msgs.msg import ObjectType
@@ -15,14 +16,16 @@ translate = QtCore.QCoreApplication.translate
 '''
     Class depicts grid corners. If some corner is moved, class informs its parent.
 '''
+
+
 class SquarePointItem(Item):
 
     # Class constructor
-    def __init__(self,  scene, x, y,  parent, corner, fixed, changed=False):
+    def __init__(self, scene, x, y, parent, corner, fixed, changed=False):
 
         self.outline_diameter = 0.025
 
-        super(SquarePointItem, self).__init__(scene, x, y, parent)
+        super(SquarePointItem, self).__init__(scene, x, y, 0, parent)
 
         self.corner = corner
         self.changed = changed
@@ -32,6 +35,7 @@ class SquarePointItem(Item):
     '''
         Method returns type of the corner (e.g. BR = bottom-right)
     '''
+
     def get_corner(self):
 
         return self.corner
@@ -39,6 +43,7 @@ class SquarePointItem(Item):
     '''
         Method sets an attribute "changed".
     '''
+
     def set_changed(self, changed):
 
         self.changed = changed
@@ -46,6 +51,7 @@ class SquarePointItem(Item):
     '''
         Method returns an attribute "changed".
     '''
+
     def get_changed(self):
 
         return self.changed
@@ -53,26 +59,29 @@ class SquarePointItem(Item):
     '''
         Method defines the outer bounds of the item as a rectangle.
     '''
+
     def boundingRect(self):
 
-        es = self.m2pix(self.outline_diameter*1.8)
+        es = self.m2pix(self.outline_diameter * 1.8)
 
-        return QtCore.QRectF(-es/2, -es/2, es, es)
+        return QtCore.QRectF(-es / 2, -es / 2, es, es)
 
     '''
          Method returns the shape of this corner as a QPainterPath in local coordinates.
     '''
+
     def shape(self):
 
         path = QtGui.QPainterPath()
         es = self.m2pix(self.outline_diameter)
-        path.addEllipse(QtCore.QPoint(0,  0),  es/2,  es/2)
+        path.addEllipse(QtCore.QPoint(0, 0), es / 2, es / 2)
         return path
 
     '''
         Metoda nastavuje atribut changed a vola rodicovsku metodu point_changed(), ked sa pohne s rohom.
         Method sets an attribute "changed" and calls parent's method "point_changed" when some corner is moved.
     '''
+
     def item_moved(self):
 
         self.changed = True
@@ -82,6 +91,7 @@ class SquarePointItem(Item):
         Metoda vola rodicovsku metodu point_changed, ked sa pusti roh.
         Method calls parent's method "point_changed" when a corner is released.
     '''
+
     def cursor_release(self):
 
         self.parentItem().point_changed(True)
@@ -89,6 +99,7 @@ class SquarePointItem(Item):
     '''
         Method paints the corner.
     '''
+
     def paint(self, painter, option, widget):
 
         painter.setClipRect(option.exposedRect)
@@ -100,12 +111,12 @@ class SquarePointItem(Item):
 
             painter.setBrush(QtCore.Qt.gray)
             painter.setPen(QtCore.Qt.gray)
-            painter.drawEllipse(QtCore.QPoint(0,  0), es/2*1.8, es/2*1.8)
+            painter.drawEllipse(QtCore.QPoint(0, 0), es / 2 * 1.8, es / 2 * 1.8)
 
         painter.setBrush(QtCore.Qt.cyan)
         painter.setPen(QtCore.Qt.cyan)
 
-        painter.drawEllipse(QtCore.QPoint(0,  0), es/2, es/2)
+        painter.drawEllipse(QtCore.QPoint(0, 0), es / 2, es / 2)
 
 
 '''
@@ -113,10 +124,12 @@ class SquarePointItem(Item):
     It implements grid's functionality such as increasing/decreasing grid proportions, rotation of objects in the grid,
     changing spacing between objects and even distribution of objects in this grid.
 '''
+
+
 class SquareItem(Item):
 
     # Class constructor
-    def __init__(self,  scene, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points, scene_items, square_changed=None, fixed=False):
+    def __init__(self, scene, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points, scene_items, square_changed=None, fixed=False):
 
         self.scn = scene
         self.caption = caption
@@ -127,7 +140,7 @@ class SquareItem(Item):
         self.space = 0.05   # is added to bbox of an object
 
         self.object_side_length_x = self.object_type.bbox.dimensions[0] + self.space
-        self.object_side_length_y = self.object_type.bbox.dimensions[2] + self.space
+        self.object_side_length_y = self.object_type.bbox.dimensions[1] + self.space
         self.poses = poses
 
         self.square = QtGui.QPolygon()
@@ -151,6 +164,8 @@ class SquareItem(Item):
         self.orig_y = []
 
         self.desc = None
+        self.dialog = None
+        self.horizontal = False
 
         super(SquareItem, self).__init__(scene, min_x, min_y)
         self.fixed = fixed
@@ -162,7 +177,7 @@ class SquareItem(Item):
         self.plus_btn = ButtonItem(scene, self.min[0] - 0.01, self.min[1] - 0.04, "+", self, self.plus_clicked, 1.25,
                                    QtCore.Qt.darkCyan, width=0.04)
         self.minus_btn = ButtonItem(scene, self.min[0] + 0.035, self.min[1] - 0.04, "-", self, self.minus_clicked, 1.25,
-                                   QtCore.Qt.darkCyan, width=0.04)
+                                    QtCore.Qt.darkCyan, width=0.04)
         self.plus_btn.setEnabled(False)
         self.minus_btn.setEnabled(False)
 
@@ -180,14 +195,15 @@ class SquareItem(Item):
                     "Object",
                     pose.pose.position.x,
                     pose.pose.position.y,
+                    pose.pose.position.z,
+                    conversions.q2a(pose.pose.orientation),
                     self.object_type,
                     None,
                     place_pose_changed=None,
                     fixed=True,
-                    yaw=conversions.quaternion2yaw(pose.pose.orientation),
                     txt=False,
                     parent=self,
-                    horizontal=True
+                    horizontal=self.horizontal
                 )
                 self.items.append(it)
         else:
@@ -205,17 +221,18 @@ class SquareItem(Item):
                     "Object",
                     pose.pose.position.x,
                     pose.pose.position.y,
+                    pose.pose.position.z,
+                    conversions.q2a(pose.pose.orientation),
                     self.object_type,
                     None,
                     place_pose_changed=None,
                     fixed=False,
-                    yaw=conversions.quaternion2yaw(pose.pose.orientation),
                     txt=False,
                     rot=rot,
                     rot_point=rot_point,
                     rotation_changed=self.items_rotation_changed,
                     parent=self,
-                    horizontal=True
+                    horizontal=self.horizontal
                 )
                 it.update_point()
                 self.items.append(it)
@@ -224,6 +241,19 @@ class SquareItem(Item):
                 self.items[0].set_other_items(self.items[1:])   # rotation of all objects in a grid (list of all objects is handed over to the first object. When the first object is rotated, all objects are rotated)
                 self.plus_btn.setEnabled(True)
                 self.minus_btn.setEnabled(True)
+                self.dialog = DialogItem(self.scene(),
+                                         self.pix2m(self.scene().width() / 2),
+                                         0.1,
+                                         translate(
+                    "Place item",
+                    "Object place pose options"),
+                    [
+                    translate(
+                        "Place item", "Rotate |"),
+                    translate(
+                        "Place item", "Rotate --")
+                ],
+                    self.dialog_cb)
 
         if self.square_changed is not None:
             self.square_changed(self.get_square_points(), self.items)   # to save grid points and objects into the ProgramItem message
@@ -234,6 +264,7 @@ class SquareItem(Item):
     '''
         Method updates text below the grid.
     '''
+
     def update_text(self):
 
         if self.desc is None:
@@ -246,6 +277,7 @@ class SquareItem(Item):
         Method is called when "+" button is pushed. It increase spacing between objects and walls of the box,
         and between objects.
     '''
+
     def plus_clicked(self, btn):
         self.space += 0.01
         self.point_changed(True, self.last_corner)
@@ -254,6 +286,7 @@ class SquareItem(Item):
         Method is called when "-" button is pushed. It decrease spacing between objects and walls of the box,
         and between objects.
     '''
+
     def minus_clicked(self, btn):
         if self.space > 0.02:
             self.space -= 0.01
@@ -262,6 +295,7 @@ class SquareItem(Item):
     '''
         Method updates the bounding rectangle.
     '''
+
     def update_bound(self):
 
         self.min[0] = self.pix2m(self.pts[0].x())
@@ -275,11 +309,15 @@ class SquareItem(Item):
 
             p = (self.pix2m(pt.x()), self.pix2m(pt.y()))
 
-            if p[0] < self.min[0]: self.min[0] = p[0]
-            if p[1] < self.min[1]: self.min[1] = p[1]
+            if p[0] < self.min[0]:
+                self.min[0] = p[0]
+            if p[1] < self.min[1]:
+                self.min[1] = p[1]
 
-            if p[0] > self.max[0]: self.max[0] = p[0]
-            if p[1] > self.max[1]: self.max[1] = p[1]
+            if p[0] > self.max[0]:
+                self.max[0] = p[0]
+            if p[1] > self.max[1]:
+                self.max[1] = p[1]
 
             point = pt.get_pos()
             self.orig_x.append(point[0])
@@ -291,6 +329,7 @@ class SquareItem(Item):
     '''
         Method returns a required corner.
     '''
+
     def find_corner(self, corner):
         for pt in self.pts:
             if pt.get_corner() == corner:
@@ -306,7 +345,8 @@ class SquareItem(Item):
         It secures even distribution of objects in the grid, checks collisions.
         Also secures saving grid points and positions of objects into the ProgramItem message.
     '''
-    def point_changed(self,  finished=False, corner=""):
+
+    def point_changed(self, finished=False, corner=""):
 
         if self.fixed:
             return
@@ -348,21 +388,24 @@ class SquareItem(Item):
         if corner != "":
 
             self.object_side_length_x = self.object_type.bbox.dimensions[0] + self.space
-            self.object_side_length_y = self.object_type.bbox.dimensions[2] + self.space
+            if not self.horizontal:
+                self.object_side_length_y = self.object_type.bbox.dimensions[1] + self.space
+            else:
+                self.object_side_length_y = self.object_type.bbox.dimensions[2] + self.space
 
             width_count = int(modf(round((((self.max[0] - self.min[0]) - self.space) / self.object_side_length_x), 5))[1])
             height_count = int(modf(round((((self.max[1] - self.min[1]) - self.space) / self.object_side_length_y), 5))[1])
             if self.previous_width != width_count or self.previous_height != height_count:
                 ps = PoseStamped()
                 if corner == "BR" or corner == "TR":
-                    ps.pose.position.x = self.pom_min[0] + self.space/2 + self.object_side_length_x/2
+                    ps.pose.position.x = self.pom_min[0] + self.space / 2 + self.object_side_length_x / 2
                 else:
-                    ps.pose.position.x = self.pom_max[0] - self.space/2 - self.object_side_length_x/2
+                    ps.pose.position.x = self.pom_max[0] - self.space / 2 - self.object_side_length_x / 2
 
                 if corner == "BR" or corner == "BL":
-                    ps.pose.position.y = self.pom_max[1] - self.space/2 - self.object_side_length_y/2
+                    ps.pose.position.y = self.pom_max[1] - self.space / 2 - self.object_side_length_y / 2
                 else:
-                    ps.pose.position.y = self.pom_min[1] + self.space/2 + self.object_side_length_y/2
+                    ps.pose.position.y = self.pom_min[1] + self.space / 2 + self.object_side_length_y / 2
                 ps.pose.orientation.w = 1.0
 
                 if self.items:
@@ -400,17 +443,18 @@ class SquareItem(Item):
                             "Object",
                             ps.pose.position.x,
                             ps.pose.position.y,
+                            ps.pose.position.z,
+                            conversions.q2a(ps.pose.orientation),
                             self.object_type,
                             None,
                             place_pose_changed=None,
                             fixed=False,
-                            yaw=conversions.quaternion2yaw(ps.pose.orientation),
                             txt=False,
                             rot=rot,
                             rot_point=rot_point,
                             rotation_changed=self.items_rotation_changed,
                             parent=self,
-                            horizontal=True
+                            horizontal=self.horizontal
                         )
                         it.setRotation(rotation)
                         it.update_point()
@@ -421,14 +465,14 @@ class SquareItem(Item):
                         else:
                             ps.pose.position.x -= self.object_side_length_x  # TL BL
                     if corner == "BR" or corner == "TR":
-                        ps.pose.position.x = self.pom_min[0] + self.space/2 + self.object_side_length_x/2  # BR a TR
+                        ps.pose.position.x = self.pom_min[0] + self.space / 2 + self.object_side_length_x / 2  # BR a TR
                     else:
-                        ps.pose.position.x = self.pom_max[0] - self.space/2 - self.object_side_length_x/2  # TL BL
+                        ps.pose.position.x = self.pom_max[0] - self.space / 2 - self.object_side_length_x / 2  # TL BL
 
                     if corner == "BR" or corner == "BL":
-                        ps.pose.position.y -= self.object_side_length_y + self.space/2   # BR BL
+                        ps.pose.position.y -= self.object_side_length_y + self.space / 2   # BR BL
                     else:
-                        ps.pose.position.y += self.object_side_length_y + self.space/2  # TL TR
+                        ps.pose.position.y += self.object_side_length_y + self.space / 2  # TL TR
                 self.previous_width = width_count
                 self.previous_height = height_count
 
@@ -447,16 +491,16 @@ class SquareItem(Item):
 
                 for i, it in enumerate(self.items):
                     if self.last_corner == "BR" or self.last_corner == "TR":
-                        new_x = self.pom_min[0] + self.space/2 + new_object_length_x / 2 + new_object_length_x * (i % self.previous_width)
+                        new_x = self.pom_min[0] + self.space / 2 + new_object_length_x / 2 + new_object_length_x * (i % self.previous_width)
                     else:
-                        new_x = self.pom_max[0] - self.space/2 - new_object_length_x / 2 - new_object_length_x * (i % self.previous_width)
+                        new_x = self.pom_max[0] - self.space / 2 - new_object_length_x / 2 - new_object_length_x * (i % self.previous_width)
 
                     if self.last_corner == "BR" or self.last_corner == "BL":
-                        new_y = self.pom_max[1] - self.space/2 - new_object_length_y / 2 - new_object_length_y * (
-                        i / self.previous_width)
+                        new_y = self.pom_max[1] - self.space / 2 - new_object_length_y / 2 - new_object_length_y * (
+                            i / self.previous_width)
                     else:
-                        new_y = self.pom_min[1] + self.space/2 + new_object_length_y / 2 + new_object_length_y * (
-                        i / self.previous_width)
+                        new_y = self.pom_min[1] + self.space / 2 + new_object_length_y / 2 + new_object_length_y * (
+                            i / self.previous_width)
                     it.set_pos(new_x, new_y)
                     it.update_point()
 
@@ -466,7 +510,7 @@ class SquareItem(Item):
             self.plus_btn.setEnabled(True)
             self.minus_btn.setEnabled(True)
 
-            if self.last_corner == "BR" or self.last_corner == "BL":
+            if self.last_corner == "BR" or self.last_corner == "BL":  # TODO: skontrolovat ci nema byt TR a TL!!!!!!!!!!!!!!!!!!!!
                 self.items.reverse()    # we want robot always to place object from furthest line
 
             in_collision = False
@@ -481,9 +525,18 @@ class SquareItem(Item):
 
         self.update()
 
+    def dialog_cb(self, idx):
+        if idx == 0:
+            self.horizontal = False
+            self.point_changed(True, "BR")
+        else:
+            self.horizontal = True
+            self.point_changed(True, "BR")
+
     '''
         Method returns grid points.
     '''
+
     def get_square_points(self):
 
         pts = []
@@ -499,6 +552,7 @@ class SquareItem(Item):
         It saves new positions of grid points and objects into the ProgramItem message.
         It checks collisions between grid objects and scene objects.
     '''
+
     def cursor_release(self):
 
         if self.fixed:
@@ -524,6 +578,7 @@ class SquareItem(Item):
     '''
         Method saves new rotations after rotating objects.
     '''
+
     def items_rotation_changed(self, items):
 
         self.square_changed(self.get_square_points(), items)  # to save grid points and objects into the ProgramItem message
@@ -531,6 +586,7 @@ class SquareItem(Item):
     '''
         Method returns the shape of this grid as a QPainterPath in local coordinates.
     '''
+
     def shape(self):
 
         path = QtGui.QPainterPath()
@@ -540,13 +596,15 @@ class SquareItem(Item):
     '''
         Method defines the outer bounds of the item as a rectangle.
     '''
+
     def boundingRect(self):
 
-        return QtCore.QRectF(self.m2pix(self.min[0])-2.5,  self.m2pix(self.min[1])-2.5, self.m2pix(self.max[0]-self.min[0])+5, self.m2pix(self.max[1]-self.min[1])+5)
+        return QtCore.QRectF(self.m2pix(self.min[0]) - 2.5, self.m2pix(self.min[1]) - 2.5, self.m2pix(self.max[0] - self.min[0]) + 5, self.m2pix(self.max[1] - self.min[1]) + 5)
 
     '''
         Method paints the grid.
     '''
+
     def paint(self, painter, option, widget):
 
         painter.setClipRect(option.exposedRect)
@@ -563,8 +621,8 @@ class SquareItem(Item):
 
         self.square = QtGui.QPolygon()
 
-        for i in range(0,  len(self.pts)):
-            
+        for i in range(0, len(self.pts)):
+
             self.square.append(self.pts[i].pos().toPoint())
 
         painter.drawPolygon(self.square)

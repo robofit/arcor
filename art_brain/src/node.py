@@ -849,7 +849,7 @@ class ArtBrain(object):
                                error=ArtBrainErrors.ERROR_PLACE_FAILED)
                 return
 
-    def place_object_to_grid(self, instruction, update_state_manager=True, get_ready_after_place=False):
+    def place_object_to_grid(self, instruction, update_state_manager=True, get_ready_after_place=True):
 
         pose = ArtBrainUtils.get_place_pose(instruction)
 
@@ -885,16 +885,20 @@ class ArtBrain(object):
                     self.state_manager.update_program_item(
                         self.ph.get_program_id(), self.block_id, instruction)
                 return
-            # if update_state_manager:
-            #     self.state_manager.update_program_item(
-            #         self.ph.get_program_id(), self.block_id, instruction,
-            #         {"SELECTED_OBJECT_ID": gripper.holding_object.object_id})
+            if update_state_manager:
+                self.state_manager.update_program_item(
+                    self.ph.get_program_id(), self.block_id, instruction,
+                    {"SELECTED_OBJECT_ID": gripper.holding_object.object_id})
             if self.place_object(gripper.holding_object, pose[0], gripper, pick_only_y_axis=True):
                 instruction.pose.pop(0)
                 gripper.holding_object = None
                 if get_ready_after_place:
                     gripper.get_ready()
-                self.fsm.done(success=True)
+                if len(instruction.pose) > 0:
+                    self.fsm.done(success=True)
+                else:
+                    self.fsm.error(severity=InterfaceState.ERROR,
+                                   error=ArtBrainErrors.ERROR_NOT_ENOUGH_PLACE_POSES)
                 return
             else:
                 gripper.get_ready()

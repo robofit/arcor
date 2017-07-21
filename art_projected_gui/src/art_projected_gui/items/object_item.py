@@ -168,14 +168,8 @@ class ObjectItem(Item):
 
             return QtCore.QRectF()
 
-        self.lx = self.hover_ratio * self.inflate * \
-            self.m2pix(self.object_type.bbox.dimensions[0])
-        if not self.horizontal:
-            self.ly = self.hover_ratio * self.inflate * \
-                self.m2pix(self.object_type.bbox.dimensions[1])
-        else:
-            self.ly = self.hover_ratio * self.inflate * \
-                 self.m2pix(self.object_type.bbox.dimensions[2])
+        if self.horizontal:
+            self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[2])
         p = 10.0
         return QtCore.QRectF(-self.lx / 2 - p, -self.ly / 2 - p, self.lx + 2 * p, self.ly + 2 * p)
 
