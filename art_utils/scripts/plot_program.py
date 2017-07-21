@@ -18,6 +18,10 @@ def get_type_string(item):
 
         return "Robot ready"
 
+    elif item.type == ProgramItem.NOP:
+
+        return "No operation"
+
     elif item.type == ProgramItem.PICK_FROM_FEEDER:
 
         return "PICK_FROM_FEEDER\nobject type: " + item.object[0]

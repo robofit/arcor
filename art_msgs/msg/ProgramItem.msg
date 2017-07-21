@@ -10,6 +10,7 @@ uint16 type
 
 # basic instructions
 uint16 GET_READY=0 # retract arms etc.
+uint16 NOP=1 # no operation
 
 # synchronization with user
 uint16 WAIT_FOR_USER=50
