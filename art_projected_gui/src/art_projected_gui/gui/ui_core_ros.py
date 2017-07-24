@@ -119,6 +119,12 @@ class UICoreRos(UICore):
         self.emergency_stop_reset_srv = rospy.ServiceProxy(
             '/pr2_ethercat/reset_motors', EmptyService)  # TODO wait for service? where?
 
+        self.motors_halted_sub = rospy.Subscriber(
+            "/pr2_ethercat/motors_halted", Bool, self.motors_halted_cb)
+
+        QtCore.QObject.connect(self, QtCore.SIGNAL(
+            'motors_halted_evt'), self.motors_halted_evt)
+
         self.program_error_resolve_srv = rospy.ServiceProxy(
             '/art/brain/program/error_response', ProgramErrorResolve)  # TODO wait for service? where?
         self.program_error_dialog = None
@@ -270,6 +276,24 @@ class UICoreRos(UICore):
         else:
             self.notif(req.message, min_duration=req.duration.to_sec(),
                        temp=True, message_type=req.type)
+
+    def motors_halted_cb(self, msg):
+
+        self.emit(QtCore.SIGNAL('motors_halted_evt'), msg.data)
+
+    def motors_halted_evt(self, halted):
+
+        if not self.emergency_stopped:
+
+            if halted:
+
+                self.notif(translate("UICoreRos", "Robot is halted."))
+                self.stop_btn.set_enabled(False)
+
+            else:
+
+                self.notif(translate("UICoreRos", "Robot is up again."))
+                self.stop_btn.set_enabled(True)
 
     def stop_btn_clicked(self, btn):
 
