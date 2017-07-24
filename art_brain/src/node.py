@@ -1225,8 +1225,7 @@ class ArtBrain(object):
     def motors_halted_cb(self, req):
         if not self.initialized:
             return
-        rospy.loginfo(str(req.data))
-        self.motors_halted = req.data
+
         if self.motors_halted and not req.data:
             if self.gripper_usage == ArtGripper.GRIPPER_LEFT:
                 self.left_gripper.get_ready()
@@ -1235,6 +1234,8 @@ class ArtBrain(object):
             elif self.gripper_usage == ArtGripper.GRIPPER_BOTH:
                 self.left_gripper.get_ready()
                 self.right_gripper.get_ready()
+
+        self.motors_halted = req.data
 
     def projectors_calibrated_cb(self, msg):
 
