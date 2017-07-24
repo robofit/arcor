@@ -26,9 +26,10 @@ class ArtCalibration(object):
                                                  '/marker_detected', '/' + cell_names[0] + '_kinect2_link',
                                                  '/art/' + cell + '/kinect2/qhd/points', self.listener))
 
-        # self.cells.append(ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
-        #                                      '/odom_combined', '/marker_detected',
-        #                                      '/pr2/points'))
+        self.cells.append(ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
+                                              '/odom_combined', '/marker_detected',
+                                              '/' + cell_names[0] + '_kinect2_link',
+                                              '/pr2/points', self.listener))
 
         self.calibrated_pub = rospy.Publisher('/art/system/calibrated', Bool,
                                               queue_size=10, latch=True)

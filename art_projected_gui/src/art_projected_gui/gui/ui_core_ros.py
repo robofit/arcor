@@ -505,6 +505,25 @@ class UICoreRos(UICore):
                 self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),
                                it.pose[0], obj.object_type, obj_id, fixed=True)
 
+        elif it.type == ProgIt.PLACE_TO_GRID:
+
+            ref_msg = self.program_vis.get_ref_item(it.ref_id)  # obtaining reference instruction
+
+            if ref_msg.type == ProgIt.PICK_OBJECT_ID:
+
+                obj = self.get_object(ref_msg.object[0])
+                object_type = obj.object_type
+                self.program_vis.get_current_item().object[0] = obj.object_id
+
+            else:
+
+                object_type = self.art.get_object_type(ref_msg.object[0])
+                self.program_vis.get_current_item().object[0] = ref_msg.object[0]
+            self.notif(translate("UICoreRos", "Going to place object into grid"))
+            self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
+                            0.075, object_type, it.pose, grid_points=conversions.get_pick_polygon_points(it),
+                            square_changed=self.square_changed, fixed=True)
+
     def show_program_vis(self, readonly=False, stopped=False):
 
         rospy.logdebug("Showing ProgramItem with readonly=" + str(readonly) + ", stopped=" + str(stopped))
@@ -743,6 +762,24 @@ class UICoreRos(UICore):
                             translate("UICoreRos", "Set where to place picked object"))
                         self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), self.get_def_pose(
                         ), object_type, object_id, place_cb=self.place_pose_changed, fixed=read_only)
+
+        elif msg.type == ProgIt.PLACE_TO_GRID:
+
+            ref_msg = self.program_vis.get_ref_item(msg.ref_id)  # obtaining reference instruction
+
+            if ref_msg.type == ProgIt.PICK_OBJECT_ID:
+
+                obj = self.get_object(ref_msg.object[0])
+                object_type = obj.object_type
+                self.program_vis.get_current_item().object[0] = obj.object_id
+
+            else:
+
+                object_type = self.art.get_object_type(ref_msg.object[0])
+                self.program_vis.get_current_item().object[0] = ref_msg.object[0]
+            self.notif(translate("UICoreRos", "Place grid"))
+            self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
+                            0.075, object_type, msg.pose, grid_points=conversions.get_pick_polygon_points(msg), square_changed=self.square_changed, fixed=read_only)
 
     def active_item_switched(self, block_id, item_id, read_only=True):
 
@@ -1021,6 +1058,17 @@ class UICoreRos(UICore):
             self.program_vis.set_polygon(pts)
             self.state_manager.update_program_item(self.ph.get_program_id(
             ), self.program_vis.block_id, self.program_vis.get_current_item())
+
+    '''
+        Method which saves grid points and place poses of all objects in grid.
+    '''
+
+    def square_changed(self, pts, poses=None):
+
+        self.program_vis.set_place_grid(pts)    # saving grid points into the ProgramItem message
+        self.program_vis.set_place_poses(poses)  # saving place poses into the ProgramItem message
+        self.state_manager.update_program_item(self.ph.get_program_id(
+        ), self.program_vis.block_id, self.program_vis.get_current_item())
 
     def object_selected(self, id, selected):
 

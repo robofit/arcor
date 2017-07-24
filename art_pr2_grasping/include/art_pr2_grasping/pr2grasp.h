@@ -76,7 +76,7 @@ public:
 
   bool hasGraspedObject();
 
-  bool pick(const std::string& object_id);
+  bool pick(const std::string& object_id, bool pick_only_y_axis=false);
 
   bool addTable(double x, double y, double angle, double width, double height,
                 double depth, std::string name);

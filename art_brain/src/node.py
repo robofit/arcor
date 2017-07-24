@@ -5,6 +5,7 @@ import rospy
 import time
 import copy
 import sys
+import math
 
 import actionlib
 from art_msgs.msg import LocalizeAgainstUMFAction, LocalizeAgainstUMFGoal, LocalizeAgainstUMFResult
@@ -61,6 +62,7 @@ class ArtBrain(object):
         self.fsm.state_pick_from_feeder = self.state_pick_from_feeder
         self.fsm.state_pick_object_id = self.state_pick_object_id
         self.fsm.state_place_to_pose = self.state_place_to_pose
+        self.fsm.state_place_to_grid = self.state_place_to_grid
         self.fsm.state_path_through_points = self.state_path_through_points
         self.fsm.state_welding_points = self.state_welding_points
         self.fsm.state_welding_seam = self.state_welding_seam
@@ -75,6 +77,7 @@ class ArtBrain(object):
         self.fsm.state_learning_pick_from_feeder = self.state_learning_pick_from_feeder
         self.fsm.state_learning_pick_object_id = self.state_learning_pick_object_id
         self.fsm.state_learning_place_to_pose = self.state_learning_place_to_pose
+        self.fsm.state_learning_place_to_grid = self.state_learning_place_to_grid
         self.fsm.state_learning_pick_from_polygon_run = self.state_learning_pick_from_polygon_run
         self.fsm.state_learning_pick_from_feeder_run = self.state_learning_pick_from_feeder_run
         self.fsm.state_learning_pick_object_id_run = self.state_learning_pick_object_id_run
@@ -331,6 +334,7 @@ class ArtBrain(object):
             ProgramItem.PICK_FROM_FEEDER: self.fsm.pick_from_feeder,
             ProgramItem.PICK_OBJECT_ID: self.fsm.pick_object_id,
             ProgramItem.PLACE_TO_POSE: self.fsm.place_to_pose,
+            ProgramItem.PLACE_TO_GRID: self.fsm.place_to_grid,
             ProgramItem.PATH_THROUGH_POINTS: self.fsm.path_through_points,
             ProgramItem.WELDING_POINTS: self.fsm.welding_points,
             ProgramItem.WELDING_SEAM: self.fsm.welding_seam,
@@ -403,7 +407,7 @@ class ArtBrain(object):
         if not self.check_gripper_for_pick(gripper):
             return
 
-        if self.pick_object_by_id(obj, gripper):
+        if self.pick_object_by_id(obj, gripper, pick_only_y_axis=True):
             gripper.holding_object = obj
             gripper.last_pick_instruction_id = self.instruction.id
             self.fsm.done()
@@ -462,6 +466,12 @@ class ArtBrain(object):
         else:
             # TODO: error
             return
+
+    def state_place_to_grid(self, event):
+        rospy.loginfo('state_place_to_grid')
+        if not self.check_robot():
+            return
+        self.place_object_to_grid(self.instruction)
 
     def state_wait_for_user(self, event):
         rospy.loginfo('state_wait_for_user')
@@ -651,6 +661,10 @@ class ArtBrain(object):
         rospy.loginfo('state_learning_place_to_pose')
         pass
 
+    def state_learning_place_to_grid(self, event):
+        rospy.loginfo('state_learning_place_to_grid')
+        pass
+
     def state_learning_pick_object_id_run(self, event):
         rospy.loginfo('state_learning_pick_object_id_run')
         rospy.sleep(2)
@@ -730,7 +744,7 @@ class ArtBrain(object):
         if not self.check_gripper_for_pick(gripper):
             return
 
-        if self.pick_object_by_id(obj, gripper):
+        if self.pick_object_by_id(obj, gripper, pick_only_y_axis=True):
             gripper.holding_object = obj
             gripper.last_pick_instruction_id = instruction.id
             self.fsm.done(success=True)
@@ -739,12 +753,13 @@ class ArtBrain(object):
             self.fsm.error(severity=InterfaceState.WARNING,
                            error=ArtBrainErrors.ERROR_PICK_FAILED)
 
-    def pick_object_by_id(self, obj, gripper):
+    def pick_object_by_id(self, obj, gripper, pick_only_y_axis=False):
 
         goal = PickPlaceGoal()
         goal.object = obj.object_id
         goal.operation = goal.PICK_OBJECT_ID
         goal.keep_orientation = False
+        goal.pick_only_y_axis = pick_only_y_axis
         rospy.loginfo("Picking object with ID: " + str(obj.object_id))
         gripper.pp_client.send_goal(goal)
         gripper.pp_client.wait_for_result()
@@ -834,7 +849,64 @@ class ArtBrain(object):
                                error=ArtBrainErrors.ERROR_PLACE_FAILED)
                 return
 
-    def place_object(self, obj, place, gripper):
+    def place_object_to_grid(self, instruction, update_state_manager=True, get_ready_after_place=True):
+
+        pose = ArtBrainUtils.get_place_pose(instruction)
+
+        if pose is None or len(pose) < 1:
+            self.fsm.error(severity=InterfaceState.ERROR,
+                           error=ArtBrainErrors.ERROR_NOT_ENOUGH_PLACE_POSES)
+            if update_state_manager:
+                self.state_manager.update_program_item(
+                    self.ph.get_program_id(), self.block_id, instruction)
+            return
+        else:
+            if len(instruction.ref_id) < 1:
+                self.fsm.error(
+                    severity=InterfaceState.ERROR,
+                    error=ArtBrainErrors.ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE)
+                if update_state_manager:
+                    self.state_manager.update_program_item(
+                        self.ph.get_program_id(), self.block_id, instruction)
+                return
+            rospy.logdebug(self.instruction)
+            gripper = self.get_gripper_by_pick_instruction_id(
+                instruction.ref_id)
+
+            if not self.check_gripper_for_place(gripper):
+                return
+
+            if gripper.holding_object is None:
+                rospy.logerr("Robot is not holding selected object")
+                self.fsm.error(
+                    severity=InterfaceState.WARNING,
+                    error=ArtBrainErrors.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
+                if update_state_manager:
+                    self.state_manager.update_program_item(
+                        self.ph.get_program_id(), self.block_id, instruction)
+                return
+            if update_state_manager:
+                self.state_manager.update_program_item(
+                    self.ph.get_program_id(), self.block_id, instruction,
+                    {"SELECTED_OBJECT_ID": gripper.holding_object.object_id})
+            if self.place_object(gripper.holding_object, pose[0], gripper, pick_only_y_axis=True):
+                instruction.pose.pop(0)
+                gripper.holding_object = None
+                if get_ready_after_place:
+                    gripper.get_ready()
+                if len(instruction.pose) > 0:
+                    self.fsm.done(success=True)
+                else:
+                    self.fsm.error(severity=InterfaceState.ERROR,
+                                   error=ArtBrainErrors.ERROR_NOT_ENOUGH_PLACE_POSES)
+                return
+            else:
+                gripper.get_ready()
+                self.fsm.error(severity=InterfaceState.WARNING,
+                               error=ArtBrainErrors.ERROR_PLACE_FAILED)
+                return
+
+    def place_object(self, obj, place, gripper, pick_only_y_axis=False):
         rospy.logdebug(obj)
         goal = PickPlaceGoal()
         goal.operation = goal.PLACE_TO_POSE
@@ -843,13 +915,20 @@ class ArtBrain(object):
             return False
         # TODO how to decide between 180 and 90 deg?
         # allow object to be rotated by 90 deg around z axis
-        goal.z_axis_angle_increment = 3.14 / 2
+        if not pick_only_y_axis:
+            goal.z_axis_angle_increment = 3.14 / 2
+        else:
+            goal.z_axis_angle_increment = 3.14
 
         goal.pose = place
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.header.frame_id = self.objects.header.frame_id
         # TODO: how to deal with this?
-        goal.pose.pose.position.z = 0.09  # obj.bbox.dimensions[2]/2
+        goal.pose.pose.position.z = 0.09  # + obj.bbox.dimensions[2]/2
+
+        if pick_only_y_axis:
+            goal.pose.pose.orientation.x = math.sqrt(0.5)
+            goal.pose.pose.orientation.w = math.sqrt(0.5)
         rospy.loginfo("Place pose: " + str(goal.pose))
         gripper.pp_client.send_goal(goal)
         gripper.pp_client.wait_for_result()
@@ -1316,6 +1395,8 @@ class ArtBrain(object):
                     pass
                 elif instruction.type == instruction.PLACE_TO_POSE:
                     self.fsm.place_to_pose()
+                elif instruction.type == instruction.PLACE_TO_GRID:
+                    self.fsm.place_to_grid()
             else:
                 result.success = False
                 result.message = "Not in learning state!"

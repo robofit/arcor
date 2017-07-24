@@ -25,37 +25,48 @@ class PlaceItem(ObjectItem):
 
     """
 
-    def __init__(self, scene, caption, x, y, z, quaternion, object_type, object_id=None, place_pose_changed=None, selected=False, fixed=False):
+    def __init__(self, scene, caption, x, y, z, quaternion, object_type, object_id=None, place_pose_changed=None, selected=False, fixed=False, txt=True, rot=True, rot_point=None, rotation_changed=None, parent=None, horizontal=False):
 
         self.in_collision = False
         self.caption = caption
         self.dialog = None
         self.last_angle = None
+        self.txt = txt
+        self.rot = rot
+        self.rot_point = rot_point
+        self.other_items = []
 
-        super(PlaceItem, self).__init__(scene, object_id, object_type, x, y, z, quaternion)
+        super(PlaceItem, self).__init__(scene, object_id, object_type, x, y, z, quaternion, parent=parent, horizontal=horizontal)
 
         self.update_text()
         self.fixed = fixed
         self.place_pose_changed = place_pose_changed
+        self.rotation_changed = rotation_changed
 
         if not self.fixed:
             self.set_color(QtCore.Qt.white)
-            self.point = PointItem(scene, 0, 0, self, self.point_changed)  # TODO option to pass pixels?
-            self.point.setPos(self.boundingRect().topLeft())
+            if self.rot:
+                if rot_point is None:
+                    self.point = PointItem(scene, 0, 0, self, self.point_changed)  # TODO option to pass pixels?
+                    self.point.setPos(self.boundingRect().topLeft())
 
-            self.dialog = DialogItem(self.scene(),
-                                     self.pix2m(self.scene().width() / 2),
-                                     0.1,
-                                     translate(
-                                         "Place item",
-                                         "Object place pose options"),
-                                     [
-                                         translate(
-                                             "Place item", "Rotate |"),
-                                         translate(
-                                             "Place item", "Rotate --")
-            ],
-                self.dialog_cb)
+                    self.dialog = DialogItem(self.scene(),
+                                             self.pix2m(self.scene().width() / 2),
+                                             0.1,
+                                             translate(
+                        "Place item",
+                        "Object place pose options"),
+                        [
+                        translate(
+                            "Place item", "Rotate |"),
+                        translate(
+                            "Place item", "Rotate --")
+                    ],
+                        self.dialog_cb)
+
+                else:
+                    self.point = PointItem(scene, self.rot_point[0], self.rot_point[1], self, self.point_changed)
+
         if z == 0:
 
             self.position[2] = self.object_type.bbox.dimensions[self.get_yaw_axis()] / 2
@@ -127,7 +138,21 @@ class PlaceItem(ObjectItem):
 
         return QtGui.QGraphicsItem.itemChange(self, change, value)
 
+    '''
+        Method which updates the position of attribute "rot_point" (instance of PointItem class).
+    '''
+
+    def update_point(self):
+
+        if self.rot_point is None:
+            return
+
+        self.point.set_pos(self.rot_point[0], self.rot_point[1])
+
     def update_text(self):
+
+        if not self.txt:
+            return
 
         if self.desc is None:
             return
@@ -179,13 +204,35 @@ class PlaceItem(ObjectItem):
 
         print ("pc-quaternion-after", self.quaternion)
 
+        if self.other_items:    # changing rotation of every object in grid
+            for it in self.other_items:
+                it.setRotation(self.rotation())
+
         self._update_desc_pos()
 
         if finished:
 
             self.last_angle = None
 
-            self.point.setPos(self.boundingRect().topLeft())
+            self.item_moved()
+            for it in self.other_items:
+                it.item_moved()
+
+            if self.rot_point is None:
+                self.point.setPos(self.boundingRect().topLeft())
+            else:
+                self.point.set_pos(self.rot_point[0], self.rot_point[1])
+
+            if self.rotation_changed is not None:
+                in_collision = False
+                for it in ([self] + self.other_items):
+                    if it.in_collision:
+                        in_collision = True
+                        break
+                if in_collision:
+                    self.rotation_changed([])  # in case of collision, new rotations of objects are NOT saved into the ProgramItem message
+                else:
+                    self.rotation_changed([self] + self.other_items)    # saving new rotations of objects into the ProgramItem message
 
             if self.place_pose_changed is not None:
                 self.place_pose_changed(self)
@@ -206,3 +253,10 @@ class PlaceItem(ObjectItem):
         else:
             self.in_collision = False
             self.set_color(QtCore.Qt.white)
+
+    '''
+        Method which sets attribute "other_items".
+    '''
+
+    def set_other_items(self, items):
+        self.other_items = items

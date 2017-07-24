@@ -25,11 +25,12 @@ class ObjectItem(Item):
     """
 
     def __init__(self, scene, object_id, object_type, x,
-                 y, z, quaternion=(0, 0, 0, 1), sel_cb=None, selected=False):
+                 y, z, quaternion=(0, 0, 0, 1), sel_cb=None, selected=False, parent=None, horizontal=False):
 
         self.object_id = object_id
         self.selected = selected
         self.sel_cb = sel_cb
+        self.horizontal = horizontal
         # TODO check bbox type and use rectangle (used now) / ellipse, consider
         # other angles
         self.object_type = object_type
@@ -42,7 +43,7 @@ class ObjectItem(Item):
         self.quaternion = (0, 0, 0, 1)
         self.on_table = False
 
-        super(ObjectItem, self).__init__(scene, x, y, z)
+        super(ObjectItem, self).__init__(scene, x, y, z, parent=parent)
 
         self.desc = DescItem(scene, 0, 0, parent=self)
         self.desc.setFlag(QtGui.QGraphicsItem.ItemIgnoresTransformations)
@@ -167,6 +168,8 @@ class ObjectItem(Item):
 
             return QtCore.QRectF()
 
+        if self.horizontal:
+            self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[2])
         p = 10.0
         return QtCore.QRectF(-self.lx / 2 - p, -self.ly / 2 - p, self.lx + 2 * p, self.ly + 2 * p)
 
@@ -180,6 +183,11 @@ class ObjectItem(Item):
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        # if not self.horizontal:
+        #     self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[1])
+        # else:
+        #     self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[2])
 
         rr = 10
 

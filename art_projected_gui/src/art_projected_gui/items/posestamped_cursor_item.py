@@ -169,7 +169,6 @@ class PoseStampedCursorItem(Item):
                     self.pointed_item.cursor_press()
 
                     if self.pointed_item.fixed:
-
                         self.pointed_item.cursor_release()
                         self.pointed_item.set_hover(False, self)
                         self.pointed_item.last_pointed = rospy.Time.now()

@@ -8,6 +8,7 @@ from button_item import ButtonItem
 from art_projected_gui.helpers import conversions
 from list_item import ListItem
 from art_projected_gui.helpers.items import group_enable, group_visible
+from geometry_msgs.msg import PoseStamped
 
 translate = QtCore.QCoreApplication.translate
 
@@ -38,6 +39,7 @@ class ProgramItem(Item):
 
         self.block_id = None
         self.item_id = None
+
         self.block_learned = False
         self.program_learned = False
 
@@ -290,6 +292,33 @@ class ProgramItem(Item):
             else:
 
                 text += "\n" + "X: ??, Y: ??, Z: ??"
+
+        elif item.type == ProgIt.PLACE_TO_GRID:
+
+            text += QtCore.QCoreApplication.translate(
+                "ProgramItem", "PLACE_TO_GRID")
+
+            ref_item = self.ph.get_item_msg(block_id, item.ref_id[0])
+
+            if ref_item.type == ProgIt.PICK_OBJECT_ID:
+
+                if self.ph.is_object_set(block_id, item_id):
+
+                    text += "\n" + "object ID=" + item.object[0]
+
+                else:
+
+                    text += "\n" + "object ID=??"
+
+            elif ref_item.type == ProgIt.PICK_FROM_POLYGON:
+
+                if self.ph.is_object_set(block_id, item_id):
+
+                    text += "\n" + "object TYPE=" + item.object[0]
+
+                else:
+
+                    text += "\n" + "object TYPE=??"
 
         return text
 
@@ -553,6 +582,33 @@ class ProgramItem(Item):
 
         self._update_item()
 
+    '''
+        Method which saves place poses of all objects (in the grid) into the ProgramItem message.
+    '''
+
+    def set_place_poses(self, poses):
+
+        msg = self.get_current_item()
+
+        poses_count = len(poses)
+        msg_poses_count = len(msg.pose)
+
+        if poses_count > msg_poses_count:
+            for i in range(poses_count - msg_poses_count):
+                ps = PoseStamped()
+                msg.pose.append(ps)
+        elif poses_count < msg_poses_count:
+            for i in range(msg_poses_count - poses_count):
+                msg.pose.pop()
+
+        for i, pose in enumerate(poses):
+            pos = pose.get_pos()
+            msg.pose[i].pose.position.x = pos[0]
+            msg.pose[i].pose.position.y = pos[1]
+            msg.pose[i].pose.orientation = conversions.yaw2quaternion(pose.rotation())
+
+        self._update_item()
+
     def set_pose(self, ps):
 
         msg = self.get_current_item()
@@ -575,6 +631,21 @@ class ProgramItem(Item):
 
         for pt in pts:
 
+            msg.polygon[0].polygon.points.append(Point32(pt[0], pt[1], 0))
+
+        self._update_item()
+
+    '''
+        Method which saves 4 points forming a grid into the ProgramItem message.
+    '''
+
+    def set_place_grid(self, pts):
+
+        msg = self.get_current_item()
+
+        del msg.polygon[0].polygon.points[:]
+
+        for pt in pts:
             msg.polygon[0].polygon.points.append(Point32(pt[0], pt[1], 0))
 
         self._update_item()
@@ -612,6 +683,17 @@ class ProgramItem(Item):
 
             return self.ph.get_item_msg(self.block_id, self.item_id)
 
+        return None
+
+    '''
+        Method which returns a reference item.
+    '''
+
+    def get_ref_item(self, ref_id=None):
+
+        if (self.block_id is not None and ref_id is not None):
+
+            return self.ph.get_item_msg(self.block_id, ref_id[0])
         return None
 
     def paint(self, painter, option, widget):
