@@ -30,6 +30,8 @@ def store_program(prog):
         store_program_srv = rospy.ServiceProxy(
             '/art/db/program/store', storeProgram)
         resp = store_program_srv(program=prog)
+        if not resp.success:
+            print "Failed to save program ID: " + str(prog.header.id) + ", error: " + resp.error
     except rospy.ServiceException as e:
         print "Service call failed: " + str(e)
         return
@@ -421,6 +423,11 @@ def main(args):
     p.pose.append(deepcopy(pf))
     pf.pose.position.x = 0.4
     p.pose.append(deepcopy(pf))
+
+    dp = PolygonStamped()
+    dp.header.frame_id = "marker"
+    p.polygon.append(dp)
+
     pb.items.append(deepcopy(p))
 
     store_program(prog)

@@ -55,13 +55,16 @@ def place_item(it_id, ref_id, on_success=None, on_failure=0):
     return p
 
 
-def grid_item(it_id, ref_id, on_success=None, on_failure=0):
+def grid_item(it_id, ref_id, on_success=None, on_failure=0, objects=2):
 
     p = item(it_id, ProgramItem.PLACE_TO_GRID, on_success, on_failure, ref_id=ref_id)
-    p.object.append("")
     pp = PolygonStamped()
-    pp.header.frame_id = ""
+    pp.header.frame_id = "marker"
     p.polygon.append(pp)
+    ps = PoseStamped()
+    ps.header.frame_id = "marker"
+    for i in range(0, objects):
+        p.pose.append(ps)
     return p
 
 
@@ -71,10 +74,6 @@ def drill_item(it_id, ref_id, on_success=None, on_failure=0):
     ps = PoseStamped()  # pose is relative to the selected object
     p.pose.append(ps)
     p.pose.append(ps)
-    p.object.append("")
-    pp = PolygonStamped()
-    pp.header.frame_id = "marker"
-    p.polygon.append(pp)
     return p
 
 
@@ -139,7 +138,7 @@ def main(args):
     pb.on_failure = 0
     prog.blocks.append(pb)
 
-    pb.items.append(item(2, ProgramItem.WAIT_UNTIL_USER_FINISHES))
+    pb.items.append(wait_item(2, on_failure=2))
 
     # each side consists of four profiles (of two types)
     pb.items.append(feeder_item(3, obj_type="p40x40x400"))
@@ -152,7 +151,7 @@ def main(args):
     pb.items.append(drill_item(11, on_success=11, on_failure=12, ref_id=[4]))
     pb.items.append(drill_item(12, on_success=12, on_failure=13, ref_id=[6]))
 
-    pb.items.append(item(13, ProgramItem.GET_READY, on_success=0))
+    pb.items.append(item(13, ProgramItem.GET_READY, on_success=0, on_failure=13))
 
     # --- right side of the trolley ------------------------------------------------------
     pb = deepcopy(pb)
@@ -170,12 +169,12 @@ def main(args):
     pb.on_failure = 0
     prog.blocks.append(pb)
 
-    pb.items.append(item(2, ProgramItem.WAIT_UNTIL_USER_FINISHES))
+    pb.items.append(wait_item(1, on_success=10, on_failure=1))
 
-    pb.items.append(feeder_item(1, obj_type="p40x40x200"))
-    pb.items.append(grid_item(2, on_success=1, on_failure=3, ref_id=[1]))
+    pb.items.append(feeder_item(10, obj_type="p40x40x200"))
+    pb.items.append(grid_item(11, on_success=1, on_failure=12, ref_id=[10], objects=4))
 
-    pb.items.append(item(3, ProgramItem.GET_READY, on_success=0))
+    pb.items.append(item(12, ProgramItem.GET_READY, on_success=0, on_failure=12))
 
     store_program(prog)
 
