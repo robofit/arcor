@@ -331,7 +331,7 @@ class ProgramHelper():
 
         msg = self.get_item_msg(block_id, item_id)
 
-        if msg.type not in [ProgramItem.PICK_FROM_FEEDER, ProgramItem.PLACE_TO_POSE, ProgramItem.DRILL_POINTS]:
+        if msg.type not in [ProgramItem.PICK_FROM_FEEDER, ProgramItem.PLACE_TO_POSE, ProgramItem.DRILL_POINTS, ProgramItem.PLACE_TO_GRID]:
 
             raise ValueError("Instruction type " + str(msg.type) + " does not use 'pose'.")
 
@@ -356,7 +356,7 @@ class ProgramHelper():
 
         msg = self.get_item_msg(block_id, item_id)
 
-        if msg.type not in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID, ProgramItem.PLACE_TO_POSE, ProgramItem.DRILL_POINTS, ProgramItem.DRILL_POINTS]:
+        if msg.type not in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID, ProgramItem.PLACE_TO_POSE, ProgramItem.PLACE_TO_GRID, ProgramItem.DRILL_POINTS]:
 
             raise ValueError("Instruction type " + str(msg.type) + " does not use 'object'.")
 
@@ -402,7 +402,7 @@ class ProgramHelper():
 
         msg = self.get_item_msg(block_id, item_id)
 
-        if msg.type not in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.DRILL_POINTS]:
+        if msg.type not in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.DRILL_POINTS, ProgramItem.PLACE_TO_GRID]:
 
             raise ValueError("Instruction type " + str(msg.type) + " does not use 'polygon'.")
 
