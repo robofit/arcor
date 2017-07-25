@@ -316,101 +316,128 @@ class ProgramHelper():
 
         return self.get_item_type(block_id, item_id) in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID, ProgramItem.PLACE_TO_POSE, ProgramItem.PLACE_TO_GRID, ProgramItem.DRILL_POINTS]
 
-    def _is_pose_set(self, msg):
+    def _check_for_pose(self, msg):
 
-        if len(msg.pose) == 0:
-            raise ValueError("No pose")
+        if msg.type not in [ProgramItem.PICK_FROM_FEEDER, ProgramItem.PLACE_TO_POSE, ProgramItem.DRILL_POINTS,
+                            ProgramItem.PLACE_TO_GRID]:
+            raise ValueError("Instruction type " + str(msg.type) + " does not use 'object'.")
 
-        for p in msg.pose:
-            if p.pose == Pose():
-                return False
+    def _check_for_object(self, msg):
 
-        return True
+        if msg.type not in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID, ProgramItem.PLACE_TO_POSE, ProgramItem.PLACE_TO_GRID, ProgramItem.DRILL_POINTS]:
 
-    def is_pose_set(self, block_id, item_id):
+            raise ValueError("Instruction type " + str(msg.type) + " does not use 'object'.")
+
+    def _check_for_polygon(self, msg):
+
+        if msg.type not in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.DRILL_POINTS, ProgramItem.PLACE_TO_GRID]:
+
+            raise ValueError("Instruction type " + str(msg.type) + " does not use 'polygon'.")
+
+    def get_pose(self, block_id, item_id):
 
         msg = self.get_item_msg(block_id, item_id)
 
-        if msg.type not in [ProgramItem.PICK_FROM_FEEDER, ProgramItem.PLACE_TO_POSE, ProgramItem.DRILL_POINTS, ProgramItem.PLACE_TO_GRID]:
-
-            raise ValueError("Instruction type " + str(msg.type) + " does not use 'pose'.")
+        self._check_for_pose(msg)
 
         if len(msg.pose) > 0:
 
-            return self._is_pose_set(msg)
+            return msg.pose, item_id
 
-        return self._check_in_refs(block_id, msg, self._is_pose_set)
+        for ref_id in msg.ref_id:
 
-    def _is_object_set(self, msg):
+            try:
+                ret = self.get_pose(block_id, ref_id)
+            except ValueError:
+                continue
 
-        if len(msg.object) == 0:
-            raise ValueError("No object")
+            if ret is not None:
+                return ret
 
-        for p in msg.object:
-            if p == "":
+        return None
+
+    def get_object(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+
+        self._check_for_object(msg)
+
+        if len(msg.object) > 0:
+
+            return msg.object, item_id
+
+        for ref_id in msg.ref_id:
+
+            try:
+                ret = self.get_object(block_id, ref_id)
+            except ValueError:
+                continue
+
+            if ret is not None:
+                return ret
+
+        return None
+
+    def get_polygon(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+
+        self._check_for_polygon(msg)
+
+        if len(msg.polygon) > 0:
+
+            return msg.polygon, item_id
+
+        for ref_id in msg.ref_id:
+
+            try:
+                ret = self.get_polygon(block_id, ref_id)
+            except ValueError:
+                continue
+
+            if ret is not None:
+                return ret
+
+        return None
+
+    def is_pose_set(self, block_id, item_id):
+
+        ret = self.get_pose(block_id, item_id)
+
+        if ret is None:
+            return ValueError("'pose' does not exist in item or its refs.")
+
+        for p in ret[0]:
+            if p.pose == Pose():
                 return False
 
         return True
 
     def is_object_set(self, block_id, item_id):
 
-        msg = self.get_item_msg(block_id, item_id)
+        ret = self.get_object(block_id, item_id)
 
-        if msg.type not in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.PICK_FROM_FEEDER, ProgramItem.PICK_OBJECT_ID, ProgramItem.PLACE_TO_POSE, ProgramItem.PLACE_TO_GRID, ProgramItem.DRILL_POINTS]:
+        if ret is None:
+            return ValueError("'object' does not exist in item or its refs.")
 
-            raise ValueError("Instruction type " + str(msg.type) + " does not use 'object'.")
-
-        if len(msg.object) > 0:
-
-            return self._is_object_set(msg)
-
-        return self._check_in_refs(block_id, msg, self._is_object_set)
-
-    def _is_polygon_set(self, msg):
-
-        if len(msg.polygon) == 0:
-            raise ValueError("No polygon")
-
-        for p in msg.polygon:
-            if p.polygon == Polygon():
+        for obj in ret[0]:
+            if obj == "":
                 return False
-
-        return True
-
-    def _check_in_refs(self, block_id, msg, cond):
-
-        for ref_id in msg.ref_id:
-
-            rmsg = self.get_item_msg(block_id, ref_id)
-
-            try:
-                if not cond(rmsg):
-                    return False
-            except ValueError:
-
-                # TODO use recursion/loop with some check
-                for rref_id in rmsg.ref_id:
-
-                    rrmsg = self.get_item_msg(block_id, rref_id)
-
-                    if not cond(rmsg):
-                        return False
 
         return True
 
     def is_polygon_set(self, block_id, item_id):
 
-        msg = self.get_item_msg(block_id, item_id)
+        ret = self.get_polygon(block_id, item_id)
 
-        if msg.type not in [ProgramItem.PICK_FROM_POLYGON, ProgramItem.DRILL_POINTS, ProgramItem.PLACE_TO_GRID]:
+        if ret is None:
+            return ValueError("'polygon' does not exist in item or its refs.")
 
-            raise ValueError("Instruction type " + str(msg.type) + " does not use 'polygon'.")
+        for poly in ret[0]:
+            if poly.polygon == Polygon():
+                return False
 
-        if len(msg.polygon) > 0:
-
-            return self._is_polygon_set(msg)
-
-        return self._check_in_refs(block_id, msg, self._is_polygon_set)
+        return True
 
     def program_learned(self):
 

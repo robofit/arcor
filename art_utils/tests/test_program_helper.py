@@ -167,6 +167,18 @@ class TestProgramHelper(unittest.TestCase):
         res = self.ph.load(prog)
         self.assertEquals(res, True, "alt program")
 
+        ret = self.ph.get_object(10, 3)
+
+        self.assertEquals(ret[0][0], "obj1", "ref_id object")
+        self.assertEquals(ret[1], 1, "ref_id object - source item id")
+
+        ret = self.ph.get_polygon(10, 3)
+
+        self.assertEquals(len(ret[0]), 1, "ref_id polygon")
+        self.assertEquals(ret[1], 2, "ref_id polygon - source item id")
+
+        self.assertRaises(ValueError, self.ph.get_polygon, 10, 1)
+
     def test_empty_program(self):
 
         res = self.ph.load(Program())
