@@ -5,7 +5,7 @@ import rospy
 from art_msgs.msg import Program, ProgramBlock, ProgramItem
 from copy import deepcopy
 from art_utils import ArtApiHelper
-from art_utils.art_msgs_functions import obj_type, wait_item, feeder_item, grid_item, drill_item, item
+from art_utils.art_msgs_functions import obj_type, wait_item, feeder_item, grid_item, drill_item, place_item, item
 
 
 def main(args):
@@ -28,8 +28,8 @@ def main(args):
     # -------------------------------------------------------------------------------------------
 
     prog = Program()
-    prog.header.id = 20
-    prog.header.name = "Montaz voziku (A)"
+    prog.header.id = 21
+    prog.header.name = "Montaz voziku (B)"
 
     # --- left side of the trolley ------------------------------------------------------
     pb = ProgramBlock()
@@ -43,14 +43,20 @@ def main(args):
 
     # each side consists of four profiles (of two types)
     pb.items.append(feeder_item(3, obj_type="p40x40x400"))
-    pb.items.append(grid_item(4, on_success=3, on_failure=5, ref_id=[3]))
+    pb.items.append(place_item(4, ref_id=[3], on_failure=4))
 
-    pb.items.append(feeder_item(5, obj_type="p40x40x200"))
-    pb.items.append(grid_item(6, on_success=5, on_failure=11, ref_id=[5]))
+    pb.items.append(feeder_item(5, ref_id=[3]))
+    pb.items.append(place_item(6, ref_id=[5], on_failure=6))
+
+    pb.items.append(feeder_item(7, obj_type="p40x40x200"))
+    pb.items.append(place_item(8, ref_id=[7], on_failure=8))
+
+    pb.items.append(feeder_item(9, ref_id=[7]))
+    pb.items.append(place_item(10, ref_id=[9], on_failure=10))
 
     # after p&p, let's drill holes
-    pb.items.append(drill_item(11, on_success=11, on_failure=12, ref_id=[4]))
-    pb.items.append(drill_item(12, on_success=12, on_failure=13, ref_id=[6]))
+    pb.items.append(drill_item(11, on_success=11, on_failure=12, obj_type="p40x40x400"))
+    pb.items.append(drill_item(12, on_success=12, on_failure=13, obj_type="p40x40x200"))
 
     pb.items.append(item(13, ProgramItem.GET_READY, on_success=0, on_failure=13))
 
@@ -73,9 +79,18 @@ def main(args):
     pb.items.append(wait_item(1, on_success=10, on_failure=1))
 
     pb.items.append(feeder_item(10, obj_type="p40x40x200"))
-    pb.items.append(grid_item(11, on_success=10, on_failure=12, ref_id=[10], objects=4))
+    pb.items.append(place_item(11, ref_id=[10], on_failure=11))
 
-    pb.items.append(item(12, ProgramItem.GET_READY, on_success=0, on_failure=12))
+    pb.items.append(feeder_item(12, ref_id=[10]))
+    pb.items.append(place_item(13, ref_id=[12], on_failure=13))
+
+    pb.items.append(feeder_item(14, ref_id=[10]))
+    pb.items.append(place_item(15, ref_id=[14], on_failure=15))
+
+    pb.items.append(feeder_item(16, ref_id=[10]))
+    pb.items.append(place_item(17, ref_id=[16], on_failure=17))
+
+    pb.items.append(item(18, ProgramItem.GET_READY, on_success=0, on_failure=18))
 
     art.store_program(prog)
 
