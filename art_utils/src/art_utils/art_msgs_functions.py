@@ -10,10 +10,15 @@ from geometry_msgs.msg import PoseStamped, PolygonStamped
 def feeder_item(it_id, on_success=None, on_failure=0, obj_type="", ref_id=[]):
 
     p = item(it_id, ProgramItem.PICK_FROM_FEEDER, on_success, on_failure, ref_id=ref_id)
-    ps = PoseStamped()
-    ps.header.frame_id = "marker"
-    p.pose.append(ps)
-    p.object.append(obj_type)
+
+    if len(ref_id) == 0:
+
+        ps = PoseStamped()
+        ps.header.frame_id = "marker"
+        p.pose.append(ps)
+
+        p.object.append(obj_type)
+
     return p
 
 
@@ -23,7 +28,7 @@ def place_item(it_id, ref_id, on_success=None, on_failure=0):
     ps = PoseStamped()
     ps.header.frame_id = "marker"
     p.pose.append(ps)
-    p.object.append("")
+    # p.object.append("")
     return p
 
 
