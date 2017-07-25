@@ -84,11 +84,11 @@ def quaternion2rpy(q):
     return euler
 
 
-def get_pick_polygon_points(msg):
+def get_pick_polygon_points(polygon_arr):
 
     poly_points = []
 
-    for pt in msg.polygon[0].polygon.points:
+    for pt in polygon_arr[0].polygon.points:
 
         poly_points.append((pt.x, pt.y))
 

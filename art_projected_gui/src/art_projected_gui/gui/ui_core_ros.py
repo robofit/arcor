@@ -477,7 +477,7 @@ class UICoreRos(UICore):
                             "UICoreRos", " from polygon."))
 
             self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
-                             poly_points=conversions.get_pick_polygon_points(it), fixed=True)
+                             poly_points=conversions.get_pick_polygon_points(self.ph.get_polygon(state.block_id, it.id)[0]), fixed=True)
 
         elif it.type == ProgIt.PICK_FROM_FEEDER:
 
@@ -486,9 +486,11 @@ class UICoreRos(UICore):
 
         elif it.type == ProgIt.PICK_OBJECT_ID:
 
+            obj_id = self.ph.get_object(state.block_id, it.id)[0][0]
+
             self.notif(
-                translate("UICoreRos", "Picking object with ID=") + it.object[0])
-            self.select_object(it.object[0])
+                translate("UICoreRos", "Picking object with ID=") + obj_id)
+            self.select_object(obj_id)
 
         elif it.type == ProgIt.PLACE_TO_POSE:
 
@@ -502,27 +504,44 @@ class UICoreRos(UICore):
             obj = self.get_object(obj_id)
 
             if obj is not None:
+
+                place_pose = self.ph.get_pose(state.block_id, it.id)[0][0]
+
                 self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),
-                               it.pose[0], obj.object_type, obj_id, fixed=True)
+                               place_pose, obj.object_type, obj_id, fixed=True)
 
         elif it.type == ProgIt.PLACE_TO_GRID:
 
-            ref_msg = self.program_vis.get_ref_item(it.ref_id)  # obtaining reference instruction
+            polygons = self.ph.get_polygon(state.block_id, it.id)[0]
+            poses = self.ph.get_pose(state.block_id, it.id)[0]
+            object_type_name = self.ph.get_object(state.block_id, it.id)[0][0]
 
-            if ref_msg.type == ProgIt.PICK_OBJECT_ID:
+            object_type = self.art.get_object_type(object_type_name)
 
-                obj = self.get_object(ref_msg.object[0])
-                object_type = obj.object_type
-                self.program_vis.get_current_item().object[0] = obj.object_id
-
-            else:
-
-                object_type = self.art.get_object_type(ref_msg.object[0])
-                self.program_vis.get_current_item().object[0] = ref_msg.object[0]
-            self.notif(translate("UICoreRos", "Going to place object into grid"))
+            self.notif(translate("UICoreRos", "Going to place objects into grid"))
             self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
-                            0.075, object_type, it.pose, grid_points=conversions.get_pick_polygon_points(it),
+                            0.075, object_type, poses, grid_points=conversions.get_pick_polygon_points(polygons),
                             square_changed=self.square_changed, fixed=True)
+
+        elif it.type == ProgIt.DRILL_POINTS:
+
+            # TODO pres nejaky flag zobrazit kolikata dira se vrta?
+            polygons = self.ph.get_polygon(state.block_id, it.id)[0]
+            poses = self.ph.get_pose(state.block_id, it.id)[0]
+
+            obj_id = None
+            try:
+                obj_id = flags["SELECTED_OBJECT_ID"]
+            except KeyError:
+                rospy.logerr(
+                    "DRILL_POINTS: SELECTED_OBJECT_ID flag not set")
+
+            if obj_id is not None:
+                self.select_object(obj_id)
+                self.notif(translate("UICoreRos", "Going to drill {0} hole(s) into object ID={1}").format(str(len(poses)), obj_id))
+
+            self.add_polygon(translate("UICoreRos", "Objects to be drilled"),
+                             poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)
 
     def show_program_vis(self, readonly=False, stopped=False):
 
@@ -696,12 +715,15 @@ class UICoreRos(UICore):
 
             else:
 
-                self.select_object_type(msg.object[0])
+                object_type_name = self.ph.get_object(block_id, item_id)[0][0]
+                self.select_object_type(object_type_name)
 
             if self.ph.is_polygon_set(block_id, item_id):
+
+                polygons = self.ph.get_polygon(block_id, item_id)[0]
+
                 self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
-                                 poly_points=conversions.get_pick_polygon_points(
-                                     msg), polygon_changed=self.polygon_changed, fixed=read_only)
+                                 poly_points=conversions.get_pick_polygon_points(polygons), polygon_changed=self.polygon_changed, fixed=read_only)
 
         elif msg.type == ProgIt.PICK_FROM_FEEDER:
 
@@ -710,7 +732,7 @@ class UICoreRos(UICore):
                     "Right arm", "Left arm"], self.save_gripper_pose_cb)
 
             if self.ph.is_object_set(block_id, item_id):
-                self.select_object_type(msg.object[0])
+                self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
             else:
                 self.notif(
                     translate("UICoreRos", "Select object type to be picked up"), temp=True)
@@ -719,67 +741,51 @@ class UICoreRos(UICore):
 
         elif msg.type == ProgIt.PICK_OBJECT_ID:
             if self.ph.is_object_set(block_id, item_id):
-                self.select_object(msg.object[0])
+                self.select_object(self.ph.get_object(block_id, item_id)[0][0])
             else:
                 self.notif(
                     translate("UICoreRos", "Select object to be picked up"), temp=True)
 
         elif msg.type == ProgIt.PLACE_TO_POSE:
 
-            if not self.ph.is_object_set(block_id, msg.ref_id[0]):
+            if not self.ph.is_object_set(block_id, item_id):
+
+                (obj_arr, ref_id) = self.ph.get_object(block_id, item_id)
 
                 self.notif(translate(
-                    "UICoreRos", "Select object to be picked up in ID=") + str(msg.ref_id[0]))
+                    "UICoreRos", "Select object to be picked up in ID=") + str(ref_id))
 
             else:
 
-                # TODO what to do with more than 1 reference?
-                ref_msg = self.ph.get_item_msg(block_id, msg.ref_id[0])
+                object_type_name = self.ph.get_object(block_id, item_id)[0][0]
 
-                if ref_msg.type == ProgIt.PICK_OBJECT_ID:
+                object_type = self.art.get_object_type(object_type_name)
+                object_id = None
+                self.select_object_type(object_type_name)
 
-                    obj = self.get_object(ref_msg.object[0])
-                    object_type = obj.object_type
-                    object_id = obj.object_id
-                    self.select_object(ref_msg.object[0])
+                if self.ph.is_pose_set(block_id, item_id):
 
+                    if object_type is not None:
+                        self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),
+                                       msg.pose[0], object_type, object_id, place_cb=self.place_pose_changed,
+                                       fixed=read_only)
                 else:
-
-                    object_type = self.art.get_object_type(ref_msg.object[0])
-                    object_id = None
-                    self.select_object_type(ref_msg.object[0])
-
-                if self.ph.is_object_set(block_id, msg.ref_id[0]):
-
-                    if self.ph.is_pose_set(block_id, item_id):
-
-                        if object_type is not None:
-                            self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),
-                                           msg.pose[0], object_type, object_id, place_cb=self.place_pose_changed,
-                                           fixed=read_only)
-                    else:
-                        self.notif(
-                            translate("UICoreRos", "Set where to place picked object"))
-                        self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), self.get_def_pose(
-                        ), object_type, object_id, place_cb=self.place_pose_changed, fixed=read_only)
+                    self.notif(
+                        translate("UICoreRos", "Set where to place picked object"))
+                    self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), self.get_def_pose(
+                    ), object_type, object_id, place_cb=self.place_pose_changed, fixed=read_only)
 
         elif msg.type == ProgIt.PLACE_TO_GRID:
 
-            ref_msg = self.program_vis.get_ref_item(msg.ref_id)  # obtaining reference instruction
+            object_type_name = self.ph.get_object(block_id, item_id)[0][0]
+            poses = self.ph.get_pose(block_id, item_id)[0]
+            polygons = self.ph.get_polygon(block_id, item_id)[0]
 
-            if ref_msg.type == ProgIt.PICK_OBJECT_ID:
+            object_type = self.art.get_object_type(object_type_name)
 
-                obj = self.get_object(ref_msg.object[0])
-                object_type = obj.object_type
-                self.program_vis.get_current_item().object[0] = obj.object_id
-
-            else:
-
-                object_type = self.art.get_object_type(ref_msg.object[0])
-                self.program_vis.get_current_item().object[0] = ref_msg.object[0]
             self.notif(translate("UICoreRos", "Place grid"))
             self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
-                            0.075, object_type, msg.pose, grid_points=conversions.get_pick_polygon_points(msg), square_changed=self.square_changed, fixed=read_only)
+                            0.075, object_type, poses, grid_points=conversions.get_pick_polygon_points(polygons), square_changed=self.square_changed, fixed=read_only)
 
     def active_item_switched(self, block_id, item_id, read_only=True):
 
@@ -1076,13 +1082,13 @@ class UICoreRos(UICore):
             rospy.logdebug("not in edit mode")
             return False
 
-        rospy.logdebug("attempt to select object id: " + id)
-        obj = self.get_object(id)
-
         msg = self.program_vis.get_current_item()
 
-        if msg is None:
+        if msg is None or len(msg.object) == 0:
             return False
+
+        rospy.logdebug("attempt to select object id: " + id)
+        obj = self.get_object(id)
 
         if msg.type in [ProgIt.PICK_FROM_FEEDER, ProgIt.PICK_FROM_POLYGON]:
 
