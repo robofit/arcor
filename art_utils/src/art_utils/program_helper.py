@@ -207,6 +207,15 @@ class ProgramHelper():
         item_idx = self._cache[block_id]["items"][item_id]["idx"]
         return self._prog.blocks[block_idx].items[item_idx]
 
+    def get_item_flag(self, block_id, item_id, key):
+        block_idx = self._cache[block_id]["idx"]
+        item_idx = self._cache[block_id]["items"][item_id]["idx"]
+        item = self._prog.blocks[block_idx].items[item_idx]
+        if key not in item.flags:
+            return None
+        else:
+            return item.flags[key]
+
     def _get_block_on(self,  block_id, what):
 
         return self._cache[block_id][what]
