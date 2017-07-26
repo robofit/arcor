@@ -435,6 +435,14 @@ def main(args):
     ot.bbox.dimensions.append(0.05)
     ot.bbox.dimensions.append(0.05)
     ot.bbox.dimensions.append(0.16)
+    store_object_type(ot)
+	
+    ot = ObjectType()
+    ot.name = "karta"
+    ot.bbox.type = SolidPrimitive.BOX
+    ot.bbox.dimensions.append(0.08)
+    ot.bbox.dimensions.append(0.04)
+    ot.bbox.dimensions.append(0.002)
 
     store_object_type(ot)
 
