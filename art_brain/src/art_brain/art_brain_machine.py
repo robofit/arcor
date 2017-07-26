@@ -39,6 +39,8 @@ class ArtBrainMachine(object):
               # manipulation - place
               State(name='place_to_pose', on_enter=[
                     'state_place_to_pose'], on_exit=[]),
+              State(name='place_to_grid', on_enter=[
+                  'state_place_to_grid'], on_exit=[]),
 
               # manipulation
               State(name='path_through_points', on_enter=[
@@ -83,6 +85,8 @@ class ArtBrainMachine(object):
                     'state_learning_place_to_pose'], on_exit=[]),
               State(name='learning_place_to_pose_run', on_enter=[
                     'state_learning_place_to_pose_run'], on_exit=[]),
+              State(name='learning_place_to_grid', on_enter=[
+                  'state_learning_place_to_grid'], on_exit=[]),
 
               State(name='learning_wait', on_enter=[
                     'state_learning_wait'], on_exit=[]),
@@ -94,14 +98,14 @@ class ArtBrainMachine(object):
 
     def __init__(self):
         self.name = 'brain'
-        self.machine = Machine(model=self,  states=ArtBrainMachine.states, initial='pre_init',
+        self.machine = Machine(model=self, states=ArtBrainMachine.states, initial='pre_init',
                                auto_transitions=False, send_event=True, queued=True)
 
         # *** transitions ***
 
-        self.machine.add_transition('init',  'pre_init',  'init')
+        self.machine.add_transition('init', 'pre_init', 'init')
         self.machine.add_transition(
-            'init_done',  'init',  'waiting_for_action', conditions='is_everything_calibrated')
+            'init_done', 'init', 'waiting_for_action', conditions='is_everything_calibrated')
         self.machine.add_transition(
             'program_start', 'waiting_for_action', 'program_init')
         self.machine.add_transition(
@@ -109,15 +113,15 @@ class ArtBrainMachine(object):
 
         # program
         self.machine.add_transition(
-            'program_init_done',  'program_init',  'program_run')
-        self.machine.add_transition('error',  'program_init',  'program_error')
-        self.machine.add_transition('error',  'program_run',  'program_error')
+            'program_init_done', 'program_init', 'program_run')
+        self.machine.add_transition('error', 'program_init', 'program_error')
+        self.machine.add_transition('error', 'program_run', 'program_error')
         self.machine.add_transition(
-            'program_error_handled', 'program_error',  'program_load_instruction')
+            'program_error_handled', 'program_error', 'program_load_instruction')
         self.machine.add_transition(
-            'program_error_shutdown', 'program_error',  'shutdown')
+            'program_error_shutdown', 'program_error', 'shutdown')
         self.machine.add_transition(
-            'program_error_fatal', 'program_error',  'program_finished')
+            'program_error_fatal', 'program_error', 'program_finished')
         self.machine.add_transition(
             'try_again', 'program_error', 'program_run')
         self.machine.add_transition(
@@ -125,13 +129,13 @@ class ArtBrainMachine(object):
         self.machine.add_transition(
             'fail', 'program_error', 'program_load_instruction')
         self.machine.add_transition(
-            'done', 'program_load_instruction',  'program_run')
+            'done', 'program_load_instruction', 'program_run')
         self.machine.add_transition(
-            'error', 'program_load_instruction',  'program_error')
+            'error', 'program_load_instruction', 'program_error')
         self.machine.add_transition(
-            'finished', 'program_load_instruction',  'program_finished')
+            'finished', 'program_load_instruction', 'program_finished')
         self.machine.add_transition(
-            'done', 'program_finished',  'waiting_for_action')
+            'done', 'program_finished', 'waiting_for_action')
         self.machine.add_transition(
             'finished', 'program_run', 'program_finished')
         self.machine.add_transition(
@@ -147,11 +151,11 @@ class ArtBrainMachine(object):
 
         # pick_from_polygon instruction
         self.machine.add_transition(
-            'pick_from_polygon',  'program_run',  'pick_from_polygon')
+            'pick_from_polygon', 'program_run', 'pick_from_polygon')
         self.machine.add_transition(
-            'done',  'pick_from_polygon',  'program_load_instruction')
+            'done', 'pick_from_polygon', 'program_load_instruction')
         self.machine.add_transition(
-            'error',  'pick_from_polygon',  'program_error')
+            'error', 'pick_from_polygon', 'program_error')
 
         # pick_from_feeder instruction
         self.machine.add_transition(
@@ -170,11 +174,19 @@ class ArtBrainMachine(object):
 
         # place_to_pose instruction
         self.machine.add_transition(
-            'place_to_pose',  'program_run',  'place_to_pose')
+            'place_to_pose', 'program_run', 'place_to_pose')
         self.machine.add_transition(
-            'done',  'place_to_pose',  'program_load_instruction')
+            'done', 'place_to_pose', 'program_load_instruction')
         self.machine.add_transition(
-            'error',  'place_to_pose',  'program_error')
+            'error', 'place_to_pose', 'program_error')
+
+        # place_to_grid instruction
+        self.machine.add_transition(
+            'place_to_grid', 'program_run', 'place_to_grid')
+        self.machine.add_transition(
+            'done', 'place_to_grid', 'program_load_instruction')
+        self.machine.add_transition(
+            'error', 'place_to_grid', 'program_error')
 
         # path through poses instruction
         self.machine.add_transition(
@@ -210,11 +222,11 @@ class ArtBrainMachine(object):
 
         # wait instruction
         self.machine.add_transition(
-            'wait_for_user',  'program_run',  'wait_for_user')
+            'wait_for_user', 'program_run', 'wait_for_user')
         self.machine.add_transition(
-            'done',  'wait_for_user',  'program_load_instruction')
+            'done', 'wait_for_user', 'program_load_instruction')
         self.machine.add_transition(
-            'error',  'wait_for_user',  'program_error')
+            'error', 'wait_for_user', 'program_error')
 
         # wait instruction
         self.machine.add_transition(
@@ -295,6 +307,14 @@ class ArtBrainMachine(object):
             'done', 'learning_place_to_pose_run', 'learning_run')
         self.machine.add_transition(
             'error', 'learning_place_to_pose_run', 'learning_step_error')
+
+        # learning place_to_grid
+        self.machine.add_transition(
+            'place_to_grid', 'learning_run', 'learning_place_to_grid')
+        self.machine.add_transition(
+            'done', 'learning_place_to_grid', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_place_to_grid', 'learning_step_error')
 
         # learning wait
         self.machine.add_transition('wait', 'learning_run', 'learning_wait')

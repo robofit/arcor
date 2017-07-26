@@ -17,7 +17,7 @@ def sigint_handler(*args):
 
 def main(args):
 
-    rospy.init_node('projected_gui', anonymous=True)
+    rospy.init_node('projected_gui', anonymous=True, log_level=rospy.DEBUG)
 
     signal.signal(signal.SIGINT, sigint_handler)
 
@@ -30,7 +30,6 @@ def main(args):
     app.installTranslator(translator)
 
     ui = UICoreRos()
-    ui.start()
 
     dbg = rospy.get_param('~show_scene', False)
     if dbg:
@@ -41,6 +40,7 @@ def main(args):
     timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
 
     sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     try:
