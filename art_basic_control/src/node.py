@@ -30,13 +30,13 @@ class ArtBasicControl:
         # taken from https://github.com/sniekum/pr2_lfd_utils/blob/master/src/pr2_lfd_utils/recordInteraction.py#L50
         rospy.loginfo('Waiting for pr2_controller_manager')
         rospy.wait_for_service('/pr2_controller_manager/switch_controller')
-        self.switch_control = rospy.ServiceProxy('/pr2_controller_manager/switch_controller', SwitchController, persistent=True)
+        self.switch_control = rospy.ServiceProxy('/pr2_controller_manager/switch_controller', SwitchController)
         self.standard_controllers = ['r_arm_controller', 'l_arm_controller']
         self.mannequin_controllers = ['r_arm_controller_loose', 'l_arm_controller_loose']
         self.left_arm_mann = False
         self.right_arm_mann = False
         self.switch_req = SwitchControllerRequest()
-        self.switch_req.strictness = SwitchControllerRequest.BEST_EFFORT
+        self.switch_req.strictness = SwitchControllerRequest.STRICT
 
         rospy.loginfo('Waiting for move_group')
         moveit_action_client = actionlib.SimpleActionClient("/move_group", MoveGroupAction)
@@ -96,12 +96,14 @@ class ArtBasicControl:
             rospy.logerr('Left arm already in interactive mode')
         else:
 
-            self.left_arm_mann = True
-
             self.switch_req.stop_controllers = [self.standard_controllers[1]]
             self.switch_req.start_controllers = [self.mannequin_controllers[1]]
-            self.switch_control(self.switch_req)
-            self.left_int_pub.publish(True)
+            res = self.switch_control(self.switch_req)
+
+            if res.ok:
+
+                self.left_arm_mann = True
+                self.left_int_pub.publish(True)
 
         return EmptyResponse()
 
@@ -111,12 +113,14 @@ class ArtBasicControl:
             rospy.logerr('Left arm already in normal mode')
         else:
 
-            self.left_arm_mann = False
-
             self.switch_req.stop_controllers = [self.mannequin_controllers[1]]
             self.switch_req.start_controllers = [self.standard_controllers[1]]
-            self.switch_control(self.switch_req)
-            self.left_int_pub.publish(False)
+            res = self.switch_control(self.switch_req)
+
+            if res.ok:
+
+                self.left_arm_mann = False
+                self.left_int_pub.publish(False)
 
         return EmptyResponse()
 
@@ -198,12 +202,14 @@ class ArtBasicControl:
             rospy.logerr('Right arm already in interactive mode')
         else:
 
-            self.right_arm_mann = True
-
             self.switch_req.stop_controllers = [self.standard_controllers[0]]
             self.switch_req.start_controllers = [self.mannequin_controllers[0]]
-            self.switch_control(self.switch_req)
-            self.right_int_pub.publish(True)
+            res = self.switch_control(self.switch_req)
+
+            if res.ok:
+
+                self.right_arm_mann = True
+                self.right_int_pub.publish(True)
 
         return EmptyResponse()
 
@@ -213,12 +219,14 @@ class ArtBasicControl:
             rospy.logerr('Right arm already in normal mode')
         else:
 
-            self.right_arm_mann = False
-
             self.switch_req.stop_controllers = [self.mannequin_controllers[0]]
             self.switch_req.start_controllers = [self.standard_controllers[0]]
-            self.switch_control(self.switch_req)
-            self.right_int_pub.publish(False)
+            res = self.switch_control(self.switch_req)
+
+            if res.ok:
+
+                self.right_arm_mann = False
+                self.right_int_pub.publish(False)
 
         return EmptyResponse()
 
