@@ -119,6 +119,7 @@ class UICoreRos(UICore):
         self.emergency_stop_reset_srv = rospy.ServiceProxy(
             '/pr2_ethercat/reset_motors', EmptyService)  # TODO wait for service? where?
 
+        self.robot_halted = None
         self.motors_halted_sub = rospy.Subscriber(
             "/pr2_ethercat/motors_halted", Bool, self.motors_halted_cb)
 
@@ -279,7 +280,11 @@ class UICoreRos(UICore):
 
     def motors_halted_cb(self, msg):
 
-        self.emit(QtCore.SIGNAL('motors_halted_evt'), msg.data)
+        if self.robot_halted != msg.data:
+
+            self.emit(QtCore.SIGNAL('motors_halted_evt'), msg.data)
+
+        self.robot_halted = msg.data
 
     def motors_halted_evt(self, halted):
 
