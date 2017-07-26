@@ -334,4 +334,3 @@ class UICore(QtCore.QObject):
         self.remove_scene_items_by_type(PlaceItem)
         self.remove_scene_items_by_type(PolygonItem)
         self.remove_scene_items_by_type(SquareItem)
-        self.remove_scene_items_by_type(DialogItem)
