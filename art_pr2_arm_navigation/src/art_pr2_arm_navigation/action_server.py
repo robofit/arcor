@@ -39,24 +39,47 @@ class ArtArmNavigationActionServer(object):
                             char + '_wrist_roll_joint']
 
     def action_cb(self, goal):
+        max_attempt = 3
+
+        self.feedback.attempt = 1
         if goal.operation == ArmNavigationGoal.MOVE_THROUGH_POSES:
-            for p in goal.poses:
-                self.move_to_point(p)
+            for idx, p in enumerate(goal.poses):
+                attempt = 1
+                self.feedback.pose_number = idx
+                self._as.publish_feedback(self.feedback)
+                while not self.move_to_point(p):
+                    attempt += 1
+                    if attempt > max_attempt:
+                        self.result.result = self.result.FAILURE
+                        self._as.set_aborted(self.result)
+                        return
             self.result.result = ArmNavigationResult.SUCCESS
         elif goal.operation == ArmNavigationGoal.TOUCH_POSES:
-            for p in goal.poses:
-                self.touch_point(p, goal.drill_duration)
+            for idx, p in enumerate(goal.poses):
+                attempt = 1
+                self.feedback.pose_number = idx
+                self._as.publish_feedback(self.feedback)
+                while not self.touch_point(p, goal.drill_duration):
+                    attempt += 1
+                    if attempt > max_attempt:
+                        self.result.result = self.result.FAILURE
+                        self._as.set_aborted(self.result)
+                        return
+
         elif goal.operation == ArmNavigationGoal.MOVE_THROUGH_TRAJECTORY:
             self.result.result = ArmNavigationResult.BAD_REQUEST
             self.result.message = "Not implemented!"
             self._as.set_aborted(self.result)
             return
         rospy.loginfo("return")
+        self.result.result = self.result.SUCCESS
         self._as.set_succeeded(self.result)
 
     def move_to_point(self, pose):
         self.group.set_pose_target(pose)
-        self.group.go(wait=True)
+        if not self.group.go(wait=True):
+            return False
+        return True
 
     def touch_point(self, pose, drill_duration):
         rospy.loginfo("Touch point in")
@@ -64,15 +87,18 @@ class ArtArmNavigationActionServer(object):
         pre_touch_pose.pose.position.z += 0.1  # 10cm above desired pose
         self.group.set_pose_target(pre_touch_pose)
         rospy.loginfo("Touch point go1")
-        self.group.go(wait=True)
+        if not self.group.go(wait=True):
+            return False
         self.group.set_pose_target(pose)
         rospy.loginfo("Touch point go2")
-        self.group.go(wait=True)
+        if not self.group.go(wait=True):
+            return False
         rospy.sleep(1)
         self.rotate_gripper(drill_duration)
         self.group.set_pose_target(pre_touch_pose)
         rospy.loginfo("Touch point go3")
-        self.group.go(wait=True)
+        if not self.group.go(wait=True):
+            return False
         rospy.loginfo("Touch point out")
 
     def rotate_gripper(self, duration):
