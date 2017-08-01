@@ -11,7 +11,9 @@ import actionlib
 from art_msgs.msg import LocalizeAgainstUMFAction, LocalizeAgainstUMFGoal, LocalizeAgainstUMFResult
 from std_srvs.srv import Empty, EmptyRequest, EmptyResponse, Trigger, TriggerResponse
 from art_msgs.msg import UserStatus, UserActivity, InterfaceState
-from art_msgs.srv import startProgram, startProgramResponse, getProgram
+from art_msgs.srv import startProgram, startProgramResponse, getProgram, \
+    ObjectFlagClear, ObjectFlagClearRequest, ObjectFlagClearResponse, \
+    ObjectFlagSet, ObjectFlagSetRequest, ObjectFlagSetResponse
 from geometry_msgs.msg import PoseStamped, Pose
 from std_msgs.msg import String, Bool
 from art_msgs.msg import PickPlaceAction, PickPlaceGoal, SystemState, ObjInstance, InstancesArray, ProgramItem, \
@@ -96,7 +98,7 @@ class ArtBrain(object):
         self.program_paused = False
         self.program_pause_request = False
         self.learning = False
-        self.instruction = None
+        self.instruction = None  # type: ProgramItem
         self.holding_object_left = None
         self.holding_object_right = None
         self.stop_server = False
@@ -218,6 +220,12 @@ class ArtBrain(object):
             '/art/db/object_type/get', getObjectType)
         # self.select_arm_srv_client = ArtBrainUtils.create_service_client(
         #    '/art/fuzzy/select_arm', SelectArm)
+        self.clear_all_object_flags_srv_client = ArtBrainUtils.create_service_client(
+            '/art/object_detector/flag/clear_all', Empty)
+        self.clear_object_flag_srv_client = ArtBrainUtils.create_service_client(
+            '/art/object_detector/flag/clear', ObjectFlagClear)
+        self.set_object_flag_srv_client = ArtBrainUtils.create_service_client(
+            '/art/object_detector/flag/set', ObjectFlagSet)
 
         r = rospy.Rate(1)
         while not self.system_calibrated:
@@ -295,6 +303,8 @@ class ArtBrain(object):
                            error=ArtBrainErrors.ERROR_NO_PROGRAM_HELPER)
             return
 
+        self.clear_all_object_flags_srv_client.call(EmptyRequest())
+
         (self.block_id, item_id) = self.ph.get_first_item_id()
         self.instruction = self.ph.get_item_msg(self.block_id, item_id)
 
@@ -327,6 +337,12 @@ class ArtBrain(object):
                        str(self.instruction.id) +
                        ', item type: ' +
                        str(self.instruction.type))
+
+        for flag in self.instruction.flags:
+            print ("flag: ", flag)
+            if flag.key == "CLEAR_OBJECT_FLAGS" and flag.value == "true":
+                print ("clearing")
+                self.clear_all_object_flags_srv_client.call(EmptyRequest())
 
         instructions = {
             ProgramItem.GET_READY: self.fsm.get_ready,
@@ -439,7 +455,7 @@ class ArtBrain(object):
         if not self.check_robot():
             return
         gripper = self.get_gripper_path_following()  # TODO:
-        if gripper.touch_poses(self.instruction.pose):
+        if gripper.touch_poses("", self.instruction.pose):
             self.fsm.done()
         else:
             # TODO: error
@@ -460,12 +476,42 @@ class ArtBrain(object):
         rospy.loginfo('state_drill_points')
         if not self.check_robot():
             return
-        gripper = self.get_gripper_path_following()  # TODO:
-        if gripper.touch_poses(self.instruction.pose, drill_duration=5):
-            self.fsm.done()
-        else:
-            # TODO: error
+        objects, _ = self.ph.get_object(self.block_id, self.instruction.id)
+        if len(objects) < 1:
+            self.fsm.error(severity=InterfaceState.ERROR,
+                           error=ArtBrainErrors.ERROR_OBJECT_NOT_DEFINED)
             return
+        obj = objects[0]
+        if obj not in self.objects:
+            self.fsm.error(severity=InterfaceState.WARNING,
+                           error=ArtBrainErrors.ERROR_OBJECT_MISSING)
+
+        self.state_manager.update_program_item(
+            self.ph.get_program_id(), self.block_id, self.instruction, {
+                    "SELECTED_OBJECT_ID": obj})
+
+        gripper = self.get_gripper_path_following()  # TODO:
+        for hole_number, pose in enumerate(self.instruction.pose):
+            if self.program_pause_request or self.program_paused:
+                self.program_pause_request = False
+                self.program_paused = True
+                r = rospy.Rate(2)
+                while self.program_paused:
+                    r.sleep()
+            self.state_manager.update_program_item(
+                self.ph.get_program_id(), self.block_id, self.instruction, {
+                    "DRILLED_HOLE_NUMBER": str(hole_number+1)})
+            if not gripper.touch_poses(obj, [pose], drill_duration=2):
+                self.fsm.error(severity=InterfaceState.WARNING,
+                               error=ArtBrainErrors.ERROR_DRILL_FAILED)
+                return
+
+        req = ObjectFlagSetRequest()
+        req.object_id = obj
+        req.flag.key = "drilled"
+        req.flag.value = "true"
+        self.set_object_flag_srv_client.call(req)
+        self.fsm.done()
 
     def state_place_to_grid(self, event):
         rospy.loginfo('state_place_to_grid')

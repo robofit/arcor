@@ -8,6 +8,7 @@ import copy
 from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import Pose
 from art_msgs.msg import InterfaceState
+from geometry_msgs.msg import PoseStamped
 
 from enum import IntEnum  # sudo pip install enum34
 
@@ -165,8 +166,9 @@ class ArtGripper(object):
         else:
             return False
 
-    def touch_poses(self, poses, drill_duration=0):
+    def touch_poses(self, object_id, poses, drill_duration=0):
         goal = ArmNavigationGoal()
+        goal.object = object_id
         goal.operation = goal.TOUCH_POSES
         goal.drill_duration = drill_duration
         goal.poses = poses
@@ -204,3 +206,4 @@ class ArtBrainErrors(IntEnum):
     ERROR_PICK_FAILED = InterfaceState.ERROR_PICK_FAILED
     ERROR_PICK_PLACE_SERVER_NOT_READY = InterfaceState.ERROR_PICK_PLACE_SERVER_NOT_READY
     ERROR_PLACE_FAILED = InterfaceState.ERROR_PLACE_FAILED
+    ERROR_DRILL_FAILED = InterfaceState.ERROR_DRILL_FAILED
