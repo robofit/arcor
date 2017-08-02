@@ -7,7 +7,7 @@ from art_msgs.msg import PickPlaceAction, ObjInstance, ArmNavigationAction, \
 import copy
 from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import Pose
-from art_msgs.msg import InterfaceState
+from art_msgs.msg import InterfaceState, InstancesArray
 from geometry_msgs.msg import PoseStamped
 
 from enum import IntEnum  # sudo pip install enum34
@@ -69,15 +69,38 @@ class ArtBrainUtils(object):
                 # test if some object is in polygon and take the first one
                 if pol.contains_point([obj.pose.position.x, obj.pose.position.y]):
                     obj_ret = copy.deepcopy(obj)
-                    print('Selected object: ' + obj.object_id)
+                    rospy.logdebug('Selected object: ' + obj.object_id)
                     break
 
         else:
             if pol is not None:
-                print('No object in the specified polygon')
-                print pol
+                rospy.logerr('No object in the specified polygon')
+
             return None
         return obj_ret
+
+    @staticmethod
+    def object_exist(obj_id, objects):
+        """
+        Checks if object id exists
+
+        Args:
+            obj_id: id of the object
+            objects: array of detected objects
+
+        @type obj_id: str
+        @type objects: InstancesArray
+
+        Returns:
+
+        @rtype: bool
+
+        """
+        for o in objects.instances:  # type: ObjInstance
+            if o.object_id == obj_id:
+                return True
+        else:
+            return False
 
     @staticmethod
     def get_place_pose(instruction):
@@ -101,9 +124,11 @@ class ArtBrainUtils(object):
         Returns: created service proxy
 
         '''
-        rospy.loginfo("Waiting for service: " + str(service_name))
+        if print_info:
+            rospy.loginfo("Waiting for service: " + str(service_name))
         rospy.wait_for_service(service_name)
-        rospy.loginfo("Service " + str(service_name) + " ready")
+        if print_info:
+            rospy.loginfo("Service " + str(service_name) + " ready")
         return rospy.ServiceProxy(service_name, service_type)
 
 
@@ -125,7 +150,6 @@ class ArtGripper(object):
         self.pp_client.wait_for_server()
         rospy.loginfo("Waiting for " + str(name) + "'s gripper manipulation action client")
         self.manip_client.wait_for_server()
-        rospy.loginfo("got it")
         self.holding_object = None
         self.last_pick_instruction_id = None
         self.group_name = name
@@ -137,6 +161,7 @@ class ArtGripper(object):
             "/art/pr2/" + name + "/get_ready", Trigger)
         self.move_to_user_client = ArtBrainUtils.create_service_client(
             "/art/pr2/" + name + "/move_to_user", Trigger)
+        rospy.loginfo("Gripper " + str(name) + " ready.")
 
     def re_init(self):
         self.last_pick_instruction_id = None
@@ -179,6 +204,13 @@ class ArtGripper(object):
             return True
         else:
             return False
+
+
+class ArtBrainErrorSeverities(IntEnum):
+    WARNING = InterfaceState.WARNING
+    ERROR = InterfaceState.ERROR
+    SEVERE = InterfaceState.SEVERE
+    INFO = InterfaceState.INFO
 
 
 class ArtBrainErrors(IntEnum):
