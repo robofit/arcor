@@ -46,6 +46,8 @@ class UICoreRos(UICore):
         QtCore.QObject.connect(self, QtCore.SIGNAL(
             'objects'), self.object_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL(
+            'objects_raw'), self.object_raw_cb_evt)
+        QtCore.QObject.connect(self, QtCore.SIGNAL(
             'user_status'), self.user_status_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL(
             'interface_state'), self.interface_state_evt)
@@ -74,7 +76,7 @@ class UICoreRos(UICore):
             PoseStampedCursorItem(self.scene, cur)
 
         TouchTableItem(self.scene, '/art/interface/touchtable/touch',
-                       list(self.get_scene_items_by_type(PoseStampedCursorItem)))
+                       list(self.get_scene_items_by_type(PoseStampedCursorItem)), show_touch_points=rospy.get_param("~show_touch_points", False))
 
         self.stop_btn = ButtonItem(self.scene, 0, 0, "STOP",
                                    None, self.stop_btn_clicked, 2.0, QtCore.Qt.red)
@@ -142,6 +144,11 @@ class UICoreRos(UICore):
         # TODO move this to ArtApiHelper ??
         self.obj_sub = rospy.Subscriber(
             '/art/object_detector/object_filtered', InstancesArray, self.object_cb, queue_size=1)
+        self.obj_raw_sub = rospy.Subscriber(
+            '/art/object_detector/object', InstancesArray, self.object_raw_cb, queue_size=1)
+
+        self.objects_by_sensor = {}
+
         self.user_status_sub = rospy.Subscriber(
             '/art/user/status', UserStatus, self.user_status_cb, queue_size=1)
 
@@ -734,7 +741,7 @@ class UICoreRos(UICore):
 
             if self.state_manager.state.edit_enabled and self.grasp_dialog is None:
                 self.grasp_dialog = DialogItem(self.scene, self.width / 2, 0.1, "Save gripper pose", [
-                    "Right arm", "Left arm"], self.save_gripper_pose_cb)
+                    "Right arm (0)", "Left arm (0)"], self.save_gripper_pose_cb)
 
             if self.ph.is_object_set(block_id, item_id):
                 self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
@@ -1034,6 +1041,33 @@ class UICoreRos(UICore):
 
         self.program_list = ProgramListItem(
             self.scene, self.last_prog_pos[0], self.last_prog_pos[1], headers_to_show, d, self.last_edited_prog_id, self.program_selected_cb)
+
+    def object_raw_cb_evt(self, msg):
+
+        self.objects_by_sensor[msg.header.frame_id] = [len(msg.instances), msg.header.stamp]
+
+        now = rospy.Time.now()
+
+        to_delete = []
+
+        for k, v in self.objects_by_sensor.iteritems():
+
+            if now - v[1] > rospy.Duration(2.0):
+
+                v[0] = 0
+
+        # TODO do this in timer...
+        if self.grasp_dialog is not None:
+
+            # TODO do it in smarter way
+            if "/r_forearm_cam_optical_frame" in self.objects_by_sensor:
+                self.grasp_dialog.items[0].set_caption("Right arm (" + str(self.objects_by_sensor["/r_forearm_cam_optical_frame"][0]) + ")")
+            if "/l_forearm_cam_optical_frame" in self.objects_by_sensor:
+                self.grasp_dialog.items[1].set_caption("Left arm (" + str(self.objects_by_sensor["/l_forearm_cam_optical_frame"][0]) + ")")
+
+    def object_raw_cb(self, msg):
+
+        self.emit(QtCore.SIGNAL('objects_raw'), msg)
 
     def object_cb(self, msg):
 

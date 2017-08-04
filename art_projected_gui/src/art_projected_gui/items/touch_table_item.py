@@ -10,11 +10,12 @@ from button_item import ButtonItem
 
 class TouchPointItem(Item):
 
-    def __init__(self, scene, x, y, parent):
+    def __init__(self, scene, x, y, parent, show=False):
 
         self.pointed_item = None
         self.offset = (0, 0)
         self.last_update = rospy.Time.now()
+        self.show = show
 
         super(TouchPointItem, self).__init__(scene, x, y, parent)
 
@@ -90,7 +91,7 @@ class TouchPointItem(Item):
 
     def paint(self, painter, option, widget):
 
-        if not self.scene():
+        if not self.scene() or not self.show:
             return
 
         painter.setClipRect(option.exposedRect)
@@ -129,16 +130,36 @@ class TouchTableItemHelper(QtCore.QObject):
 class TouchTableItem(Item):
 
     # TODO display corners of touchable area
-    def __init__(self, scene, topic, items_to_disable_on_touch=[], world_frame="marker"):
+    def __init__(self, scene, topic, items_to_disable_on_touch=[], world_frame="marker", show_touch_points=False):
 
         super(TouchTableItem, self).__init__(scene, 0.0, 0.0)
         self.touch_points = {}
 
+        self.show_touch_points = show_touch_points
         self.items_to_disable_on_touch = items_to_disable_on_touch
 
         self.helper = TouchTableItemHelper(topic, world_frame, self.touch_cb)
 
         self.setZValue(400)
+
+        self.prune_timer = QtCore.QTimer()
+
+        QtCore.QObject.connect(self.prune_timer, QtCore.SIGNAL(
+            'timeout()'), self.prune_timer_evt)
+        self.prune_timer.start(0.5 * 1000)
+
+    def prune_timer_evt(self):
+
+        to_delete = []
+        now = rospy.Time.now()
+        for k, v in self.touch_points.iteritems():
+
+            if now - v.last_update > rospy.Duration(self.prune_timer.interval() / 1000.0):
+                to_delete.append(k)
+
+        for k in to_delete:
+            rospy.logdebug("deleting outdated touch, id: " + str(k))
+            self.delete_id(k)
 
     def boundingRect(self):
 
@@ -170,7 +191,7 @@ class TouchTableItem(Item):
 
             # TODO check frame_id
             rospy.logdebug("new touch point, id: " + str(msg.id))
-            self.touch_points[msg.id] = TouchPointItem(self.scene(), msg.point.point.x, msg.point.point.y, self)
+            self.touch_points[msg.id] = TouchPointItem(self.scene(), msg.point.point.x, msg.point.point.y, self, show=self.show_touch_points)
 
         else:
 
@@ -183,19 +204,6 @@ class TouchTableItem(Item):
 
                 rospy.logdebug("update of touch, id: " + str(msg.id))
                 self.touch_points[msg.id].set_poss(msg.point.point.x, msg.point.point.y)
-
-        # TODO make a timer for deleting outdated touches
-        to_delete = []
-        now = rospy.Time.now()
-        for k, v in self.touch_points.iteritems():
-
-            if now - v.last_update > rospy.Duration(1.0):
-                to_delete.append(k)
-
-        for k in to_delete:
-
-            rospy.logdebug("deleting outdated touch, id: " + str(k))
-            self.delete_id(k)
 
         # enable / disable given items
         if len(self.touch_points) > 0 and touches == 0:

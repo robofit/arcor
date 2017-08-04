@@ -4,7 +4,7 @@ from PyQt4 import QtGui, QtCore
 from item import Item
 from point_item import PointItem
 from desc_item import DescItem
-from math import fabs,  atan2
+from math import fabs, atan2
 
 
 class PolygonItem(Item):
@@ -48,7 +48,7 @@ class PolygonItem(Item):
             max[0] += pad
             max[1] += pad
 
-            self.pts.append(PointItem(scene, min[0], min[1], self,  self.point_changed))
+            self.pts.append(PointItem(scene, min[0], min[1], self, self.point_changed))
             self.pts.append(PointItem(scene, max[0], min[1], self, self.point_changed))
             self.pts.append(PointItem(scene, max[0], max[1], self, self.point_changed))
             self.pts.append(PointItem(scene, min[0], max[1], self, self.point_changed))
@@ -67,9 +67,9 @@ class PolygonItem(Item):
             pass  # TODO chyba
 
         for pt in self.pts:
-                self.poly.append(pt.pos().toPoint())
+            self.poly.append(pt.pos().toPoint())
 
-        self.desc = DescItem(scene, 0,  0, self)
+        self.desc = DescItem(scene, 0, 0, self)
         self.desc.setFlag(QtGui.QGraphicsItem.ItemIgnoresTransformations)
         self.__update_desc_pos()
         self.__update_text()
@@ -80,7 +80,7 @@ class PolygonItem(Item):
 
         if self.desc is not None:
 
-            p = self.poly.boundingRect().bottomLeft() + QtCore.QPointF(0,  self.m2pix(0.02))
+            p = self.poly.boundingRect().bottomLeft() + QtCore.QPointF(0, self.m2pix(0.02))
             self.desc.setPos(p)
 
     def __update_text(self):
@@ -94,20 +94,20 @@ class PolygonItem(Item):
 
     def point_changed(self, pt, finished):
 
-        self.poly.setPoint(self.pts.index(pt),  pt.pos().toPoint())
+        self.poly.setPoint(self.pts.index(pt), pt.pos().toPoint())
 
         ps = self.poly.size()
 
         # TODO what to do with shuffled points? should be fixed...
-        for i in range(2,  ps+2):
+        for i in range(2, ps + 2):
 
-            line1 = QtCore.QLineF(self.poly.point(i-2),  self.poly.point((i-1) % ps))
-            line2 = QtCore.QLineF(self.poly.point((i-1) % ps),  self.poly.point(i % ps))
+            line1 = QtCore.QLineF(self.poly.point(i - 2), self.poly.point((i - 1) % ps))
+            line2 = QtCore.QLineF(self.poly.point((i - 1) % ps), self.poly.point(i % ps))
 
             a1 = line1.angle()
             a2 = line2.angle()
 
-            d = a2-a1
+            d = a2 - a1
 
             if d < 0:
                 d = 360 + d
@@ -136,9 +136,12 @@ class PolygonItem(Item):
 
         pts = []
 
-        for pt in self.pts:
+        try:
+            for pt in self.pts:
 
-            pts.append(pt.get_pos())
+                pts.append(pt.get_pos())
+        except AttributeError:
+            return None
 
         return pts
 
