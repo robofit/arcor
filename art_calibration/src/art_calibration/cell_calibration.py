@@ -23,11 +23,12 @@ import struct
 class ArtCellCalibration(object):
 
     last_pc = None
+    last_pc_transformed = None
 
     def __init__(self, cell_id, markers_topic, world_frame, cell_frame, main_cell_frame, pc_topic, tf_listener):
         self.cell_id = cell_id
         self.markers_topic = markers_topic
-        self.calibrated = None
+        self.calibrated = False
         self.positions = [None, None, None, None]
 
         self.cell_frame = cell_frame
@@ -136,46 +137,61 @@ class ArtCellCalibration(object):
         :type pc: PointCloud2
         :return:
         '''
+        if not self.calibrated:
+            rospy.logwarn_throttle(1.0, "Not calibrated cell: " + self.cell_id)
+            return
 
-        if self.cell_frame == self.main_cell_frame:
+        # if self.cell_frame == self.main_cell_frame:
             # if False:
-            transformed_cloud = pc
-        else:
-            p = pcl.PointCloud(np.array(list(pc2.read_points(pc, field_names=['x', 'y', 'z'],
-                                                             skip_nans=True)), dtype=np.float32))
-            pcloud = pc2.create_cloud_xyz32(pc.header, p.to_list())
-            try:
-                print self.cell_frame
-                print self.main_cell_frame
-                translation, rotation = self.listener.lookupTransform(self.world_frame, self.main_cell_frame, rospy.Time(0))
-            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                return
-            print rotation
-            transform = TransformStamped()
-            transform.transform.translation = Vector3(translation[0], translation[1], translation[2])
-            transform.transform.rotation = Quaternion(rotation[0], rotation[1], rotation[2], rotation[3])
-            transform.header.frame_id = self.main_cell_frame
-            transform.child_frame_id = self.world_frame
-            transformed_cloud = do_transform_cloud(pcloud, transform)
+        #    transformed_cloud = pc
+        # else:
+        p = pcl.PointCloud(np.array(list(pc2.read_points(pc, field_names=['x', 'y', 'z'],
+                                                         skip_nans=True)), dtype=np.float32))
+        pcloud = pc2.create_cloud_xyz32(pc.header, p.to_list())
+        self.last_pc = pcloud
+        try:
+            print self.cell_frame
+            print self.main_cell_frame
+            #translation, rotation = self.listener.lookupTransform(pc.header.frame_id, self.main_cell_frame, rospy.Time(0))
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            return
+        transform = TransformStamped()
+        tr = self.get_transform()
+        transformed_cloud = self.transform_pcloud(pcloud, tr.translation, tr.rotation,
+                                                  self.cell_frame, self.world_frame)
 
-            #transformed_cloud = self.listener.transformPointCloud(self.world_frame, pc)
+        #transformed_cloud = self.listener.transformPointCloud(self.world_frame, pc)
 
         p = pcl.PointCloud(np.array(list(pc2.read_points(transformed_cloud, field_names=['x', 'y', 'z'],
                                                          skip_nans=True)), dtype=np.float32))
+        filter = p.make_voxel_grid_filter()  # type: pcl.VoxelGridFilter
+        filter.set_leaf_size(0.01, 0.01, 0.01)
+        p = filter.filter()
 
         seg = p.make_segmenter()  # type: pcl.Segmentation
         seg.set_model_type(pcl.SACMODEL_PLANE)
         seg.set_method_type(pcl.SAC_RANSAC)
-        seg.set_distance_threshold(0.1)
+        seg.set_distance_threshold(0.02)
         indices, model = seg.segment()
+
         p = p.extract(indices)  # type: pcl.PointCloud
-        filter = p.make_voxel_grid_filter()  # type: pcl.VoxelGridFilter
-        filter.set_leaf_size(0.01, 0.01, 0.01)
-        p = filter.filter()
+
         h = Header()
         h.stamp = pc.header.stamp
         h.seq = pc.header.seq
-        h.frame_id = self.main_cell_frame
+        h.frame_id = self.world_frame
+
         pcloud = pc2.create_cloud_xyz32(h, p.to_list())
-        self.pc_pub.publish(pcloud)
-        self.last_pc = p
+        pcloud.header.frame_id = self.world_frame
+
+        self.last_pc_transformed = p
+
+    @staticmethod
+    def transform_pcloud(cloud_in, translation, rotation, source_frame_id, target_frame_id):
+        transform = TransformStamped()
+
+        transform.transform.translation = Vector3(translation[0], translation[1], translation[2])
+        transform.transform.rotation = Quaternion(rotation[0], rotation[1], rotation[2], rotation[3])
+        transform.header.frame_id = source_frame_id
+        transform.child_frame_id = target_frame_id
+        return do_transform_cloud(cloud_in, transform)
