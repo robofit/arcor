@@ -389,19 +389,19 @@ class ArtBrain(object):
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_PICK_POSE_NOT_SELECTED)
             return'''
-        gripper = self.get_gripper(pick_pose=self.instruction.pose)
+        #gripper = self.get_gripper(pick_pose=self.instruction.pose)
+        gripper = self.left_gripper
         if not self.check_gripper_for_pick(gripper):
             return
 
         # TODO: pick from feeder method
-        if self.pick_object_from_feeder(obj, gripper, self.instruction.pose):
+        if self.pick_object_from_feeder(obj, gripper, self.instruction.pose[0]):  # TODO (kapi): fix the pose[0]
             gripper.holding_object = obj
             gripper.last_pick_instruction_id = self.instruction.id
-            self.done(success=True)
+            self.fsm.done(success=True)
 
         else:
-            gripper.get_ready_clinet.call()
-            self.done(success=False)
+            gripper.get_ready()
 
     def state_pick_object_id(self, event):
         if not self.check_robot():
@@ -486,7 +486,7 @@ class ArtBrain(object):
 
         self.state_manager.update_program_item(
             self.ph.get_program_id(), self.block_id, self.instruction, {
-                    "SELECTED_OBJECT_ID": obj})
+                "SELECTED_OBJECT_ID": obj})
 
         gripper = self.get_gripper_path_following()  # TODO:
         for hole_number, pose in enumerate(self.instruction.pose):
@@ -498,7 +498,7 @@ class ArtBrain(object):
                     r.sleep()
             self.state_manager.update_program_item(
                 self.ph.get_program_id(), self.block_id, self.instruction, {
-                    "DRILLED_HOLE_NUMBER": str(hole_number+1)})
+                    "DRILLED_HOLE_NUMBER": str(hole_number + 1)})
             if not gripper.touch_poses(obj, [pose], drill_duration=2):
                 self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                                error=ArtBrainErrors.ERROR_DRILL_FAILED)
@@ -675,8 +675,8 @@ class ArtBrain(object):
         error_left = error_right = None
         if self.gripper_usage in (ArtGripper.GRIPPER_BOTH, ArtGripper.GRIPPER_LEFT) and self.left_gripper is not None:
             success_left, error_left = self.left_gripper.prepare_for_interaction()
-        if self.gripper_usage in (ArtGripper.GRIPPER_BOTH, ArtGripper.GRIPPER_LEFT) and self.left_gripper is not None:
-            success_right, error_right = self.left_gripper.prepare_for_interaction()
+        # if self.gripper_usage in (ArtGripper.GRIPPER_BOTH, ArtGripper.GRIPPER_LEFT) and self.left_gripper is not None:
+        #    success_right, error_right = self.left_gripper.prepare_for_interaction()
 
         if not success_left or not success_right:
             if ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED in (error_left, error_right):
@@ -820,7 +820,7 @@ class ArtBrain(object):
         else:
             return False
 
-    def pick_object_from_feeder(self, obj_type, gripper, pre_grasp_pose):
+    def pick_object_from_feeder(self, obj, gripper, pre_grasp_pose):
 
         if not gripper.move_to_pose(pre_grasp_pose):
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
@@ -828,9 +828,12 @@ class ArtBrain(object):
             return False
         rospy.sleep(2)
         pick_object = None
-        for obj in self.objects.instances:  # type: ObjInstance
-            if obj.object_type == obj_type:
-                pick_object = obj
+        rospy.loginfo("Looking for: " + str(obj.object_type))
+        for inst in self.objects.instances:  # type: ObjInstance
+            rospy.loginfo(inst.object_type)
+            rospy.loginfo(inst.object_id)
+            if inst.object_type == obj.object_type:
+                pick_object = inst
         if pick_object is None:
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING)
