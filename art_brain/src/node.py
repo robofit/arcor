@@ -206,11 +206,11 @@ class ArtBrain(object):
             self.gripper_usage = ArtGripper.GRIPPER_BOTH
 
         if self.gripper_usage == ArtGripper.GRIPPER_BOTH or ArtGripper.GRIPPER_LEFT:
-            self.left_gripper = ArtGripper('left_arm')
+            self.left_gripper = ArtGripper('left_arm', 'l_gripper_tool_frame')
         else:
             self.left_gripper = None  # type: ArtGripper
         if self.gripper_usage == ArtGripper.GRIPPER_BOTH or ArtGripper.GRIPPER_RIGHT:
-            self.right_gripper = ArtGripper('right_arm')
+            self.right_gripper = ArtGripper('right_arm', 'r_gripper_tool_frame')
         else:
             self.right_gripper = None  # type: ArtGripper
 
@@ -421,7 +421,7 @@ class ArtBrain(object):
         if not self.check_gripper_for_pick(gripper):
             return
 
-        if self.pick_object_by_id(obj, gripper, pick_only_y_axis=True):
+        if self.pick_object_by_id(obj, gripper, pick_only_y_axis=False):
             gripper.holding_object = obj
             gripper.last_pick_instruction_id = self.instruction.id
             self.fsm.done()
@@ -790,7 +790,7 @@ class ArtBrain(object):
         if not self.check_gripper_for_pick(gripper):
             return
 
-        if self.pick_object_by_id(obj, gripper, pick_only_y_axis=True):
+        if self.pick_object_by_id(obj, gripper, pick_only_y_axis=False):
             gripper.holding_object = obj
             gripper.last_pick_instruction_id = instruction.id
             self.fsm.done(success=True)
@@ -826,22 +826,38 @@ class ArtBrain(object):
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED)
             return False
-        rospy.sleep(2)
+        rospy.sleep(3)
         pick_object = None
+        pick_object_dist = None
+
         rospy.loginfo("Looking for: " + str(obj.object_type))
         for inst in self.objects.instances:  # type: ObjInstance
-            rospy.loginfo(inst.object_type)
-            rospy.loginfo(inst.object_id)
+
             if inst.object_type == obj.object_type:
-                pick_object = inst
-        if pick_object is None:
+
+                ps = PoseStamped()
+                ps.header.frame_id = self.objects.header.frame_id
+                ps.header.stamp = rospy.Time(0)
+                ps.pose = inst.pose
+
+                # TODO compute transform once and then only apply it
+                ps = self.tf_listener.transformPose(gripper.gripper_link, ps)
+
+                # distance in x does not matter - we want the object closest to the x-axis of gripper
+                dist = math.sqrt(ps.pose.position.y**2 + ps.pose.position.z**2)
+
+                if pick_object is None or (dist < pick_object_dist):
+                    pick_object = inst
+                    pick_object_dist = dist
+
+        if pick_object is None or pick_object_dist > 0.2:
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING)
             return False
 
         goal = PickPlaceGoal()
         goal.object = pick_object.object_id
-        goal.operation = goal.PICK_OBJECT_ID
+        goal.operation = goal.PICK_FROM_FEEDER
         goal.keep_orientation = False
         rospy.logdebug("Picking object from feeder")
         gripper.pp_client.send_goal(goal)
@@ -949,7 +965,7 @@ class ArtBrain(object):
                 self.state_manager.update_program_item(
                     self.ph.get_program_id(), self.block_id, instruction,
                     {"SELECTED_OBJECT_ID": gripper.holding_object.object_id})
-            if self.place_object(gripper.holding_object, pose[0], gripper, pick_only_y_axis=True):
+            if self.place_object(gripper.holding_object, pose[0], gripper, pick_only_y_axis=False):
                 instruction.pose.pop(0)
                 gripper.holding_object = None
                 if get_ready_after_place:
@@ -970,6 +986,7 @@ class ArtBrain(object):
         rospy.logdebug(obj)
         goal = PickPlaceGoal()
         goal.operation = goal.PLACE_TO_POSE
+        print ("place_object", obj)
         goal.object = obj.object_id
         if not self.check_place_pose(place, obj):
             return False
@@ -984,7 +1001,7 @@ class ArtBrain(object):
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.header.frame_id = self.objects.header.frame_id
         # TODO: how to deal with this?
-        goal.pose.pose.position.z = 0.09  # + obj.bbox.dimensions[2]/2
+        # goal.pose.pose.position.z = 0.09  # + obj.bbox.dimensions[2]/2
 
         if pick_only_y_axis:
             goal.pose.pose.orientation.x = math.sqrt(0.5)

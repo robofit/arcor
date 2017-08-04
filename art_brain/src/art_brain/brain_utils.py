@@ -138,8 +138,9 @@ class ArtGripper(object):
     GRIPPER_RIGHT = 1
     GRIPPER_BOTH = 2
 
-    def __init__(self, name):
+    def __init__(self, name, gripper_link):
         self.name = name
+        self.gripper_link = gripper_link
         self.pp_client_name = "/art/pr2/" + name + "/pp"
         self.manip_client_name = "/art/pr2/" + name + "/manipulation"
         self.pp_client = actionlib.SimpleActionClient(
