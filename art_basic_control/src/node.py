@@ -87,8 +87,8 @@ class ArtBasicControl:
 
     def gripper_pose_timer_cb(self, event):
 
-        self.publish_gripper_pose("l_gripper_tool_frame", self.left_gripper_pose_pub)
-        self.publish_gripper_pose("r_gripper_tool_frame", self.right_gripper_pose_pub)
+        self.publish_gripper_pose("l_wrist_roll_link", self.left_gripper_pose_pub)
+        self.publish_gripper_pose("r_wrist_roll_link", self.right_gripper_pose_pub)
 
     def left_interaction_on_cb(self, req):
 
