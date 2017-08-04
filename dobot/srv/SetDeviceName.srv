@@ -1,3 +1,0 @@
-std_msgs/String deviceName
----
-int32 result

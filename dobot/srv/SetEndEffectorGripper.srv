@@ -1,6 +1,0 @@
-uint8 enableCtrl
-uint8 grip
-bool isQueued
----
-int32 result
-uint64 queuedCmdIndex
