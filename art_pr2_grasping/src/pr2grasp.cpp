@@ -274,7 +274,7 @@ std::string artPr2Grasping::getPlanningFrame()
 
 bool artPr2Grasping::hasGraspedObject() { return grasped_object_; }
 
-bool artPr2Grasping::pick(const std::string& object_id, bool pick_only_y_axis)
+bool artPr2Grasping::pick(const std::string& object_id, bool pick_only_y_axis, bool feeder)
 {
   if (hasGraspedObject())
   {
@@ -353,10 +353,18 @@ bool artPr2Grasping::pick(const std::string& object_id, bool pick_only_y_axis)
   grasped_object_ = boost::make_shared<TObjectInfo>(obj);
   grasped_object_->object_id = object_id;
 
+  if (feeder) {
+      visual_tools_->cleanupCO("force-side-grasp-co");
+      geometry_msgs::PoseStamped pao = p;
+      pao.pose.position.z += 0.1;
+      visual_tools_->publishCollisionBlock(pao.pose, "force-side-grasp-co", 0.05);
+  }
+
   if (!move_group_->pick(object_id, grasps))
   {
     ROS_WARN_NAMED(group_name_, "Failed to pick");
     grasped_object_.reset();
+    visual_tools_->cleanupCO("force-side-grasp-co");
     return false;
   }
 
@@ -368,30 +376,35 @@ bool artPr2Grasping::pick(const std::string& object_id, bool pick_only_y_axis)
     grasped_object_.reset();
     ROS_ERROR_NAMED(group_name_,
                     "Gripper is closed - object missed or dropped :-(");
+    visual_tools_->cleanupCO("force-side-grasp-co");
     return false;
   }
 
   ROS_INFO_NAMED(group_name_, "Picked the object.");
   publishObject(object_id);
+  visual_tools_->cleanupCO("force-side-grasp-co");
   return true;
 }
 
 // TODO(ZdenekM): move to Objects? Or somewhere else?
-bool artPr2Grasping::addTable()
+bool artPr2Grasping::addTable(std::string frame_id)
 {
 
   visual_tools_->cleanupCO("table");
 
   geometry_msgs::PoseStamped ps;
-  ps.header.frame_id = "marker";
+  ps.header.frame_id = frame_id;
+  ps.pose.orientation.w = 1.0;
   
   if (!transformPose(ps)) return false;
 
   for (int j = 0; j < 3; j++)  // hmm, sometimes the table is not added
   {
-    if (!visual_tools_->publishCollisionFloor(ps.pose.position.z, "table"))
-      return false;
-    move_group_->setSupportSurfaceName(name);
+      visual_tools_->publishCollisionTable(ps.pose.position.x+0.1-0.75/2, 0, 0, 1.5, ps.pose.position.z, 0.75, "table");
+      visual_tools_->publishCollisionTable(0.5, 1.0, 0, 0.1, 2.0, 1.5, "left-guard");
+      visual_tools_->publishCollisionTable(0.5, -1.0, 0, 0.1, 2.0, 1.5, "right-guard");
+
+    move_group_->setSupportSurfaceName("table");
     ros::Duration(0.1).sleep();
   }
 

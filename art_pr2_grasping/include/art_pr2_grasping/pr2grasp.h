@@ -76,10 +76,9 @@ public:
 
   bool hasGraspedObject();
 
-  bool pick(const std::string& object_id, bool pick_only_y_axis=false);
+  bool pick(const std::string& object_id, bool pick_only_y_axis=false, bool feeder=false);
 
-  bool addTable(double x, double y, double angle, double width, double height,
-                double depth, std::string name);
+  bool addTable(std::string frame_id);
 };
 }  // namespace art_pr2_grasping
 #endif  // ART_PR2_GRASPING_PR2GRASP_H
