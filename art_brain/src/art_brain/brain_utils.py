@@ -197,6 +197,8 @@ class ArtGripper(object):
         goal.operation = goal.TOUCH_POSES
         goal.drill_duration = drill_duration
         goal.poses = poses
+        for pose in goal.poses:  # type: PoseStamped
+            pose.header.frame_id = object_id
         self.manip_client.send_goal(goal)
         rospy.sleep(1)
         self.manip_client.wait_for_result()
@@ -204,6 +206,33 @@ class ArtGripper(object):
             return True
         else:
             return False
+
+    def move_to_pose(self, pose):
+        goal = ArmNavigationGoal()
+        goal.poses = [pose]
+        goal.operation = ArmNavigationGoal.MOVE_THROUGH_POSES
+        self.manip_client.send_goal(goal)
+        rospy.sleep(1)
+        self.manip_client.wait_for_result()
+        if self.manip_client.get_result().result == ArmNavigationResult.SUCCESS:
+            return True
+        else:
+            return False
+
+    def prepare_for_interaction(self):
+        result = self.move_to_user_client.call()
+
+        if not result.success:
+            rospy.logwarn("Can't move gripper to the user: " +
+                          str(result.message))
+            return False, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED
+        result = self.interaction_on_client.call()
+        if not result:
+            rospy.logwarn(
+                "Can't change gripper interaction state: " + str(result.message))
+            # TODO: check arm state, inform user
+            return False, ArtBrainErrors.ERROR_LEARNING_GRIPPER_INTERACTION_MODE_SWITCH_FAILED
+        return True, None
 
 
 class ArtBrainErrorSeverities(IntEnum):
@@ -214,6 +243,7 @@ class ArtBrainErrorSeverities(IntEnum):
 
 
 class ArtBrainErrors(IntEnum):
+    ERROR_UNKNOWN = 0
     ERROR_NOT_IMPLEMENTED = 1
     ERROR_NOT_EXECUTING_PROGRAM = 2
     ERROR_NO_INSTRUCTION = 3
@@ -228,6 +258,7 @@ class ArtBrainErrors(IntEnum):
     # Learning errors
     ERROR_LEARNING_NOT_IMPLEMENTED = 101
     ERROR_LEARNING_GRIPPER_NOT_DEFINED = 102
+    ERROR_LEARNING_GRIPPER_INTERACTION_MODE_SWITCH_FAILED = 103
 
     ERROR_ROBOT_HALTED = InterfaceState.ERROR_ROBOT_HALTED
     ERROR_OBJECT_MISSING = InterfaceState.ERROR_OBJECT_MISSING
@@ -239,3 +270,4 @@ class ArtBrainErrors(IntEnum):
     ERROR_PICK_PLACE_SERVER_NOT_READY = InterfaceState.ERROR_PICK_PLACE_SERVER_NOT_READY
     ERROR_PLACE_FAILED = InterfaceState.ERROR_PLACE_FAILED
     ERROR_DRILL_FAILED = InterfaceState.ERROR_DRILL_FAILED
+    ERROR_GRIPPER_MOVE_FAILED = InterfaceState.ERROR_GRIPPER_MOVE_FAILED

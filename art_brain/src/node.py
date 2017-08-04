@@ -208,11 +208,11 @@ class ArtBrain(object):
         if self.gripper_usage == ArtGripper.GRIPPER_BOTH or ArtGripper.GRIPPER_LEFT:
             self.left_gripper = ArtGripper('left_arm')
         else:
-            self.left_gripper = None
+            self.left_gripper = None  # type: ArtGripper
         if self.gripper_usage == ArtGripper.GRIPPER_BOTH or ArtGripper.GRIPPER_RIGHT:
             self.right_gripper = ArtGripper('right_arm')
         else:
-            self.right_gripper = None
+            self.right_gripper = None  # type: ArtGripper
 
         self.art.wait_for_api()
 
@@ -671,22 +671,23 @@ class ArtBrain(object):
 
     def state_learning_pick_from_feeder(self, event):
         rospy.logdebug('Current state: state_learning_pick_from_feeder')
-        gripper = event.kwargs.get('gripper', None)
-        if gripper is None:
-            self.error(severity="ERROR",
-                       error=ArtBrainErrors.ERROR_LEARNING_GRIPPER_NOT_DEFINED)
-            return
-        result = gripper.move_to_user_client.call()
+        success_left = success_right = True
+        error_left = error_right = None
+        if self.gripper_usage in (ArtGripper.GRIPPER_BOTH, ArtGripper.GRIPPER_LEFT) and self.left_gripper is not None:
+            success_left, error_left = self.left_gripper.prepare_for_interaction()
+        if self.gripper_usage in (ArtGripper.GRIPPER_BOTH, ArtGripper.GRIPPER_LEFT) and self.left_gripper is not None:
+            success_right, error_right = self.left_gripper.prepare_for_interaction()
 
-        if not result.success:
-            rospy.logwarn("Can't move gripper to the user: " +
-                          str(result.message))
-            # TODO: inform user
-        result = gripper.interaction_on_client.call()
-        if not result:
-            rospy.logwarn(
-                "Can't change gripper interaction state: " + str(result.message))
-            # TODO: check arm state, inform user
+        if not success_left or not success_right:
+            if ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED in (error_left, error_right):
+                self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
+                               error=ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED)
+            elif ArtBrainErrors.ERROR_LEARNING_GRIPPER_INTERACTION_MODE_SWITCH_FAILED in (error_left, error_right):
+                self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
+                               error=ArtBrainErrors.ERROR_LEARNING_GRIPPER_INTERACTION_MODE_SWITCH_FAILED)
+            else:
+                self.fsm.error(severity=ArtBrainErrorSeverities.SEVERE,
+                               error=ArtBrainErrors.ERROR_UNKNOWN)
 
     def state_learning_pick_from_feeder_run(self, event):
         rospy.logdebug('Current state: state_learning_pick_from_feeder_run')
@@ -819,12 +820,25 @@ class ArtBrain(object):
         else:
             return False
 
-    def pick_object_from_feeder(self, obj_type, gripper, pick_pose):
+    def pick_object_from_feeder(self, obj_type, gripper, pre_grasp_pose):
+
+        if not gripper.move_to_pose(pre_grasp_pose):
+            self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
+                           error=ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED)
+            return False
+        rospy.sleep(2)
+        pick_object = None
+        for obj in self.objects.instances:  # type: ObjInstance
+            if obj.object_type == obj_type:
+                pick_object = obj
+        if pick_object is None:
+            self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
+                           error=ArtBrainErrors.ERROR_OBJECT_MISSING)
+            return False
 
         goal = PickPlaceGoal()
-        goal.object = obj_type
-        goal.operation = goal.PICK_FROM_FEEDER
-        goal.pose = pick_pose
+        goal.object = pick_object.object_id
+        goal.operation = goal.PICK_OBJECT_ID
         goal.keep_orientation = False
         rospy.logdebug("Picking object from feeder")
         gripper.pp_client.send_goal(goal)
@@ -1430,7 +1444,7 @@ class ArtBrain(object):
                     self.fsm.pick_object_id()
                     pass
                 elif instruction.type == instruction.PICK_FROM_FEEDER:
-                    self.fsm.pick_from_feeder(gripper=self.left_gripper)
+                    self.fsm.pick_from_feeder()
                     # TODO: choose which gripper use
                     # TODO: check if it worked
                 elif instruction.type == instruction.PICK_FROM_POLYGON:
