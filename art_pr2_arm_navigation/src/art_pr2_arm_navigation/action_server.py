@@ -9,6 +9,7 @@ import copy
 
 import actionlib
 from sensor_msgs.msg import JointState
+from geometry_msgs.msg import PoseStamped
 
 
 class ArtArmNavigationActionServer(object):
@@ -29,6 +30,7 @@ class ArtArmNavigationActionServer(object):
         rospy.loginfo('Got it')
         self.joint_state_sub = rospy.Subscriber("/joint_states", JointState, self.js_cb, queue_size=1)
         self.angles = None
+        self.move_to_pose_pub = rospy.Publisher("/pr2_arm_navigation/move_to_pose", PoseStamped, queue_size=1)
 
         self.joint_names = [char + '_shoulder_pan_joint',
                             char + '_shoulder_lift_joint',
@@ -45,7 +47,6 @@ class ArtArmNavigationActionServer(object):
         if goal.operation == ArmNavigationGoal.MOVE_THROUGH_POSES:
             for idx, p in enumerate(goal.poses):
                 attempt = 1
-                self.feedback.pose_number = idx
                 self._as.publish_feedback(self.feedback)
                 while not self.move_to_point(p):
                     attempt += 1
@@ -57,7 +58,6 @@ class ArtArmNavigationActionServer(object):
         elif goal.operation == ArmNavigationGoal.TOUCH_POSES:
             for idx, p in enumerate(goal.poses):
                 attempt = 1
-                self.feedback.pose_number = idx
                 self._as.publish_feedback(self.feedback)
                 while not self.touch_point(p, goal.drill_duration):
                     attempt += 1
@@ -77,6 +77,7 @@ class ArtArmNavigationActionServer(object):
 
     def move_to_point(self, pose):
         self.group.set_pose_target(pose)
+        self.move_to_pose_pub.publish(pose)
         if not self.group.go(wait=True):
             return False
         return True
@@ -111,7 +112,7 @@ class ArtArmNavigationActionServer(object):
         point = JointTrajectoryPoint()
         angles = self.angles
         rate = 4
-        for i in xrange(duration*rate):
+        for i in xrange(duration * rate):
             angles[6] += i * 0.1
             rospy.loginfo(angles[6])
             point.positions = angles
@@ -119,11 +120,11 @@ class ArtArmNavigationActionServer(object):
             goal.trajectory.points.append(copy.deepcopy(point))
         rospy.loginfo("rotate send goal")
         self.jta.send_goal(goal)
-        rospy.sleep(duration+1)
+        rospy.sleep(duration + 1)
         rospy.loginfo("rotate out")
 
     def js_cb(self, data):
-        self.angles = [0]*7
+        self.angles = [0] * 7
         positions = zip(data.name, data.position)
         for name, position in positions:
             if name in self.joint_names:
