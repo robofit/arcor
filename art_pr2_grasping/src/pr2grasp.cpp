@@ -377,17 +377,19 @@ bool artPr2Grasping::pick(const std::string& object_id, bool pick_only_y_axis)
 }
 
 // TODO(ZdenekM): move to Objects? Or somewhere else?
-bool artPr2Grasping::addTable(double x, double y, double angle, double width,
-                              double height, double depth, std::string name)
+bool artPr2Grasping::addTable()
 {
-  ROS_INFO_NAMED(group_name_, "Adding table: %s", name.c_str());
 
-  visual_tools_->cleanupCO(name);
+  visual_tools_->cleanupCO("table");
+
+  geometry_msgs::PoseStamped ps;
+  ps.header.frame_id = "marker";
+  
+  if (!transformPose(ps)) return false;
 
   for (int j = 0; j < 3; j++)  // hmm, sometimes the table is not added
   {
-    if (!visual_tools_->publishCollisionTable(x, y, angle, width, height, depth,
-                                              name))
+    if (!visual_tools_->publishCollisionFloor(ps.pose.position.z, "table"))
       return false;
     move_group_->setSupportSurfaceName(name);
     ros::Duration(0.1).sleep();
