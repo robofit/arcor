@@ -385,17 +385,18 @@ class ArtBrain(object):
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_OBJECT_NOT_DEFINED)
             return
-        '''if not self.ph.is_pick_pose_set(self.block_id, self.instruction.id):
-            self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
+
+        if self.instruction.pose < 1:
+            self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_PICK_POSE_NOT_SELECTED)
-            return'''
-        #gripper = self.get_gripper(pick_pose=self.instruction.pose)
-        gripper = self.left_gripper
+            return
+        pick_pose = self.instruction.pose[0]
+
+        gripper = self.get_gripper(pick_pose=pick_pose)
         if not self.check_gripper_for_pick(gripper):
             return
 
-        # TODO: pick from feeder method
-        if self.pick_object_from_feeder(obj, gripper, self.instruction.pose[0]):  # TODO (kapi): fix the pose[0]
+        if self.pick_object_from_feeder(obj, gripper, pick_pose):
             gripper.holding_object = obj
             gripper.last_pick_instruction_id = self.instruction.id
             self.fsm.done(success=True)
@@ -855,6 +856,8 @@ class ArtBrain(object):
         if gripper.pp_client.get_result().result == 0:
             return True
         else:
+            self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
+                           error=ArtBrainErrors.ERROR_PICK_FAILED)
             return False
 
     def place_object_to_pose(self, instruction, update_state_manager=True, get_ready_after_place=False):
