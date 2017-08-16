@@ -11,13 +11,24 @@
       <arg name="address" value="artable-n2"/>
     </include>
 
-    <include file="$(find art_calibration)/launch/art_calibration.launch"></include>
-	<include file="$(find art_db)/launch/art_db.launch"></include>
-	<include file="$(find art_arcode_detector)/launch/ar_code_detector.launch"></include>
-	<include file="$(find art_projected_gui)/launch/app.launch"></include>
-	<include file="$(find art_simple_tracker)/launch/art_simple_tracker.launch"></include>
-	<include file="$(find art_touch_driver)/launch/touch.launch"></include>
+    <include file="$(find art_calibration)/launch/pr2_indiv.launch" />
+    <include file="$(find art_calibration)/launch/art_calibration.launch">
+      <arg name="cells" value="n1,n2"/>
+      <arg name="pr2" value="true"/>
+    </include>
+	
+	<include file="$(find art_projected_gui)/launch/app.launch">
+	  <arg name="projectors" value="n1,n2"/>
+	  <arg name="scene_server" value="192.168.104.200"/>
+	</include>
+
+	<include file="$(find art_touch_driver)/launch/touch.launch">
+	  <arg name="calib_x_min" value="0.15"/>
+	  <arg name="calib_x_max" value="1.25"/>
+ 	  <arg name="calib_y_min" value="0.1"/>
+	  <arg name="calib_y_max" value="0.5"/>
+	</include>
+	
     <node name="art_brain_node" pkg="art_brain" type="node.py" respawn="false" output="screen"/>
-    <!-- include file="$(find art_table_pointing)/launch/node.launch"></include -->  <!-- moved to ar-table-pr2 -->
     
 </launch>

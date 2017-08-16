@@ -16,5 +16,42 @@
       <arg name="publish_tf" value="true"/>
       <!--arg name="calib_path" value="$(find art_bringup)/data/"/-->
     </include>
+    
+    <include file="$(find art_projected_gui)/launch/projector.launch">
+      <arg name="scene_server" value="192.168.104.200"/>
+      <arg name="projector_id" value="left"/>
+    </include>
+    
+    <include file="$(find art_projected_gui)/launch/app.launch">
+	  <arg name="projectors" value="n1,n2"/>
+	  <arg name="scene_server" value="192.168.104.200"/>
+	</include>
+	
+	<include file="$(find art_touch_driver)/launch/touch.launch">
+	  <arg name="calib_x_min" value="0.1"/>
+	  <arg name="calib_x_max" value="0.9"/>
+ 	  <arg name="calib_y_min" value="0.05"/>
+	  <arg name="calib_y_max" value="0.35"/>
+	</include>
+	
+	<include file="$(find art_calibration)/launch/calibration_marker_detector.launch">
+      <arg name="namespace" value="left"/>
+    </include>
+    
+    <include file="$(find art_calibration)/launch/art_calibration.launch">
+      <arg name="cells" value="left,right"/>
+    </include>
+    
+    <include ns="/art/left" file="$(find art_arcode_detector)/launch/ar_code_detector_bundle.launch">
+      <arg name="cam_image_topic" value="kinect2/hd/image_color"/>
+      <arg name="cam_info_topic" value="kinect2/hd/camera_info"/>
+      <arg name="output_frame" value="left_kinect2_rgb_optical_frame"/>
+    </include>
+    
+    <include ns="/art/right" file="$(find art_arcode_detector)/launch/ar_code_detector_bundle.launch">
+      <arg name="cam_image_topic" value="kinect2/hd/image_color"/>
+      <arg name="cam_info_topic" value="kinect2/hd/camera_info"/>
+      <arg name="output_frame" value="right_kinect2_rgb_optical_frame"/>
+    </include>
 
 </launch>

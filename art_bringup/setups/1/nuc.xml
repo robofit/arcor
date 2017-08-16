@@ -10,6 +10,7 @@
 
     <include file="$(find art_projected_gui)/launch/projector.launch">
       <arg name="machine" value="$(arg machine_name)"/>
+      <arg name="scene_server" value="192.168.104.200"/> <!-- TODO avoid this -->
     </include>
     
     <include file="$(find art_calibration)/launch/calibration_marker_detector.launch">
