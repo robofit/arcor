@@ -8,6 +8,10 @@ Visualization of detected object(s).
 from PyQt4 import QtGui, QtCore
 from item import Item
 from desc_item import DescItem
+import math
+import numpy as np
+import tf
+from art_projected_gui.helpers import conversions
 
 translate = QtCore.QCoreApplication.translate
 
@@ -21,28 +25,32 @@ class ObjectItem(Item):
     """
 
     def __init__(self, scene, object_id, object_type, x,
-                 y, yaw, sel_cb=None, selected=False):
+                 y, z, quaternion=(0, 0, 0, 1), sel_cb=None, selected=False, parent=None, horizontal=False):
 
         self.object_id = object_id
         self.selected = selected
         self.sel_cb = sel_cb
+        self.horizontal = horizontal
         # TODO check bbox type and use rectangle (used now) / ellipse, consider
         # other angles
         self.object_type = object_type
-        self.inflate = 1.2
-        self.hover_ratio = 1.1
+        self.inflate = 0.01
         self.def_color = QtCore.Qt.gray
+        self.lx = 0
+        self.ly = 0
 
         self.desc = None
+        self.quaternion = (0, 0, 0, 1)
+        self.on_table = False
 
-        super(ObjectItem, self).__init__(scene, x, y)
+        super(ObjectItem, self).__init__(scene, x, y, z, parent=parent)
 
-        self.desc = DescItem(scene, 0, 0, self)
+        self.desc = DescItem(scene, 0, 0, parent=self)
         self.desc.setFlag(QtGui.QGraphicsItem.ItemIgnoresTransformations)
 
         self.update_text()
 
-        self.setRotation(yaw)
+        self.set_orientation(quaternion)
 
         if selected:
             self.set_selected()
@@ -71,11 +79,67 @@ class ObjectItem(Item):
                     2 +
                     self.m2pix(0.01)))
 
-    def set_pos(self, x, y, parent_coords=False, yaw=None):
+    def set_pos(self, x, y, z=None, parent_coords=False):
 
-        super(ObjectItem, self).set_pos(x, y, parent_coords, yaw)
+        super(ObjectItem, self).set_pos(x, y, z, parent_coords)
         self._update_desc_pos()
         self.update_text()
+
+    def get_yaw_axis(self):
+
+        ax = ((1, 0, 0), (0, 1, 0), (0, 0, 1))
+
+        for idx in range(0, len(ax)):
+
+            res = conversions.qv_mult(self.quaternion, ax[idx])
+
+            # TODO euclid dist
+            if conversions.is_close(res[0], 0, abs_tol=0.1) and conversions.is_close(res[1], 0, abs_tol=0.1):
+
+                return idx
+
+        return -1
+
+    def set_orientation(self, q):
+
+        self.quaternion = q
+
+        ax = self.get_yaw_axis()
+
+        if ax == ObjectItem.Z:
+
+            self.lx = self.m2pix(self.inflate + self.object_type.bbox.dimensions[0])
+            self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[1])
+
+            sres = conversions.qv_mult(self.quaternion, (1, 0, 0))
+            angle = math.atan2(sres[1], sres[0])
+
+            self.on_table = self.position[2] < self.object_type.bbox.dimensions[2] + 0.05
+
+        elif ax in [ObjectItem.X, ObjectItem.Y]:
+
+            res = conversions.qv_mult(self.quaternion, (0, 0, 1))
+
+            self.lx = self.m2pix(self.inflate + self.object_type.bbox.dimensions[2])
+
+            # TODO use correct dimension (x/y) - now let's assume that x and y dimensions are same
+            self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[1])
+
+            angle = math.atan2(res[1], res[0])
+
+            self.on_table = self.position[2] < self.object_type.bbox.dimensions[0] + 0.05
+
+        else:
+
+            self.set_enabled(False, True)
+            return
+
+        self.setRotation(-angle / (math.pi * 2) * 360)
+
+        # TODO if not on table - display somewhere list of detected objects or what?
+        self.set_enabled(self.on_table, True)
+
+        self.update()
 
     def update_text(self):
 
@@ -104,54 +168,45 @@ class ObjectItem(Item):
 
             return QtCore.QRectF()
 
-        lx = self.hover_ratio * self.inflate * \
-            self.m2pix(self.object_type.bbox.dimensions[0])
-        ly = self.hover_ratio * self.inflate * \
-            self.m2pix(self.object_type.bbox.dimensions[1])
-        p = 1.0
-        return QtCore.QRectF(-lx / 2 - p, -ly / 2 - p, lx + 2 * p, ly + 2 * p)
+        if self.horizontal:
+            self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[2])
+        p = 10.0
+        return QtCore.QRectF(-self.lx / 2 - p, -self.ly / 2 - p, self.lx + 2 * p, self.ly + 2 * p)
 
     def paint(self, painter, option, widget):
 
         if not self.scene():
             return
 
+        if not self.on_table:
+            return
+
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
-        lx = self.inflate * self.m2pix(self.object_type.bbox.dimensions[0])
-        ly = self.inflate * self.m2pix(self.object_type.bbox.dimensions[1])
+        # if not self.horizontal:
+        #     self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[1])
+        # else:
+        #     self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[2])
 
         rr = 10
 
+        painter.setBrush(QtCore.Qt.NoBrush)
+        pen = QtGui.QPen(self.def_color, 5, QtCore.Qt.SolidLine, QtCore.Qt.RoundCap)
+
         if self.selected:
 
-            painter.setBrush(QtCore.Qt.green)
-            painter.setPen(QtCore.Qt.green)
-
-            painter.drawRoundedRect(-lx / 2 * self.hover_ratio, -ly / 2 * self.hover_ratio,
-                                    lx * self.hover_ratio, ly * self.hover_ratio, rr, rr, QtCore.Qt.RelativeSize)
+            pen.setColor(QtCore.Qt.green)
+            pen.setWidth(10)
 
         elif self.hover:
 
-            painter.setBrush(QtCore.Qt.gray)
-            painter.setPen(QtCore.Qt.gray)
+            pen.setWidth(10)
 
-            painter.drawRoundedRect(-lx / 2 * self.hover_ratio, -ly / 2 * self.hover_ratio,
-                                    lx * self.hover_ratio, ly * self.hover_ratio, rr, rr, QtCore.Qt.RelativeSize)
+        painter.setPen(pen)
 
-        painter.setBrush(self.def_color)
-        painter.setPen(self.def_color)
-
-        painter.drawRoundedRect(-lx / 2, -ly / 2, lx,
-                                ly, rr, rr, QtCore.Qt.RelativeSize)
-
-        fr = 1.0 - (self.hover_ratio - 1.0)  # fill ratio
-
-        painter.setBrush(QtCore.Qt.black)
-        painter.setPen(QtCore.Qt.black)
-        painter.drawRoundedRect(-lx / 2 * fr, -ly / 2 * fr,
-                                lx * fr, ly * fr, rr, rr, QtCore.Qt.RelativeSize)
+        painter.drawRoundedRect(-self.lx / 2, -self.ly / 2, self.lx,
+                                self.ly, rr, rr, QtCore.Qt.RelativeSize)
 
     def cursor_press(self):
 

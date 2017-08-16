@@ -7,13 +7,15 @@
     
         <node pkg="art_projected_gui" name="app" type="app.py" output="screen">
 
-            <rosparam param="cursors">["/art/user/pointing_left"]</rosparam>
+            <rosparam param="cursors">[]</rosparam>
             
             <!-- n1 temporarily removed as projector is out of order -->
-            <rosparam param="projectors">["n1","n2"]</rosparam> <!-- comment this param for testing purposes - gui will not wait for projector nodes -->
+            <rosparam param="projectors">["n1"]</rosparam> <!-- comment this param for testing purposes - gui will not wait for projector nodes -->
 
             <!-- open window with scene - for debugging purposes (can be controlled using mouse) -->
             <param name="show_scene" value="false"/>
+            <param name="show_touch_points" value="false"/>
+
         </node>
     
     </group>

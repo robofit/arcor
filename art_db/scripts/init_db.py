@@ -2,8 +2,8 @@
 
 import sys
 import rospy
-from art_msgs.msg import Program,  ProgramBlock, ProgramItem,  ObjectType
-from art_msgs.srv import storeProgram,   getObjectType,  storeObjectType
+from art_msgs.msg import Program, ProgramBlock, ProgramItem, ObjectType
+from art_msgs.srv import storeProgram, getObjectType, storeObjectType
 from shape_msgs.msg import SolidPrimitive
 from geometry_msgs.msg import PoseStamped, PolygonStamped, Point32
 from copy import deepcopy
@@ -17,7 +17,7 @@ def store_object_type(ot):
         store_object_srv = rospy.ServiceProxy(
             '/art/db/object_type/store', storeObjectType)
         resp = store_object_srv(ot)
-    except rospy.ServiceException, e:
+    except rospy.ServiceException as e:
         print "Service call failed: " + str(e)
         return
 
@@ -30,7 +30,9 @@ def store_program(prog):
         store_program_srv = rospy.ServiceProxy(
             '/art/db/program/store', storeProgram)
         resp = store_program_srv(program=prog)
-    except rospy.ServiceException, e:
+        if not resp.success:
+            print "Failed to save program ID: " + str(prog.header.id) + ", error: " + resp.error
+    except rospy.ServiceException as e:
         print "Service call failed: " + str(e)
         return
 
@@ -155,7 +157,7 @@ def main(args):
 
     # -------------------------------------------------------------------------------------------
     prog = Program()
-    prog.header.id = 1
+    prog.header.id = 3
     prog.header.name = "Basic pick&place"
 
     pb = ProgramBlock()
@@ -421,6 +423,62 @@ def main(args):
     p.pose.append(deepcopy(pf))
     pf.pose.position.x = 0.4
     p.pose.append(deepcopy(pf))
+
+    dp = PolygonStamped()
+    dp.header.frame_id = "marker"
+    p.polygon.append(dp)
+
+    pb.items.append(deepcopy(p))
+
+    store_program(prog)
+
+    # -------------------------------------------------------------------------------------------
+    prog = Program()
+    prog.header.id = 9
+    prog.header.name = "Place to grid"
+
+    pb = ProgramBlock()
+    pb.id = 1  # can't be zero
+    pb.name = "First Block"
+    pb.on_success = 1
+    pb.on_failure = 0
+    prog.blocks.append(pb)
+
+    p = ProgramItem()
+    p.id = 1
+    p.on_success = 2
+    p.on_failure = 0
+    p.type = ProgramItem.GET_READY
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 2
+    p.on_success = 3
+    p.on_failure = 0
+    p.type = ProgramItem.WAIT_FOR_USER
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 3
+    p.on_success = 4
+    p.on_failure = 0
+    p.type = ProgramItem.PICK_FROM_POLYGON
+    p.object.append("")
+    p.object.append("profile_20_60")
+    pp = PolygonStamped()
+    pp.header.frame_id = "marker"
+    p.polygon.append(pp)
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 4
+    p.on_success = 3
+    p.on_failure = 0
+    p.type = ProgramItem.PLACE_TO_GRID
+    p.object.append("")
+    pp = PolygonStamped()
+    p.polygon.append(pp)
+    p.ref_id.append(3)
     pb.items.append(deepcopy(p))
 
     store_program(prog)
@@ -435,12 +493,21 @@ def main(args):
     ot.bbox.dimensions.append(0.05)
     ot.bbox.dimensions.append(0.05)
     ot.bbox.dimensions.append(0.16)
+    store_object_type(ot)
+	
+    ot = ObjectType()
+    ot.name = "karta"
+    ot.bbox.type = SolidPrimitive.BOX
+    ot.bbox.dimensions.append(0.08)
+    ot.bbox.dimensions.append(0.04)
+    ot.bbox.dimensions.append(0.002)
 
     store_object_type(ot)
 
     ot.name = "profile_20_80"
 
     store_object_type(ot)
+
 
 if __name__ == '__main__':
     try:

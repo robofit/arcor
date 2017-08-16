@@ -6,11 +6,11 @@ from item import Item
 
 class PointItem(Item):
 
-    def __init__(self, scene, x, y, parent, changed_cb=None,  fixed=False):
+    def __init__(self, scene, x, y, parent, changed_cb=None, fixed=False):
 
         self.outline_diameter = 0.025
         self.changed_cb = changed_cb
-        super(PointItem, self).__init__(scene, x, y, parent)
+        super(PointItem, self).__init__(scene, x, y, parent=parent)
         self.fixed = fixed
 
     def boundingRect(self):
@@ -35,11 +35,11 @@ class PointItem(Item):
     def item_moved(self):
 
         if self.changed_cb is not None:
-            self.changed_cb(self,  False)
+            self.changed_cb(self, False)
 
     def cursor_release(self):
 
-        self.changed_cb(self,  True)
+        self.changed_cb(self, True)
 
     def paint(self, painter, option, widget):
 

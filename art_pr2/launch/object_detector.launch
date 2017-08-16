@@ -6,5 +6,17 @@
     <arg name="cam_info_topic" value="/prosilica/camera_info"/>
     <arg name="output_frame" value="/high_def_optical_frame"/>
   </include>
+  
+  <include ns="/art/pr2/l_forearm" file="$(find art_arcode_detector)/launch/ar_code_detector_bundle.launch">
+    <arg name="cam_image_topic" value="/l_forearm_cam/image_rect"/>
+    <arg name="cam_info_topic" value="/l_forearm_cam/camera_info"/>
+    <arg name="output_frame" value="/l_forearm_cam_optical_frame"/>
+  </include>
+  
+  <include ns="/art/pr2/r_forearm" file="$(find art_arcode_detector)/launch/ar_code_detector_bundle.launch">
+    <arg name="cam_image_topic" value="/r_forearm_cam/image_rect"/>
+    <arg name="cam_info_topic" value="/r_forearm_cam/camera_info"/>
+    <arg name="output_frame" value="/r_forearm_cam_optical_frame"/>
+  </include>
 
 </launch>

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
 	
-	<node name="art_touch_driver" pkg="art_touch_driver" type="node.py" output="screen"/>
+	<node ns="/art/interface/touchtable" name="driver_node" pkg="art_touch_driver" type="node.py" output="screen"/>
 	
 </launch>

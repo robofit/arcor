@@ -46,24 +46,18 @@ class ArtTouchDriver:
         self.touch_id = -1
         self.device = input.EventDevice()
         self.device.find(name=self.device_name)
+        self.target_frame = "marker"  # TODO parameter
 
         self.slots = []
         self.slot = None
         self.to_delete_id = -1
 
-        self.ns = '/art/interface/touchtable/'
-
         # make sure that all messages will be sent
-        self.touch_pub = rospy.Publisher(
-            self.ns + "touch", Touch, queue_size=100, tcp_nodelay=True)
-        self.calibrated_pub = rospy.Publisher(
-            self.ns + 'calibrated', Bool, queue_size=1, latch=True)
-        self.calibrating_pub = rospy.Publisher(
-            self.ns + 'calibrating', Bool, queue_size=1, latch=True)
-        self.touch_det_pub = rospy.Publisher(
-            self.ns + 'touch_detected', Empty, queue_size=10)
-        self.calibrate_req_srv = rospy.Service(
-            self.ns + "calibrate", EmptySrv, self.calibrate_req_srv_cb)
+        self.touch_pub = rospy.Publisher("touch", Touch, queue_size=100, tcp_nodelay=True)
+        self.calibrated_pub = rospy.Publisher('calibrated', Bool, queue_size=1, latch=True)
+        self.calibrating_pub = rospy.Publisher('calibrating', Bool, queue_size=1, latch=True)
+        self.touch_det_pub = rospy.Publisher('touch_detected', Empty, queue_size=10)
+        self.calibrate_req_srv = rospy.Service("calibrate", EmptySrv, self.calibrate_req_srv_cb)
 
         self.calib_srv = rospy.ServiceProxy(
             '/art/interface/projected_gui/touch_calibration', TouchCalibrationPoints)
@@ -71,7 +65,7 @@ class ArtTouchDriver:
         self.set_calibrated(False)
         self.set_calibrating(False)
 
-        self.h_matrix = rospy.get_param('~calibration_matrix', None)
+        self.h_matrix = rospy.get_param('calibration_matrix', None)
 
         if self.h_matrix is not None:
             rospy.loginfo("Loaded calibration from param server")
@@ -97,12 +91,19 @@ class ArtTouchDriver:
         req = TouchCalibrationPointsRequest()
         ps = PointStamped()
         ps.header.stamp = rospy.Time.now()
-        ps.header.frame_id = "marker"
+        ps.header.frame_id = self.target_frame
         ps.point.z = 0
 
-        self.ref_points = ((0.15, 0.1), (0.55, 0.1), (1.25, 0.1),
-                           (0.15, 0.25), (0.55, 0.25), (1.25, 0.25),
-                           (0.15, 0.55), (0.55, 0.55), (1.25, 0.55))
+        # x/y range (min, max)
+        x = (0.15, 1.25)
+        y = (0.1, 0.5)
+
+        xm = (x[0] + x[1]) / 2.0
+        ym = (y[0] + y[1]) / 2.0
+
+        self.ref_points = ((x[0], y[0]), (xm, y[0]), (x[1], y[0]),
+                           (x[0], ym), (xm, ym), (x[1], ym),
+                           (x[0], y[1]), (xm, y[1]), (x[1], y[1]))
 
         # self.ref_points += self.ref_points
 
@@ -144,6 +145,7 @@ class ArtTouchDriver:
         try:
             event = self.device.read()
         except (OSError, TypeError):
+            rospy.logdebug("Reconnecting...")
             rospy.sleep(0.1)
             try:
                 self.device.find(name=self.device_name)
@@ -192,6 +194,8 @@ class ArtTouchDriver:
                     touch.touch = True
                     touch.id = self.slot.track_id
                     touch.point = PointStamped()
+                    touch.point.header.stamp = rospy.Time.now()
+                    touch.point.header.frame_id = self.target_frame
 
                     if self.calibrated:
 
@@ -245,6 +249,7 @@ class ArtTouchDriver:
             try:
                 event = self.device.read()
             except (OSError, TypeError):
+                rospy.logdebug("Reconnecting...")
                 rospy.sleep(0.1)
                 try:
                     self.device.find(name=self.device_name)
@@ -263,7 +268,7 @@ class ArtTouchDriver:
         self.h_matrix = np.matrix(h)
 
         s = str(self.h_matrix.tolist())
-        rospy.set_param("~calibration_matrix", s)
+        rospy.set_param("calibration_matrix", s)
 
         # print self.h_matrix
 
@@ -279,10 +284,8 @@ if __name__ == '__main__':
 
     try:
         node = ArtTouchDriver()
-        rate = rospy.Rate(1000)
 
         while not rospy.is_shutdown():
             node.process()
-            # rate.sleep()
     except rospy.ROSInterruptException:
         pass

@@ -7,7 +7,8 @@ from art_msgs.msg import PickPlaceAction, ObjInstance, ArmNavigationAction, \
 import copy
 from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import Pose
-from art_msgs.msg import InterfaceState
+from art_msgs.msg import InterfaceState, InstancesArray
+from geometry_msgs.msg import PoseStamped
 
 from enum import IntEnum  # sudo pip install enum34
 
@@ -68,15 +69,38 @@ class ArtBrainUtils(object):
                 # test if some object is in polygon and take the first one
                 if pol.contains_point([obj.pose.position.x, obj.pose.position.y]):
                     obj_ret = copy.deepcopy(obj)
-                    print('Selected object: ' + obj.object_id)
+                    rospy.logdebug('Selected object: ' + obj.object_id)
                     break
 
         else:
             if pol is not None:
-                print('No object in the specified polygon')
-                print pol
+                rospy.logerr('No object in the specified polygon')
+
             return None
         return obj_ret
+
+    @staticmethod
+    def object_exist(obj_id, objects):
+        """
+        Checks if object id exists
+
+        Args:
+            obj_id: id of the object
+            objects: array of detected objects
+
+        @type obj_id: str
+        @type objects: InstancesArray
+
+        Returns:
+
+        @rtype: bool
+
+        """
+        for o in objects.instances:  # type: ObjInstance
+            if o.object_id == obj_id:
+                return True
+        else:
+            return False
 
     @staticmethod
     def get_place_pose(instruction):
@@ -100,9 +124,11 @@ class ArtBrainUtils(object):
         Returns: created service proxy
 
         '''
-        rospy.loginfo("Waiting for service: " + str(service_name))
+        if print_info:
+            rospy.loginfo("Waiting for service: " + str(service_name))
         rospy.wait_for_service(service_name)
-        rospy.loginfo("Service " + str(service_name) + " ready")
+        if print_info:
+            rospy.loginfo("Service " + str(service_name) + " ready")
         return rospy.ServiceProxy(service_name, service_type)
 
 
@@ -112,8 +138,9 @@ class ArtGripper(object):
     GRIPPER_RIGHT = 1
     GRIPPER_BOTH = 2
 
-    def __init__(self, name):
+    def __init__(self, name, gripper_link):
         self.name = name
+        self.gripper_link = gripper_link
         self.pp_client_name = "/art/pr2/" + name + "/pp"
         self.manip_client_name = "/art/pr2/" + name + "/manipulation"
         self.pp_client = actionlib.SimpleActionClient(
@@ -124,7 +151,6 @@ class ArtGripper(object):
         self.pp_client.wait_for_server()
         rospy.loginfo("Waiting for " + str(name) + "'s gripper manipulation action client")
         self.manip_client.wait_for_server()
-        rospy.loginfo("got it")
         self.holding_object = None
         self.last_pick_instruction_id = None
         self.group_name = name
@@ -136,6 +162,7 @@ class ArtGripper(object):
             "/art/pr2/" + name + "/get_ready", Trigger)
         self.move_to_user_client = ArtBrainUtils.create_service_client(
             "/art/pr2/" + name + "/move_to_user", Trigger)
+        rospy.loginfo("Gripper " + str(name) + " ready.")
 
     def re_init(self):
         self.last_pick_instruction_id = None
@@ -165,11 +192,14 @@ class ArtGripper(object):
         else:
             return False
 
-    def touch_poses(self, poses, drill_duration=0):
+    def touch_poses(self, object_id, poses, drill_duration=0):
         goal = ArmNavigationGoal()
+        goal.object = object_id
         goal.operation = goal.TOUCH_POSES
         goal.drill_duration = drill_duration
         goal.poses = poses
+        for pose in goal.poses:  # type: PoseStamped
+            pose.header.frame_id = object_id
         self.manip_client.send_goal(goal)
         rospy.sleep(1)
         self.manip_client.wait_for_result()
@@ -178,8 +208,43 @@ class ArtGripper(object):
         else:
             return False
 
+    def move_to_pose(self, pose):
+        goal = ArmNavigationGoal()
+        goal.poses = [pose]
+        goal.operation = ArmNavigationGoal.MOVE_THROUGH_POSES
+        self.manip_client.send_goal(goal)
+        rospy.sleep(1)
+        self.manip_client.wait_for_result()
+        if self.manip_client.get_result().result == ArmNavigationResult.SUCCESS:
+            return True
+        else:
+            return False
+
+    def prepare_for_interaction(self):
+        result = self.move_to_user_client.call()
+
+        if not result.success:
+            rospy.logwarn("Can't move gripper to the user: " +
+                          str(result.message))
+            return False, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED
+        result = self.interaction_on_client.call()
+        if not result:
+            rospy.logwarn(
+                "Can't change gripper interaction state: " + str(result.message))
+            # TODO: check arm state, inform user
+            return False, ArtBrainErrors.ERROR_LEARNING_GRIPPER_INTERACTION_MODE_SWITCH_FAILED
+        return True, None
+
+
+class ArtBrainErrorSeverities(IntEnum):
+    WARNING = InterfaceState.WARNING
+    ERROR = InterfaceState.ERROR
+    SEVERE = InterfaceState.SEVERE
+    INFO = InterfaceState.INFO
+
 
 class ArtBrainErrors(IntEnum):
+    ERROR_UNKNOWN = 0
     ERROR_NOT_IMPLEMENTED = 1
     ERROR_NOT_EXECUTING_PROGRAM = 2
     ERROR_NO_INSTRUCTION = 3
@@ -190,9 +255,11 @@ class ArtBrainErrors(IntEnum):
     ERROR_PICK_POSE_NOT_SELECTED = 8
     ERROR_PLACE_POSE_NOT_DEFINED = 9
     ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE = 10
+    ERROR_NOT_ENOUGH_PLACE_POSES = 11
     # Learning errors
     ERROR_LEARNING_NOT_IMPLEMENTED = 101
     ERROR_LEARNING_GRIPPER_NOT_DEFINED = 102
+    ERROR_LEARNING_GRIPPER_INTERACTION_MODE_SWITCH_FAILED = 103
 
     ERROR_ROBOT_HALTED = InterfaceState.ERROR_ROBOT_HALTED
     ERROR_OBJECT_MISSING = InterfaceState.ERROR_OBJECT_MISSING
@@ -203,3 +270,5 @@ class ArtBrainErrors(IntEnum):
     ERROR_PICK_FAILED = InterfaceState.ERROR_PICK_FAILED
     ERROR_PICK_PLACE_SERVER_NOT_READY = InterfaceState.ERROR_PICK_PLACE_SERVER_NOT_READY
     ERROR_PLACE_FAILED = InterfaceState.ERROR_PLACE_FAILED
+    ERROR_DRILL_FAILED = InterfaceState.ERROR_DRILL_FAILED
+    ERROR_GRIPPER_MOVE_FAILED = InterfaceState.ERROR_GRIPPER_MOVE_FAILED

@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 import rospy
-from art_msgs.msg import InstancesArray, ObjInstance
+from art_msgs.msg import InstancesArray, ObjInstance, KeyValue
+from art_msgs.srv import ObjectFlagSetResponse, ObjectFlagSet, ObjectFlagClear, ObjectFlagClearResponse
+from std_srvs.srv import Empty, EmptyResponse
 import tf
 from geometry_msgs.msg import Pose, PoseStamped
 from math import sqrt
@@ -35,10 +37,18 @@ class TrackedObject:
         self.min_dist = 0.3
         self.min_meas_cnt = 5
         self.new = True
+        self.lost = False
 
         self.meas = {}
+        self.flags = {}
 
     def add_meas(self, ps):
+
+        if self.lost:
+
+            self.new = True
+
+        self.lost = False
 
         dist = distance.euclidean((0, 0, 0), (ps.pose.position.x, ps.pose.position.y, ps.pose.position.z))
 
@@ -145,25 +155,16 @@ class TrackedObject:
 
         cur_rpy = [fr, fp, fy]
 
-        # TODO hysteresis!
-        # TODO is there a smarter way how to do it?
-        # "fix" roll and pitch so they are only 0, 90, 180 or 270 degrees
-        # yaw (in table coordinates) may stay as it is
-        for i in range(0, 2):
-
-            if cur_rpy[i] < 0.0:
-                cur_rpy[i] = 2 * pi + cur_rpy[i]
-
-            if cur_rpy[i] >= 7 * pi / 4 or cur_rpy[i] < pi / 4:
-                cur_rpy[i] = 0.0
-            elif cur_rpy[i] >= pi / 4 and cur_rpy[i] < 3 * pi / 4:
-                cur_rpy[i] = pi / 2
-            elif cur_rpy[i] >= 3 * pi / 4 and cur_rpy[i] < 5 * pi / 4:
-                cur_rpy[i] = pi
-            elif cur_rpy[i] >= 5 * pi / 4 and cur_rpy[i] < 7 * pi / 4:
-                cur_rpy[i] = 3 * pi / 2
-
         a2q(inst.pose.orientation, transformations.quaternion_from_euler(*cur_rpy))
+
+        # TODO "fix" roll and pitch so they are only 0, 90, 180 or 270 degrees
+        # yaw (in table coordinates) may stay as it is
+
+        for (key, value) in self.flags.iteritems():
+            kv = KeyValue()
+            kv.key = key
+            kv.value = value
+            inst.flags.append(kv)
 
         return inst
 
@@ -186,11 +187,64 @@ class ArtSimpleTracker:
             "/art/object_detector/object", InstancesArray, self.cb, queue_size=10)
         self.pub = rospy.Publisher(
             "/art/object_detector/object_filtered", InstancesArray, queue_size=10, latch=True)
-        self.timer = rospy.Timer(rospy.Duration(0.5), self.timer_cb)
-        self.meas_max_age = rospy.Duration(5.0)
+        self.timer = rospy.Timer(rospy.Duration(0.1), self.timer_cb)
+        self.meas_max_age = rospy.Duration(2.0)
         self.prune_timer = rospy.Timer(self.meas_max_age, self.prune_timer_cb)
         self.objects = {}
         self.br = tf.TransformBroadcaster()
+
+        self.srv_set_flag = rospy.Service('/art/object_detector/flag/set', ObjectFlagSet, self.srv_set_flag_cb)
+        self.srv_clear_flag = rospy.Service('/art/object_detector/flag/clear', ObjectFlagClear, self.srv_clear_flag_cb)
+        self.srv_clear_all_flags = rospy.Service('/art/object_detector/flag/clear_all', Empty, self.srv_clear_all_flags_cb)
+
+    def srv_clear_all_flags_cb(self, req):
+
+        with self.lock:
+
+            for k, v in self.objects.iteritems():
+
+                v.flags = {}
+
+        return EmptyResponse()
+
+    def srv_clear_flag_cb(self, req):
+
+        with self.lock:
+
+            resp = ObjectFlagClearResponse()
+
+            if req.object_id not in self.objects:
+
+                resp.success = False
+                resp.error = "Unknown object"
+                return resp
+
+            if req.key not in self.objects[req.object_id].flags:
+
+                resp.success = False
+                resp.error = "Unknown key"
+                return resp
+
+            del self.objects[req.object_id].flags[req.key]
+            resp.success = True
+            return resp
+
+    def srv_set_flag_cb(self, req):
+
+        with self.lock:
+
+            # TODO should flag be remembered even if object is lost and then detected again?
+            resp = ObjectFlagSetResponse()
+
+            if req.object_id not in self.objects:
+
+                resp.success = False
+                resp.error = "Unknown object"
+                return resp
+
+            self.objects[req.object_id].flags[req.flag.key] = req.flag.value
+            resp.success = True
+            return resp
 
     def prune_timer_cb(self, event):
 
@@ -219,8 +273,9 @@ class ArtSimpleTracker:
                 if inst is None:  # new object might not have enough measurements yet
 
                     # TODO fix it: this would keep objects which were detected only few times
-                    if not v.new:  # object is no longer detected
+                    if not v.new and not v.lost:  # object is no longer detected
 
+                        v.lost = True
                         objects_to_delete.append(k)
                         ia.lost_objects.append(k)
                         continue
@@ -236,8 +291,9 @@ class ArtSimpleTracker:
                 self.br.sendTransform((inst.pose.position.x, inst.pose.position.y, inst.pose.position.z),
                                       q2a(inst.pose.orientation), ia.header.stamp, "object_id_" + inst.object_id, self.target_frame)
 
-            for obj_id in objects_to_delete:
-                del self.objects[obj_id]
+            # commented out in order to keep object flags even if object is lost for some time
+            # for obj_id in objects_to_delete:
+            #    del self.objects[obj_id]
 
             self.pub.publish(ia)
 
@@ -269,7 +325,7 @@ class ArtSimpleTracker:
 
 if __name__ == '__main__':
     try:
-        rospy.init_node('simple_tracker')
+        rospy.init_node('art_simple_tracker')
         ArtSimpleTracker()
         rospy.spin()
     except rospy.ROSInterruptException:

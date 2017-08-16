@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 
 import rospy
-from art_msgs.srv import getProgram, storeProgram, startProgram, getObjectType,  getProgramHeaders
+from art_msgs.srv import getProgram, storeProgram, startProgram, getObjectType, getProgramHeaders, storeObjectType
 
 # TODO make brain version a new class (based on ArtApiHelper)
 
 
-class ArtApiHelper():
+class ArtApiHelper(object):
 
-    def __init__(self,  brain=False):
+    def __init__(self, brain=False):
 
         # DB API
         self.get_prog_srv = rospy.ServiceProxy('/art/db/program/get', getProgram)
         self.store_prog_srv = rospy.ServiceProxy('/art/db/program/store', storeProgram)
         self.get_program_headers_srv = rospy.ServiceProxy('/art/db/program_headers/get', getProgramHeaders)
         self.get_obj_type_srv = rospy.ServiceProxy('/art/db/object_type/get', getObjectType)
+        self.store_obj_type_srv = rospy.ServiceProxy('/art/db/object_type/store', storeObjectType)
 
         # Brain API
         self.brain = brain
@@ -27,6 +28,7 @@ class ArtApiHelper():
         self.store_prog_srv.wait_for_service()
         self.get_program_headers_srv.wait_for_service()
         self.get_obj_type_srv.wait_for_service()
+        self.store_obj_type_srv.wait_for_service()
 
         if not self.brain:
             self.start_program_srv.wait_for_service()
@@ -37,7 +39,7 @@ class ArtApiHelper():
 
         try:
             resp = self.get_prog_srv(prog_id)
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
             print "Service call failed: %s" % e
             return None
 
@@ -46,11 +48,11 @@ class ArtApiHelper():
         else:
             return resp.program
 
-    def get_program_headers(self,  ids=[]):
+    def get_program_headers(self, ids=[]):
 
         try:
             resp = self.get_program_headers_srv(ids)
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
             print "Service call failed: %s" % e
             return None
 
@@ -60,20 +62,17 @@ class ArtApiHelper():
 
         try:
             resp = self.store_prog_srv(prog)
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
             print "Service call failed: %s" % e
             return False
 
-        if not resp.success:
-            return False
-        else:
-            return True
+        return resp.success
 
     def start_program(self, prog_id):
 
         try:
             resp = self.start_program_srv(prog_id)
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
             print "Service call failed: %s" % e
             return (False, "")
 
@@ -83,10 +82,21 @@ class ArtApiHelper():
 
         try:
             resp = self.get_obj_type_srv(name)
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
             print "Service call failed: %s" % e
+            return None
 
         if not resp.success:
             return None
         else:
             return resp.object_type
+
+    def store_object_type(self, ot):
+
+        try:
+            resp = self.store_obj_type_srv(ot)
+        except rospy.ServiceException as e:
+            print "Service call failed: " + str(e)
+            return False
+
+        return resp.success

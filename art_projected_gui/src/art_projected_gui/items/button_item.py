@@ -21,7 +21,7 @@ class ButtonItem(Item):
         self.w = 0
         self.h = 0
 
-        super(ButtonItem, self).__init__(scene, x, y, parent)
+        super(ButtonItem, self).__init__(scene, x, y, parent=parent)
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
         self.setZValue(100)
 
@@ -37,7 +37,7 @@ class ButtonItem(Item):
 
     def boundingRect(self):
 
-        return QtCore.QRectF(-1.5, -1.5, self.w + 3,  self.h + 3)
+        return QtCore.QRectF(-1.5, -1.5, self.w + 3, self.h + 3)
 
     def cursor_click(self):
 
@@ -67,7 +67,7 @@ class ButtonItem(Item):
 
         else:
 
-            br = metrics.boundingRect(QtCore.QRectF(0, 0, self.m2pix(width) - (20 * self.scale),  10000).toRect(
+            br = metrics.boundingRect(QtCore.QRectF(0, 0, self.m2pix(width) - (20 * self.scale), 10000).toRect(
             ), QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self.caption)
 
             self.w = max(br.width() + 20 * self.scale, self.m2pix(width))

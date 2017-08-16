@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from PyQt4 import QtGui, QtCore, QtNetwork
-from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem
+from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem, SquareItem, DialogItem
 import rospy
 from art_projected_gui.helpers import conversions
 from art_msgs.srv import NotifyUserRequest
@@ -199,7 +199,7 @@ class UICore(QtCore.QObject):
 
             self.scene.removeItem(it)
 
-    def add_object(self, object_id, object_type, x, y, yaw, sel_cb=None):
+    def add_object(self, object_id, object_type, x, y, z, quaternion, sel_cb=None):
         """Adds object to the scene.
 
         Args:
@@ -209,7 +209,7 @@ class UICore(QtCore.QObject):
             sel_cb (method): Callback which gets called one the object is selected.
         """
 
-        obj = ObjectItem(self.scene, object_id, object_type, x, y, yaw, sel_cb)
+        obj = ObjectItem(self.scene, object_id, object_type, x, y, z, quaternion, sel_cb)
 
         if object_id in self.selected_object_ids or object_type.name in self.selected_object_types:
 
@@ -290,11 +290,12 @@ class UICore(QtCore.QObject):
             caption,
             pose_stamped.pose.position.x,
             pose_stamped.pose.position.y,
+            pose_stamped.pose.position.z,
+            conversions.q2a(pose_stamped.pose.orientation),
             object_type,
             object_id,
             place_pose_changed=place_cb,
-            fixed=fixed,
-            yaw=conversions.quaternion2yaw(pose_stamped.pose.orientation)
+            fixed=fixed
         )
 
     def add_polygon(self, caption, obj_coords=[], poly_points=[],
@@ -307,6 +308,15 @@ class UICore(QtCore.QObject):
             poly_points,
             polygon_changed,
             fixed)
+
+    '''
+        Method which creates instance of SquareItem class.
+    '''
+
+    def add_square(self, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points=[], square_changed=None, fixed=False):
+
+        SquareItem(self.scene, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points, self.scene.items,
+                   square_changed, fixed)
 
     def clear_places(self):
 
@@ -323,3 +333,4 @@ class UICore(QtCore.QObject):
 
         self.remove_scene_items_by_type(PlaceItem)
         self.remove_scene_items_by_type(PolygonItem)
+        self.remove_scene_items_by_type(SquareItem)

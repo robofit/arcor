@@ -26,8 +26,7 @@ bool artActionServer::init()
     return false;
   }
 
-  // TODO(ZdenekM): read size/position from param
-  if (!addTable(0.65, 0, 0, 1.5, 0.78, 0.70, "table1"))
+  if (!addTable("marker"))
   {
     ROS_ERROR("failed to add table");
     return false;
@@ -49,7 +48,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
                         "Got goal, operation: " << goal->operation);
 
   // TODO(ZdenekM): hack - table sometimes gets deleted from planning scene
-  addTable(0.65, 0, 0, 1.5, 0.78, 0.70, "table1");
+  addTable("marker");
 
   // TODO(ZdenekM): check /art/pr2/xyz_arm/interaction/state topic?
 
@@ -81,6 +80,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
   }
   break;
 
+  case art_msgs::PickPlaceGoal::PICK_FROM_FEEDER:
   case art_msgs::PickPlaceGoal::PICK_OBJECT_ID:
   {
     if (!objects_->isKnownObject(goal->object))
@@ -103,7 +103,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
       tries--;
       as_->publishFeedback(f);
 
-      grasped = pick(goal->object);  // todo flag if it make sense to try again
+      grasped = pick(goal->object, goal->pick_only_y_axis, goal->operation == art_msgs::PickPlaceGoal::PICK_FROM_FEEDER);  // todo flag if it make sense to try again
       // (type of failure)
       if (grasped)
         break;
@@ -126,14 +126,6 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
 
     res.result = art_msgs::PickPlaceResult::SUCCESS;
     as_->setSucceeded(res);
-  }
-  break;
-
-  case art_msgs::PickPlaceGoal::PICK_FROM_FEEDER:
-  {
-    res.result = art_msgs::PickPlaceResult::BAD_REQUEST;
-    as_->setAborted(res, "PICK_FROM_FEEDER is not implemented yet");
-    return;
   }
   break;
 
