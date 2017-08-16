@@ -1,4 +1,9 @@
 <?xml version="1.0"?>
 <launch>
+
+  <!-- Common API-->
   <rosparam command="load" ns="/art/api" file="$(find art_bringup)/config/api.yaml" />
+  
+  <include file="$(find art_bringup)/setups/$(optenv ARTABLE)/bringup.xml"/>
+
 </launch>

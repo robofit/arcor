@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+
+    <include ns="/art/left" file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
+      <arg name="sensor" value="000393642047"/>
+      <arg name="base_name_tf" value="left_kinect2"/>
+      <arg name="respawn" value="false"/>
+      <arg name="publish_tf" value="true"/>
+      <!--arg name="calib_path" value="$(find art_bringup)/data/"/-->
+    </include>
+    
+    <include ns="/art/right" file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
+      <arg name="sensor" value="016042150647"/>
+      <arg name="base_name_tf" value="right_kinect2"/>
+      <arg name="respawn" value="false"/>
+      <arg name="publish_tf" value="true"/>
+      <!--arg name="calib_path" value="$(find art_bringup)/data/"/-->
+    </include>
+
+</launch>
