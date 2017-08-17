@@ -116,6 +116,11 @@ class Projector(QtGui.QWidget):
 
         self.connect()
 
+    def keyPressEvent(self, e):
+
+        if e.key() == QtCore.Qt.Key_Escape:
+            self.close()
+
     def init_map_from_matrix(self, m):
 
         rospy.loginfo("Building map from calibration matrix...")

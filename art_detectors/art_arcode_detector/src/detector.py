@@ -37,7 +37,7 @@ class ArCodeDetector:
 
             # list of allowed object ids
             # TODO load from param
-            if aid not in [4, 5, 3, 21, 26, 31]:
+            if aid not in [4, 5, 3, 21, 26, 31, 6, 7, 8]:
                 continue
 
             if aid not in self.objects_cache:
@@ -47,8 +47,11 @@ class ArCodeDetector:
 
                 if aid == 21:
                     object_type = self.art.get_object_type("profile_20_60_longer")
+                elif aid in [6,7,8]:
+                    object_type = self.art.get_object_type("placka")
                 else:
                     object_type = self.art.get_object_type("profile_20_60")
+                    
 
                 if object_type is None:
 

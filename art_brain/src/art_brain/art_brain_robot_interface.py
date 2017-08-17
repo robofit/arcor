@@ -18,6 +18,7 @@ class ArtBrainRobotInterface:
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)
+        print arm
         severity, error = self.check_arm_for_pick(arm)
         if error is not None:
             return severity, error, arm_id
@@ -72,7 +73,7 @@ class ArtBrainRobotInterface:
         rospy.logdebug("Place pose: " + str(goal.pose))
         arm.pp_client.send_goal(goal)
         arm.pp_client.wait_for_result()
-        rospy.logdebug("Placing object with ID: " + str(obj.object_id))
+        rospy.logdebug("Placing object with ID: " + str(arm.holding_object.object_id))
         if arm.pp_client.get_result().result == 0:
             arm.holding_object = None
             return None, None, arm_id

@@ -2,7 +2,7 @@
 <launch>
 
     <arg name="projectors" default=""/>
-    <arg name="scene_server"/>
+    <arg name="scene_server" default="localhost" />
 
     <group ns="/art/interface/projected_gui">
 
@@ -12,13 +12,13 @@
     
         <node pkg="art_projected_gui" name="app" type="app.py" output="screen">
 
-            <rosparam param="cursors">[]</rosparam>
+            <rosparam param="cursors">["cokoliv"]</rosparam>
             
             <!-- n1 temporarily removed as projector is out of order -->
             <param name="projectors" value="$(arg projectors)"/>
 
             <!-- open window with scene - for debugging purposes (can be controlled using mouse) -->
-            <param name="show_scene" value="false"/>
+            <param name="show_scene" value="true"/>
             <param name="show_touch_points" value="false"/>
 
         </node>

@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <launch>
     
-    <arg name="x_offset" default="0.15"/>
-    <arg name="y_offset" default="0.06"/>
-    <arg name="z_offset" default="0"/>
+    <arg name="x_offset"/>
+    <arg name="y_offset"/>
+    <arg name="z_offset"/>
     <arg name="cells"/>
     <arg name="pr2" default="false"/>
     

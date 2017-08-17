@@ -518,6 +518,8 @@ def main(args):
 
     store_program(prog)
     """
+    
+    
 
     # -------------------------------------------------------------------------------------------
     # OBJECT TYPES
@@ -529,6 +531,14 @@ def main(args):
     ot.bbox.dimensions.append(0.05)
     ot.bbox.dimensions.append(0.05)
     ot.bbox.dimensions.append(0.16)
+    store_object_type(ot)
+    
+    ot = ObjectType()
+    ot.name = "placka"
+    ot.bbox.type = SolidPrimitive.BOX
+    ot.bbox.dimensions.append(0.1)
+    ot.bbox.dimensions.append(0.1)
+    ot.bbox.dimensions.append(0.008)
     store_object_type(ot)
 
     ot = ObjectType()

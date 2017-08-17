@@ -4,27 +4,30 @@
     <include ns="/art/left" file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
       <arg name="sensor" value="000393642047"/>
       <arg name="base_name_tf" value="left_kinect2"/>
-      <arg name="respawn" value="false"/>
+      <arg name="respawn" value="true"/>
       <arg name="publish_tf" value="true"/>
-      <!--arg name="calib_path" value="$(find art_bringup)/data/"/-->
+      <arg name="depth_method" value="opencl"/>
+      <arg name="reg_method" value="cpu"/>
+      <arg name="output" value="log"/>
     </include>
     
-    <include ns="/art/right" file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
+    <!--include ns="/art/right" file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
       <arg name="sensor" value="016042150647"/>
       <arg name="base_name_tf" value="right_kinect2"/>
-      <arg name="respawn" value="false"/>
+      <arg name="respawn" value="true"/>
       <arg name="publish_tf" value="true"/>
-      <!--arg name="calib_path" value="$(find art_bringup)/data/"/-->
-    </include>
+      <arg name="depth_method" value="cuda"/>
+    </include-->
     
     <include file="$(find art_projected_gui)/launch/projector.launch">
-      <arg name="scene_server" value="192.168.104.200"/>
+      <arg name="screen_number" value="1"/>
+      <arg name="scene_server" value="192.168.104.101"/>
       <arg name="projector_id" value="left"/>
     </include>
     
     <include file="$(find art_projected_gui)/launch/app.launch">
-	  <arg name="projectors" value="n1,n2"/>
-	  <arg name="scene_server" value="192.168.104.200"/>
+	  <arg name="projectors" value="left"/>
+	  <arg name="scene_server" value="192.168.104.101"/>
 	</include>
 	
 	<include file="$(find art_touch_driver)/launch/touch.launch">
@@ -39,19 +42,31 @@
     </include>
     
     <include file="$(find art_calibration)/launch/art_calibration.launch">
-      <arg name="cells" value="left,right"/>
+      <!--arg name="cells" value="left,right"/-->
+      <arg name="cells" value="left"/>
+      <arg name="x_offset" value="0.06"/>
+      <arg name="y_offset" value="0.06"/>
+      <arg name="z_offset" value="0.0"/>
     </include>
     
-    <include ns="/art/left" file="$(find art_arcode_detector)/launch/ar_code_detector_bundle.launch">
+    <!--<include ns="/art/left" file="$(find art_arcode_detector)/launch/ar_code_detector_bundle.launch">
+      <arg name="cam_image_topic" value="kinect2/hd/image_color"/>
+      <arg name="cam_info_topic" value="kinect2/hd/camera_info"/>
+      <arg name="output_frame" value="left_kinect2_rgb_optical_frame"/>
+    </include>-->
+    
+    <include ns="/art/left" file="$(find art_arcode_detector)/launch/ar_code_detector.launch">
+    
+      <arg name="marker_size" value="4.8"/>
       <arg name="cam_image_topic" value="kinect2/hd/image_color"/>
       <arg name="cam_info_topic" value="kinect2/hd/camera_info"/>
       <arg name="output_frame" value="left_kinect2_rgb_optical_frame"/>
     </include>
     
-    <include ns="/art/right" file="$(find art_arcode_detector)/launch/ar_code_detector_bundle.launch">
+    <!--include ns="/art/right" file="$(find art_arcode_detector)/launch/ar_code_detector_bundle.launch">
       <arg name="cam_image_topic" value="kinect2/hd/image_color"/>
       <arg name="cam_info_topic" value="kinect2/hd/camera_info"/>
       <arg name="output_frame" value="right_kinect2_rgb_optical_frame"/>
-    </include>
+    </include-->
 
 </launch>

@@ -132,14 +132,14 @@ class ArtBrain(object):
 
         self.calibrate_pr2 = rospy.get_param('calibrate_pr2', False)
         self.calibrate_table = rospy.get_param('calibrate_table', False)
-        self.robot_type = rospy.get_param('robot_type', "pr2")
+        self.robot_type = rospy.get_param('robot_type', "dobot")
         if self.robot_type == "pr2":
             self.robot = ArtPr2Interface()
         elif self.robot_type == "dobot":
             self.robot = ArtDobotInterface()
         else:
             rospy.signal_shutdown("Robot " + str(self.robot_type) + " unknown")
-
+	rospy.loginfo("Robot inirialized")
         self.user_status_sub = rospy.Subscriber(
             "/art/user/status", UserStatus, self.user_status_cb)
         self.user_activity_sub = rospy.Subscriber(
@@ -374,7 +374,7 @@ class ArtBrain(object):
             self.ph.get_program_id(), self.block_id, self.instruction, {
                 "SELECTED_OBJECT_ID": obj.object_id})
         arm_id = self.robot.select_arm_for_pick(obj.object_id, self.objects.header.frame_id, self.tf_listener)
-        severity, error, arm_id = self.robot.pick_object(obj, arm_id)
+        severity, error, arm_id = self.robot.pick_object(obj, self.instruction.id, arm_id)
         if error is not None:
             self.fsm.error(severity=severity, error=error)
         else:
@@ -393,7 +393,7 @@ class ArtBrain(object):
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_PICK_POSE_NOT_SELECTED)
             return'''
-		pick_pose = self.instruction.pose[0]
+	pick_pose = self.instruction.pose[0]
 
         arm_id = self.robot.select_arm_for_pick(obj.object_id, self.objects.header.frame_id, self.tf_listener)
         severity, error, arm_id = self.robot.move_arm_to_pose(pick_pose, arm_id)
@@ -908,7 +908,7 @@ class ArtBrain(object):
                 return
             else:
                 self.fsm.done(success=True)
-                self.robot.arm_get_ready(arm_id)
+                self.robot.arms_get_ready()
                 return
 
     def place_object_to_grid(self, instruction, update_state_manager=True, get_ready_after_place=True):

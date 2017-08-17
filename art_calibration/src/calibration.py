@@ -85,7 +85,7 @@ class ArtCalibration(object):
             self.calibrated_pub.publish(self.calibrated)
 
     def calculate_icp(self):
-        print "calculate"
+        # print "calculate"
         main_cell = self.cells[0]  # type: ArtRobotCalibration
         for c in self.cells:  # type: ArtRobotCalibration
 

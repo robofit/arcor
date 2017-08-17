@@ -15,6 +15,9 @@
     <include file="$(find art_calibration)/launch/art_calibration.launch">
       <arg name="cells" value="n1,n2"/>
       <arg name="pr2" value="true"/>
+      <arg name="x_offset" value="0.15"/>
+      <arg name="y_offset" value="0.06"/>
+      <arg name="z_offset" value="0.0"/>
     </include>
 	
 	<include file="$(find art_projected_gui)/launch/app.launch">

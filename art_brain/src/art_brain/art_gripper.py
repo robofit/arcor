@@ -19,6 +19,7 @@ class ArtGripper(object):
                 self.pp_client_name, PickPlaceAction)
             rospy.loginfo("Waiting for " + str(name) + "'s gripper pick&place action client")
             self.pp_client.wait_for_server()
+	    rospy.loginfo("Connected to " + str(name) + "'s gripper pick&place action client")
         else:
             self.pp_client = None
         if drill_enabled:
@@ -26,6 +27,7 @@ class ArtGripper(object):
                 self.manip_client_name, ArmNavigationAction)
             rospy.loginfo("Waiting for " + str(name) + "'s gripper manipulation action client")
             self.manip_client.wait_for_server()
+            rospy.loginfo("Connected to " + str(name) + "'s gripper pick&place action client") 
         else:
             self.manip_client = None
 
