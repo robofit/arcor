@@ -13,6 +13,10 @@ class PointItem(Item):
         super(PointItem, self).__init__(scene, x, y, parent=parent)
         self.fixed = fixed
 
+        if not self.fixed:
+            self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
+            self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+
     def boundingRect(self):
 
         if not self.scene():
@@ -31,6 +35,16 @@ class PointItem(Item):
         es = self.m2pix(self.outline_diameter)
         path.addEllipse(QtCore.QPoint(0, 0), es / 2, es / 2)
         return path
+
+    def mouseMoveEvent(self, event):
+
+        self.changed_cb(self, False)
+        super(Item, self).mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+
+        self.changed_cb(self, True)
+        super(Item, self).mouseReleaseEvent(event)
 
     def item_moved(self):
 

@@ -23,6 +23,8 @@
 	<include file="$(find art_projected_gui)/launch/app.launch">
 	  <arg name="projectors" value="n1,n2"/>
 	  <arg name="scene_server" value="192.168.104.200"/>
+      <arg name="scene_size" value="1.35, 0.64"/>
+      <arg name="scene_origin" value="0.0, 0.0"/>
 	</include>
 
 	<include file="$(find art_touch_driver)/launch/touch.launch">

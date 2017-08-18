@@ -13,6 +13,7 @@ from std_srvs.srv import Trigger, TriggerResponse
 from std_srvs.srv import Empty as EmptyService
 from geometry_msgs.msg import PoseStamped
 import actionlib
+from art_utils import array_from_param
 
 translate = QtCore.QCoreApplication.translate
 
@@ -35,8 +36,8 @@ class UICoreRos(UICore):
 
     def __init__(self):
 
-        origin = rospy.get_param("scene_origin")
-        size = rospy.get_param("scene_size")
+        origin = array_from_param("scene_origin", float, 2)
+        size = array_from_param("scene_size", float, 2)
         rpm = rospy.get_param("rpm")
         port = rospy.get_param("scene_server_port")
 
@@ -86,9 +87,17 @@ class UICoreRos(UICore):
 
         self.projectors = []
 
-        projs = rospy.get_param("~projectors", "").split(",")
-        for proj in projs:
-            self.projectors.append(ProjectorHelper(proj.strip()))
+        try:
+
+            for proj in array_from_param("~projectors"):
+                if len(proj) > 0:
+                    self.projectors.append(ProjectorHelper(proj))
+
+        except KeyError:
+            pass
+
+        if len(self.projectors) == 0:
+            rospy.loginfo("Starting with no projector.")
 
         rospy.loginfo("Waiting for /art/brain/learning_request")
         self.learning_action_cl = actionlib.SimpleActionClient(

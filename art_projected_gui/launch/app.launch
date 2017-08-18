@@ -3,18 +3,22 @@
 
     <arg name="projectors" default=""/>
     <arg name="scene_server" default="localhost" />
+    <arg name="scene_size"/>
+    <arg name="scene_origin"/>
+    <arg name="rpm" default="2000"/>
 
     <group ns="/art/interface/projected_gui">
 
-        <include file="$(find art_projected_gui)/launch/common_params.launch">
-          <arg name="scene_server" value="$(arg scene_server)"/>
-        </include>
+        <param name="scene_origin" value="$(arg scene_origin)"/>
+        <param name="scene_size" value="$(arg scene_size)"/>
+        <param name="rpm" value="$(arg rpm)"/>
+        <param name="scene_server" value="$(arg scene_server)"/>
+        <param name="scene_server_port" value="1234"/>
     
-        <node pkg="art_projected_gui" name="app" type="app.py" output="screen">
+        <node pkg="art_projected_gui" name="app" type="app.py" output="screen"> <!-- launch-prefix="python -m cProfile -o art_projected_gui.txt"-->
 
-            <rosparam param="cursors">["cokoliv"]</rosparam>
-            
-            <!-- n1 temporarily removed as projector is out of order -->
+            <!--rosparam param="cursors">["cokoliv"]</rosparam-->
+
             <param name="projectors" value="$(arg projectors)"/>
 
             <!-- open window with scene - for debugging purposes (can be controlled using mouse) -->

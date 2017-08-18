@@ -167,6 +167,10 @@ class Item(QtGui.QGraphicsItem):
 
         pass
 
+    def mouseDoubleClickEvent(self, evt):
+
+        self.cursor_click()
+
     def boundingRect(self):
 
         raise NotImplementedError("Please implement this method")

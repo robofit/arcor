@@ -121,6 +121,9 @@ class ProgramItem(Item):
         self.edit_request = False
         self.run_request = False
 
+        self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+
         self.setZValue(100)
 
     def pr_pause_btn_cb(self, btn):

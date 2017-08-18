@@ -40,6 +40,11 @@ class PlaceItem(ObjectItem):
 
         self.update_text()
         self.fixed = fixed
+
+        if not self.fixed:
+            self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
+            self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+
         self.place_pose_changed = place_pose_changed
         self.rotation_changed = rotation_changed
 
@@ -170,6 +175,20 @@ class PlaceItem(ObjectItem):
 
         self.desc.set_content(desc)
 
+    def mouseReleaseEvent(self, event):
+
+        self.cursor_release()
+        super(PlaceItem, self).mouseReleaseEvent(event)
+
+    def mouseMoveEvent(self, event):
+
+        pos = self.get_pos()
+
+        self.position[0] = pos[0]
+        self.position[1] = pos[1]
+        self.item_moved()
+        super(PlaceItem, self).mouseMoveEvent(event)
+
     def cursor_release(self):
 
         # TODO call base class method
@@ -246,7 +265,7 @@ class PlaceItem(ObjectItem):
             if isinstance(it, PoseStampedCursorItem) or isinstance(it, TouchTableItem):
                 continue
 
-            if isinstance(it, ObjectItem):
+            if isinstance(it, PlaceItem):
                 self.in_collision = True
                 self.set_color(QtCore.Qt.red)
                 break

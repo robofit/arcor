@@ -6,6 +6,7 @@ import rospy
 from art_msgs.msg import Touch
 from desc_item import DescItem
 from button_item import ButtonItem
+from label_item import LabelItem
 
 
 class TouchPointItem(Item):
@@ -50,7 +51,7 @@ class TouchPointItem(Item):
                     continue
 
                 # TODO what types to skip?
-                if isinstance(it, TouchTableItem) or isinstance(it, TouchPointItem) or isinstance(it, DescItem):
+                if isinstance(it, TouchTableItem) or isinstance(it, TouchPointItem) or isinstance(it, DescItem) or isinstance(it, LabelItem):
                     continue
 
                 if self.collidesWithItem(it):

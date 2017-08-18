@@ -45,6 +45,8 @@ class ObjectItem(Item):
 
         super(ObjectItem, self).__init__(scene, x, y, z, parent=parent)
 
+        self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+
         self.desc = DescItem(scene, 0, 0, parent=self)
         self.desc.setFlag(QtGui.QGraphicsItem.ItemIgnoresTransformations)
 

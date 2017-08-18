@@ -21,6 +21,10 @@ class PolygonItem(Item):
         self.fixed = fixed
         self.convex = True
 
+        if not self.fixed:
+            self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
+            self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+
         self.pts = []
 
         if len(obj_coords) > 0:
@@ -124,6 +128,11 @@ class PolygonItem(Item):
 
         if finished and self.convex and self.polygon_changed is not None:
             self.polygon_changed(self.get_poly_points())
+
+    def mouseReleaseEvent(self, event):
+
+        self.cursor_release()
+        super(Item, self).mouseReleaseEvent(event)
 
     def cursor_release(self):
 
