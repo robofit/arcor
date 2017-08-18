@@ -14,7 +14,7 @@
         type="dobot_client.py" output="screen" respawn="false" />
 
     <node pkg="tf" type="static_transform_publisher" name="dobot_broadcaster"
-          args="0.52 0.4 0.011 -1.57 0 0 marker base_link 100" if="$(arg static_calibration)"/>
+          args="0.45 0.47 0.059 -1.57 0 0 marker base_link 100" if="$(arg static_calibration)"/>
 
 
 

@@ -120,6 +120,7 @@ class DobotClient(object):
                 self._grasped_object = deepcopy(o)
                 obj_type = self.get_object_type(o.object_type)
                 #pick_pose.position.z += obj_type.bbox.dimensions[obj_type.bbox.BOX_Z] - 0.005
+                pick_pose.position.z -= 0.004
                 pp = PoseStamped()
                 pp.pose = pick_pose
                 self.get_ready_for_pick_place()
@@ -150,7 +151,7 @@ class DobotClient(object):
         """
         obj_type = self.get_object_type(self._grasped_object.object_type)
         place_pose.pose.position.z = obj_type.bbox.dimensions[obj_type.bbox.BOX_Z]
-        self.get_ready_for_pick_place()
+        #  self.get_ready_for_pick_place()
 
 
         transformed_pose = self.tf_listener.transformPose("/base_link", place_pose)
