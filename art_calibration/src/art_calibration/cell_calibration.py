@@ -42,7 +42,7 @@ class ArtCellCalibration(object):
         self.markers_sub = rospy.Subscriber(self.markers_topic, AlvarMarkers, self.markers_cb, queue_size=1)
         self.marker_detection_enable_publisher = rospy.Publisher("/art/" +
                                                                  self.cell_id +
-                                                                 "/ar_track_alvar_bundle_objects/enable_detection",
+                                                                 "/ar_track_alvar_bundle_calibration/enable_detection",
                                                                  Bool,
                                                                  queue_size=1,
                                                                  latch=True)
