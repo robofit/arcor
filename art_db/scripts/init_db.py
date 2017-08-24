@@ -7,6 +7,7 @@ from art_msgs.srv import storeProgram, getObjectType, storeObjectType
 from shape_msgs.msg import SolidPrimitive
 from geometry_msgs.msg import PoseStamped, PolygonStamped, Point32
 from copy import deepcopy
+from art_msgs.msg import KeyValue
 
 
 def store_object_type(ot):
@@ -399,16 +400,48 @@ def main(args):
     p.on_success = 2
     p.on_failure = 0
     p.type = ProgramItem.GET_READY
+    p.flags = [KeyValue]
+    p.flags[0].key = "CLEAR_OBJECT_FLAGS"
+    p.flags[0].value = "true"
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 2
-    p.on_success = 2
+    p.on_success = 3
     p.on_failure = 0
     p.type = ProgramItem.DRILL_POINTS
-    p.object.append("")
+    p.object.append("profile_20_60")
     pf = PoseStamped()
-    pf.header.frame_id = "marker"
+    pf.header.frame_id = "object_id_profile_20_60"
+    pf.pose.position.x = 0.4
+    pf.pose.position.y = 0.4
+    pf.pose.position.z = 0.30
+    pf.pose.orientation.x = -0.707
+    pf.pose.orientation.y = 0
+    pf.pose.orientation.z = 0.707
+    pf.pose.orientation.w = 0
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.5
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.y = 0.2
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.4
+    p.pose.append(deepcopy(pf))
+
+    dp = PolygonStamped()
+    dp.header.frame_id = "marker"
+    p.polygon.append(dp)
+
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 3
+    p.on_success = 1
+    p.on_failure = 0
+    p.type = ProgramItem.DRILL_POINTS
+    p.object.append("profile_20_60")
+    pf = PoseStamped()
+    pf.header.frame_id = "object_id_profile_20_60"
     pf.pose.position.x = 0.4
     pf.pose.position.y = 0.4
     pf.pose.position.z = 0.30
@@ -431,8 +464,9 @@ def main(args):
     pb.items.append(deepcopy(p))
 
     store_program(prog)
-    '''
+
     # -------------------------------------------------------------------------------------------
+    """
     prog = Program()
     prog.header.id = 9
     prog.header.name = "Place to grid"
@@ -481,7 +515,8 @@ def main(args):
     p.ref_id.append(3)
     pb.items.append(deepcopy(p))
 
-    store_program(prog)'''
+    store_program(prog)
+    """
 
     # -------------------------------------------------------------------------------------------
     # OBJECT TYPES
