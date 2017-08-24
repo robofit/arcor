@@ -431,7 +431,7 @@ def main(args):
     pb.items.append(deepcopy(p))
 
     store_program(prog)
-
+    '''
     # -------------------------------------------------------------------------------------------
     prog = Program()
     prog.header.id = 9
@@ -481,7 +481,7 @@ def main(args):
     p.ref_id.append(3)
     pb.items.append(deepcopy(p))
 
-    store_program(prog)
+    store_program(prog)'''
 
     # -------------------------------------------------------------------------------------------
     # OBJECT TYPES
@@ -494,7 +494,23 @@ def main(args):
     ot.bbox.dimensions.append(0.05)
     ot.bbox.dimensions.append(0.16)
     store_object_type(ot)
-	
+
+    ot = ObjectType()
+    ot.name = "wood_46_150"
+    ot.bbox.type = SolidPrimitive.BOX
+    ot.bbox.dimensions.append(0.046)
+    ot.bbox.dimensions.append(0.046)
+    ot.bbox.dimensions.append(0.154)
+    store_object_type(ot)
+
+    ot = ObjectType()
+    ot.name = "wood_46_300"
+    ot.bbox.type = SolidPrimitive.BOX
+    ot.bbox.dimensions.append(0.046)
+    ot.bbox.dimensions.append(0.046)
+    ot.bbox.dimensions.append(0.298)
+    store_object_type(ot)
+
     ot = ObjectType()
     ot.name = "karta"
     ot.bbox.type = SolidPrimitive.BOX
