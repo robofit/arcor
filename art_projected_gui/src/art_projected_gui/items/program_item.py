@@ -83,7 +83,6 @@ class ProgramItem(Item):
         group_enable((self.block_edit_btn, self.block_on_failure_btn), False)
 
         self.h = y
-        self.update()
 
         # items "view"
         self.item_edit_btn = ButtonItem(self.scene(), 0, 0, translate(
@@ -126,6 +125,9 @@ class ProgramItem(Item):
 
         self.setZValue(100)
 
+        self._update_learned()
+        self.update()
+
     def pr_pause_btn_cb(self, btn):
 
         if self.pause_cb is not None:
@@ -148,7 +150,8 @@ class ProgramItem(Item):
 
     def _update_learned(self):
 
-        self.block_learned = self.ph.block_learned(self.block_id)
+        if self.block_id is not None:
+            self.block_learned = self.ph.block_learned(self.block_id)
         self.program_learned = self.ph.program_learned()
 
     def set_readonly(self, readonly):
@@ -466,6 +469,8 @@ class ProgramItem(Item):
 
             self.item_switched_cb(self.block_id, self.item_id)
 
+        self.update()
+
     def item_on_failure_btn_cb(self, btn):
 
         of = self.ph.get_id_on_failure(self.block_id, self.item_id)
@@ -684,7 +689,7 @@ class ProgramItem(Item):
 
         sp = self.m2pix(0.01)
 
-        if self.block_id is not None:
+        if self.items_list is not None:
 
             if not self.block_learned and not self.readonly:
 

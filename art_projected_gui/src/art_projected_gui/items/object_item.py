@@ -210,7 +210,7 @@ class ObjectItem(Item):
         painter.drawRoundedRect(-self.lx / 2, -self.ly / 2, self.lx,
                                 self.ly, rr, rr, QtCore.Qt.RelativeSize)
 
-    def cursor_press(self):
+    def cursor_click(self):
 
         # TODO call base class method
 

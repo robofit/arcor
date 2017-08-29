@@ -215,13 +215,13 @@ class PlaceItem(ObjectItem):
         axis = [0, 0, 0]
         axis[ax] = 1.0
 
-        print ("pc-quaternion-before", self.quaternion)
+        # print ("pc-quaternion-before", self.quaternion)
 
         q = tf.transformations.quaternion_about_axis(-(angle - self.last_angle), axis)
 
         self.set_orientation(tf.transformations.quaternion_multiply(self.quaternion, q))
 
-        print ("pc-quaternion-after", self.quaternion)
+        # print ("pc-quaternion-after", self.quaternion)
 
         if self.other_items:    # changing rotation of every object in grid
             for it in self.other_items:

@@ -906,25 +906,6 @@ class UICoreRos(UICore):
 
         prog = self.ph.get_program()
 
-        # if it is template - save it with new id
-        if self.is_template():
-
-            self.template = False
-
-            headers = self.art.get_program_headers()
-            ids = []
-
-            for h in headers:
-                ids.append(h.id)
-
-            # is there a better way how to find not used ID for program?
-            for i in range(0, 2**16 - 1):
-                if i not in ids:
-                    prog.header.id = i
-                    break
-            else:
-                rospy.logerr("Failed to find available program ID")
-
         if not self.art.store_program(prog):
 
             self.notif(
@@ -974,8 +955,32 @@ class UICoreRos(UICore):
                 # TODO what to do?
                 return
 
+            if template:
+
+                # TODO this should be done by art_brain
+                # if it is template - save it with new id
+                headers = self.art.get_program_headers()
+                prog = self.ph.get_program()
+                ids = []
+
+                for h in headers:
+                    ids.append(h.id)
+
+                # is there a better way how to find not used ID for program?
+                for i in range(0, 2 ** 16 - 1):
+                    if i not in ids:
+                        prog.header.id = i
+                        break
+                else:
+                    rospy.logerr("Failed to find available program ID")
+                    return
+
+                self.art.store_program(prog)
+
+                rospy.loginfo("Program ID=" + str(prog_id) + " templated as ID=" + str(prog.header.id))
+
             req = startProgramRequest()
-            req.program_id = prog_id
+            req.program_id = self.ph.get_program_id()
             resp = None
             try:
                 resp = self.start_learning_srv(req)
