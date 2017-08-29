@@ -3,7 +3,8 @@
     <machine name="localhost" address="localhost" default="true" />
     <arg name="machine" default="localhost"/>
 
-    <arg name="marker_size" default="2.77" />
+    <!-- <arg name="marker_size" default="2.77" /> Aluminium  wood 3.68-->
+    <arg name="marker_size" default="3.68" />
 	<arg name="max_new_marker_error" default="0.08" />
 	<arg name="max_track_error" default="0.2" />
 
@@ -12,7 +13,7 @@
 
 	<arg name="output_frame" default="/marker" />
 	<!--arg name="bundle_files" default="/home/artable/catkin_ws/src/ar-table-itable/art_detectors/art_arcode_detector/bundles/truthTableLeg.xml"  /-->
-	<arg name="bundle_files" default="$(find art_arcode_detector)/bundles/truthTableLeg.xml $(find art_arcode_detector)/bundles/profile26.xml $(find art_arcode_detector)/bundles/profile31.xml"  />
+	<arg name="bundle_files" default="$(find art_arcode_detector)/bundles/truthTableLeg.xml $(find art_arcode_detector)/bundles/profile26.xml $(find art_arcode_detector)/bundles/profile31.xml  $(find art_arcode_detector)/bundles/short_wood_181.xml $(find art_arcode_detector)/bundles/short_wood_141.xml $(find art_arcode_detector)/bundles/short_wood_133.xml $(find art_arcode_detector)/bundles/short_wood_185.xml $(find art_arcode_detector)/bundles/short_wood_137.xml $(find art_arcode_detector)/bundles/short_wood_169.xml $(find art_arcode_detector)/bundles/short_wood_173.xml $(find art_arcode_detector)/bundles/short_wood_177.xml $(find art_arcode_detector)/bundles/long_wood_125.xml $(find art_arcode_detector)/bundles/long_wood_145.xml $(find art_arcode_detector)/bundles/long_wood_153.xml $(find art_arcode_detector)/bundles/long_wood_161.xml"/>
 	<node machine="$(arg machine)" name="ar_track_alvar_bundle_objects" pkg="ar_track_alvar" type="findMarkerBundlesNoKinect" respawn="false" output="screen" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame) $(arg bundle_files)" >
 	<remap from="ar_pose_marker" to="ar_pose_marker_objects"/>
 	</node>
