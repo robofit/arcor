@@ -10,6 +10,7 @@
 
     <include file="$(find art_projected_gui)/launch/projector.launch">
       <arg name="machine" value="$(arg machine_name)"/>
+      <arg name="scene_server" value="192.168.104.200"/> <!-- TODO avoid this -->
     </include>
     
     <include file="$(find art_calibration)/launch/calibration_marker_detector.launch">
@@ -23,7 +24,7 @@
       <arg name="base_name_tf" value="$(arg machine_name)_kinect2"/>
       <arg name="respawn" value="false"/>
       <arg name="publish_tf" value="true"/>
-      <arg name="calib_path" value="$(find art_bringup)/data/"/>
+      <arg name="calib_path" value="$(find art_bringup)/setups/$(optenv ARTABLE)/data/"/>
       <arg name="max_depth" value="1.8"/>
     </include>
 

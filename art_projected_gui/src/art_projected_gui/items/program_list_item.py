@@ -34,11 +34,11 @@ class ProgramListItem(Item):
         for ph in self.program_headers:
 
             data.append("ID: " + str(ph.id) + "\nName: " + ph.name)
-            idx = len(data)-1
+            idx = len(data) - 1
             self.map_from_idx_to_program_id[idx] = ph.id
             self.map_from_program_id_to_idx[ph.id] = idx
 
-        self.list = ListItem(scene, 0, 0, 0.2-2*0.005, data, self.item_selected_cb, parent=self)
+        self.list = ListItem(scene, 0, 0, 0.2 - 2 * 0.005, data, self.item_selected_cb, parent=self)
 
         for idx in range(0, len(data)):
 
@@ -59,16 +59,20 @@ class ProgramListItem(Item):
 
         sp = self.m2pix(0.005)
         h = 50
-        self.list.setPos(sp,  h)
+        self.list.setPos(sp, h)
         h += self.list._height()
-        h += 2*sp
+        h += 2 * sp
 
         self. _place_childs_horizontally(h, sp, [self.run_btn, self.edit_btn, self.template_btn])
 
         h += self.run_btn._height()
-        h += 3*sp
+        h += 3 * sp
 
         self.h = h
+
+        self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+
         self.update()
 
     def item_selected_cb(self):
@@ -124,7 +128,7 @@ class ProgramListItem(Item):
         painter.setPen(QtCore.Qt.white)
 
         sp = self.m2pix(0.01)
-        painter.drawText(sp, 2*sp, translate("ProgramListItem", "Program list"))
+        painter.drawText(sp, 2 * sp, translate("ProgramListItem", "Program list"))
 
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.NoPen)

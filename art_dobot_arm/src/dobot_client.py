@@ -14,7 +14,7 @@ from dobot.srv import \
     SetPTPCommonParams, SetPTPCommonParamsRequest, SetPTPCommonParamsResponse, \
     SetEndEffectorSuctionCup, SetEndEffectorSuctionCupRequest, SetEndEffectorSuctionCupResponse, \
     GetEndEffectorSuctionCup, GetEndEffectorSuctionCupRequest, GetEndEffectorSuctionCupResponse
-from tf import TransformBroadcaster
+from tf import TransformBroadcaster, TransformListener
 from geometry_msgs.msg import PoseStamped, Pose
 from art_msgs.msg import PickPlaceAction, PickPlaceFeedback, PickPlaceGoal, PickPlaceResult, InstancesArray, \
     ObjInstance
@@ -58,6 +58,7 @@ class DobotClient(object):
                                            queue_size=1)
 
         self.tf_broadcaster = TransformBroadcaster()
+        self.tf_listener = TransformListener()
         self._dobot_pose = Pose()
 
         self._objects = InstancesArray()
@@ -108,10 +109,18 @@ class DobotClient(object):
 
         for o in self._objects.instances:  # type: ObjInstance
             if o.object_id == object_id:
+                obj = PoseStamped()
+                obj.pose = o.pose
+                obj.header = self._objects.header
+                obj.header.stamp = rospy.Time(0)
+
+                transformed_obj = self.tf_listener.transformPose("/base_link", obj)
+                pick_pose = transformed_obj.pose
+
                 self._grasped_object = deepcopy(o)
-                pick_pose = o.pose
                 obj_type = self.get_object_type(o.object_type)
-                pick_pose.position.z += obj_type.bbox.dimensions[obj_type.bbox.BOX_Z] / 2 - 0.005
+                #pick_pose.position.z += obj_type.bbox.dimensions[obj_type.bbox.BOX_Z] - 0.005
+                pick_pose.position.z -= 0.004
                 pp = PoseStamped()
                 pp.pose = pick_pose
                 self.get_ready_for_pick_place()
@@ -141,14 +150,17 @@ class DobotClient(object):
 
         """
         obj_type = self.get_object_type(self._grasped_object.object_type)
-        place_pose.pose.position.z += obj_type.bbox.dimensions[obj_type.bbox.BOX_Z] / 2
-        self.get_ready_for_pick_place()
-        self.move_to_pose(place_pose, 0)
-        self.wait_for_final_pose(place_pose.pose)
+        place_pose.pose.position.z = obj_type.bbox.dimensions[obj_type.bbox.BOX_Z]
+        #  self.get_ready_for_pick_place()
+
+
+        transformed_pose = self.tf_listener.transformPose("/base_link", place_pose)
+        self.move_to_pose(transformed_pose, 0)
+        self.wait_for_final_pose(transformed_pose.pose)
         self.set_suction(False)
-        place_pose.pose.position.z += 0.03
-        self.move_to_pose(place_pose)
-        self.wait_for_final_pose(place_pose.pose)
+        transformed_pose.pose.position.z += 0.03
+        self.move_to_pose(transformed_pose)
+        self.wait_for_final_pose(transformed_pose.pose)
 
     def wait_for_final_pose(self, pose, timeout=10):
         end_time = rospy.Time.now() + rospy.Duration(timeout)
@@ -236,7 +248,7 @@ class DobotClient(object):
         self._dobot_pose.position.y = resp.y/1000.0
         self._dobot_pose.position.z = resp.z/1000.0
         self.tf_broadcaster.sendTransform((self._dobot_pose.position.x, self._dobot_pose.position.y,
-                                           self._dobot_pose.position.z/1000.0),
+                                           self._dobot_pose.position.z),
                                           (0, 0, 0, 1), rospy.Time.now(), "suction_cup", "base_link")
 
     def move_to_cb(self, pose):
@@ -322,6 +334,7 @@ class DobotClient(object):
         self.get_ready()
         resp = TriggerResponse()
         resp.success = True
+        return resp
 
     def get_ready(self):
         pose = PoseStamped()

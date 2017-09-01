@@ -95,8 +95,8 @@ class ArtTouchDriver:
         ps.point.z = 0
 
         # x/y range (min, max)
-        x = (0.15, 1.25)
-        y = (0.1, 0.5)
+        x = (rospy.get_param("calib_x_min"), rospy.get_param("calib_x_max"))
+        y = (rospy.get_param("calib_y_min"), rospy.get_param("calib_y_max"))
 
         xm = (x[0] + x[1]) / 2.0
         ym = (y[0] + y[1]) / 2.0

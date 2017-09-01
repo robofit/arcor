@@ -22,7 +22,10 @@ class ArtCalibration(object):
         self.listener = tf.TransformListener()
 
         self.cells = []
-        cell_names = rospy.get_param("cells", ["n1", "n2"])
+        cell_names = rospy.get_param("~cells").split(",")
+
+        for cell in cell_names:
+            cell = cell.strip()
 
         for cell in cell_names:
             self.cells.append(ArtCellCalibration(cell, '/art/' + cell + '/ar_pose_marker',
@@ -30,10 +33,12 @@ class ArtCalibration(object):
                                                  '/' + cell_names[0] + '_kinect2_link',
                                                  '/art/' + cell + '/kinect2/qhd/points', self.listener))
 
-        self.cells.append(ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
-                                              '/marker_detected', '/odom_combined',
-                                              '/' + cell_names[0] + '_kinect2_link',
-                                              '/pr2/points', self.listener))
+        if rospy.get_param("~pr2"):
+
+            self.cells.append(ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
+                                                  '/marker_detected', '/odom_combined',
+                                                  '/' + cell_names[0] + '_kinect2_link',
+                                                  '/pr2/points', self.listener))
 
         self.calibrated_pub = rospy.Publisher('/art/system/calibrated', Bool,
                                               queue_size=10, latch=True)
@@ -80,7 +85,7 @@ class ArtCalibration(object):
             self.calibrated_pub.publish(self.calibrated)
 
     def calculate_icp(self):
-        print "calculate"
+        # print "calculate"
         main_cell = self.cells[0]  # type: ArtRobotCalibration
         for c in self.cells:  # type: ArtRobotCalibration
 

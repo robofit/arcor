@@ -13,6 +13,7 @@ from std_srvs.srv import Trigger, TriggerResponse
 from std_srvs.srv import Empty as EmptyService
 from geometry_msgs.msg import PoseStamped
 import actionlib
+from art_utils import array_from_param
 
 translate = QtCore.QCoreApplication.translate
 
@@ -35,8 +36,8 @@ class UICoreRos(UICore):
 
     def __init__(self):
 
-        origin = rospy.get_param("scene_origin")
-        size = rospy.get_param("scene_size")
+        origin = array_from_param("scene_origin", float, 2)
+        size = array_from_param("scene_size", float, 2)
         rpm = rospy.get_param("rpm")
         port = rospy.get_param("scene_server_port")
 
@@ -86,9 +87,17 @@ class UICoreRos(UICore):
 
         self.projectors = []
 
-        projs = rospy.get_param("~projectors", [])
-        for proj in projs:
-            self.projectors.append(ProjectorHelper(proj))
+        try:
+
+            for proj in array_from_param("~projectors"):
+                if len(proj) > 0:
+                    self.projectors.append(ProjectorHelper(proj))
+
+        except KeyError:
+            pass
+
+        if len(self.projectors) == 0:
+            rospy.loginfo("Starting with no projector.")
 
         rospy.loginfo("Waiting for /art/brain/learning_request")
         self.learning_action_cl = actionlib.SimpleActionClient(
@@ -897,25 +906,6 @@ class UICoreRos(UICore):
 
         prog = self.ph.get_program()
 
-        # if it is template - save it with new id
-        if self.is_template():
-
-            self.template = False
-
-            headers = self.art.get_program_headers()
-            ids = []
-
-            for h in headers:
-                ids.append(h.id)
-
-            # is there a better way how to find not used ID for program?
-            for i in range(0, 2**16 - 1):
-                if i not in ids:
-                    prog.header.id = i
-                    break
-            else:
-                rospy.logerr("Failed to find available program ID")
-
         if not self.art.store_program(prog):
 
             self.notif(
@@ -965,8 +955,32 @@ class UICoreRos(UICore):
                 # TODO what to do?
                 return
 
+            if template:
+
+                # TODO this should be done by art_brain
+                # if it is template - save it with new id
+                headers = self.art.get_program_headers()
+                prog = self.ph.get_program()
+                ids = []
+
+                for h in headers:
+                    ids.append(h.id)
+
+                # is there a better way how to find not used ID for program?
+                for i in range(0, 2 ** 16 - 1):
+                    if i not in ids:
+                        prog.header.id = i
+                        break
+                else:
+                    rospy.logerr("Failed to find available program ID")
+                    return
+
+                self.art.store_program(prog)
+
+                rospy.loginfo("Program ID=" + str(prog_id) + " templated as ID=" + str(prog.header.id))
+
             req = startProgramRequest()
-            req.program_id = prog_id
+            req.program_id = self.ph.get_program_id()
             resp = None
             try:
                 resp = self.start_learning_srv(req)

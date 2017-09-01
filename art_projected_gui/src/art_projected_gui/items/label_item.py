@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from PyQt4 import QtGui, QtCore,  QtSvg
+from PyQt4 import QtGui, QtCore, QtSvg
 from item import Item
 import rospy
 from collections import deque
@@ -25,15 +25,15 @@ class LabelItem(Item):
         self.icons_path = rospack.get_path('art_projected_gui') + '/icons/'
 
         self.icons = {}
-        self.icons[NotifyUserRequest.INFO] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_dialog-information.svg',  self)
-        self.icons[NotifyUserRequest.WARN] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_dialog-warning.svg',  self)
-        self.icons[NotifyUserRequest.ERROR] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_emblem-important.svg',  self)
-        self.icons[NotifyUserRequest.YES_NO_QUESTION] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_dialog-question.svg',  self)
+        self.icons[NotifyUserRequest.INFO] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_dialog-information.svg', self)
+        self.icons[NotifyUserRequest.WARN] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_dialog-warning.svg', self)
+        self.icons[NotifyUserRequest.ERROR] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_emblem-important.svg', self)
+        self.icons[NotifyUserRequest.YES_NO_QUESTION] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_dialog-question.svg', self)
 
         s = self.m2pix(self.h)
         for k, v in self.icons.iteritems():
 
-            v.setScale(s/v.boundingRect().height())
+            v.setScale(s / v.boundingRect().height())
             v.setPos(0, 0)
             v.setVisible(False)
 
@@ -44,9 +44,9 @@ class LabelItem(Item):
         self.setCacheMode(QtGui.QGraphicsItem.ItemCoordinateCache)
         self.setZValue(200)
 
-    def add_msg(self, msg, message_type,  min_duration=rospy.Duration(3), temp=False):
+    def add_msg(self, msg, message_type, min_duration=rospy.Duration(3), temp=False):
 
-        self.msgs.append({"msg": msg, "min_duration": min_duration, "shown_at": None, "temp": temp,  "type": message_type})
+        self.msgs.append({"msg": msg, "min_duration": min_duration, "shown_at": None, "temp": temp, "type": message_type})
         self.check_for_msgs()
 
     def boundingRect(self):
@@ -143,10 +143,10 @@ class LabelItem(Item):
         painter.setPen(QtCore.Qt.white)
 
         # TODO fix for multiline messages
-        font = QtGui.QFont('Arial', self.get_font_size(1.5))
+        font = QtGui.QFont('Arial', self.get_font_size(1.2))
         painter.setFont(font)
         metrics = QtGui.QFontMetrics(font)
         h = self.m2pix(self.h)
-        left_padding = h+self.m2pix(0.02)
+        left_padding = h + self.m2pix(0.02)
 
-        painter.drawText(left_padding, (h-metrics.height())/2, self.m2pix(self.w)-left_padding, h, QtCore.Qt.AlignLeft, msg["msg"])
+        painter.drawText(left_padding, (h - metrics.height()) / 2, self.m2pix(self.w) - left_padding, h, QtCore.Qt.AlignLeft, msg["msg"])
