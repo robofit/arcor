@@ -95,7 +95,7 @@ class ArtTouchDriver:
         ps.point.z = 0
 
         # x/y range (min, max)
-        x = (0.15, 1.25)
+        x = (0.15, 1.1)
         y = (0.1, 0.5)
 
         xm = (x[0] + x[1]) / 2.0
