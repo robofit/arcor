@@ -27,18 +27,21 @@ class ArtCalibration(object):
         self.listener = tf.TransformListener()
 
         self.cells = []
-        cell_names = rospy.get_param("cells", ["n1", "n2"])
+        cell_names = rospy.get_param("~cells").split(",")
+
+        for cell in cell_names:
+            cell = cell.strip()
 
         for cell in cell_names:
             self.cells.append(ArtCellCalibration(cell, '/art/' + cell + '/ar_pose_marker',
                                                  '/marker_detected', '/' + cell + '_kinect2_link',
                                                  '/' + cell_names[0] + '_kinect2_link',
                                                  '/art/' + cell + '/kinect2/qhd/pointsHACK', self.listener))  # TODO: kapi hack
-
-        self.cells.append(ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
-                                              '/marker_detected', '/odom_combined',
-                                              '/' + cell_names[0] + '_kinect2_link',
-                                              '/pr2/pointsHACK', self.listener))  # TODO: kapi hack
+                if rospy.get_param("~pr2"):
+                    self.cells.append(ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
+                                                          '/marker_detected', '/odom_combined',
+                                                          '/' + cell_names[0] + '_kinect2_link',
+                                                          '/pr2/pointsHACK', self.listener))  # TODO: kapi hack
 
         self.calibrated_pub = rospy.Publisher('/art/system/calibrated', Bool,
                                               queue_size=10, latch=True)

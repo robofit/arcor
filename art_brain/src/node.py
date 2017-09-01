@@ -139,7 +139,7 @@ class ArtBrain(object):
             self.robot = ArtDobotInterface()
         else:
             rospy.signal_shutdown("Robot " + str(self.robot_type) + " unknown")
-
+                rospy.loginfo("Robot initialized")
         self.user_status_sub = rospy.Subscriber(
             "/art/user/status", UserStatus, self.user_status_cb)
         self.user_activity_sub = rospy.Subscriber(
@@ -375,12 +375,11 @@ class ArtBrain(object):
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_OBJECT_NOT_DEFINED)
             return
-
-        if self.instruction.pose < 1:
+        '''if not self.ph.is_pick_pose_set(self.block_id, self.instruction.id):
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_PICK_POSE_NOT_SELECTED)
-            return
-        pick_pose = self.instruction.pose[0]
+            return'''
+		pick_pose = self.instruction.pose[0]
 
         arm_id = self.robot.select_arm_for_pick(obj.object_id, self.objects.header.frame_id, self.tf_listener)
         severity, error, arm_id = self.robot.move_arm_to_pose(pick_pose, arm_id)
@@ -768,7 +767,8 @@ class ArtBrain(object):
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING_IN_POLYGON)
 
             self.state_manager.update_program_item(
-                self.ph.get_program_id(), self.block_id, instruction)
+                self.ph.get_program_id(), self.block_id, instruction, {
+                    "SELECTED_OBJECT_ID": obj.object_id})
             return
 
         self.state_manager.update_program_item(
@@ -1437,7 +1437,8 @@ class ArtBrain(object):
             rospy.logerr('Service call failed: ' + str(e))
             return None
 
-    def learning_request_cb(self, goal):
+    def learning_request_cb(self,
+                            goal):  # type: LearningRequestGoal
         result = LearningRequestResult()
         if not self.fsm.is_learning_run:
             result.success = False
@@ -1484,7 +1485,7 @@ class ArtBrain(object):
                     self.fsm.pick_object_id_run()
                     pass
                 elif instruction.type == instruction.PICK_FROM_FEEDER:
-                    self.fsm.pick_from_feeder_run()
+                    self.fsm.pick_from_feeder_run(gripper=self.left_gripper)
                     # TODO: choose which gripper use
                     # TODO: check if it worked
                 elif instruction.type == instruction.PICK_FROM_POLYGON:

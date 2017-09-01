@@ -86,9 +86,9 @@ class UICoreRos(UICore):
 
         self.projectors = []
 
-        projs = rospy.get_param("~projectors", [])
+        projs = rospy.get_param("~projectors", "").split(",")
         for proj in projs:
-            self.projectors.append(ProjectorHelper(proj))
+            self.projectors.append(ProjectorHelper(proj.strip()))
 
         rospy.loginfo("Waiting for /art/brain/learning_request")
         self.learning_action_cl = actionlib.SimpleActionClient(

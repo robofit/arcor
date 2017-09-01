@@ -5,14 +5,19 @@
 
     <arg name="screen_number" default="1"/>
     <arg name="machine" default="localhost"/>
+    <arg name="projector_id" default="$(arg machine)"/>
+    <arg name="scene_server"/>
 
-    <group ns="/art/$(arg machine)">
+    <group ns="/art/$(arg projector_id)">
 
-        <include file="$(find art_projected_gui)/launch/common_params.launch" />
+        <!-- TODO this should NOT be included once for app and then for each projector! -->
+        <include file="$(find art_projected_gui)/launch/common_params.launch">
+            <arg name="scene_server" value="$(arg scene_server)"/>
+        </include>
 
         <node pkg="art_projected_gui" name="projector" machine="$(arg machine)" type="projector_node.py" output="screen">
 
-            <param name="projector_id" value="$(arg machine)"/>
+            <param name="projector_id" value="$(arg projector_id)"/>
             <param name="screen_number" value="$(arg screen_number)"/>
 
         </node>

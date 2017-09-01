@@ -505,6 +505,14 @@ def main(args):
     store_object_type(ot)
 
     ot = ObjectType()
+    ot.name = "placka"
+    ot.bbox.type = SolidPrimitive.BOX
+    ot.bbox.dimensions.append(0.1)
+    ot.bbox.dimensions.append(0.1)
+    ot.bbox.dimensions.append(0.008)
+    store_object_type(ot)
+
+    ot = ObjectType()
     ot.name = "wood_46_150"
     ot.bbox.type = SolidPrimitive.BOX
     ot.bbox.dimensions.append(0.046)

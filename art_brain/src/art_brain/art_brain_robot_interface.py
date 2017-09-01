@@ -21,6 +21,7 @@ class ArtBrainRobotInterface:
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)
+        print arm
         severity, error = self.check_arm_for_pick(arm)
         if error is not None:
             return severity, error, arm_id
