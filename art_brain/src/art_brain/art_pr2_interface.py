@@ -18,7 +18,7 @@ class ArtPr2Interface(ArtBrainRobotInterface):
             ArtGripper(self.LEFT_ARM, "PR2 Left", True, True, "/art/pr2/left_arm/pp", "/art/pr2/left_arm/manipulation",
                        "/art/pr2/left_arm/interaction/on", "/art/pr2/left_arm/interaction/off",
                        "/art/pr2/left_arm/get_ready", "/art/pr2/left_arm/move_to_user"),
-            ArtGripper(self.RIGHT_ARM, "PR2 Right", True, True,  "/art/pr2/right_arm/pp", "/art/pr2/right_arm/manipulation",
+            ArtGripper(self.RIGHT_ARM, "PR2 Right", True, True, "/art/pr2/right_arm/pp", "/art/pr2/right_arm/manipulation",
                        "/art/pr2/right_arm/interaction/on", "/art/pr2/right_arm/interaction/off",
                        "/art/pr2/right_arm/get_ready", "/art/pr2/right_arm/move_to_user")
         ]

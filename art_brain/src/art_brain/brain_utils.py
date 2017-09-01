@@ -132,8 +132,6 @@ class ArtBrainUtils(object):
         return rospy.ServiceProxy(service_name, service_type)
 
 
-
-
 class ArtBrainErrorSeverities(IntEnum):
     WARNING = InterfaceState.WARNING
     ERROR = InterfaceState.ERROR
