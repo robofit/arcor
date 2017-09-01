@@ -14,3 +14,6 @@ class ArtDobotInterface(ArtBrainRobotInterface):
 
     def select_arm_for_pick(self, obj_id, objects_frame_id, tf_listener):
         return self.DOBOT_ARM
+
+    def select_arm_for_pick_from_feeder(self, pick_pose, tf_listener):
+        return self.DOBOT_ARM
