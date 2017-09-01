@@ -69,7 +69,7 @@ class UICore(QtCore.QObject):
         # be good for dynamic scenes
 
         self.bottom_label = LabelItem(
-            self.scene, 0.2, 0.05, self.width - 0.4, 0.05)
+            self.scene, 0.05, 0.05, self.width - 0.05, 0.05)
 
         self.selected_object_ids = []
         self.selected_object_types = []
@@ -105,7 +105,10 @@ class UICore(QtCore.QObject):
         # TODO deal with disconnected clients!
         # self.connections[-1].disconnected.connect(clientConnection.deleteLater)
 
-    def send_to_clients_evt(self, client=None):
+    def send_to_clients_evt(self):
+
+        if len(self.connections) == 0:
+            return
 
         # start = time.time()
 
@@ -135,15 +138,9 @@ class UICore(QtCore.QObject):
 
         # print block.size()
 
-        if client is None:
+        for con in self.connections:
 
-            for con in self.connections:
-
-                con.write(block)
-
-        else:
-
-            client.write(block)
+            con.write(block)
 
         # end = time.time()
         # rospy.logdebug("Image sent in: " + str(end-start))

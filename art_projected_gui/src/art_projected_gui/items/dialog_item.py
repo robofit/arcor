@@ -42,6 +42,10 @@ class DialogItem(Item):
         y += self.sp
 
         self.h = y
+
+        self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+
         self.update()
         self.setZValue(300)
 

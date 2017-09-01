@@ -35,6 +35,8 @@ class ButtonItem(Item):
             self.img = self.img.scaled(self.boundingRect().width() * 0.9, self.boundingRect(
             ).height() * 0.9, QtCore.Qt.KeepAspectRatio | QtCore.Qt.SmoothTransformation)
 
+        self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+
     def boundingRect(self):
 
         return QtCore.QRectF(-1.5, -1.5, self.w + 3, self.h + 3)

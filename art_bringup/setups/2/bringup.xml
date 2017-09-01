@@ -21,13 +21,16 @@
     
     <include file="$(find art_projected_gui)/launch/projector.launch">
       <arg name="screen_number" value="1"/>
-      <arg name="scene_server" value="192.168.104.101"/>
       <arg name="projector_id" value="left"/>
     </include>
     
     <include file="$(find art_projected_gui)/launch/app.launch">
-	  <arg name="projectors" value="left"/>
+	  <!--arg name="projectors" value="left"/-->
+      <arg name="projectors" value=""/>
 	  <arg name="scene_server" value="192.168.104.101"/>
+      <arg name="scene_size" value="0.996, 0.574"/>
+      <arg name="scene_origin" value="0.0, 0.0"/>
+      <arg name="rpm" value="2000"/>
 	</include>
 	
 	<include file="$(find art_touch_driver)/launch/touch.launch">

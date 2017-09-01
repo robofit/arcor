@@ -89,7 +89,7 @@ def main(args):
     p.type = ProgramItem.PLACE_TO_POSE
     p.ref_id.append(3)
     pp = PoseStamped()
-    pp.header.frame_id = "/marker"
+    pp.header.frame_id = "marker"
     p.pose.append(pp)
     pb.items.append(deepcopy(p))
 
@@ -113,7 +113,7 @@ def main(args):
     p.on_failure = 0
     p.type = ProgramItem.PICK_FROM_FEEDER
     p.object.append("")
-    pp.header.frame_id = "/marker"
+    pp.header.frame_id = "marker"
     pf = PoseStamped()
     p.pose.append(pf)
     pb.items.append(deepcopy(p))
@@ -438,7 +438,6 @@ def main(args):
     pb.items.append(deepcopy(p))
 
     store_program(prog)
-
     # -------------------------------------------------------------------------------------------
     """
     prog = Program()

@@ -15,6 +15,7 @@ from image_geometry import PinholeCameraModel
 from geometry_msgs.msg import PointStamped, Pose, PoseArray
 import tf
 import ast
+from art_utils import array_from_param
 
 
 # import time
@@ -31,7 +32,7 @@ class Projector(QtGui.QWidget):
         super(Projector, self).__init__()
 
         self.proj_id = rospy.get_param('~projector_id', 'test')
-        self.world_frame = rospy.get_param('~world_frame', 'marker')
+        self.world_frame = rospy.get_param('/art/conf/world_frame')
         self.screen = rospy.get_param('~screen_number', 0)
         self.camera_image_topic = rospy.get_param(
             '~camera_image_topic', 'kinect2/hd/image_color_rect')
@@ -43,9 +44,14 @@ class Projector(QtGui.QWidget):
         self.map_x = None
         self.map_y = None
 
-        self.rpm = rospy.get_param('rpm')
-        self.scene_size = rospy.get_param("scene_size")
-        self.scene_origin = rospy.get_param("scene_origin")
+        ns = "/art/interface/projected_gui/"
+
+        self.rpm = int(rospy.get_param(ns + 'rpm'))
+        self.server = rospy.get_param(ns + "scene_server")
+        self.port = rospy.get_param(ns + "scene_server_port")
+
+        self.scene_size = array_from_param(ns + "scene_size", float, 2)
+        self.scene_origin = array_from_param(ns + "scene_origin", float, 2)
 
         rospy.loginfo("Projector '" + self.proj_id +
                       "', on screen " + str(self.screen))
@@ -75,8 +81,6 @@ class Projector(QtGui.QWidget):
         # self.pix_label.setScaledContents(True)
         self.pix_label.resize(self.size())
 
-        self.server = rospy.get_param("scene_server")
-        self.port = rospy.get_param("scene_server_port")
         self.tcpSocket = QtNetwork.QTcpSocket(self)
         self.blockSize = 0
         self.tcpSocket.readyRead.connect(self.getScene)
