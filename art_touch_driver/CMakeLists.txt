@@ -38,3 +38,5 @@ include_directories(
 #   ${catkin_LIBRARIES}
 # )
 
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
