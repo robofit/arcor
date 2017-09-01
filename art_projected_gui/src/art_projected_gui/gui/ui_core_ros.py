@@ -7,7 +7,7 @@ from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem
 from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, TouchPointsItem, LabelItem, TouchTableItem, ProgramListItem, ProgramItem, DialogItem, PolygonItem
 from art_projected_gui.helpers import ProjectorHelper, conversions, error_strings
 from art_utils import InterfaceStateManager, ArtApiHelper, ProgramHelper
-from art_msgs.srv import TouchCalibrationPoints, TouchCalibrationPointsResponse, NotifyUser, NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest, startProgram, startProgramRequest
+from art_msgs.srv import TouchCalibrationPoints, TouchCalibrationPointsResponse, NotifyUser, NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest, ProgramIdTrigger, ProgramIdTriggerRequest
 from std_msgs.msg import Empty, Bool
 from std_srvs.srv import Trigger, TriggerResponse
 from std_srvs.srv import Empty as EmptyService
@@ -111,7 +111,7 @@ class UICoreRos(UICore):
         self.projectors_calibrated_pub.publish(False)
 
         self.start_learning_srv = rospy.ServiceProxy(
-            '/art/brain/learning/start', startProgram)  # TODO wait for service? where?
+            '/art/brain/learning/start', ProgramIdTrigger)  # TODO wait for service? where?
         self.stop_learning_srv = rospy.ServiceProxy(
             '/art/brain/learning/stop', Trigger)  # TODO wait for service? where?
 
@@ -979,7 +979,7 @@ class UICoreRos(UICore):
 
                 rospy.loginfo("Program ID=" + str(prog_id) + " templated as ID=" + str(prog.header.id))
 
-            req = startProgramRequest()
+            req = ProgramIdTriggerRequest()
             req.program_id = self.ph.get_program_id()
             resp = None
             try:

@@ -508,10 +508,13 @@ def main(args):
     p.on_success = 3
     p.on_failure = 0
     p.type = ProgramItem.PLACE_TO_GRID
-    p.object.append("")
     pp = PolygonStamped()
     p.polygon.append(pp)
     p.ref_id.append(3)
+    p.pose.append(PoseStamped())
+    p.pose.append(PoseStamped())
+    p.pose.append(PoseStamped())
+    p.pose.append(PoseStamped())
     pb.items.append(deepcopy(p))
 
     store_program(prog)

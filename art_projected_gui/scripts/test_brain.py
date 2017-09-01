@@ -2,7 +2,7 @@
 
 import sys
 import rospy
-from art_msgs.srv import startProgram, startProgramResponse
+from art_msgs.srv import ProgramIdTrigger, ProgramIdTriggerResponse
 from art_msgs.msg import InterfaceState, ProgramItem, LearningRequestAction, LearningRequestFeedback, LearningRequestResult
 from art_utils import InterfaceStateManager, ProgramHelper, ArtApiHelper
 import actionlib
@@ -87,17 +87,17 @@ def start_program(req):
     program = art.load_program(req.program_id)
 
     if program is None:
-        return startProgramResponse(success=False)
+        return ProgramIdTriggerResponse(success=False)
 
     if not ph.load(program):
-        return startProgramResponse(success=False)
+        return ProgramIdTriggerResponse(success=False)
 
     current_item = ph.get_first_item_id()
     iters = 0
 
     state_manager.set_system_state(InterfaceState.STATE_PROGRAM_RUNNING)
     prog_timer = rospy.Timer(rospy.Duration(4), timer_callback)
-    return startProgramResponse(success=True)
+    return ProgramIdTriggerResponse(success=True)
 
 # def stop_program(req):
 #
@@ -142,10 +142,10 @@ def learning_srv_cb(req):
     program = art.load_program(req.program_id)
 
     if program is None:
-        return startProgramResponse(success=False)
+        return ProgramIdTriggerResponse(success=False)
 
     if not ph.load(program):
-        return startProgramResponse(success=False)
+        return ProgramIdTriggerResponse(success=False)
 
     current_item = ph.get_first_item_id()
 
@@ -153,7 +153,7 @@ def learning_srv_cb(req):
     state_manager.set_system_state(InterfaceState.STATE_LEARNING)
 
     rospy.loginfo("learning_srv_cb")
-    return startProgramResponse(success=True)
+    return ProgramIdTriggerResponse(success=True)
 
 
 def main(args):
@@ -173,8 +173,8 @@ def main(args):
 
     state_manager.set_system_state(InterfaceState.STATE_IDLE)
 
-    rospy.Service('/art/brain/program/start', startProgram, start_program)
-    rospy.Service('/art/brain/learning/start', startProgram, learning_srv_cb)
+    rospy.Service('/art/brain/program/start', ProgramIdTrigger, start_program)
+    rospy.Service('/art/brain/learning/start', ProgramIdTrigger, learning_srv_cb)
     rospy.Service('/art/brain/learning/stop', Trigger, learning_srv_cb)
     # rospy.Service('/art/brain/program/stop',  stopProgram, stop_program)
 

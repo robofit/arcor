@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from art_msgs.srv import getProgram, storeProgram, startProgram, getObjectType, getProgramHeaders, storeObjectType
+from art_msgs.srv import getProgram, storeProgram, ProgramIdTrigger, getObjectType, getProgramHeaders, storeObjectType
 
 # TODO make brain version a new class (based on ArtApiHelper)
 
@@ -20,7 +20,7 @@ class ArtApiHelper(object):
         # Brain API
         self.brain = brain
         if not self.brain:
-            self.start_program_srv = rospy.ServiceProxy('/art/brain/program/start', startProgram)
+            self.start_program_srv = rospy.ServiceProxy('/art/brain/program/start', ProgramIdTrigger)
 
     def wait_for_api(self):
 

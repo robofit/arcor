@@ -43,7 +43,7 @@ add_service_files(
     storeProgram.srv
     getObjectType.srv
     storeObjectType.srv
-    startProgram.srv
+    ProgramIdTrigger.srv
     TouchCalibrationPoints.srv
     NotifyUser.srv
     ProgramErrorResolve.srv

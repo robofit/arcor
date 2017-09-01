@@ -11,7 +11,7 @@ import actionlib
 from art_msgs.msg import LocalizeAgainstUMFAction, LocalizeAgainstUMFGoal, LocalizeAgainstUMFResult
 from std_srvs.srv import Empty, EmptyRequest, EmptyResponse, Trigger, TriggerResponse
 from art_msgs.msg import UserStatus, UserActivity, InterfaceState
-from art_msgs.srv import startProgram, startProgramResponse, getProgram, \
+from art_msgs.srv import ProgramIdTrigger, ProgramIdTriggerResponse, getProgram, \
     ObjectFlagClear, ObjectFlagClearRequest, ObjectFlagClearResponse, \
     ObjectFlagSet, ObjectFlagSetRequest, ObjectFlagSetResponse
 from geometry_msgs.msg import PoseStamped, Pose
@@ -139,7 +139,7 @@ class ArtBrain(object):
             self.robot = ArtDobotInterface()
         else:
             rospy.signal_shutdown("Robot " + str(self.robot_type) + " unknown")
-	rospy.loginfo("Robot inirialized")
+        rospy.loginfo("Robot inirialized")
         self.user_status_sub = rospy.Subscriber(
             "/art/user/status", UserStatus, self.user_status_cb)
         self.user_activity_sub = rospy.Subscriber(
@@ -157,7 +157,7 @@ class ArtBrain(object):
             "/art/interface/projected_gui/app/projectors_calibrated", Bool, self.projectors_calibrated_cb)
 
         self.srv_program_start = rospy.Service(
-            '/art/brain/program/start', startProgram, self.program_start_cb)
+            '/art/brain/program/start', ProgramIdTrigger, self.program_start_cb)
         self.srv_program_stop = rospy.Service(
             '/art/brain/program/stop', Trigger, self.program_stop_cb)
 
@@ -167,7 +167,7 @@ class ArtBrain(object):
             '/art/brain/program/resume', Trigger, self.program_resume_cb)
 
         self.srv_learning_start = rospy.Service(
-            '/art/brain/learning/start', startProgram, self.learning_start_cb)
+            '/art/brain/learning/start', ProgramIdTrigger, self.learning_start_cb)
         self.srv_learning_stop = rospy.Service(
             '/art/brain/learning/stop', Trigger, self.learning_stop_cb)
 
@@ -393,7 +393,7 @@ class ArtBrain(object):
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_PICK_POSE_NOT_SELECTED)
             return'''
-	pick_pose = self.instruction.pose[0]
+        pick_pose = self.instruction.pose[0]
 
         arm_id = self.robot.select_arm_for_pick(obj.object_id, self.objects.header.frame_id, self.tf_listener)
         severity, error, arm_id = self.robot.move_arm_to_pose(pick_pose, arm_id)
@@ -1231,7 +1231,7 @@ class ArtBrain(object):
 
     def program_start_cb(self, req):
 
-        resp = startProgramResponse()
+        resp = ProgramIdTriggerResponse()
 
         if not self.is_everything_calibrated():
             resp.success = False
@@ -1301,7 +1301,7 @@ class ArtBrain(object):
         return resp
 
     def learning_start_cb(self, req):
-        resp = startProgramResponse()
+        resp = ProgramIdTriggerResponse()
         resp.success = False
 
         if not self.is_everything_calibrated():
