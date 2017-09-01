@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <launch>
     
-    <arg name="x_offset"/>
-    <arg name="y_offset"/>
-    <arg name="z_offset"/>
-    <arg name="cells"/>
+    <arg name="x_offset" default="0"/>
+    <arg name="y_offset" default="0"/>
+    <arg name="z_offset" default="0"/>
+    <arg name="cells" default=""/>
     <arg name="pr2" default="false"/>
     
     <node name="static_tf_marker" pkg="tf" type="static_transform_publisher" args="$(arg x_offset) $(arg y_offset) $(arg z_offset) 0 0 0 /marker /marker_detected 100" />
