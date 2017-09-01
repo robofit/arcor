@@ -19,9 +19,9 @@ def main(args):
     # Simplified trolley assembly: object types
     # -------------------------------------------------------------------------------------------
 
-    art.store_object_type(obj_type("p40x40x200", 0.04, 0.04, 0.2))
-    art.store_object_type(obj_type("p40x40x400", 0.04, 0.04, 0.4))
-    art.store_object_type(obj_type("p40x40x500", 0.04, 0.04, 0.5))
+    art.store_object_type(obj_type("wood_46_150", 0.046, 0.046, 0.15))
+    art.store_object_type(obj_type("wood_46_300", 0.046, 0.046, 0.3))
+    art.store_object_type(obj_type("wood_46_400", 0.046, 0.046, 0.4))
 
     # -------------------------------------------------------------------------------------------
     # Simplified trolley assembly: program

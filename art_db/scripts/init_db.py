@@ -77,39 +77,20 @@ def main(args):
     p.on_success = 4
     p.on_failure = 0
     p.type = ProgramItem.PICK_FROM_FEEDER
-    p.object.append("profile_20_60")
+    p.object.append("")
     pf = PoseStamped()
-    pf.header.frame_id = "marker"
-    pf.pose.position.x = 0.75
-    pf.pose.position.y = 0.5
     p.pose.append(pf)
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 4
-    p.on_success = 5
+    p.on_success = 6
     p.on_failure = 0
     p.type = ProgramItem.PLACE_TO_POSE
     p.ref_id.append(3)
-    p.ref_id.append(5)
     pp = PoseStamped()
-    pp.header.frame_id = "marker"
-    pp.pose.position.x = 0.75
-    pp.pose.position.y = 0.5
+    pp.header.frame_id = "/marker"
     p.pose.append(pp)
-    pb.items.append(deepcopy(p))
-
-    p = ProgramItem()
-    p.id = 5
-    p.on_success = 6
-    p.on_failure = 0
-    p.type = ProgramItem.PICK_FROM_FEEDER
-    p.object.append("profile_20_60")
-    pf = PoseStamped()
-    pf.header.frame_id = "marker"
-    pf.pose.position.x = 0.75
-    pf.pose.position.y = 0.5
-    p.pose.append(pf)
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
@@ -130,27 +111,20 @@ def main(args):
     p.id = 8
     p.on_success = 9
     p.on_failure = 0
-    p.type = ProgramItem.PICK_FROM_POLYGON
-    p.object.append("profile_20_60")
-    pp = PolygonStamped()
-    pp.header.frame_id = "marker"
-    pp.polygon.points.append(Point32(0.4, 0.1, 0))
-    pp.polygon.points.append(Point32(1.0, 0.1, 0))
-    pp.polygon.points.append(Point32(1.0, 0.6, 0))
-    pp.polygon.points.append(Point32(0.4, 0.6, 0))
-    p.polygon.append(pp)
+    p.type = ProgramItem.PICK_FROM_FEEDER
+    p.object.append("")
+    pp.header.frame_id = "/marker"
+    pf = PoseStamped()
+    p.pose.append(pf)
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 9
-    p.on_success = 4
+    p.on_success = 1
     p.on_failure = 0
     p.type = ProgramItem.PLACE_TO_POSE
     p.ref_id.append(8)
     pp = PoseStamped()
-    pp.header.frame_id = "marker"
-    pp.pose.position.x = 0.75
-    pp.pose.position.y = 0.5
     p.pose.append(pp)
     pb.items.append(deepcopy(p))
 
