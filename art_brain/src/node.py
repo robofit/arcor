@@ -33,7 +33,7 @@ from tf import TransformerROS, TransformListener
 import logging
 from transitions import logger
 
-from art_brain.brain_utils import ArtBrainUtils, ArtBrainErrors, ArtBrainErrorSeverities
+from art_brain.brain_utils import ArtBrainUtils, ArtGripper, ArtBrainErrors, ArtBrainErrorSeverities
 from art_brain.art_brain_machine import ArtBrainMachine
 
 
@@ -132,13 +132,15 @@ class ArtBrain(object):
 
         self.calibrate_pr2 = rospy.get_param('calibrate_pr2', False)
         self.calibrate_table = rospy.get_param('calibrate_table', False)
-        self.robot_type = rospy.get_param('robot_type', "dobot")
+        self.robot_type = rospy.get_param('robot_type', "pr2")  # TODO how to set param from command line? robot_type:=pr2 does not work...
+
         if self.robot_type == "pr2":
             self.robot = ArtPr2Interface()
         elif self.robot_type == "dobot":
             self.robot = ArtDobotInterface()
         else:
             rospy.signal_shutdown("Robot " + str(self.robot_type) + " unknown")
+            return
         rospy.loginfo("Robot initialized")
         self.user_status_sub = rospy.Subscriber(
             "/art/user/status", UserStatus, self.user_status_cb)
@@ -402,14 +404,25 @@ class ArtBrain(object):
             return
 
         rospy.sleep(2)
+
         pick_object = None
+        pick_object_dist = None
         rospy.loginfo("Looking for: " + str(obj.object_type))
         for inst in self.objects.instances:  # type: ObjInstance
-            rospy.loginfo(inst.object_type)
-            rospy.loginfo(inst.object_id)
             if inst.object_type == obj.object_type:
-                pick_object = inst
-        if pick_object is None:
+                ps = PoseStamped()
+                ps.header.frame_id = self.objects.header.frame_id
+                ps.header.stamp = rospy.Time(0)
+                ps.pose = inst.pose
+                # TODO compute transform once and then only apply it
+                ps = self.tf_listener.transformPose(self.robot.get_arm_by_id(arm_id).gripper_link, ps)
+                # distance in x does not matter - we want the object closest to the x-axis of gripper
+                dist = math.sqrt(ps.pose.position.y ** 2 + ps.pose.position.z ** 2)
+                rospy.logdebug("Distance to object ID=" + inst.object_id + " is: " + str(dist))
+                if pick_object is None or (dist < pick_object_dist):
+                    pick_object = inst
+                    pick_object_dist = dist
+        if pick_object is None or pick_object_dist > 0.2:
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING)
             return
@@ -679,23 +692,13 @@ class ArtBrain(object):
 
     def state_learning_pick_from_feeder(self, event):
         rospy.logdebug('Current state: state_learning_pick_from_feeder')
-        success_left = success_right = True
-        error_left = error_right = None
-        if self.gripper_usage in (ArtGripper.GRIPPER_BOTH, ArtGripper.GRIPPER_LEFT) and self.left_gripper is not None:
-            success_left, error_left = self.left_gripper.prepare_for_interaction()
-        # if self.gripper_usage in (ArtGripper.GRIPPER_BOTH, ArtGripper.GRIPPER_LEFT) and self.left_gripper is not None:
-        #    success_right, error_right = self.left_gripper.prepare_for_interaction()
 
-        if not success_left or not success_right:
-            if ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED in (error_left, error_right):
-                self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
-                               error=ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED)
-            elif ArtBrainErrors.ERROR_LEARNING_GRIPPER_INTERACTION_MODE_SWITCH_FAILED in (error_left, error_right):
-                self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
-                               error=ArtBrainErrors.ERROR_LEARNING_GRIPPER_INTERACTION_MODE_SWITCH_FAILED)
-            else:
-                self.fsm.error(severity=ArtBrainErrorSeverities.SEVERE,
-                               error=ArtBrainErrors.ERROR_UNKNOWN)
+        severity, error, arm_id = self.robot.arm_prepare_for_interaction()
+        if error is not None:
+            rospy.logerr("Failed to prepare gripper " + str(arm_id) + " for interaction: " + str(error))
+            self.robot.arm_get_ready_after_interaction()
+            self.fsm.error(severity=severity,
+                           error=error)
 
     def state_learning_pick_from_feeder_run(self, event):
         rospy.logdebug('Current state: state_learning_pick_from_feeder_run')
@@ -808,9 +811,6 @@ class ArtBrain(object):
         if error is not None:
             self.fsm.error(severity=severity, error=error)
         else:
-            self.fsm.done(success=True)
-
-        else:
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_PICK_FAILED)
 
@@ -856,14 +856,25 @@ class ArtBrain(object):
             return
 
         rospy.sleep(2)
+
         pick_object = None
+        pick_object_dist = None
         rospy.loginfo("Looking for: " + str(obj.object_type))
         for inst in self.objects.instances:  # type: ObjInstance
-            rospy.loginfo(inst.object_type)
-            rospy.loginfo(inst.object_id)
             if inst.object_type == obj.object_type:
-                pick_object = inst
-        if pick_object is None:
+                ps = PoseStamped()
+                ps.header.frame_id = self.objects.header.frame_id
+                ps.header.stamp = rospy.Time(0)
+                ps.pose = inst.pose
+                # TODO compute transform once and then only apply it
+                ps = self.tf_listener.transformPose(self.robot.get_arm_by_id(arm_id).gripper_link, ps)
+                # distance in x does not matter - we want the object closest to the x-axis of gripper
+                dist = math.sqrt(ps.pose.position.y ** 2 + ps.pose.position.z ** 2)
+                rospy.logdebug("Distance to object ID=" + inst.object_id + "is: " + str(dist))
+                if pick_object is None or (dist < pick_object_dist):
+                    pick_object = inst
+                    pick_object_dist = dist
+        if pick_object is None or pick_object_dist > 0.2:
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING)
             return
@@ -927,6 +938,7 @@ class ArtBrain(object):
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_PICK_FAILED)
             return False
+        """
 
     def place_object_to_pose(self, instruction, update_state_manager=True, get_ready_after_place=False):
         pose = ArtBrainUtils.get_place_pose(instruction)
@@ -1518,7 +1530,7 @@ class ArtBrain(object):
                     self.fsm.pick_object_id_run()
                     pass
                 elif instruction.type == instruction.PICK_FROM_FEEDER:
-                    self.fsm.pick_from_feeder_run(gripper=self.left_gripper)
+                    self.fsm.pick_from_feeder_run()
                     # TODO: choose which gripper use
                     # TODO: check if it worked
                 elif instruction.type == instruction.PICK_FROM_POLYGON:

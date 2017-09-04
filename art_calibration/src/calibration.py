@@ -33,15 +33,18 @@ class ArtCalibration(object):
             cell = cell.strip()
 
         for cell in cell_names:
-            self.cells.append(ArtCellCalibration(cell, '/art/' + cell + '/ar_pose_marker',
-                                                 '/marker_detected', '/' + cell + '_kinect2_link',
-                                                 '/' + cell_names[0] + '_kinect2_link',
-                                                 '/art/' + cell + '/kinect2/qhd/pointsHACK', self.listener))  # TODO: kapi hack
-        if rospy.get_param("~pr2"):
-            self.cells.append(ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
-                                                  '/marker_detected', '/odom_combined',
-                                                  '/' + cell_names[0] + '_kinect2_link',
-                                                  '/pr2/pointsHACK', self.listener))  # TODO: kapi hack
+
+            if cell == 'pr2':
+                self.cells.append(ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
+                                                      '/marker_detected', '/odom_combined',
+                                                      '/' + cell_names[0] + '_kinect2_link',
+                                                      '/pr2/pointsHACK', self.listener))  # TODO: kapi hack
+            else:
+
+                self.cells.append(ArtCellCalibration(cell, '/art/' + cell + '/ar_pose_marker',
+                                                     '/marker_detected', '/' + cell + '_kinect2_link',
+                                                     '/' + cell_names[0] + '_kinect2_link',
+                                                     '/art/' + cell + '/kinect2/qhd/pointsHACK', self.listener))  # TODO: kapi hack
 
         self.calibrated_pub = rospy.Publisher('/art/system/calibrated', Bool,
                                               queue_size=10, latch=True)
@@ -62,6 +65,7 @@ class ArtCalibration(object):
         cell_name = req.cell_name
         for cell in self.cells:
             if cell.cell_id == cell_name:
+                rospy.loginfo('Recalibrating cell: ' + req.cell_name)
                 cell.reset_markers_searching()
                 resp.success = True
                 break

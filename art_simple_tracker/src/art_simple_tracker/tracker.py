@@ -34,7 +34,7 @@ class TrackedObject:
         self.tfl = tfl
         self.target_frame = target_frame
         self.max_dist = 2.0
-        self.min_dist = 0.3
+        self.min_dist = 0.05
         self.min_meas_cnt = 5
         self.new = True
         self.lost = False
@@ -53,6 +53,7 @@ class TrackedObject:
         dist = distance.euclidean((0, 0, 0), (ps.pose.position.x, ps.pose.position.y, ps.pose.position.z))
 
         if dist > self.max_dist or dist < self.min_dist:
+            rospy.logdebug("Object " + self.object_id + " seen by " + ps.header.frame_id + " is too far (or too close): " + str(dist))
             return
 
         if ps.header.frame_id not in self.meas:

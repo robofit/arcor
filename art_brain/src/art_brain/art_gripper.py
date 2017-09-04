@@ -1,6 +1,7 @@
 from brain_utils import ArtBrainUtils, ArtBrainErrors, ArtBrainErrorSeverities
 import actionlib
-from art_msgs.msg import PickPlaceAction, ArmNavigationAction, ArmNavigationGoal, ArmNavigationResult
+from art_msgs.msg import PickPlaceAction, PickPlaceGoal, PickPlaceResult, \
+    ArmNavigationAction, ArmNavigationGoal, ArmNavigationResult
 from std_srvs.srv import Empty, Trigger, TriggerRequest, TriggerResponse
 import rospy
 
@@ -8,9 +9,10 @@ import rospy
 class ArtGripper(object):
 
     def __init__(self, arm_id, name, pick_place_enabled, drill_enabled, pp_client=None, manipulation_client=None, interaction_on_client=None,
-                 interaction_off_client=None, get_ready_client=None, move_to_user_client=None):
+                 interaction_off_client=None, get_ready_client=None, move_to_user_client=None, gripper_link=None):
         self.arm_id = arm_id
         self.name = name
+        self.gripper_link = gripper_link
 
         self.pp_client_name = pp_client
         self.manip_client_name = manipulation_client
@@ -60,6 +62,12 @@ class ArtGripper(object):
     def re_init(self):
         self.last_pick_instruction_id = None
         self.holding_object = None
+        if self.pp_client is not None:
+            goal = PickPlaceGoal()
+            goal.operation = goal.RESET
+            self.pp_client.send_goal(goal)
+            self.pp_client.wait_for_result()
+            # if self.pp_client.get_result.result == PickPlaceResult.SUCCESS:
 
     def get_ready(self):
         resp = self.get_ready_client.call(TriggerRequest())  # type: TriggerResponse
