@@ -131,6 +131,13 @@ class ArtBrainUtils(object):
             rospy.loginfo("Service " + str(service_name) + " ready")
         return rospy.ServiceProxy(service_name, service_type)
 
+    @staticmethod
+    def normalize_frame_id(frame_id):
+        if frame_id[0] == '/':
+            return frame_id[1:]
+        else:
+            return frame_id
+
 
 class ArtGripper(object):
 
@@ -234,13 +241,6 @@ class ArtGripper(object):
             # TODO: check arm state, inform user
             return False, ArtBrainErrors.ERROR_LEARNING_GRIPPER_INTERACTION_MODE_SWITCH_FAILED
         return True, None
-
-    @staticmethod
-    def normalize_frame_id(frame_id):
-        if frame_id[0] == '/':
-            return frame_id[1:]
-        else:
-            return frame_id
 
 
 class ArtBrainErrorSeverities(IntEnum):
