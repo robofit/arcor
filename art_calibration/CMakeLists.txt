@@ -14,6 +14,15 @@ find_package(catkin REQUIRED COMPONENTS
   roslaunch
 )
 
+find_package(catkin REQUIRED dynamic_reconfigure)
+
+catkin_python_setup()
+
+generate_dynamic_reconfigure_options(
+  cfg/Calibration.cfg
+
+)
+
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES art_cluster_detector
@@ -21,7 +30,7 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
-catkin_python_setup()
+
 
 include_directories(
   ${catkin_INCLUDE_DIRS}

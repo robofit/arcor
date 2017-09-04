@@ -153,7 +153,6 @@ class DobotClient(object):
         place_pose.pose.position.z = obj_type.bbox.dimensions[obj_type.bbox.BOX_Z]
         #  self.get_ready_for_pick_place()
 
-
         transformed_pose = self.tf_listener.transformPose("/base_link", place_pose)
         self.move_to_pose(transformed_pose, 0)
         self.wait_for_final_pose(transformed_pose.pose)
@@ -244,9 +243,9 @@ class DobotClient(object):
 
     def get_pose(self):
         resp = self.get_pose_srv.call(GetPoseRequest())  # type: GetPoseResponse
-        self._dobot_pose.position.x = resp.x/1000.0
-        self._dobot_pose.position.y = resp.y/1000.0
-        self._dobot_pose.position.z = resp.z/1000.0
+        self._dobot_pose.position.x = resp.x / 1000.0
+        self._dobot_pose.position.y = resp.y / 1000.0
+        self._dobot_pose.position.z = resp.z / 1000.0
         self.tf_broadcaster.sendTransform((self._dobot_pose.position.x, self._dobot_pose.position.y,
                                            self._dobot_pose.position.z),
                                           (0, 0, 0, 1), rospy.Time.now(), "suction_cup", "base_link")
