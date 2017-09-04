@@ -1,7 +1,7 @@
 from brain_utils import ArtBrainUtils, ArtBrainErrors, ArtBrainErrorSeverities
 import actionlib
 from art_msgs.msg import PickPlaceAction, ArmNavigationAction, ArmNavigationGoal, ArmNavigationResult
-from std_srvs.srv import Empty, Trigger
+from std_srvs.srv import Empty, Trigger, TriggerRequest, TriggerResponse
 import rospy
 
 
@@ -36,12 +36,12 @@ class ArtGripper(object):
         self.group_name = name
         if interaction_on_client is not None:
             self.interaction_on_client = ArtBrainUtils.create_service_client(
-                interaction_on_client, Empty)
+                interaction_on_client, Trigger)
         else:
             self.interaction_on_client = None
         if interaction_off_client is not None:
             self.interaction_off_client = ArtBrainUtils.create_service_client(
-                interaction_off_client, Empty)
+                interaction_off_client, Trigger)
         else:
             self.interaction_off_client = None
         if get_ready_client is not None:
@@ -62,16 +62,32 @@ class ArtGripper(object):
         self.holding_object = None
 
     def get_ready(self):
-        self.get_ready_client.call()
+        resp = self.get_ready_client.call(TriggerRequest())  # type: TriggerResponse
+        if resp.success:
+            return None, None
+        else:
+            return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED
 
     def move_to_user(self):
-        self.move_to_user_client.call()
+        resp = self.move_to_user_client.call(TriggerRequest())  # type: TriggerResponse
+        if resp.success:
+            return None, None
+        else:
+            return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED
 
     def interaction_on(self):
-        self.interaction_on_client.call()
+        resp = self.interaction_on_client.call(TriggerRequest())  # type: TriggerResponse
+        if resp.success:
+            return None, None
+        else:
+            return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_LEARNING_GRIPPER_INTERACTION_MODE_SWITCH_FAILED
 
     def interaction_off(self):
-        self.interaction_off()
+        resp = self.interaction_off_client.call(TriggerRequest())  # type: TriggerResponse
+        if resp.success:
+            return None, None
+        else:
+            return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_LEARNING_GRIPPER_INTERACTION_MODE_SWITCH_FAILED
 
     def move_through_poses(self, poses):
         if self.manip_client is None:

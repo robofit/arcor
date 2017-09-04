@@ -4,6 +4,7 @@ import abc
 import rospy
 from art_msgs.msg import InterfaceState, PickPlaceGoal
 import math
+from std_srvs.srv import TriggerRequest, TriggerResponse
 
 
 class ArtBrainRobotInterface:
@@ -15,6 +16,8 @@ class ArtBrainRobotInterface:
         self.halted = False
 
     def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False):
+        print "pick_object"
+        print arm_id
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)
@@ -78,7 +81,7 @@ class ArtBrainRobotInterface:
             arm.holding_object = None
             return None, None, arm_id
         else:
-            return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_PLACE_FAILED
+            return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_PLACE_FAILED, None
 
     def move_arm_to_pose(self, pose, arm_id=None):
         if arm_id is None:
@@ -101,7 +104,42 @@ class ArtBrainRobotInterface:
         return
 
     def arm_prepare_for_interaction(self, arm_id=None):
-        return
+        if arm_id is None:
+            for arm in self._arms:  # type: ArtGripper
+                severity, error, arm_id = self.arm_prepare_for_interaction(arm.arm_id)
+                if error is not None:
+                    return severity, error, arm_id
+            else:
+                return None, None, None
+
+        else:
+            arm = self.get_arm_by_id(arm_id)  # type: ArtGripper
+            severity, error = arm.move_to_user()
+            if error is not None:
+                return severity, error, arm_id
+            severity, error = arm.interaction_on()
+            if error is not None:
+                return severity, error, arm_id
+            return None, None, arm_id
+
+    def arm_get_ready_after_interaction(self, arm_id=None):
+        if arm_id is None:
+            for arm in self._arms:  # type: ArtGripper
+                severity, error, arm_id = self.arm_get_ready_after_interaction(arm.arm_id)
+                if error is not None:
+                    return severity, error, arm_id
+            else:
+                return None, None, None
+
+        else:
+            arm = self.get_arm_by_id(arm_id)  # type: ArtGripper
+            severity, error = arm.interaction_off()
+            if error is not None:
+                return severity, error, arm_id
+            severity, error = arm.get_ready()
+            if error is not None:
+                return severity, error, arm_id
+            return None, None, arm_id
 
     def check_arm_for_pick(self, arm):
         severity, error = self.check_arm(arm)
@@ -145,6 +183,10 @@ class ArtBrainRobotInterface:
     def select_arm_for_pick(self, obj_id, objects_frame_id, tf_listener):
         return
 
+    @abc.abstractmethod
+    def select_arm_for_pick_from_feeder(self, pick_pose, tf_listener):
+        return
+
     def select_arm_for_place(self, pick_instruction_ids):
         for arm in self._arms:
             if arm.last_pick_instruction_id in pick_instruction_ids:
@@ -153,6 +195,12 @@ class ArtBrainRobotInterface:
             return None
 
     def get_arm_by_id(self, arm_id):
+        """
+
+        :param arm_id:
+        :return:
+        :rtype ArtGripper
+        """
         for arm in self._arms:
             if arm.arm_id == arm_id:
                 return arm

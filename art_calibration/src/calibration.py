@@ -5,12 +5,17 @@ from art_utils import ArtCalibrationHelper
 from tf import TransformBroadcaster, transformations
 import rospy
 from geometry_msgs.msg import Transform
-from art_calibration import ArtRobotCalibration, ArtCellCalibration
+from art_calibration_cells import ArtRobotCalibration, ArtCellCalibration
 from std_msgs.msg import Bool
 from art_msgs.srv import RecalibrateCell, RecalibrateCellRequest, RecalibrateCellResponse
 from pcl.registration import icp, icp_nl, gicp
 import tf
 from std_msgs.msg import Header
+
+
+from dynamic_reconfigure.server import Server
+from art_calibration.cfg import CalibrationConfig
+
 
 from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 import sensor_msgs.point_cloud2 as pc2
@@ -31,14 +36,12 @@ class ArtCalibration(object):
             self.cells.append(ArtCellCalibration(cell, '/art/' + cell + '/ar_pose_marker',
                                                  '/marker_detected', '/' + cell + '_kinect2_link',
                                                  '/' + cell_names[0] + '_kinect2_link',
-                                                 '/art/' + cell + '/kinect2/qhd/points', self.listener))
-
+                                                 '/art/' + cell + '/kinect2/qhd/pointsHACK', self.listener))  # TODO: kapi hack
         if rospy.get_param("~pr2"):
-
             self.cells.append(ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
                                                   '/marker_detected', '/odom_combined',
                                                   '/' + cell_names[0] + '_kinect2_link',
-                                                  '/pr2/points', self.listener))
+                                                  '/pr2/pointsHACK', self.listener))  # TODO: kapi hack
 
         self.calibrated_pub = rospy.Publisher('/art/system/calibrated', Bool,
                                               queue_size=10, latch=True)
@@ -50,6 +53,8 @@ class ArtCalibration(object):
                                                       self.recalibrate_cell_cb)
 
         self.broadcaster = TransformBroadcaster()
+
+        self.dynamic_reconfigure_srv = Server(CalibrationConfig, self.dynamic_reconfigure_cb)
 
     def recalibrate_cell_cb(self, req):
         resp = RecalibrateCellResponse()
@@ -84,8 +89,19 @@ class ArtCalibration(object):
             self.calibrated.data = True
             self.calibrated_pub.publish(self.calibrated)
 
+    def dynamic_reconfigure_cb(self, config, level):
+
+        for cell in self.cells:  # type: ArtCellCalibration
+            cell.x_offset = config.get(cell.cell_id + "_x_offset", 0)
+            cell.y_offset = config.get(cell.cell_id + "_y_offset", 0)
+            cell.z_offset = config.get(cell.cell_id + "_z_offset", 0)
+            cell.x_rotate_offset = config.get(cell.cell_id + "_x_rotate_offset", 0)
+            cell.y_rotate_offset = config.get(cell.cell_id + "_y_rotate_offset", 0)
+            cell.z_rotate_offset = config.get(cell.cell_id + "_z_rotate_offset", 0)
+        return config
+
     def calculate_icp(self):
-        # print "calculate"
+        print "calculate"
         main_cell = self.cells[0]  # type: ArtRobotCalibration
         for c in self.cells:  # type: ArtRobotCalibration
 
@@ -137,7 +153,7 @@ if __name__ == '__main__':
 
         while not rospy.is_shutdown():
             node.publish_calibration()
-            node.calculate_icp()
+            # node.calculate_icp()
             rate.sleep()
     except rospy.ROSInterruptException:
         pass

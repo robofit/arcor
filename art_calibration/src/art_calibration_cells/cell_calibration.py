@@ -18,6 +18,7 @@ from geometry_msgs.msg import Transform, TransformStamped, Vector3, Quaternion
 import tf
 from std_msgs.msg import Header
 import struct
+from copy import deepcopy
 
 
 class ArtCellCalibration(object):
@@ -48,6 +49,13 @@ class ArtCellCalibration(object):
                                                                  latch=True)
         self.pc_sub = rospy.Subscriber(pc_topic, PointCloud2, self.pc_cb, queue_size=1)
         self.pc_pub = rospy.Publisher("/test_" + str(cell_id), PointCloud2, queue_size=1)
+
+        self.x_offset = 0
+        self.y_offset = 0
+        self.z_offset = 0
+        self.x_rotate_offset = 0
+        self.y_rotate_offset = 0
+        self.z_rotate_offset = 0
 
         if m is not None:
 
@@ -103,7 +111,15 @@ class ArtCellCalibration(object):
 
             return None
 
-        return self.transformation
+        tr = deepcopy(self.transformation)
+        tr.translation[0] += self.x_offset
+        tr.translation[1] += self.y_offset
+        tr.translation[2] += self.z_offset
+        (x, y, z) = transformations.euler_from_quaternion(tr.rotation)
+        tr.rotation = transformations.quaternion_from_euler(x+self.x_rotate_offset,
+                                                            y+self.y_rotate_offset,
+                                                            z+self.z_rotate_offset)
+        return tr
 
     def reset_markers_searching(self):
         self.start_marker_detection()
