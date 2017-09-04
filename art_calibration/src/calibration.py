@@ -37,11 +37,11 @@ class ArtCalibration(object):
                                                  '/marker_detected', '/' + cell + '_kinect2_link',
                                                  '/' + cell_names[0] + '_kinect2_link',
                                                  '/art/' + cell + '/kinect2/qhd/pointsHACK', self.listener))  # TODO: kapi hack
-                if rospy.get_param("~pr2"):
-                    self.cells.append(ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
-                                                          '/marker_detected', '/odom_combined',
-                                                          '/' + cell_names[0] + '_kinect2_link',
-                                                          '/pr2/pointsHACK', self.listener))  # TODO: kapi hack
+        if rospy.get_param("~pr2"):
+            self.cells.append(ArtRobotCalibration('pr2', '/pr2/ar_pose_marker',
+                                                  '/marker_detected', '/odom_combined',
+                                                  '/' + cell_names[0] + '_kinect2_link',
+                                                  '/pr2/pointsHACK', self.listener))  # TODO: kapi hack
 
         self.calibrated_pub = rospy.Publisher('/art/system/calibrated', Bool,
                                               queue_size=10, latch=True)

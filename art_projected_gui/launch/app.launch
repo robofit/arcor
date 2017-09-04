@@ -22,7 +22,7 @@
             <param name="projectors" value="$(arg projectors)"/>
 
             <!-- open window with scene - for debugging purposes (can be controlled using mouse) -->
-            <param name="show_scene" value="true"/>
+            <param name="show_scene" value="false"/>
             <param name="show_touch_points" value="false"/>
 
         </node>

@@ -139,7 +139,7 @@ class ArtBrain(object):
             self.robot = ArtDobotInterface()
         else:
             rospy.signal_shutdown("Robot " + str(self.robot_type) + " unknown")
-                rospy.loginfo("Robot initialized")
+        rospy.loginfo("Robot initialized")
         self.user_status_sub = rospy.Subscriber(
             "/art/user/status", UserStatus, self.user_status_cb)
         self.user_activity_sub = rospy.Subscriber(

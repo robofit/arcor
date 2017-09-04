@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <launch>
 
-    <include file="$(find art_bringup)/launch/nuc.xml">
+    <include file="$(find art_bringup)/setups/$(optenv ARTABLE)/nuc.xml">
       <arg name="machine_name" value="n1"/>
       <arg name="address" value="artable-n1"/>
     </include>
     
-    <include file="$(find art_bringup)/launch/nuc.xml">
+    <include file="$(find art_bringup)/setups/$(optenv ARTABLE)/nuc.xml">
       <arg name="machine_name" value="n2"/>
       <arg name="address" value="artable-n2"/>
     </include>
@@ -15,8 +15,8 @@
     <include file="$(find art_calibration)/launch/art_calibration.launch">
       <arg name="cells" value="n1,n2"/>
       <arg name="pr2" value="true"/>
-      <arg name="x_offset" value="0.15"/>
-      <arg name="y_offset" value="0.06"/>
+      <arg name="x_offset" value="0.215"/>
+      <arg name="y_offset" value="0.125"/>
       <arg name="z_offset" value="0.0"/>
     </include>
 	
