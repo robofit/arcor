@@ -398,11 +398,25 @@ bool artPr2Grasping::addTable(std::string frame_id)
   
   if (!transformPose(ps)) return false;
 
+  geometry_msgs::PoseStamped k1;
+  k1.header.frame_id = "n1_kinect2_link";
+  k1.pose.orientation.w = 1.0;
+
+  if (!transformPose(k1)) return false;
+
+  geometry_msgs::PoseStamped k2; 
+  k2.header.frame_id = "n2_kinect2_link";
+  k2.pose.orientation.w = 1.0;
+
+  if (!transformPose(k2)) return false;
+
   for (int j = 0; j < 3; j++)  // hmm, sometimes the table is not added
   {
       visual_tools_->publishCollisionTable(ps.pose.position.x+0.1-0.75/2, 0, 0, 1.5, ps.pose.position.z, 0.75, "table");
-      visual_tools_->publishCollisionTable(0.5, 1.0, 0, 0.1, 2.0, 1.5, "left-guard");
-      visual_tools_->publishCollisionTable(0.5, -1.0, 0, 0.1, 2.0, 1.5, "right-guard");
+      // visual_tools_->publishCollisionTable(0.5, 1.1, 0, 0.1, 2.0, 1.0, "left-guard");
+      // visual_tools_->publishCollisionTable(0.5, -1.1, 0, 0.1, 2.0, 1.0, "right-guard");
+      visual_tools_->publishCollisionBlock(k1.pose, "kinect-n1", 0.3);
+      visual_tools_->publishCollisionBlock(k2.pose, "kinect-n2", 0.3);
 
     move_group_->setSupportSurfaceName("table");
     ros::Duration(0.1).sleep();
