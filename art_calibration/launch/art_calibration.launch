@@ -5,13 +5,11 @@
     <arg name="y_offset" default="0"/>
     <arg name="z_offset" default="0"/>
     <arg name="cells" default=""/>
-    <arg name="pr2" default="false"/>
     
     <node name="static_tf_marker" pkg="tf" type="static_transform_publisher" args="$(arg x_offset) $(arg y_offset) $(arg z_offset) 0 0 0 /marker /marker_detected 100" />
 
     <node name="art_calibration" pkg="art_calibration" type="calibration.py" respawn="false" output="screen">
       <param name="cells" value="$(arg cells)"/>
-      <param name="pr2" type="bool" value="$(arg pr2)"/>
     </node>
 
-</launch>   
+</launch>
