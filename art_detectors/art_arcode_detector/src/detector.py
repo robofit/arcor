@@ -51,7 +51,7 @@ class ArCodeDetector:
                     object_type = self.art.get_object_type("wood_46_150")
                 elif aid in [60, 61, 62, 63]:
                     object_type = self.art.get_object_type("wood_46_300")
-                        elif aid in [6, 7, 8]:
+                elif aid in [6, 7, 8]:
                     object_type = self.art.get_object_type("placka")
                 else:
                     object_type = self.art.get_object_type("profile_20_60")
