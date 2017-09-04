@@ -33,7 +33,7 @@ from tf import TransformerROS, TransformListener
 import logging
 from transitions import logger
 
-from art_brain.brain_utils import ArtBrainUtils, ArtBrainErrors, ArtBrainErrorSeverities
+from art_brain.brain_utils import ArtBrainUtils, ArtGripper, ArtBrainErrors, ArtBrainErrorSeverities
 from art_brain.art_brain_machine import ArtBrainMachine
 
 
@@ -808,9 +808,6 @@ class ArtBrain(object):
         if error is not None:
             self.fsm.error(severity=severity, error=error)
         else:
-            self.fsm.done(success=True)
-
-        else:
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_PICK_FAILED)
 
@@ -927,6 +924,7 @@ class ArtBrain(object):
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_PICK_FAILED)
             return False
+        """
 
     def place_object_to_pose(self, instruction, update_state_manager=True, get_ready_after_place=False):
         pose = ArtBrainUtils.get_place_pose(instruction)
