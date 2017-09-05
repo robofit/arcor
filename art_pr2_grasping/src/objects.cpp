@@ -23,6 +23,25 @@ Objects::Objects(boost::shared_ptr<tf::TransformListener> tfl,
   visual_tools_->setMuted(false);
 
   visual_tools_->publishRemoveAllCollisionObjects();
+  paused_ = false;
+}
+
+void Objects::setPaused(bool paused) {
+
+    boost::recursive_mutex::scoped_lock lock(mutex_);
+
+    paused_ = paused;
+
+    if (paused) {
+
+        TObjectMap::iterator it;
+        for (it = objects_.begin(); it != objects_.end(); ++it)
+        {
+            if (isGrasped(it->first)) continue;
+            visual_tools_->cleanupCO(it->first);
+        }
+
+    }
 }
 
 void Objects::clear()
@@ -40,6 +59,20 @@ bool Objects::isKnownObject(std::string id)
 
   TObjectMap::iterator it = objects_.find(id);
   return it != objects_.end();
+}
+
+std::vector<std::string> Objects::getObjects() {
+
+    boost::recursive_mutex::scoped_lock lock(mutex_);
+
+    std::vector<std::string> tmp;
+    TObjectMap::iterator it;
+    for (it = objects_.begin(); it != objects_.end(); ++it)
+    {
+        tmp.push_back(it->first);
+    }
+
+    return tmp;
 }
 
 TObjectInfo Objects::getObject(std::string object_id)
@@ -80,6 +113,7 @@ bool Objects::transformPose(geometry_msgs::PoseStamped& ps)
 void Objects::detectedObjectsCallback(
     const art_msgs::InstancesArrayConstPtr& msg)
 {
+
   boost::recursive_mutex::scoped_lock lock(mutex_);
 
   // remove outdated objects
@@ -98,12 +132,10 @@ void Objects::detectedObjectsCallback(
       }
     }
 
-    if (!found)
+    if (!found && !isGrasped(it->first))
     {
       ids_to_remove.push_back(it->first);
-
-      if (!isGrasped(it->first))
-        visual_tools_->cleanupCO(it->first);
+      visual_tools_->cleanupCO(it->first);
     }
   }
 
@@ -149,6 +181,8 @@ void Objects::detectedObjectsCallback(
       objects_[msg->instances[i].object_id].type = srv.response.object_type;
     }
   }
+
+  if (paused_) return;
 
   for (TObjectMap::iterator it = objects_.begin(); it != objects_.end(); ++it)
   {
