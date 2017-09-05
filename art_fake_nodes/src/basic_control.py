@@ -17,16 +17,16 @@ class FakeUserState:
         self.left_arm_mann = False
         self.right_arm_mann = False
 
-        self.left_interaction_on = rospy.Service("/art/pr2/left_arm/interaction/on", Empty, self.left_interaction_on_cb)
-        self.left_interaction_off = rospy.Service("/art/pr2/left_arm/interaction/off", Empty, self.left_interaction_off_cb)
+        self.left_interaction_on = rospy.Service("/art/pr2/left_arm/interaction/on", Trigger, self.left_interaction_on_cb)
+        self.left_interaction_off = rospy.Service("/art/pr2/left_arm/interaction/off", Trigger, self.left_interaction_off_cb)
         self.left_get_ready = rospy.Service("/art/pr2/left_arm/get_ready", Trigger,
                                             self.left_interaction_get_ready_cb)
         self.left_move_to_user = rospy.Service("/art/pr2/left_arm/move_to_user", Trigger,
                                                self.left_interaction_move_to_user_cb)
         self.left_int_pub = rospy.Publisher("/art/pr2/left_arm/interaction/state", Bool, queue_size=1, latch=True)
 
-        self.right_interaction_on = rospy.Service("/art/pr2/right_arm/interaction/on", Empty, self.right_interaction_on_cb)
-        self.right_interaction_off = rospy.Service("/art/pr2/right_arm/interaction/off", Empty, self.right_interaction_off_cb)
+        self.right_interaction_on = rospy.Service("/art/pr2/right_arm/interaction/on", Trigger, self.right_interaction_on_cb)
+        self.right_interaction_off = rospy.Service("/art/pr2/right_arm/interaction/off", Trigger, self.right_interaction_off_cb)
         self.right_get_ready = rospy.Service("/art/pr2/right_arm/get_ready", Trigger,
                                              self.right_interaction_get_ready_cb)
         self.right_move_to_user = rospy.Service("/art/pr2/right_arm/move_to_user", Trigger,
@@ -41,24 +41,26 @@ class FakeUserState:
         self.spine_control_pub = rospy.Publisher("/art/pr2/torso_controller/command", JointTrajectory, queue_size=1)
 
     def left_interaction_on_cb(self,  req):
-
+        resp = TriggerResponse()
         if self.left_arm_mann:
             rospy.logerr('Left arm already in interactive mode')
+            resp.success = False
         else:
             rospy.loginfo('Left arm interactive mode ON')
             self.left_arm_mann = True
-
-        return EmptyResponse()
+            resp.success = True
+        return resp
 
     def left_interaction_off_cb(self,  req):
-
+        resp = TriggerResponse()
         if not self.left_arm_mann:
             rospy.logerr('Left arm already in normal mode')
+            resp.success = False
         else:
             rospy.loginfo('Left arm interactive mode OFF')
             self.left_arm_mann = False
-
-        return EmptyResponse()
+            resp.success = True
+        return resp
 
     def left_interaction_get_ready_cb(self,  req):
 
@@ -82,24 +84,30 @@ class FakeUserState:
         return resp
 
     def right_interaction_on_cb(self,  req):
+        resp = TriggerResponse()
 
         if self.right_arm_mann:
             rospy.logerr('Right arm already in interactive mode')
+            resp.success = False
         else:
             rospy.loginfo('Right arm interactive mode ON')
+            resp.success = True
             self.right_arm_mann = True
 
-        return EmptyResponse()
+        return resp
 
     def right_interaction_off_cb(self,  req):
+        resp = TriggerResponse()
 
         if not self.right_arm_mann:
             rospy.logerr('Right arm already in normal mode')
+            resp.success = False
         else:
             rospy.loginfo('Right arm interactive mode OFF')
+            resp.success = True
             self.right_arm_mann = False
 
-        return EmptyResponse()
+        return resp
 
     def right_interaction_get_ready_cb(self, req):
 
