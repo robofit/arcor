@@ -677,11 +677,13 @@ class ArtBrain(object):
     def state_learning_step_error(self, event):
         rospy.logdebug('Current state: state_learning_step_error')
         severity = event.kwargs.get('severity', ArtBrainErrorSeverities.SEVERE)
-        error = event.kwargs.get('error', None)
+        error = event.kwargs.get('error', ArtBrainErrors.ERROR_UNKNOWN)
         rospy.logdebug("Severity of error: " + str(severity))
         rospy.logdebug("Severity of error: " + str(error))
         self.state_manager.set_error(ArtBrainErrorSeverities.INFO, error)
         self.state_manager.set_error(0, 0)
+        
+        self.state_manager.set_error(severity, error)
         if error is None:
             pass
             # TODO: kill brain
@@ -702,7 +704,6 @@ class ArtBrain(object):
         elif severity == ArtBrainErrorSeverities.INFO:
 
             pass
-        pass
         self.fsm.error_handled()
 
     def state_learning_step_done(self, event):
@@ -823,12 +824,13 @@ class ArtBrain(object):
                 self.fsm.error(severity=severity, error=error)
                 return
             else:
-                self.robot.arms_get_ready([arm_id])
+                if get_ready_after_place:
+                    self.robot.arms_get_ready([arm_id])
                 self.fsm.done(success=True)
                 return
 
     def place_object_to_grid(self, instruction, update_state_manager=True, get_ready_after_place=True):
-
+        rospy.logerr("DO NOT USE, DEPRECATED! (place_object_to_grid in node.py)")
         pose = ArtBrainUtils.get_place_pose(instruction)
 
         if pose is None or len(pose) < 1:
@@ -885,6 +887,8 @@ class ArtBrain(object):
                 return
 
     def place_object(self, obj, place, gripper, pick_only_y_axis=False):
+        rospy.logerr("DO NOT USE, DEPRECATED! (place_object in node.py)")
+        return
         rospy.logdebug(obj)
         goal = PickPlaceGoal()
         goal.operation = goal.PLACE_TO_POSE

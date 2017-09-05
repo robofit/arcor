@@ -67,7 +67,6 @@ class ArtGripper(object):
             goal.operation = goal.RESET
             self.pp_client.send_goal(goal)
             self.pp_client.wait_for_result()
-            # if self.pp_client.get_result.result == PickPlaceResult.SUCCESS:
 
     def get_ready(self):
         resp = self.get_ready_client.call(TriggerRequest())  # type: TriggerResponse
