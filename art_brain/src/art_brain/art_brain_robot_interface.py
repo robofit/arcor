@@ -15,7 +15,7 @@ class ArtBrainRobotInterface:
         self._arms = []
         self.halted = False
 
-    def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False):
+    def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False, feeder=False):
         print "pick_object"
         print arm_id
         if arm_id is None:
@@ -28,7 +28,10 @@ class ArtBrainRobotInterface:
 
         goal = PickPlaceGoal()
         goal.object = obj.object_id
-        goal.operation = goal.PICK_OBJECT_ID
+        if feeder:
+            goal.operation = goal.PICK_FROM_FEEDER
+        else:
+            goal.operation = goal.PICK_OBJECT_ID
         goal.keep_orientation = False
         goal.pick_only_y_axis = pick_only_y_axis
         rospy.logdebug("Picking object with ID: " + str(obj.object_id))

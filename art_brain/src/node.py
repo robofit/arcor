@@ -879,7 +879,7 @@ class ArtBrain(object):
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING)
             return
 
-        severity, error, arm_id = self.robot.pick_object(pick_object, instruction.id, arm_id)
+        severity, error, arm_id = self.robot.pick_object(pick_object, instruction.id, arm_id, feeder=True)
         if error is not None:
             self.fsm.error(severity=severity, error=error)
         else:
