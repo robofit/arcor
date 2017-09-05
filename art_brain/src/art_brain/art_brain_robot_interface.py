@@ -51,8 +51,11 @@ class ArtBrainRobotInterface:
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)  # type: ArtGripper
+        if arm.holding_object is None or arm.holding_object.object_id is None or arm.holding_object.object_id == "":
+            return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_NO_OBJECT_IN_GRIPPER, arm_id
         goal = PickPlaceGoal()
         goal.operation = goal.PLACE_TO_POSE
+
         goal.object = arm.holding_object.object_id
         # TODO (Kapi) check if it is safe to place the object
         #  if not self.check_place_pose(place_pose, obj):
