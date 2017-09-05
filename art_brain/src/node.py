@@ -33,18 +33,16 @@ from tf import TransformerROS, TransformListener
 import logging
 from transitions import logger
 
-from art_brain.brain_utils import ArtBrainUtils, ArtGripper, ArtBrainErrors, ArtBrainErrorSeverities
+from art_brain.brain_utils import ArtBrainUtils, ArtBrainErrors, ArtBrainErrorSeverities
 from art_brain.art_brain_machine import ArtBrainMachine
+from art_brain.art_gripper import ArtGripper
 
 
 # TODO:
 # !!!!!!!!!!!!!!sudo pip install enum34
 
-# pause/resume programu
-# používat obě ramena robota -> done, otestovat na stole
 # při place zkontrolovat place pose (jestli tam není jiný objekt) -> done, otestovat na stole
 
-# action pro provedení naučené instrukce
 
 # update_state_manager - automaticky volat z machine
 
@@ -386,48 +384,7 @@ class ArtBrain(object):
         rospy.logdebug('Current state: state_pick_from_feeder')
         if not self.check_robot():
             return
-        obj = ArtBrainUtils.get_pick_obj_from_feeder(self.instruction)
-        if obj is None:
-            self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
-                           error=ArtBrainErrors.ERROR_OBJECT_NOT_DEFINED)
-            return
-        '''if not self.ph.is_pick_pose_set(self.block_id, self.instruction.id):
-            self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
-                           error=ArtBrainErrors.ERROR_PICK_POSE_NOT_SELECTED)
-            return'''
-        pick_pose = self.instruction.pose[0]
-
-        arm_id = self.robot.select_arm_for_pick(obj.object_id, self.objects.header.frame_id, self.tf_listener)
-        severity, error, arm_id = self.robot.move_arm_to_pose(pick_pose, arm_id)
-        if error is not None:
-            self.fsm.error(severity=severity, error=error)
-            return
-
-        rospy.sleep(2)
-
-        pick_object = None
-        pick_object_dist = None
-        rospy.loginfo("Looking for: " + str(obj.object_type))
-        for inst in self.objects.instances:  # type: ObjInstance
-            if inst.object_type == obj.object_type:
-                ps = PoseStamped()
-                ps.header.frame_id = self.objects.header.frame_id
-                ps.header.stamp = rospy.Time(0)
-                ps.pose = inst.pose
-                # TODO compute transform once and then only apply it
-                ps = self.tf_listener.transformPose(self.robot.get_arm_by_id(arm_id).gripper_link, ps)
-                # distance in x does not matter - we want the object closest to the x-axis of gripper
-                dist = math.sqrt(ps.pose.position.y ** 2 + ps.pose.position.z ** 2)
-                rospy.logdebug("Distance to object ID=" + inst.object_id + " is: " + str(dist))
-                if pick_object is None or (dist < pick_object_dist):
-                    pick_object = inst
-                    pick_object_dist = dist
-        if pick_object is None or pick_object_dist > 0.2:
-            self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
-                           error=ArtBrainErrors.ERROR_OBJECT_MISSING)
-            return
-
-        severity, error, arm_id = self.robot.pick_object(pick_object, arm_id)
+        self.pick_object_from_feeder(self.instruction)
         if error is not None:
             self.fsm.error(severity=severity, error=error)
         else:
@@ -879,66 +836,11 @@ class ArtBrain(object):
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING)
             return
 
-        severity, error, arm_id = self.robot.pick_object(pick_object, instruction.id, arm_id)
+        severity, error, arm_id = self.robot.pick_object(pick_object, instruction.id, arm_id, from_feeder=True)
         if error is not None:
             self.fsm.error(severity=severity, error=error)
         else:
             self.fsm.done(success=True)
-
-        """
-        if not gripper.move_to_pose(pre_grasp_pose):
-            self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
-                           error=ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED)
-            return False
-        rospy.sleep(2)
-        pick_object = None
-        pick_object_dist = None
-
-        rospy.loginfo("Looking for: " + str(obj.object_type))
-        for inst in self.objects.instances:  # type: ObjInstance
-
-            if inst.object_type == obj.object_type:
-
-                ps = PoseStamped()
-                ps.header.frame_id = self.objects.header.frame_id
-                ps.header.stamp = rospy.Time(0)
-                ps.pose = inst.pose
-
-                # TODO compute transform once and then only apply it
-                ps = self.tf_listener.transformPose(gripper.gripper_link, ps)
-
-                # distance in x does not matter - we want the object closest to the x-axis of gripper
-                dist = math.sqrt(ps.pose.position.y**2 + ps.pose.position.z**2)
-
-                if pick_object is None or (dist < pick_object_dist):
-                    pick_object = inst
-                    pick_object_dist = dist
-
-        if pick_object is None or pick_object_dist > 0.2:
-            self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
-                           error=ArtBrainErrors.ERROR_OBJECT_MISSING)
-            return False
-
-        goal = PickPlaceGoal()
-        goal.object = pick_object.object_id
-        goal.operation = goal.PICK_FROM_FEEDER
-        goal.keep_orientation = False
-        rospy.logdebug("Picking object from feeder")
-        gripper.pp_client.send_goal(goal)
-        gripper.pp_client.wait_for_result()
-        # TODO: make some error msg etc
-        rospy.logdebug('Results from p&p server')
-        rospy.logdebug("result: " + str(gripper.pp_client.get_result()))
-        rospy.logdebug("status: " + gripper.pp_client.get_goal_status_text())
-        rospy.logdebug("state: " + str(gripper.pp_client.get_state()))
-
-        if gripper.pp_client.get_result().result == 0:
-            return True
-        else:
-            self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
-                           error=ArtBrainErrors.ERROR_PICK_FAILED)
-            return False
-        """
 
     def place_object_to_pose(self, instruction, update_state_manager=True, get_ready_after_place=False):
         pose = ArtBrainUtils.get_place_pose(instruction)
