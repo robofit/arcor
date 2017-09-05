@@ -961,6 +961,7 @@ class UICoreRos(UICore):
                 # if it is template - save it with new id
                 headers = self.art.get_program_headers()
                 prog = self.ph.get_program()
+                prog.header.readonly = False
                 ids = []
 
                 for h in headers:
