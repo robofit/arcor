@@ -25,7 +25,8 @@ class ArtBrainRobotInterface:
         severity, error = self.check_arm_for_pick(arm)
         if error is not None:
             return severity, error, arm_id
-
+        if obj is None or obj.object_id is None or obj.object_id == "":
+            return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_OBJECT_NOT_DEFINED, arm_id
         goal = PickPlaceGoal()
         goal.object = obj.object_id
         goal.operation = goal.PICK_OBJECT_ID if not from_feeder else goal.PICK_FROM_FEEDER
@@ -99,12 +100,14 @@ class ArtBrainRobotInterface:
     def arms_get_ready(self, arm_ids=None):
         if arm_ids is None:
             for arm in self._arms:
-                arm.get_ready()
+                severity, error = arm.get_ready()
+                if error is not None:
+                    return severity, error, arm.arm_id
         else:
             for arm_id in arm_ids:
                 arm = self.get_arm_by_id(arm_id)
-                arm.get_ready()
-        return
+                return arm.get_ready()
+        return None, None, None
 
     def arm_prepare_for_interaction(self, arm_id=None):
         if arm_id is None:
