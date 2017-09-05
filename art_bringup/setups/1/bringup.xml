@@ -28,10 +28,10 @@
     </include>
 
     <include file="$(find art_touch_driver)/launch/touch.launch">
-        <arg name="calib_x_min" value="0.15"/>
-        <arg name="calib_x_max" value="1.25"/>
-        <arg name="calib_y_min" value="0.1"/>
-        <arg name="calib_y_max" value="0.5"/>
+        <arg name="calib_x_min" value="0.2"/>
+        <arg name="calib_x_max" value="1.3"/>
+        <arg name="calib_y_min" value="0.15"/>
+        <arg name="calib_y_max" value="0.55"/>
     </include>
 
     <node name="art_brain_node" pkg="art_brain" type="node.py" respawn="false" output="screen"/>
