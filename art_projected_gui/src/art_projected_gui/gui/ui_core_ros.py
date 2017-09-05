@@ -753,6 +753,7 @@ class UICoreRos(UICore):
                     "Right arm (0)", "Left arm (0)"], self.save_gripper_pose_cb)
 
             if self.ph.is_object_set(block_id, item_id):
+
                 self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
             else:
                 self.notif(
@@ -1106,10 +1107,17 @@ class UICoreRos(UICore):
             else:
 
                 obj_type = self.art.get_object_type(inst.object_type)
-                self.add_object(inst.object_id, obj_type, inst.pose.position.x, inst.pose.position.y, inst.pose.position.z,
-                                conversions.q2a(inst.pose.orientation), self.object_selected)
-                self.notif(translate("UICoreRos", "New object") +
-                           " ID=" + str(inst.object_id), temp=True)
+
+                if obj_type:
+
+                    self.add_object(inst.object_id, obj_type, inst.pose.position.x, inst.pose.position.y, inst.pose.position.z,
+                                    conversions.q2a(inst.pose.orientation), self.object_selected)
+                    self.notif(translate("UICoreRos", "New object") +
+                               " ID=" + str(inst.object_id), temp=True)
+
+                else:
+
+                    rospy.logerr("Failed to get object type (" + inst.object_type + ") for ID=" + str(inst.object_id))
 
     def polygon_changed(self, pts):
 
