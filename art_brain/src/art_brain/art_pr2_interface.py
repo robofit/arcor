@@ -30,7 +30,7 @@ class ArtPr2Interface(ArtBrainRobotInterface):
             return free_arm
         objects_frame_id = ArtBrainUtils.normalize_frame_id(objects_frame_id)
         if tf_listener.frameExists(
-                "base_link") and tf_listener.frameExists(objects_frame_id):
+                "base_link") and tf_listener.frameExists(ArtBrainUtils.normalize_frame_id(objects_frame_id)):
             if obj is not None:
                 obj_pose = PoseStamped()
                 obj_pose.pose = obj.pose

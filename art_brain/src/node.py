@@ -509,8 +509,12 @@ class ArtBrain(object):
             self.ph.get_program_id(), self.block_id, self.instruction)
         # TODO: call some service to set PR2 to ready position
         # TODO handle if it fails
-        self.robot.arms_get_ready()
-        self.fsm.done(success=True)
+        severity, error, arm_id = self.robot.arms_get_ready()
+        if error is not None:
+            rospy.logerr("Error while geting ready: ", arm_id)
+            self.fsm.error(severity=severity, error=error)
+        else:
+            self.fsm.done(success=True)
 
     def state_program_load_instruction(self, event):
         rospy.logdebug('Current state: state_program_load_instruction')
@@ -584,7 +588,7 @@ class ArtBrain(object):
                 rospy.logwarn("Object is missing")
             elif error == ArtBrainErrors.ERROR_PICK_FAILED:
                 rospy.logwarn("Pick failed")
-                self.robot.arms_get_ready()
+                self.try_robot_arms_get_ready()
                 self.robot.init_arms()
 
             rospy.logwarn("Waiting for user response")
@@ -683,7 +687,6 @@ class ArtBrain(object):
         self.state_manager.set_error(ArtBrainErrorSeverities.INFO, error)
         self.state_manager.set_error(0, 0)
 
-        self.state_manager.set_error(severity, error)
         if error is None:
             pass
             # TODO: kill brain
@@ -698,7 +701,7 @@ class ArtBrain(object):
                 rospy.logwarn("Object is missing")
             elif error == ArtBrainErrors.ERROR_PICK_FAILED:
                 rospy.logwarn("Pick failed")
-                self.robot.arms_get_ready()
+                self.try_robot_arms_get_ready()
                 self.robot.init_arms()
 
         elif severity == ArtBrainErrorSeverities.INFO:
@@ -724,7 +727,7 @@ class ArtBrain(object):
 
         obj = ArtBrainUtils.get_pick_obj_from_polygon(
             instruction, self.objects)
-        if obj is None or obj.object_id is None:
+        if obj is None or obj.object_id is None or obj.object_id == "":
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING_IN_POLYGON)
             if update_state_manager:
@@ -740,7 +743,7 @@ class ArtBrain(object):
         if error is not None:
             self.fsm.error(severity=severity, error=error)
         else:
-            self.robot.arms_get_ready([arm_id])
+            self.try_robot_arms_get_ready([arm_id])
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_PICK_FAILED)
 
@@ -761,7 +764,7 @@ class ArtBrain(object):
         arm_id = self.robot.select_arm_for_pick_from_feeder(pick_pose, self.tf_listener)
         severity, error, arm_id = self.robot.move_arm_to_pose(pick_pose, arm_id)
         if error is not None:
-            self.robot.arms_get_ready([arm_id])
+            self.try_robot_arms_get_ready([arm_id])
             self.fsm.error(severity=severity, error=error)
             return
 
@@ -785,14 +788,14 @@ class ArtBrain(object):
                     pick_object = inst
                     pick_object_dist = dist
         if pick_object is None or pick_object_dist > 0.2:
-            self.robot.arms_get_ready([arm_id])
+            self.try_robot_arms_get_ready([arm_id])
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING)
             return
 
         severity, error, arm_id = self.robot.pick_object(pick_object, instruction.id, arm_id, from_feeder=True)
         if error is not None:
-            self.robot.arms_get_ready([arm_id])
+            self.try_robot_arms_get_ready([arm_id])
             self.fsm.error(severity=severity, error=error)
         else:
             self.fsm.done(success=True)
@@ -820,12 +823,12 @@ class ArtBrain(object):
             arm_id = self.robot.select_arm_for_place(instruction.ref_id)
             severity, error, _ = self.robot.place_object_to_pose(instruction.pose[0], arm_id)
             if error is not None:
-                self.robot.arms_get_ready([arm_id])
+                self.try_robot_arms_get_ready([arm_id])
                 self.fsm.error(severity=severity, error=error)
                 return
             else:
                 if get_ready_after_place:
-                    self.robot.arms_get_ready([arm_id])
+                    self.try_robot_arms_get_ready([arm_id])
                 self.fsm.done(success=True)
                 return
 
@@ -920,6 +923,20 @@ class ArtBrain(object):
             return True
         else:
             return False
+
+    def try_robot_arms_get_ready(self, max_attempts=3, arm_ids=None):
+        attempt = 0
+        while True:
+            if attempt >= max_attempts:
+                rospy.logerr("Failed to get ready")
+                return False
+            severity, error, arm_id = self.robot.arms_get_ready()
+            if error is not None:
+                attempt += 1
+                rospy.logwarn("Error while getting ready: ", arm_id, " , attempt: ", attempt)
+                continue
+            else:
+                return True
 
     # ***************************************************************************************
     #                                        OTHERS
@@ -1297,7 +1314,7 @@ class ArtBrain(object):
             return
 
         if self.robot.is_halted() and not req.data:
-            self.robot.arms_get_ready()
+            self.try_robot_arms_get_ready()
 
         self.robot.set_halted(req.data)
 
@@ -1356,6 +1373,8 @@ class ArtBrain(object):
         self.state_manager.send()
 
         if goal.request == LearningRequestGoal.GET_READY:
+
+            self.state_manager.state.edit_enabled = True
 
             if self.fsm.is_learning_run:
                 if instruction.type == instruction.PICK_OBJECT_ID:
