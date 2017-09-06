@@ -88,7 +88,13 @@ class ProgramListItem(Item):
             pid = self.map_from_idx_to_program_id[self.list.selected_item_idx]
             self.run_btn.setEnabled(self.learned_dict[pid])
 
-            self.edit_btn.set_enabled(True)
+            for ph in self.program_headers:
+
+                if ph.id == pid:
+
+                    self.edit_btn.set_enabled(not ph.readonly)
+                    break
+
             self.template_btn.set_enabled(True)
 
     def get_current_header(self):

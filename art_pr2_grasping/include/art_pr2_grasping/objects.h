@@ -44,9 +44,13 @@ public:
 
   TObjectInfo getObject(std::string object_id);  // TODO(ZdenekM) return pointer?
 
+  std::vector<std::string> getObjects();
+
   void setGrasped(std::string object_id, bool grasped);
 
   void clear();
+
+  void setPaused(bool paused);
 
 private:
   std::string objects_frame_id_;
@@ -67,6 +71,9 @@ private:
   moveit_visual_tools::VisualToolsPtr visual_tools_;
 
   std::set<std::string> grasped_objects_;
+
+  bool paused_;
+
 };
 
 }  // namespace art_pr2_grasping

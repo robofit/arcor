@@ -274,7 +274,7 @@ std::string artPr2Grasping::getPlanningFrame()
 
 bool artPr2Grasping::hasGraspedObject() { return grasped_object_; }
 
-bool artPr2Grasping::pick(const std::string& object_id, bool pick_only_y_axis, bool feeder)
+bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
 {
   if (hasGraspedObject())
   {
@@ -310,10 +310,55 @@ bool artPr2Grasping::pick(const std::string& object_id, bool pick_only_y_axis, b
   // objects_[id].bb.dimensions[2]);
 
   if (!simple_grasps_->generateShapeGrasps(obj.type.bbox, true, true, p,
-                                           grasp_data_, grasps, pick_only_y_axis))
+                                           grasp_data_, grasps))
   {
     ROS_ERROR_NAMED(group_name_, "No grasps found.");
     return false;
+  }
+
+  look_at(p);
+  objects_->setPaused(true);
+
+  if (feeder) {
+
+      // remove side (checked in object coordinates) and top grasps (checked in planning frame)
+
+      std::vector<moveit_msgs::Grasp> tmp;
+
+      for (int i = 0; i < grasps.size(); i++) {
+
+        geometry_msgs::PoseStamped pp = grasps[i].grasp_pose;
+
+          try
+          {
+            if (tfl_->waitForTransform("object_id_" + object_id, pp.header.frame_id,
+                                       pp.header.stamp, ros::Duration(1.0)))
+            {
+              tfl_->transformPose("object_id_" + object_id, pp, pp);
+            }
+            else
+            {
+              continue;
+            }
+          }
+          catch (tf::TransformException& ex)
+          {
+            ROS_ERROR_NAMED(group_name_, "TF exception: %s",
+                            std::string(ex.what()).c_str());
+            continue;
+          }
+
+        if (abs(pp.pose.position.z) < obj.type.bbox.dimensions[2]/2.0 && abs(grasps[i].grasp_pose.pose.position.z-obj.pose.pose.position.z) < obj.type.bbox.dimensions[0]/2) {
+
+            tmp.push_back(grasps[i]);
+
+        }
+      }
+
+      ROS_INFO_NAMED(group_name_, "%d grasps out of %d pruned out as not feasible for pick from feeder.", grasps.size() - tmp.size(), grasps.size());
+
+      grasps = tmp;
+
   }
 
   // todo fix this (No kinematic solver found)
@@ -331,8 +376,6 @@ bool artPr2Grasping::pick(const std::string& object_id, bool pick_only_y_axis, b
     ROS_ERROR_NAMED(group_name_, "No feasible grasps found.");
     return false;
   }
-
-  look_at(p);
 
   // visualization only - takes time
   /*if (!groups_[group]->visual_tools_->publishAnimatedGrasps(grasps,
@@ -353,18 +396,10 @@ bool artPr2Grasping::pick(const std::string& object_id, bool pick_only_y_axis, b
   grasped_object_ = boost::make_shared<TObjectInfo>(obj);
   grasped_object_->object_id = object_id;
 
-  if (feeder) {
-      visual_tools_->cleanupCO("force-side-grasp-co");
-      geometry_msgs::PoseStamped pao = p;
-      pao.pose.position.z += 0.1;
-      visual_tools_->publishCollisionBlock(pao.pose, "force-side-grasp-co", 0.05);
-  }
-
   if (!move_group_->pick(object_id, grasps))
   {
     ROS_WARN_NAMED(group_name_, "Failed to pick");
     grasped_object_.reset();
-    visual_tools_->cleanupCO("force-side-grasp-co");
     return false;
   }
 
@@ -376,13 +411,11 @@ bool artPr2Grasping::pick(const std::string& object_id, bool pick_only_y_axis, b
     grasped_object_.reset();
     ROS_ERROR_NAMED(group_name_,
                     "Gripper is closed - object missed or dropped :-(");
-    visual_tools_->cleanupCO("force-side-grasp-co");
     return false;
   }
 
   ROS_INFO_NAMED(group_name_, "Picked the object.");
   publishObject(object_id);
-  visual_tools_->cleanupCO("force-side-grasp-co");
   return true;
 }
 
@@ -412,7 +445,7 @@ bool artPr2Grasping::addTable(std::string frame_id)
 
   for (int j = 0; j < 3; j++)  // hmm, sometimes the table is not added
   {
-      visual_tools_->publishCollisionTable(ps.pose.position.x+0.1-0.75/2, 0, 0, 1.5, ps.pose.position.z, 0.75, "table");
+      visual_tools_->publishCollisionTable(ps.pose.position.x-0.75/2, 0, 0, 1.5, ps.pose.position.z, 0.75, "table");
       // visual_tools_->publishCollisionTable(0.5, 1.1, 0, 0.1, 2.0, 1.0, "left-guard");
       // visual_tools_->publishCollisionTable(0.5, -1.1, 0, 0.1, 2.0, 1.0, "right-guard");
       visual_tools_->publishCollisionBlock(k1.pose, "kinect-n1", 0.3);

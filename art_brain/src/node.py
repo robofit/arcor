@@ -1368,6 +1368,7 @@ class ArtBrain(object):
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
 
         self.state_manager.state.edit_enabled = False
+        self.state_manager.send()
 
         if goal.request == LearningRequestGoal.GET_READY:
 
@@ -1389,7 +1390,8 @@ class ArtBrain(object):
                 elif instruction.type == instruction.PLACE_TO_GRID:
                     self.fsm.place_to_grid()
                 result.success = True
-
+                self.state_manager.state.edit_enabled = True
+                self.state_manager.send()
                 self.as_learning_request.set_succeeded(result)
                 return
             else:
@@ -1430,11 +1432,10 @@ class ArtBrain(object):
             # Great!
             result.success = True
 
-            self.as_learning_request.set_succeeded(result)
             self.fsm.done()
+            self.as_learning_request.set_succeeded(result)
             return
 
-        self.state_manager.send()
         result.success = False
         result.message = "Unkwnown request"
 
