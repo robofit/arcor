@@ -72,7 +72,7 @@ class ArtBrainRobotInterface:
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.header.frame_id = objects_frame_id
         # TODO: how to deal with this?
-        goal.pose.pose.position.z = 0.09  # + obj.bbox.dimensions[2]/2
+        goal.pose.pose.position.z += 0.03
 
         if pick_only_y_axis:
             goal.pose.pose.orientation.x = math.sqrt(0.5)
