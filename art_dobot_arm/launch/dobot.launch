@@ -10,7 +10,7 @@
     <node pkg="dobot" type="DobotServer" name="dobot_arm_server"
         args="$(arg dobot_port)" if="$(arg run_dobot_server)" respawn="true" />
 
-    <node ns="/art/dobot/" name="dobot_arm_client" pkg="art_dobot_arm"
+    <node ns="/art/robot/" name="dobot_arm_client" pkg="art_dobot_arm"
         type="dobot_client.py" output="screen" respawn="false" />
 
     <node pkg="tf" type="static_transform_publisher" name="dobot_broadcaster"

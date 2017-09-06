@@ -8,34 +8,33 @@ import rospy
 
 class ArtGripper(object):
 
-    def __init__(self, arm_id, name, pick_place_enabled, drill_enabled, pp_client=None, manipulation_client=None, interaction_on_client=None,
+    def __init__(self, arm_id, drill_enabled, pp_client=None, manipulation_client=None, interaction_on_client=None,
                  interaction_off_client=None, get_ready_client=None, move_to_user_client=None, gripper_link=None):
         self.arm_id = arm_id
-        self.name = name
         self.gripper_link = gripper_link
 
         self.pp_client_name = pp_client
         self.manip_client_name = manipulation_client
-        if pick_place_enabled:
+        self.drill_enabled = drill_enabled
+        if pp_client is not None:
             self.pp_client = actionlib.SimpleActionClient(
                 self.pp_client_name, PickPlaceAction)
-            rospy.loginfo("Waiting for " + str(name) + "'s gripper pick&place action client")
+            rospy.loginfo("Waiting for " + str(arm_id) + "'s gripper pick&place action client")
             self.pp_client.wait_for_server()
-            rospy.loginfo("Connected to " + str(name) + "'s gripper pick&place action client")
+            rospy.loginfo("Connected to " + str(arm_id) + "'s gripper pick&place action client")
         else:
             self.pp_client = None
-        if drill_enabled:
+        if manipulation_client is not None:
             self.manip_client = actionlib.SimpleActionClient(
                 self.manip_client_name, ArmNavigationAction)
-            rospy.loginfo("Waiting for " + str(name) + "'s gripper manipulation action client")
+            rospy.loginfo("Waiting for " + str(arm_id) + "'s gripper manipulation action client")
             self.manip_client.wait_for_server()
-            rospy.loginfo("Connected to " + str(name) + "'s gripper pick&place action client")
+            rospy.loginfo("Connected to " + str(arm_id) + "'s gripper pick&place action client")
         else:
             self.manip_client = None
 
         self.holding_object = None
         self.last_pick_instruction_id = None
-        self.group_name = name
         if interaction_on_client is not None:
             self.interaction_on_client = ArtBrainUtils.create_service_client(
                 interaction_on_client, Trigger)
@@ -57,7 +56,7 @@ class ArtGripper(object):
         else:
             self.move_to_user_client = None
 
-        rospy.loginfo("Arm " + str(name) + " ready.")
+        rospy.loginfo("Arm " + str(arm_id) + " ready.")
 
     def re_init(self):
         self.last_pick_instruction_id = None
@@ -69,6 +68,8 @@ class ArtGripper(object):
             self.pp_client.wait_for_result()
 
     def get_ready(self):
+        if self.get_ready_client is None:
+            return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_NOT_IMPLEMENTED
         resp = self.get_ready_client.call(TriggerRequest())  # type: TriggerResponse
         if resp.success:
             return None, None
@@ -76,6 +77,8 @@ class ArtGripper(object):
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED
 
     def move_to_user(self):
+        if self.move_to_user_client is None:
+            return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_NOT_IMPLEMENTED
         resp = self.move_to_user_client.call(TriggerRequest())  # type: TriggerResponse
         if resp.success:
             return None, None
@@ -83,6 +86,8 @@ class ArtGripper(object):
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED
 
     def interaction_on(self):
+        if self.interaction_on_client is None:
+            return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_NOT_IMPLEMENTED
         resp = self.interaction_on_client.call(TriggerRequest())  # type: TriggerResponse
         if resp.success:
             return None, None
@@ -90,6 +95,8 @@ class ArtGripper(object):
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_LEARNING_GRIPPER_INTERACTION_MODE_SWITCH_FAILED
 
     def interaction_off(self):
+        if self.interaction_off_client is None:
+            return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_NOT_IMPLEMENTED
         resp = self.interaction_off_client.call(TriggerRequest())  # type: TriggerResponse
         if resp.success:
             return None, None
@@ -112,6 +119,8 @@ class ArtGripper(object):
 
     def touch_poses(self, object_id, poses, drill_duration=0):
         if self.manip_client is None:
+            return False
+        if not self.drill_enabled and drill_duration > 0:
             return False
         goal = ArmNavigationGoal()
         goal.object = object_id

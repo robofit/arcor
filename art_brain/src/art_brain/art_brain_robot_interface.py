@@ -11,9 +11,27 @@ class ArtBrainRobotInterface:
 
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self):
+    def __init__(self, robot_parameters, robot_ns):
         self._arms = []
         self.halted = False
+        for arm_id, parameters in robot_parameters.get("arms", []).iteritems():
+            pp = parameters.get("capabilities", {}).get("pick_place", False)
+            manipulation = parameters.get("capabilities", {}).get("manipulation", False)
+            move_to_user = parameters.get("capabilities", {}).get("move_to_user", False)
+            interactive_mode = parameters.get("capabilities", {}).get("interactive_mode", False)
+            get_ready = parameters.get("capabilities", {}).get("get_ready", False)
+            drill_enabled = parameters.get("capabilities", {}).get("drill", False)
+
+            gripper_link = parameters.get("gripper_link", None)
+            self._arms.append(ArtGripper(arm_id,
+                                         drill_enabled=drill_enabled,
+                                         pp_client=robot_ns + "/" + arm_id + "/pp" if pp else None,
+                                         manipulation_client=robot_ns + "/" + arm_id + "/manipulation" if manipulation else None,
+                                         move_to_user_client=robot_ns + "/" + arm_id + "/move_to_user" if move_to_user else None,
+                                         interaction_on_client=robot_ns + "/" + arm_id + "/interaction/on" if interactive_mode else None,
+                                         interaction_off_client=robot_ns + "/" + arm_id + "/interaction/off" if interactive_mode else None,
+                                         get_ready_client=robot_ns + "/" + arm_id + "/get_ready" if get_ready else None,
+                                         gripper_link=gripper_link))
 
     def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False, from_feeder=False):
         print "pick_object"

@@ -39,9 +39,13 @@ from art_brain.art_gripper import ArtGripper
 
 
 # TODO:
-# !!!!!!!!!!!!!!sudo pip install enum34
+# service pro reinicializaci ruky/rukou robota, vraceni do vychozi pozice, emergency stop
+# pri startu zjistit co si robot myslí že drží za objekty
+# zmenit interface z /art/pr2,/art/dobot na univerzalni /art/robot
+# koukat tam kam se bude pohybovat ruka
+# zjistovat jestli drzim objekt predtim nez zacnu neco vykonavat (typicky pick from feeder)
 
-# při place zkontrolovat place pose (jestli tam není jiný objekt) -> done, otestovat na stole
+# při place zkontrolovat place pose (jestli tam není jiný objekt)
 
 
 # update_state_manager - automaticky volat z machine
@@ -119,26 +123,20 @@ class ArtBrain(object):
 
         rospy.loginfo('Waiting for other nodes to come up...')
 
-        self.show_marker_service = rospy.get_param(
-            'show_marker_service', '/art/interface/projected_gui/show_marker')
-        self.hide_marker_service = rospy.get_param(
-            'hide_marker_service', '/art/interface/projected_gui/hide_marker')
-        self.table_localize_action = rospy.get_param(
-            'table_localize_action', '/umf_localizer_node_table/localize')
-        self.pr2_localize_action = rospy.get_param(
-            'pr2_localize_action', '/umf_localizer_node/localize')
+        self.robot_ns = rospy.get_param("robot_ns", "/art/robot")
 
-        self.calibrate_pr2 = rospy.get_param('calibrate_pr2', False)
-        self.calibrate_table = rospy.get_param('calibrate_table', False)
-        self.robot_type = rospy.get_param('robot_type', "pr2")  # TODO how to set param from command line? robot_type:=pr2 does not work...
+        self.robot_parameters = rospy.get_param(self.robot_ns)
+        self.robot_type = rospy.get_param(self.robot_ns + "/robot_id", "")
 
         if self.robot_type == "pr2":
-            self.robot = ArtPr2Interface()
+            self.robot = ArtPr2Interface(self.robot_parameters, self.robot_ns)
         elif self.robot_type == "dobot":
-            self.robot = ArtDobotInterface()
+            self.robot = ArtDobotInterface(self.robot_parameters, self.robot_ns)
         else:
+            rospy.logerr("Robot " + str(self.robot_type) + " unknown")
             rospy.signal_shutdown("Robot " + str(self.robot_type) + " unknown")
             return
+
         rospy.loginfo("Robot initialized")
         self.user_status_sub = rospy.Subscriber(
             "/art/user/status", UserStatus, self.user_status_cb)

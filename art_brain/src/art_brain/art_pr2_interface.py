@@ -11,18 +11,18 @@ class ArtPr2Interface(ArtBrainRobotInterface):
     LEFT_ARM = 0
     RIGHT_ARM = 1
 
-    def __init__(self, gripper_usage=BOTH_ARM):
+    def __init__(self, robot_parameters, robot_ns, gripper_usage=BOTH_ARM):
 
-        super(ArtPr2Interface, self).__init__()
+        super(ArtPr2Interface, self).__init__(robot_parameters, robot_ns)
         self.gripper_usage = gripper_usage
-        self._arms = [
+        '''self._arms = [
             ArtGripper(self.LEFT_ARM, "PR2 Left", True, True, "/art/pr2/left_arm/pp", "/art/pr2/left_arm/manipulation",
                        "/art/pr2/left_arm/interaction/on", "/art/pr2/left_arm/interaction/off",
                        "/art/pr2/left_arm/get_ready", "/art/pr2/left_arm/move_to_user", gripper_link="l_gripper_tool_frame"),
             ArtGripper(self.RIGHT_ARM, "PR2 Right", True, True, "/art/pr2/right_arm/pp", "/art/pr2/right_arm/manipulation",
                        "/art/pr2/right_arm/interaction/on", "/art/pr2/right_arm/interaction/off",
                        "/art/pr2/right_arm/get_ready", "/art/pr2/right_arm/move_to_user", gripper_link="r_gripper_tool_frame")
-        ]
+        ]'''
 
     def select_arm_for_pick(self, obj, objects_frame_id, tf_listener):
         free_arm = self.select_free_arm()

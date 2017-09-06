@@ -31,7 +31,7 @@ class TimeoutException(Exception):
 class DobotClient(object):
 
     def __init__(self):
-        self.get_ready_srv = rospy.Service("get_ready", Trigger, self.get_ready_cb)
+        self.get_ready_srv = rospy.Service("arm/get_ready", Trigger, self.get_ready_cb)
 
         self.get_object_type_srv = rospy.ServiceProxy("/art/db/object_type/get", getObjectType)
 
@@ -50,10 +50,10 @@ class DobotClient(object):
                                                            SetPTPCoordinateParams)
         self.set_ptp_jump_params_srv = rospy.ServiceProxy("/DobotServer/SetPTPJumpParams", SetPTPJumpParams)
         self.set_ptp_common_params_srv = rospy.ServiceProxy("/DobotServer/SetPTPCommonParams", SetPTPCommonParams)
-        self._action_name = "pp_client"
+        self._action_name = "arm/pp"
         self._as = actionlib.SimpleActionServer(self._action_name, PickPlaceAction, self.pick_place_cb, True)
 
-        self.move_to_sub = rospy.Subscriber("move_to", PoseStamped, self.move_to_cb, queue_size=100)
+        self.move_to_sub = rospy.Subscriber("arm/move_to", PoseStamped, self.move_to_cb, queue_size=100)
         self.object_sub = rospy.Subscriber("/art/object_detector/object_filtered", InstancesArray, self.objects_cb,
                                            queue_size=1)
 
