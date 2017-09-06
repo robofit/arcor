@@ -14,7 +14,7 @@ artActionServer::artActionServer(boost::shared_ptr<tf::TransformListener> tfl,
                                        gripper_state_topic)
 {
   as_.reset(new actionlib::SimpleActionServer<art_msgs::PickPlaceAction>(
-      nh_, "/art/pr2/" + group_name_ + "/pp",
+      nh_, "/art/robot/" + group_name_ + "/pp",
       boost::bind(&artActionServer::executeCB, this, _1), false));
 }
 
