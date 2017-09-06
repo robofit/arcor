@@ -68,6 +68,9 @@ artPr2Grasping::artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl,
   grasped_object_pub_ = nh_.advertise<art_msgs::ObjInstance>(
       "/art/pr2/" + group_name_ + "/grasped_object", 1, true);
 
+  place_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>(
+      "/art/pr2/" + group_name_ + "/debug/place_pose", 1, true);
+
   look_at_pub_ = nh_.advertise<geometry_msgs::PointStamped>(
       "/art/pr2/look_at", 10);
 
@@ -161,11 +164,17 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
                               bb.dimensions[0], bb.dimensions[1],
                               bb.dimensions[2]);
 
-  if (z_axis_angle_increment < 0)
+  /*if (z_axis_angle_increment < 0)
     z_axis_angle_increment *= -1.0;  // only positive increment allowed
   if (z_axis_angle_increment == 0)
     z_axis_angle_increment =
-        2 * M_PI;  // for 0 we only want one cycle (only given orientation)
+        2 * M_PI;  // for 0 we only want one cycle (only given orientation)*/
+
+  z_axis_angle_increment = M_PI;
+
+  geometry_msgs::PoseArray arr;
+  arr.header.frame_id = getPlanningFrame();
+  arr.header.stamp = ros::Time::now();
 
   // Create 360 degrees of place location rotated around a center
   for (double angle = 0; angle < 2 * M_PI; angle += z_axis_angle_increment)
@@ -173,12 +182,22 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
     geometry_msgs::PoseStamped pps = pose_stamped;
 
     // Orientation
-    tf::Quaternion tfq2 = tf::createQuaternionFromYaw(angle);
+    tf::Quaternion tfq2 = tf::Quaternion(0, 0.707, 0, 0.707); // tf::createQuaternionFromRPY(angle, 0, 0);
 
     tf::Quaternion tfq1;
     tf::quaternionMsgToTF(pps.pose.orientation, tfq1);
 
+    tf::Matrix3x3 m(tfq1);
+    double roll, pitch, yaw;
+    m.getEulerYPR(yaw, pitch, roll);
+
+    tfq1 = tf::createQuaternionFromYaw(yaw + angle + M_PI/2);
+
+    std::cout << "yaw: " << yaw << " angle: " << angle << std::endl;
+
     tf::quaternionTFToMsg(tfq1 * tfq2, pps.pose.orientation);
+
+    arr.poses.push_back(pps.pose);
 
     // Create new place location
     moveit_msgs::PlaceLocation place_loc;
@@ -233,6 +252,8 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
 
     place_locations.push_back(place_loc);
   }
+
+  place_pose_pub_.publish(arr);
 
   if (keep_orientation)
   {
