@@ -32,9 +32,6 @@ bool artActionServer::init()
     return false;
   }
 
-  if (!getReady())
-    return false;
-
   as_->start();
   return true;
 }
@@ -56,6 +53,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
   {
   case art_msgs::PickPlaceGoal::RESET:
   {
+    move_group_->detachObject();
     grasped_object_.reset();
     objects_->clear();
 

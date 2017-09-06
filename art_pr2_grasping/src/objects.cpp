@@ -47,8 +47,13 @@ void Objects::setPaused(bool paused) {
 void Objects::clear()
 {
   boost::recursive_mutex::scoped_lock lock(mutex_);
-  visual_tools_->publishRemoveAllCollisionObjects();
 
+  for (std::set<std::string>::iterator i = grasped_objects_.begin(); i != grasped_objects_.end(); ++i)
+    {
+    visual_tools_->cleanupACO(*i);
+  }
+
+  visual_tools_->publishRemoveAllCollisionObjects();
   objects_.clear();
   grasped_objects_.clear();
 }

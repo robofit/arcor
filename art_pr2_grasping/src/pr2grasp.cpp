@@ -65,7 +65,7 @@ artPr2Grasping::artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl,
   grasp_filter_.reset(
       new moveit_simple_grasps::GraspFilter(robot_state, visual_tools_));
 
-  grasped_object_pub_ = nh_.advertise<std_msgs::String>(
+  grasped_object_pub_ = nh_.advertise<art_msgs::ObjInstance>(
       "/art/pr2/" + group_name_ + "/grasped_object", 1, true);
 
   look_at_pub_ = nh_.advertise<geometry_msgs::PointStamped>(
@@ -74,11 +74,12 @@ artPr2Grasping::artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl,
   publishObject();
 }
 
-void artPr2Grasping::publishObject(std::string object_id)
+void artPr2Grasping::publishObject(TObjectInfo obj)
 {
-  std_msgs::String msg;
-  msg.data = object_id;
-  grasped_object_pub_.publish(msg);
+    art_msgs::ObjInstance inst;
+    inst.object_id = obj.object_id;
+    inst.object_type = obj.type.name;
+    grasped_object_pub_.publish(inst);
 }
 
 bool artPr2Grasping::transformPose(geometry_msgs::PoseStamped& ps)
@@ -415,7 +416,7 @@ bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
   }
 
   ROS_INFO_NAMED(group_name_, "Picked the object.");
-  publishObject(object_id);
+  publishObject(obj);
   return true;
 }
 

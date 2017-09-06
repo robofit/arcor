@@ -17,6 +17,7 @@
 #include <std_msgs/String.h>
 #include <geometry_msgs/PointStamped.h>
 #include <pr2_controllers_msgs/JointControllerState.h>
+#include "art_msgs/ObjInstance.h"
 
 // adapted from
 // https://github.com/davetcoleman/baxter_cpp/blob/hydro-devel/baxter_pick_place/src/block_pick_place.cpp
@@ -33,8 +34,6 @@ private:
   // data for generating grasps
   moveit_simple_grasps::GraspData grasp_data_;
 
-  boost::shared_ptr<move_group_interface::MoveGroup> move_group_;
-
   moveit_simple_grasps::GraspFilterPtr grasp_filter_;
   planning_scene_monitor::PlanningSceneMonitorPtr planning_scene_monitor_;
 
@@ -46,9 +45,12 @@ private:
   std::string default_target_;
   std::string gripper_state_topic_;
 
-  void publishObject(std::string object_id = "");
+  void publishObject(TObjectInfo obj = TObjectInfo());
 
 protected:
+
+  boost::shared_ptr<move_group_interface::MoveGroup> move_group_;
+
   ros::NodeHandle nh_;
 
   std::string group_name_;
@@ -79,6 +81,7 @@ public:
   bool pick(const std::string& object_id, bool feeder=false);
 
   bool addTable(std::string frame_id);
+
 };
 }  // namespace art_pr2_grasping
 #endif  // ART_PR2_GRASPING_PR2GRASP_H
