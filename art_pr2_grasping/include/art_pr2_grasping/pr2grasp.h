@@ -16,6 +16,8 @@
 #include "art_pr2_grasping/objects.h"
 #include <std_msgs/String.h>
 #include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/Pose.h>
 #include <pr2_controllers_msgs/JointControllerState.h>
 #include "art_msgs/ObjInstance.h"
 
@@ -39,8 +41,7 @@ private:
 
   ros::Publisher grasped_object_pub_;
   ros::Publisher look_at_pub_;
-
-  boost::shared_ptr<tf::TransformListener> tfl_;
+  ros::Publisher place_pose_pub_;
 
   std::string default_target_;
   std::string gripper_state_topic_;
@@ -48,6 +49,8 @@ private:
   void publishObject(TObjectInfo obj = TObjectInfo());
 
 protected:
+
+  boost::shared_ptr<tf::TransformListener> tfl_;
 
   boost::shared_ptr<move_group_interface::MoveGroup> move_group_;
 

@@ -45,10 +45,10 @@ class ArtPr2Interface(ArtBrainRobotInterface):
                 obj_pose = tf_listener.transformPose(
                     'base_link', obj_pose)
                 if obj_pose.pose.position.y < 0:
-                    return self.RIGHT_ARM
+                    return "right_arm"
                 else:
-                    return self.LEFT_ARM
-        return self.LEFT_ARM
+                    return "left_arm"
+        return "left_arm"
 
     def select_arm_for_pick_from_feeder(self, pick_pose, tf_listener):
         pick_pose.header.frame_id = ArtBrainUtils.normalize_frame_id(pick_pose.header.frame_id)
@@ -70,16 +70,16 @@ class ArtPr2Interface(ArtBrainRobotInterface):
         obj_pose = tf_listener.transformPose(
             'base_link', pick_pose)
         if obj_pose.pose.position.y < 0:
-            return self.RIGHT_ARM
+            return "right_arm"
         else:
-            return self.LEFT_ARM
-        return None
+            return "left_arm"
+        return "left_arm"
 
     def select_free_arm(self):
-        left_arm = self._arms[self.LEFT_ARM] if self.gripper_usage in [self.BOTH_ARM,
-                                                                       self.LEFT_ARM] else None  # type: ArtGripper
-        right_arm = self._arms[self.RIGHT_ARM] if self.gripper_usage in [self.BOTH_ARM,
-                                                                         self.RIGHT_ARM] else None  # type: ArtGripper
+        left_arm = self.get_arm_by_id("left_arm") if self.gripper_usage in [self.BOTH_ARM,
+                                                                            self.LEFT_ARM] else None  # type: ArtGripper
+        right_arm = self.get_arm_by_id("right_arm") if self.gripper_usage in [self.BOTH_ARM,
+                                                                              self.RIGHT_ARM] else None  # type: ArtGripper
         if left_arm is None and right_arm is None:
             return None
 
@@ -87,17 +87,17 @@ class ArtPr2Interface(ArtBrainRobotInterface):
             if left_arm.holding_object:
                 return None
             else:
-                return self.LEFT_ARM
+                return left_arm.arm_id
         elif self.gripper_usage == self.RIGHT_ARM:
             if left_arm.holding_object:
                 return None
             else:
-                return self.RIGHT_ARM
+                return right_arm.arm_id
         elif self.gripper_usage == self.BOTH_ARM:
             if left_arm.holding_object and not right_arm.holding_object:
-                return right_arm
+                return right_arm.arm_id
             elif not left_arm.holding_object and right_arm.holding_object:
-                return left_arm
+                return left_arm.arm_id
             elif left_arm.holding_object and right_arm.holding_object:
                 return None
         return self.BOTH_ARM

@@ -90,7 +90,7 @@ class ArtBrainRobotInterface:
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.header.frame_id = objects_frame_id
         # TODO: how to deal with this?
-        goal.pose.pose.position.z = 0.09  # + obj.bbox.dimensions[2]/2
+        goal.pose.pose.position.z += 0.03
 
         if pick_only_y_axis:
             goal.pose.pose.orientation.x = math.sqrt(0.5)
@@ -109,6 +109,8 @@ class ArtBrainRobotInterface:
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)
+        print arm_id
+        print arm
 
         if not arm.move_to_pose(pose):
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED, arm_id

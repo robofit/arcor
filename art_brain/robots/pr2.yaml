@@ -8,6 +8,7 @@ arms:
       interactive_mode: yes
       manipulation: yes
       move_to_user: yes
+      get_ready: yes
   right_arm:
     gripper_link: r_gripper_tool_frame
     capabilities:
@@ -16,3 +17,4 @@ arms:
       interactive_mode: yes
       manipulation: yes
       move_to_user: yes
+      get_ready: yes

@@ -20,6 +20,12 @@ artActionServer::artActionServer(boost::shared_ptr<tf::TransformListener> tfl,
 
 bool artActionServer::init()
 {
+
+  while (!tfl_->waitForTransform(getPlanningFrame(), "marker", ros::Time(0), ros::Duration(5.0))) {
+
+    ROS_INFO_STREAM_NAMED(group_name_, "Waiting for transform...");
+  }
+
   if (getGripperValue() == 1000)
   { // TODO(ZdenekM): exception / NaN
     ROS_ERROR_NAMED(group_name_, "Can't get gripper state");
