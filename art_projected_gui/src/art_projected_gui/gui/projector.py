@@ -31,8 +31,15 @@ class Projector(QtGui.QWidget):
 
         super(Projector, self).__init__()
 
+        while True:
+            try:
+                self.world_frame = rospy.get_param('/art/conf/world_frame')
+                break
+            except KeyError:
+                rospy.loginfo("Waiting for global parameters...")
+                rospy.sleep(1.0)
+
         self.proj_id = rospy.get_param('~projector_id', 'test')
-        self.world_frame = rospy.get_param('/art/conf/world_frame')
         self.screen = rospy.get_param('~screen_number', 0)
         self.camera_image_topic = rospy.get_param(
             '~camera_image_topic', 'kinect2/hd/image_color_rect')
