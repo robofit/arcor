@@ -11,7 +11,7 @@ from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
 
 class ArtRobotCalibration(ArtCellCalibration):
 
-    def __init__(self, robot_id, markers_topic, world_frame, robot_frame, main_cell_frame, pc_topic, tfl, look_at_topic='/art/pr2/look_at'):
+    def __init__(self, robot_id, markers_topic, world_frame, robot_frame, main_cell_frame, pc_topic, tfl, look_at_topic='/art/robot/look_at'):
 
         # cell_id, markers_topic, world_frame, cell_frame, main_cell_frame, pc_topic, tf_listener
         super(ArtRobotCalibration, self).__init__(robot_id, markers_topic, world_frame, robot_frame, main_cell_frame, pc_topic, tfl)

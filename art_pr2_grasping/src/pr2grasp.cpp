@@ -66,13 +66,13 @@ artPr2Grasping::artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl,
       new moveit_simple_grasps::GraspFilter(robot_state, visual_tools_));
 
   grasped_object_pub_ = nh_.advertise<art_msgs::ObjInstance>(
-      "/art/pr2/" + group_name_ + "/grasped_object", 1, true);
+      "/art/robot/" + group_name_ + "/grasped_object", 1, true);
 
   place_pose_pub_ = nh_.advertise<geometry_msgs::PoseArray>(
-      "/art/pr2/" + group_name_ + "/debug/place_pose", 1, true);
+      "/art/robot/" + group_name_ + "/debug/place_pose", 1, true);
 
   look_at_pub_ = nh_.advertise<geometry_msgs::PointStamped>(
-      "/art/pr2/look_at", 10);
+      "/art/robot/look_at", 10);
 
   publishObject();
 }
