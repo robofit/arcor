@@ -26,12 +26,15 @@ class ArtBrainRobotInterface:
             self._arms.append(ArtGripper(arm_id,
                                          drill_enabled=drill_enabled,
                                          pp_client=robot_ns + "/" + arm_id + "/pp" if pp else None,
+                                         holding_object_topic=robot_ns + "/" + arm_id + "/grasped_object" if pp else None,
                                          manipulation_client=robot_ns + "/" + arm_id + "/manipulation" if manipulation else None,
                                          move_to_user_client=robot_ns + "/" + arm_id + "/move_to_user" if move_to_user else None,
                                          interaction_on_client=robot_ns + "/" + arm_id + "/interaction/on" if interactive_mode else None,
                                          interaction_off_client=robot_ns + "/" + arm_id + "/interaction/off" if interactive_mode else None,
                                          get_ready_client=robot_ns + "/" + arm_id + "/get_ready" if get_ready else None,
                                          gripper_link=gripper_link))
+
+
 
     def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False, from_feeder=False):
         print "pick_object"
@@ -60,7 +63,6 @@ class ArtBrainRobotInterface:
         rospy.logdebug("state: " + str(arm.pp_client.get_state()))
 
         if arm.pp_client.get_result().result == 0:
-            arm.holding_object = obj
             arm.last_pick_instruction_id = pick_instruction_id
             return None, None, arm_id
         else:
@@ -100,7 +102,6 @@ class ArtBrainRobotInterface:
         arm.pp_client.wait_for_result()
         rospy.logdebug("Placing object with ID: " + str(arm.holding_object.object_id))
         if arm.pp_client.get_result().result == 0:
-            arm.holding_object = None
             return None, None, arm_id
         else:
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_PLACE_FAILED, None
