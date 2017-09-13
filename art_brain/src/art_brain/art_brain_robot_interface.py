@@ -109,6 +109,8 @@ class ArtBrainRobotInterface:
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)
+        print arm_id
+        print arm
 
         if not arm.move_to_pose(pose):
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED, arm_id

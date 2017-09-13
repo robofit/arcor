@@ -760,6 +760,7 @@ class ArtBrain(object):
         pick_pose = instruction.pose[0]
 
         arm_id = self.robot.select_arm_for_pick_from_feeder(pick_pose, self.tf_listener)
+
         severity, error, arm_id = self.robot.move_arm_to_pose(pick_pose, arm_id)
         if error is not None:
             self.try_robot_arms_get_ready([arm_id])
@@ -922,7 +923,7 @@ class ArtBrain(object):
         else:
             return False
 
-    def try_robot_arms_get_ready(self, max_attempts=3, arm_ids=None):
+    def try_robot_arms_get_ready(self, arm_ids=None, max_attempts=3):
         attempt = 0
         while True:
             if attempt >= max_attempts:
@@ -931,7 +932,7 @@ class ArtBrain(object):
             severity, error, arm_id = self.robot.arms_get_ready()
             if error is not None:
                 attempt += 1
-                rospy.logwarn("Error while getting ready: ", arm_id, " , attempt: ", attempt)
+                rospy.logwarn("Error while getting ready: " + str(arm_id) + " , attempt: " + str(attempt))
                 continue
             else:
                 return True

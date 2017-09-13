@@ -3,5 +3,5 @@ arms:
   arm:
     gripper_link: suction_cup
     capabilities:
-      pickPlace: yes
-      getReady: yes
+      pick_place: yes
+      get_ready: yes

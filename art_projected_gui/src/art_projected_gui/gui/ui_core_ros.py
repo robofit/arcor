@@ -206,8 +206,8 @@ class UICoreRos(UICore):
 
     def save_gripper_pose_cb(self, idx):
 
-        topics = ['/art/pr2/right_arm/gripper/pose',
-                  '/art/pr2/left_arm/gripper/pose']
+        topics = ['/art/robot/right_arm/gripper/pose',
+                  '/art/robot/left_arm/gripper/pose']
 
         # wait for message, set pose
         try:
@@ -699,9 +699,13 @@ class UICoreRos(UICore):
             item = state.program_current_item
             self.clear_all()
 
-            self.learning_vis(state.block_id, state.program_current_item.id, not state.edit_enabled)
+            self.learning_vis(state)
 
-    def learning_vis(self, block_id, item_id, read_only):
+    def learning_vis(self, state):
+
+        block_id = state.block_id
+        item_id = state.program_current_item.id
+        read_only = not state.edit_enabled
 
         if not self.ph.item_requires_learning(block_id, item_id):
             self.notif(translate("UICoreRos", "Item has no parameters."))
@@ -748,7 +752,7 @@ class UICoreRos(UICore):
 
         elif msg.type == ProgIt.PICK_FROM_FEEDER:
 
-            if self.state_manager.state.edit_enabled and self.grasp_dialog is None:
+            if state.edit_enabled and self.grasp_dialog is None:
                 self.grasp_dialog = DialogItem(self.scene, self.width / 2, 0.1, "Save gripper pose", [
                     "Right arm (0)", "Left arm (0)"], self.save_gripper_pose_cb)
 
@@ -820,10 +824,10 @@ class UICoreRos(UICore):
             # TODO hlaska
             return
 
-        self.learning_vis(block_id, item_id, read_only)
-
         self.state_manager.update_program_item(
             self.ph.get_program_id(), block_id, self.ph.get_item_msg(block_id, item_id))
+
+        self.learning_vis(self.state_manager.state)
 
     def get_def_pose(self):
 
