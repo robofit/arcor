@@ -21,8 +21,8 @@ class FakeObjectTracker:
         obj.object_type = "profile_20_60"
 
         obj.pose = Pose()
-        obj.pose.position.x = 1
-        obj.pose.position.y = 1
+        obj.pose.position.x = 0.3
+        obj.pose.position.y = 0.3
         obj.pose.position.z = 0
         obj.pose.orientation.x = 0
         obj.pose.orientation.y = 0

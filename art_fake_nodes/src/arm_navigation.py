@@ -21,8 +21,8 @@ class FakeArmNavigation():
 
 def main():
 
-    FakeArmNavigation("/art/pr2/left_arm/manipulation")
-    FakeArmNavigation("/art/pr2/right_arm/manipulation")
+    FakeArmNavigation("/art/robot/left_arm/manipulation")
+    FakeArmNavigation("/art/robot/right_arm/manipulation")
     rospy.spin()
 
 

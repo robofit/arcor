@@ -17,27 +17,27 @@ class FakeUserState:
         self.left_arm_mann = False
         self.right_arm_mann = False
 
-        self.left_interaction_on = rospy.Service("/art/pr2/left_arm/interaction/on", Trigger, self.left_interaction_on_cb)
-        self.left_interaction_off = rospy.Service("/art/pr2/left_arm/interaction/off", Trigger, self.left_interaction_off_cb)
-        self.left_get_ready = rospy.Service("/art/pr2/left_arm/get_ready", Trigger,
+        self.left_interaction_on = rospy.Service("/art/robot/left_arm/interaction/on", Trigger, self.left_interaction_on_cb)
+        self.left_interaction_off = rospy.Service("/art/robot/left_arm/interaction/off", Trigger, self.left_interaction_off_cb)
+        self.left_get_ready = rospy.Service("/art/robot/left_arm/get_ready", Trigger,
                                             self.left_interaction_get_ready_cb)
-        self.left_move_to_user = rospy.Service("/art/pr2/left_arm/move_to_user", Trigger,
+        self.left_move_to_user = rospy.Service("/art/robot/left_arm/move_to_user", Trigger,
                                                self.left_interaction_move_to_user_cb)
-        self.left_int_pub = rospy.Publisher("/art/pr2/left_arm/interaction/state", Bool, queue_size=1, latch=True)
+        self.left_int_pub = rospy.Publisher("/art/robot/left_arm/interaction/state", Bool, queue_size=1, latch=True)
 
-        self.right_interaction_on = rospy.Service("/art/pr2/right_arm/interaction/on", Trigger, self.right_interaction_on_cb)
-        self.right_interaction_off = rospy.Service("/art/pr2/right_arm/interaction/off", Trigger, self.right_interaction_off_cb)
-        self.right_get_ready = rospy.Service("/art/pr2/right_arm/get_ready", Trigger,
+        self.right_interaction_on = rospy.Service("/art/robot/right_arm/interaction/on", Trigger, self.right_interaction_on_cb)
+        self.right_interaction_off = rospy.Service("/art/robot/right_arm/interaction/off", Trigger, self.right_interaction_off_cb)
+        self.right_get_ready = rospy.Service("/art/robot/right_arm/get_ready", Trigger,
                                              self.right_interaction_get_ready_cb)
-        self.right_move_to_user = rospy.Service("/art/pr2/right_arm/move_to_user", Trigger,
+        self.right_move_to_user = rospy.Service("/art/robot/right_arm/move_to_user", Trigger,
                                                 self.right_interaction_move_to_user_cb)
-        self.right_int_pub = rospy.Publisher("/art/pr2/right_arm/interaction/state", Bool, queue_size=1, latch=True)
+        self.right_int_pub = rospy.Publisher("/art/robot/right_arm/interaction/state", Bool, queue_size=1, latch=True)
 
         rospy.loginfo("Server ready")
-        self.spine_up_service = rospy.Service("/art/pr2/spine/up", Empty, self.spine_up_cb)
-        self.spine_down_service = rospy.Service("/art/pr2/spine/down", Empty, self.spine_down_cb)
-        self.spine_control_sub = rospy.Subscriber("/art/pr2/spine/control", Float32, self.spine_control_cb)
-        self.look_at_sub = rospy.Subscriber("/art/pr2/look_at", PointStamped, self.look_at_cb)
+        self.spine_up_service = rospy.Service("/art/robot/spine/up", Empty, self.spine_up_cb)
+        self.spine_down_service = rospy.Service("/art/robot/spine/down", Empty, self.spine_down_cb)
+        self.spine_control_sub = rospy.Subscriber("/art/robot/spine/control", Float32, self.spine_control_cb)
+        self.look_at_sub = rospy.Subscriber("/art/robot/look_at", PointStamped, self.look_at_cb)
         self.spine_control_pub = rospy.Publisher("/art/pr2/torso_controller/command", JointTrajectory, queue_size=1)
 
     def left_interaction_on_cb(self,  req):

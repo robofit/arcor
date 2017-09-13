@@ -21,7 +21,7 @@ class ArtBasicControl:
 
         self.tfl = tf.TransformListener()
 
-        self.ns = "/art/pr2/"  # the node cannot be started in namespace - MoveGroupCommander does not work like that
+        self.ns = "/art/robot/"  # the node cannot be started in namespace - MoveGroupCommander does not work like that
 
         self.head_action_client = actionlib.SimpleActionClient("/head_traj_controller/point_head_action", PointHeadAction)
         rospy.loginfo("Waiting for point_head_action server")
