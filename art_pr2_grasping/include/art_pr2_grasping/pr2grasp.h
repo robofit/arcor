@@ -8,6 +8,9 @@
 #include <vector>
 #include <algorithm>
 #include <ros/ros.h>
+#include <moveit/robot_state/attached_body.h>
+    #include <eigen_stl_containers/eigen_stl_vector_container.h>
+#include "tf/transform_datatypes.h"
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit_simple_grasps/simple_grasps.h>
 #include <moveit_visual_tools/visual_tools.h>

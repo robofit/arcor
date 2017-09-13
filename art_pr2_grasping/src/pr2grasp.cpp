@@ -60,10 +60,17 @@ artPr2Grasping::artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl,
 
   planning_scene_monitor_.reset(
       new planning_scene_monitor::PlanningSceneMonitor("robot_description"));
+
+  planning_scene_monitor::LockedPlanningSceneRW ls(planning_scene_monitor_);
+
   robot_state::RobotState robot_state =
-      planning_scene_monitor_->getPlanningScene()->getCurrentState();
+      ls->getCurrentState();
   grasp_filter_.reset(
       new moveit_simple_grasps::GraspFilter(robot_state, visual_tools_));
+
+  planning_scene_monitor_->startStateMonitor();
+  //planning_scene_monitor_->startWorldGeometryMonitor();
+  planning_scene_monitor_->startSceneMonitor("/move_group/monitored_planning_scene");
 
   grasped_object_pub_ = nh_.advertise<art_msgs::ObjInstance>(
       "/art/robot/" + group_name_ + "/grasped_object", 1, true);
@@ -176,6 +183,27 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
   arr.header.frame_id = getPlanningFrame();
   arr.header.stamp = ros::Time::now();
 
+  planning_scene_monitor::LockedPlanningSceneRO ls(planning_scene_monitor_);
+
+  robot_state::RobotState robot_state =
+      ls->getCurrentState();
+
+   /*std::vector<const moveit::core::AttachedBody *> abs;
+   robot_state.getAttachedBodies(abs);
+
+   for (int i = 0; i < abs.size(); i++) {
+     std::cout << abs[i]->getName() << " link: " << abs[i]->getAttachedLinkName();*/
+
+   const moveit::core::AttachedBody *ab = robot_state.getAttachedBody(grasped_object_->object_id);
+   const EigenSTL::vector_Affine3d& ab_tf = ab->getFixedTransforms();
+   tf::Pose obj_tf_pose;
+   tf::poseEigenToTF(ab_tf[0], obj_tf_pose);
+
+   tf::Matrix3x3 tmp(obj_tf_pose.getRotation());
+   double rr, rp, ry;
+   tmp.getRPY(rr, rp, ry);
+   std::cout << rr << " " << rp << " " << ry << std::endl;
+
   // Create 360 degrees of place location rotated around a center
   for (double y = -1; y <= 1; y+= 2)
   for (double angle = 0; angle < 2 * M_PI; angle += z_axis_angle_increment)
@@ -185,6 +213,16 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
     // Orientation
     tf::Quaternion tfq2 = tf::Quaternion(0, y*0.707, 0, 0.707); // tf::createQuaternionFromRPY(angle, 0, 0);
 
+    double yaw_ang = M_PI/2;
+
+    // TODO quick and dirty "fix"
+    if (fabs(ry) > 1.0 && fabs(ry) < 2.0) {
+
+        std::cout << "x-axis correction ;)" << std::endl;
+        tfq2 = tf::Quaternion(y*0.707, 0, 0, 0.707);
+        yaw_ang = 0;
+    }
+
     tf::Quaternion tfq1;
     tf::quaternionMsgToTF(pps.pose.orientation, tfq1);
 
@@ -192,7 +230,7 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
     double roll, pitch, yaw;
     m.getEulerYPR(yaw, pitch, roll);
 
-    tfq1 = tf::createQuaternionFromYaw(yaw + angle + M_PI/2);
+    tfq1 = tf::createQuaternionFromYaw(yaw + angle + yaw_ang);
 
     std::cout << "yaw: " << yaw << " angle: " << angle << std::endl;
 
