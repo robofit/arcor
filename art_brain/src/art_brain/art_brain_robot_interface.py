@@ -66,7 +66,7 @@ class ArtBrainRobotInterface:
         else:
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_PICK_FAILED, arm_id
 
-    def place_object_to_pose(self, place_pose, arm_id, objects_frame_id="/marker", pick_only_y_axis=False):
+    def place_object_to_pose(self, place_pose, arm_id, objects_frame_id="/marker"):
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)  # type: ArtGripper
@@ -81,10 +81,7 @@ class ArtBrainRobotInterface:
         #    return False
         # TODO how to decide between 180 and 90 deg?
         # allow object to be rotated by 90 deg around z axis
-        if not pick_only_y_axis:
-            goal.z_axis_angle_increment = 3.14 / 2
-        else:
-            goal.z_axis_angle_increment = 3.14
+        # goal.z_axis_angle_increment = 3.14
 
         goal.pose = place_pose
         goal.pose.header.stamp = rospy.Time.now()
@@ -92,9 +89,6 @@ class ArtBrainRobotInterface:
         # TODO: how to deal with this?
         goal.pose.pose.position.z += 0.03
 
-        if pick_only_y_axis:
-            goal.pose.pose.orientation.x = math.sqrt(0.5)
-            goal.pose.pose.orientation.w = math.sqrt(0.5)
         rospy.logdebug("Place pose: " + str(goal.pose))
         arm.pp_client.send_goal(goal)
         arm.pp_client.wait_for_result()
