@@ -177,12 +177,13 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
   arr.header.stamp = ros::Time::now();
 
   // Create 360 degrees of place location rotated around a center
+  for (double y = -1; y <= 1; y+= 2)
   for (double angle = 0; angle < 2 * M_PI; angle += z_axis_angle_increment)
   {
     geometry_msgs::PoseStamped pps = pose_stamped;
 
     // Orientation
-    tf::Quaternion tfq2 = tf::Quaternion(0, 0.707, 0, 0.707); // tf::createQuaternionFromRPY(angle, 0, 0);
+    tf::Quaternion tfq2 = tf::Quaternion(0, y*0.707, 0, 0.707); // tf::createQuaternionFromRPY(angle, 0, 0);
 
     tf::Quaternion tfq1;
     tf::quaternionMsgToTF(pps.pose.orientation, tfq1);
@@ -228,12 +229,7 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
     // TODO(ZdenekM): is box_z always height of the object?
     // assume that robot holds the object in the middle of its height
 
-    double des_dist =
-        std::max(grasp_data_.approach_retreat_desired_dist_,
-                 0.1 +
-                     0.5 *
-                         grasped_object_->type.bbox
-                             .dimensions[shape_msgs::SolidPrimitive::BOX_Z]);
+    double des_dist = grasp_data_.approach_retreat_desired_dist_ + 0.5 * grasped_object_->type.bbox.dimensions[shape_msgs::SolidPrimitive::BOX_X];
 
     post_place_retreat.desired_distance =
         des_dist;  // The distance the origin of a robot link needs to travel
