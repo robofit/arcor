@@ -62,6 +62,7 @@ class ArtTouchDriver:
         self.calib_srv = rospy.ServiceProxy(
             '/art/interface/projected_gui/touch_calibration', TouchCalibrationPoints)
 
+        self.ref_points = []
         self.set_calibrated(False)
         self.set_calibrating(False)
 
@@ -101,11 +102,14 @@ class ArtTouchDriver:
         xm = (x[0] + x[1]) / 2.0
         ym = (y[0] + y[1]) / 2.0
 
-        self.ref_points = ((x[0], y[0]), (xm, y[0]), (x[1], y[0]),
-                           (x[0], ym), (xm, ym), (x[1], ym),
-                           (x[0], y[1]), (xm, y[1]), (x[1], y[1]))
+        pts = [(x[0], y[0]), (xm, y[0]), (x[1], y[0]),
+               (x[0], ym), (xm, ym), (x[1], ym),
+               (x[0], y[1]), (xm, y[1]), (x[1], y[1])]
 
-        # self.ref_points += self.ref_points
+        self.ref_points = []
+
+        for i in range(2):
+            self.ref_points.extend(pts)
 
         for pt in self.ref_points:
 
