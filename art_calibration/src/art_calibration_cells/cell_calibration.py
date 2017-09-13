@@ -30,7 +30,10 @@ class ArtCellCalibration(object):
         self.cell_id = cell_id
         self.markers_topic = markers_topic
         self.calibrated = False
-        self.positions = [None, None, None, None]
+        self.positions = [np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f'),
+                          np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f')]
+        self.avg = 100
+        self.cnt = [0, 0, 0, 0]
 
         self.cell_frame = cell_frame
         self.world_frame = world_frame
@@ -116,14 +119,16 @@ class ArtCellCalibration(object):
         tr.translation[1] += self.y_offset
         tr.translation[2] += self.z_offset
         (x, y, z) = transformations.euler_from_quaternion(tr.rotation)
-        tr.rotation = transformations.quaternion_from_euler(x+self.x_rotate_offset,
-                                                            y+self.y_rotate_offset,
-                                                            z+self.z_rotate_offset)
+        tr.rotation = transformations.quaternion_from_euler(x + self.x_rotate_offset,
+                                                            y + self.y_rotate_offset,
+                                                            z + self.z_rotate_offset)
         return tr
 
     def reset_markers_searching(self):
         self.start_marker_detection()
-        self.positions = [None, None, None, None]
+        self.positions = [np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f'),
+                          np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f')]
+        self.cnt = [0, 0, 0, 0]
         self.calibrated = False
 
     def markers_cb(self, markers):
@@ -131,18 +136,28 @@ class ArtCellCalibration(object):
             return
         all_markers = True
         for i in xrange(4):
-            if self.positions[i] is not None:
-                continue
+
             if i == 2:
                 continue
+
+            if self.cnt[i] >= self.avg:
+                continue
+
+            all_markers = False
+
             p = ArtCalibrationHelper.get_marker_position_by_id(markers, i + 10)
             if p is not None:
-                self.positions[i] = p
-                rospy.loginfo("Cell: " + str(self.cell_id) + " gets marker id " + str(i + 10))
+                self.positions[i] += p
+                self.cnt[i] += 1
+                rospy.loginfo("Cell: " + str(self.cell_id) + " gets marker id " + str(i + 10) + ", cnt: " + str(self.cnt[i]))
 
-            else:
-                all_markers = False
         if all_markers:
+
+            for i in xrange(4):
+                if i == 2:
+                    continue
+                self.positions[i] /= self.avg
+
             self.stop_marker_detection()
             self.calibrate()
 

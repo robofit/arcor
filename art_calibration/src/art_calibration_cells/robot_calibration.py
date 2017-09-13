@@ -59,7 +59,7 @@ class ArtRobotCalibration(ArtCellCalibration):
                 self.positions[self.robot_looking_for_id - 10] += p
 
                 self.count += 1
-                if self.count >= 10:
+                if self.count >= self.avg:
                     self.positions[self.robot_looking_for_id - 10] /= self.count
                     self.count = 0
                     self.robot_looking_for_id += 1
