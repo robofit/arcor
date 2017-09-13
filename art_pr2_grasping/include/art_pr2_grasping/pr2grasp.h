@@ -43,14 +43,14 @@ private:
   ros::Publisher look_at_pub_;
   ros::Publisher place_pose_pub_;
 
-  boost::shared_ptr<tf::TransformListener> tfl_;
-
   std::string default_target_;
   std::string gripper_state_topic_;
 
   void publishObject(TObjectInfo obj = TObjectInfo());
 
 protected:
+
+  boost::shared_ptr<tf::TransformListener> tfl_;
 
   boost::shared_ptr<move_group_interface::MoveGroup> move_group_;
 
