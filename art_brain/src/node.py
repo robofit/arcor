@@ -148,7 +148,7 @@ class ArtBrain(object):
             "/art/interface/touchtable/calibrating", Bool, self.table_calibrating_cb)
         self.system_calibrated_sub = rospy.Subscriber(
             "/art/system/calibrated", Bool, self.system_calibrated_cb)
-        
+
         self.projectors_calibrated_sub = rospy.Subscriber(
             "/art/interface/projected_gui/app/projectors_calibrated", Bool, self.projectors_calibrated_cb)
 
@@ -368,7 +368,8 @@ class ArtBrain(object):
         if not self.check_robot():
             return
         rospy.logdebug('Current state: state_pick_object_id')
-        obj = ArtBrainUtils.get_pick_obj(self.instruction, self.objects)
+        obj_type = self.ph.get_object(self.block_id, self.instruction.id)
+        obj = ArtBrainUtils.get_pick_obj(obj_type, self.objects)
         if obj is None or obj.object_id is None:
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING)
@@ -433,7 +434,8 @@ class ArtBrain(object):
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_OBJECT_NOT_DEFINED)
             return
-        obj = objects[0]
+        # TODO: Object ID saved in program??
+        obj = self.ph.get_object(self.block_id, self.instruction.id)
         if not ArtBrainUtils.object_exist(obj, self.objects):
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING)
@@ -721,8 +723,10 @@ class ArtBrain(object):
 
     def pick_object_from_polygon(self, instruction, update_state_manager=True):
 
+        obj_type = self.ph.get_object(self.block_id, self.instruction.id)
+        polygon = self.ph.get_polygon(self.block_id, self.instruction.id)
         obj = ArtBrainUtils.get_pick_obj_from_polygon(
-            instruction, self.objects)
+            obj_type, polygon, self.objects)
         if obj is None or obj.object_id is None or obj.object_id == "":
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING_IN_POLYGON)
@@ -745,7 +749,8 @@ class ArtBrain(object):
 
     def pick_object_from_feeder(self, instruction):
 
-        obj = ArtBrainUtils.get_pick_obj_from_feeder(instruction)
+        obj_type = self.ph.get_object(self.block_id, self.instruction.id)
+        obj = ArtBrainUtils.get_pick_obj_from_feeder(obj_type)
         if obj is None:
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_OBJECT_NOT_DEFINED)
@@ -755,7 +760,7 @@ class ArtBrain(object):
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_PICK_POSE_NOT_SELECTED)
             return
-        pick_pose = instruction.pose[0]
+        pick_pose = self.ph.get_pose(self.block_id, self.instruction.id)
 
         arm_id = self.robot.select_arm_for_pick_from_feeder(pick_pose, self.tf_listener)
 
@@ -818,7 +823,8 @@ class ArtBrain(object):
 
                 return
             arm_id = self.robot.select_arm_for_place(instruction.ref_id)
-            severity, error, _ = self.robot.place_object_to_pose(instruction.pose[0], arm_id)
+            place_pose = self.ph.get_pose(self.block_id, self.instruction.id)
+            severity, error, _ = self.robot.place_object_to_pose(place_pose, arm_id)
             if error is not None:
                 self.try_robot_arms_get_ready([arm_id])
                 self.fsm.error(severity=severity, error=error)
@@ -869,6 +875,7 @@ class ArtBrain(object):
                 self.state_manager.update_program_item(
                     self.ph.get_program_id(), self.block_id, instruction,
                     {"SELECTED_OBJECT_ID": gripper.holding_object.object_id})
+
             if self.place_object(gripper.holding_object, pose[0], gripper, pick_only_y_axis=False):
                 instruction.pose.pop(0)
                 gripper.holding_object = None
