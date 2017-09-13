@@ -4,7 +4,8 @@ import abc
 import rospy
 from art_msgs.msg import InterfaceState, PickPlaceGoal
 import math
-from std_srvs.srv import TriggerRequest, TriggerResponse
+from std_srvs.srv import TriggerRequest, TriggerResponse, Trigger
+from art_msgs.srv import ReinitArms, ReinitArmsResponse, ReinitArmsRequest
 
 
 class ArtBrainRobotInterface:
@@ -34,7 +35,56 @@ class ArtBrainRobotInterface:
                                          get_ready_client=robot_ns + "/" + arm_id + "/get_ready" if get_ready else None,
                                          gripper_link=gripper_link))
 
+            # arm reinit service
+            self.reinit_srv = rospy.Service(robot_ns + "/" + arm_id + "/" + "reinit", ReinitArms, self.re_init_arm_cb)
 
+            # emergency stop
+            self.emergency_stop_srv = rospy.Service(robot_ns + "/stop", Trigger, self.emergency_stop_cb)
+            self.restore_srv = rospy.Service(robot_ns + "/restore", Trigger, self.restore_cb)
+
+    def re_init_arm_cb(self, data):
+        """
+
+        Args:
+            data:
+        @type data: ReinitArmsRequest
+
+        Returns:
+
+        """
+        if len(data.arm_ids) == 0:
+            for arm in self._arms:
+                arm.re_init()
+        else:
+            for arm_id in data.arm_ids:
+                arm = self.get_arm_by_id(arm_id)  # type: ArtGripper
+                arm.re_init()
+
+    def emergency_stop_cb(self, _):
+        resp = TriggerResponse()
+        if self.emergency_stop():
+            resp.success = True
+        else:
+            resp.success = False
+            resp.message = "Failed to stop the robot"
+        return resp
+
+    def restore_cb(self, _):
+        resp = TriggerResponse()
+        if self.restore_robot():
+            resp.success = True
+        else:
+            resp.success = False
+            resp.message = "Failed to restore the robot"
+        return resp
+
+    @abc.abstractmethod
+    def emergency_stop(self):
+        pass
+
+    @abc.abstractmethod
+    def restore_robot(self):
+        pass
 
     def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False, from_feeder=False):
         print "pick_object"

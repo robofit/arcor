@@ -39,9 +39,9 @@ from art_brain.art_gripper import ArtGripper
 
 
 # TODO:
-# service pro reinicializaci ruky/rukou robota, vraceni do vychozi pozice, emergency stop
-# pri startu zjistit co si robot myslí že drží za objekty
-# zmenit interface z /art/pr2,/art/dobot na univerzalni /art/robot
+# service pro reinicializaci ruky/rukou robota, vraceni do vychozi pozice, emergency stop | DONE, otestovat
+# pri startu zjistit co si robot myslí že drží za objekty | DONE, otestovat
+# zmenit interface z /art/pr2,/art/dobot na univerzalni /art/robot  | DONE, otestovat
 # koukat tam kam se bude pohybovat ruka
 # zjistovat jestli drzim objekt predtim nez zacnu neco vykonavat (typicky pick from feeder)
 
@@ -148,9 +148,7 @@ class ArtBrain(object):
             "/art/interface/touchtable/calibrating", Bool, self.table_calibrating_cb)
         self.system_calibrated_sub = rospy.Subscriber(
             "/art/system/calibrated", Bool, self.system_calibrated_cb)
-        # TODO (kapi) move to art_pr2_interface
-        self.motors_halted_sub = rospy.Subscriber(
-            "/pr2_ethercat/motors_halted", Bool, self.motors_halted_cb)
+        
         self.projectors_calibrated_sub = rospy.Subscriber(
             "/art/interface/projected_gui/app/projectors_calibrated", Bool, self.projectors_calibrated_cb)
 
@@ -1307,15 +1305,6 @@ class ArtBrain(object):
             # if self.is_learning_pick_from_feeder():
         '''
         pass
-
-    def motors_halted_cb(self, req):
-        if not self.initialized:
-            return
-
-        if self.robot.is_halted() and not req.data:
-            self.try_robot_arms_get_ready()
-
-        self.robot.set_halted(req.data)
 
     def projectors_calibrated_cb(self, msg):
 
