@@ -51,6 +51,7 @@ add_service_files(
     RecalibrateCell.srv
     ObjectFlagSet.srv
     ObjectFlagClear.srv
+    ReinitArms.srv
 )
 
 generate_messages(
