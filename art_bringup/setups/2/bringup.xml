@@ -72,4 +72,8 @@
       <arg name="output_frame" value="right_kinect2_rgb_optical_frame"/>
     </include-->
 
+    <include file="$(find art_brain)/launch/brain.launch">
+        <arg name="robot_type" value="dobot"/>
+    </include>
+
 </launch>

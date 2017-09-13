@@ -34,6 +34,8 @@
         <arg name="calib_y_max" value="0.55"/>
     </include>
 
-    <node name="art_brain_node" pkg="art_brain" type="node.py" respawn="false" output="screen"/>
+    <include file="$(find art_brain)/launch/brain.launch">
+        <arg name="robot_type" value="pr2"/>
+    </include>
     
 </launch>
