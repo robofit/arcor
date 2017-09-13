@@ -30,8 +30,8 @@ class ArtCellCalibration(object):
         self.cell_id = cell_id
         self.markers_topic = markers_topic
         self.calibrated = False
-        self.positions = [np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f'),
-                          np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f')]
+        self.positions = [np.array([0, 0, 0], dtype='f8'), np.array([0, 0, 0], dtype='f8'),
+                          np.array([0, 0, 0], dtype='f8'), np.array([0, 0, 0], dtype='f8')]
         self.avg = 100
         self.cnt = [0, 0, 0, 0]
 
@@ -126,8 +126,8 @@ class ArtCellCalibration(object):
 
     def reset_markers_searching(self):
         self.start_marker_detection()
-        self.positions = [np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f'),
-                          np.array([0, 0, 0], dtype='f'), np.array([0, 0, 0], dtype='f')]
+        self.positions = [np.array([0, 0, 0], dtype='f8'), np.array([0, 0, 0], dtype='f8'),
+                          np.array([0, 0, 0], dtype='f8'), np.array([0, 0, 0], dtype='f8')]
         self.cnt = [0, 0, 0, 0]
         self.calibrated = False
 
