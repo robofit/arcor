@@ -43,7 +43,7 @@ from art_brain.art_gripper import ArtGripper
 # pri startu zjistit co si robot myslí že drží za objekty | DONE, otestovat
 # zmenit interface z /art/pr2,/art/dobot na univerzalni /art/robot  | DONE, otestovat
 # koukat tam kam se bude pohybovat ruka
-# zjistovat jestli drzim objekt predtim nez zacnu neco vykonavat (typicky pick from feeder)
+# zjistovat jestli drzim objekt predtim nez zacnu neco vykonavat (typicky pick from feeder)  | DONE, otestovat
 
 # při place zkontrolovat place pose (jestli tam není jiný objekt)
 
@@ -749,14 +749,14 @@ class ArtBrain(object):
 
     def pick_object_from_feeder(self, instruction):
 
-        obj_type = self.ph.get_object(self.block_id, self.instruction.id)
-        obj = ArtBrainUtils.get_pick_obj_from_feeder(obj_type)
-        if obj is None:
+        if not self.ph.is_object_set(self.block_id, self.instruction.id):
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_OBJECT_NOT_DEFINED)
             return
+        obj_type = self.ph.get_object(self.block_id, self.instruction.id)
+        obj = ArtBrainUtils.get_pick_obj_from_feeder(obj_type)
 
-        if instruction.pose < 1:
+        if not self.ph.is_pose_set(self.block_id, self.instruction.id):
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_PICK_POSE_NOT_SELECTED)
             return

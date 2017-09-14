@@ -7,6 +7,7 @@ from art_msgs.srv import ReinitArmsRequest, ReinitArmsResponse
 from std_srvs.srv import TriggerResponse, TriggerRequest
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty, EmptyRequest
+from geometry_msgs.msg import PointStamped
 
 
 class ArtPr2Interface(ArtBrainRobotInterface):
@@ -26,6 +27,8 @@ class ArtPr2Interface(ArtBrainRobotInterface):
 
         self.reset_motors_srv = rospy.ServiceProxy(
             '/pr2_ethercat/reset_motors', Empty)  # TODO wait for service? where?
+
+        self.look_at_srv = ArtBrainUtils.create_service_client(robot_ns + "look_at", PointStamped)
 
     def select_arm_for_pick(self, obj, objects_frame_id, tf_listener):
         free_arm = self.select_free_arm()
@@ -118,3 +121,26 @@ class ArtPr2Interface(ArtBrainRobotInterface):
             self.arms_get_ready()
 
         self.set_halted(req.data)
+
+    def look_at(self, x, y, z, frame_id="marker"):
+        point = PointStamped()
+        point.header.frame_id = frame_id
+        point.point.x = x
+        point.point.y = y
+        point.point.z = z
+        self.look_at_srv.call(point)
+
+    def look_at_point(self, point, frame_id="marker"):
+        self.look_at(point.pose.position.x, point.pose.position.y, point.pose.position.z, frame_id)
+
+    def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False, from_feeder=False):
+        self.look_at_point(obj.pose.point)
+        super(ArtPr2Interface, self).pick_object(obj, pick_instruction_id, arm_id, pick_only_y_axis, from_feeder)
+
+    def place_object_to_pose(self, place_pose, arm_id, objects_frame_id="/marker", pick_only_y_axis=False):
+        self.look_at_point(place_pose.pose.point)
+        super(ArtPr2Interface, self).place_object_to_pose(place_pose, arm_id, objects_frame_id, pick_only_y_axis)
+
+    def move_arm_to_pose(self, pose, arm_id=None):
+        self.look_at_point(pose.point)
+        super(ArtPr2Interface, self).move_arm_to_pose(pose, arm_id)
