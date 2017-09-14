@@ -1,0 +1,3 @@
+string[] arm_ids # empty means all of them
+---
+string[] failed_ids # list of failed ids

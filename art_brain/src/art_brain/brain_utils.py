@@ -16,35 +16,35 @@ from enum import IntEnum  # sudo pip install enum34
 class ArtBrainUtils(object):
 
     @staticmethod
-    def get_pick_obj(instruction, objects):
-        rospy.logdebug("Object to pick: " + str(instruction.object))
-        if len(instruction.object) < 1:
+    def get_pick_obj(obj_type, objects):
+        rospy.logdebug("Object to pick: " + str(obj_type))
+        if obj_type is None:
             return None
         for obj in objects.instances:
 
-            if obj.object_id == instruction.object[0]:
+            if obj.object_id == obj_type:
                 obj_ret = copy.deepcopy(obj)
                 return obj_ret
         else:
             return None
 
     @staticmethod
-    def get_pick_obj_from_feeder(instruction):
+    def get_pick_obj_from_feeder(obj_type):
         obj = ObjInstance()
         obj.object_id = None
-        obj.object_type = instruction.object[0]
+        obj.object_type = obj_type
         obj.pose = Pose()
         return obj
 
     @staticmethod
-    def get_pick_obj_from_polygon(instruction, objects):
+    def get_pick_obj_from_polygon(obj_type, polygon, objects):
         pick_polygon = []
         pol = None
         obj_ret = None
-        if len(instruction.object) < 1:
+        if obj_type is None:
             return None
         # TODO check frame_id and transform to table frame?
-        for point in instruction.polygon[0].polygon.points:
+        for point in polygon.polygon.points:
             pick_polygon.append([point.x, point.y])
         pick_polygon.append([0, 0])
 
@@ -60,7 +60,7 @@ class ArtBrainUtils(object):
 
                 # if no pick polygon is specified - let's take the first
                 # object of that type
-                if obj.object_type == instruction.object[0]:
+                if obj.object_type == obj_type:
                     obj_ret = copy.deepcopy(obj)
                     break
 

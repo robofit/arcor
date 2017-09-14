@@ -4,7 +4,8 @@ import abc
 import rospy
 from art_msgs.msg import InterfaceState, PickPlaceGoal
 import math
-from std_srvs.srv import TriggerRequest, TriggerResponse
+from std_srvs.srv import TriggerRequest, TriggerResponse, Trigger
+from art_msgs.srv import ReinitArms, ReinitArmsResponse, ReinitArmsRequest
 
 
 class ArtBrainRobotInterface:
@@ -26,12 +27,64 @@ class ArtBrainRobotInterface:
             self._arms.append(ArtGripper(arm_id,
                                          drill_enabled=drill_enabled,
                                          pp_client=robot_ns + "/" + arm_id + "/pp" if pp else None,
+                                         holding_object_topic=robot_ns + "/" + arm_id + "/grasped_object" if pp else None,
                                          manipulation_client=robot_ns + "/" + arm_id + "/manipulation" if manipulation else None,
                                          move_to_user_client=robot_ns + "/" + arm_id + "/move_to_user" if move_to_user else None,
                                          interaction_on_client=robot_ns + "/" + arm_id + "/interaction/on" if interactive_mode else None,
                                          interaction_off_client=robot_ns + "/" + arm_id + "/interaction/off" if interactive_mode else None,
                                          get_ready_client=robot_ns + "/" + arm_id + "/get_ready" if get_ready else None,
                                          gripper_link=gripper_link))
+
+            # arm reinit service
+            self.reinit_srv = rospy.Service(robot_ns + "/" + arm_id + "/" + "reinit", ReinitArms, self.re_init_arm_cb)
+
+            # emergency stop
+            self.emergency_stop_srv = rospy.Service(robot_ns + "/stop", Trigger, self.emergency_stop_cb)
+            self.restore_srv = rospy.Service(robot_ns + "/restore", Trigger, self.restore_cb)
+
+    def re_init_arm_cb(self, data):
+        """
+
+        Args:
+            data:
+        @type data: ReinitArmsRequest
+
+        Returns:
+
+        """
+        if len(data.arm_ids) == 0:
+            for arm in self._arms:
+                arm.re_init()
+        else:
+            for arm_id in data.arm_ids:
+                arm = self.get_arm_by_id(arm_id)  # type: ArtGripper
+                arm.re_init()
+
+    def emergency_stop_cb(self, _):
+        resp = TriggerResponse()
+        if self.emergency_stop():
+            resp.success = True
+        else:
+            resp.success = False
+            resp.message = "Failed to stop the robot"
+        return resp
+
+    def restore_cb(self, _):
+        resp = TriggerResponse()
+        if self.restore_robot():
+            resp.success = True
+        else:
+            resp.success = False
+            resp.message = "Failed to restore the robot"
+        return resp
+
+    @abc.abstractmethod
+    def emergency_stop(self):
+        pass
+
+    @abc.abstractmethod
+    def restore_robot(self):
+        pass
 
     def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False, from_feeder=False):
         print "pick_object"
@@ -60,7 +113,6 @@ class ArtBrainRobotInterface:
         rospy.logdebug("state: " + str(arm.pp_client.get_state()))
 
         if arm.pp_client.get_result().result == 0:
-            arm.holding_object = obj
             arm.last_pick_instruction_id = pick_instruction_id
             return None, None, arm_id
         else:
@@ -94,7 +146,6 @@ class ArtBrainRobotInterface:
         arm.pp_client.wait_for_result()
         rospy.logdebug("Placing object with ID: " + str(arm.holding_object.object_id))
         if arm.pp_client.get_result().result == 0:
-            arm.holding_object = None
             return None, None, arm_id
         else:
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_PLACE_FAILED, None

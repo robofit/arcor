@@ -3,26 +3,32 @@ from geometry_msgs.msg import PoseStamped
 import rospy
 from art_gripper import ArtGripper
 from brain_utils import ArtBrainUtils
+from art_msgs.srv import ReinitArmsRequest, ReinitArmsResponse
+from std_srvs.srv import TriggerResponse, TriggerRequest
+from std_msgs.msg import Bool
+from std_srvs.srv import Empty, EmptyRequest
+from geometry_msgs.msg import PointStamped
 
 
 class ArtPr2Interface(ArtBrainRobotInterface):
 
-    BOTH_ARM = 2
-    LEFT_ARM = 0
-    RIGHT_ARM = 1
+    BOTH_ARM = "both_arm"
+    LEFT_ARM = "left_arm"
+    RIGHT_ARM = "right_arm"
 
     def __init__(self, robot_parameters, robot_ns, gripper_usage=BOTH_ARM):
 
         super(ArtPr2Interface, self).__init__(robot_parameters, robot_ns)
         self.gripper_usage = gripper_usage
-        '''self._arms = [
-            ArtGripper(self.LEFT_ARM, "PR2 Left", True, True, "/art/pr2/left_arm/pp", "/art/pr2/left_arm/manipulation",
-                       "/art/pr2/left_arm/interaction/on", "/art/pr2/left_arm/interaction/off",
-                       "/art/pr2/left_arm/get_ready", "/art/pr2/left_arm/move_to_user", gripper_link="l_gripper_tool_frame"),
-            ArtGripper(self.RIGHT_ARM, "PR2 Right", True, True, "/art/pr2/right_arm/pp", "/art/pr2/right_arm/manipulation",
-                       "/art/pr2/right_arm/interaction/on", "/art/pr2/right_arm/interaction/off",
-                       "/art/pr2/right_arm/get_ready", "/art/pr2/right_arm/move_to_user", gripper_link="r_gripper_tool_frame")
-        ]'''
+        self.motors_halted_sub = rospy.Subscriber(
+            "/pr2_ethercat/motors_halted", Bool, self.motors_halted_cb)
+        self.halt_motors_srv = rospy.ServiceProxy(
+            '/pr2_ethercat/halt_motors', Empty)  # TODO wait for service? where?
+
+        self.reset_motors_srv = rospy.ServiceProxy(
+            '/pr2_ethercat/reset_motors', Empty)  # TODO wait for service? where?
+
+        self.look_at_srv = ArtBrainUtils.create_service_client(robot_ns + "look_at", PointStamped)
 
     def select_arm_for_pick(self, obj, objects_frame_id, tf_listener):
         free_arm = self.select_free_arm()
@@ -45,10 +51,10 @@ class ArtPr2Interface(ArtBrainRobotInterface):
                 obj_pose = tf_listener.transformPose(
                     'base_link', obj_pose)
                 if obj_pose.pose.position.y < 0:
-                    return "right_arm"
+                    return self.RIGHT_ARM
                 else:
-                    return "left_arm"
-        return "left_arm"
+                    return self.LEFT_ARM
+        return self.LEFT_ARM
 
     def select_arm_for_pick_from_feeder(self, pick_pose, tf_listener):
         pick_pose.header.frame_id = ArtBrainUtils.normalize_frame_id(pick_pose.header.frame_id)
@@ -70,16 +76,15 @@ class ArtPr2Interface(ArtBrainRobotInterface):
         obj_pose = tf_listener.transformPose(
             'base_link', pick_pose)
         if obj_pose.pose.position.y < 0:
-            return "right_arm"
+            return self.RIGHT_ARM
         else:
-            return "left_arm"
-        return "left_arm"
+            return self.LEFT_ARM
 
     def select_free_arm(self):
-        left_arm = self.get_arm_by_id("left_arm") if self.gripper_usage in [self.BOTH_ARM,
-                                                                            self.LEFT_ARM] else None  # type: ArtGripper
-        right_arm = self.get_arm_by_id("right_arm") if self.gripper_usage in [self.BOTH_ARM,
-                                                                              self.RIGHT_ARM] else None  # type: ArtGripper
+        left_arm = self.get_arm_by_id(self.LEFT_ARM) if self.gripper_usage in [self.BOTH_ARM,
+                                                                               self.LEFT_ARM] else None  # type: ArtGripper
+        right_arm = self.get_arm_by_id(self.RIGHT_ARM) if self.gripper_usage in [self.BOTH_ARM,
+                                                                                 self.RIGHT_ARM] else None  # type: ArtGripper
         if left_arm is None and right_arm is None:
             return None
 
@@ -89,7 +94,7 @@ class ArtPr2Interface(ArtBrainRobotInterface):
             else:
                 return left_arm.arm_id
         elif self.gripper_usage == self.RIGHT_ARM:
-            if left_arm.holding_object:
+            if right_arm.holding_object:
                 return None
             else:
                 return right_arm.arm_id
@@ -101,3 +106,41 @@ class ArtPr2Interface(ArtBrainRobotInterface):
             elif left_arm.holding_object and right_arm.holding_object:
                 return None
         return self.BOTH_ARM
+
+    def restore_robot(self):
+        self.reset_motors_srv.call(EmptyRequest())
+        return True  # TODO: how to check if it worked? wait some time and check topic?
+
+    def emergency_stop(self):
+        self.halt_motors_srv.call(EmptyRequest())
+        return True  # TODO: how to check if it worked? wait some time and check topic?
+
+    def motors_halted_cb(self, req):
+
+        if self.is_halted() and not req.data:
+            self.arms_get_ready()
+
+        self.set_halted(req.data)
+
+    def look_at(self, x, y, z, frame_id="marker"):
+        point = PointStamped()
+        point.header.frame_id = frame_id
+        point.point.x = x
+        point.point.y = y
+        point.point.z = z
+        self.look_at_srv.call(point)
+
+    def look_at_point(self, point, frame_id="marker"):
+        self.look_at(point.pose.position.x, point.pose.position.y, point.pose.position.z, frame_id)
+
+    def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False, from_feeder=False):
+        self.look_at_point(obj.pose.point)
+        super(ArtPr2Interface, self).pick_object(obj, pick_instruction_id, arm_id, pick_only_y_axis, from_feeder)
+
+    def place_object_to_pose(self, place_pose, arm_id, objects_frame_id="/marker", pick_only_y_axis=False):
+        self.look_at_point(place_pose.pose.point)
+        super(ArtPr2Interface, self).place_object_to_pose(place_pose, arm_id, objects_frame_id, pick_only_y_axis)
+
+    def move_arm_to_pose(self, pose, arm_id=None):
+        self.look_at_point(pose.point)
+        super(ArtPr2Interface, self).move_arm_to_pose(pose, arm_id)
