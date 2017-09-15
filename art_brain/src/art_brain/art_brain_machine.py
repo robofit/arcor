@@ -61,40 +61,43 @@ class ArtBrainMachine(object):
 
               # learning
               State(name='learning_init', on_enter=[
-                    'state_learning_init'], on_exit=[]),
+                    'learning_load_block_id', 'state_learning_init'], on_exit=[]),
               State(name='learning_run', on_enter=[
-                    'state_learning_run'], on_exit=[]),
+                    'learning_load_block_id', 'state_learning_run'], on_exit=[]),
 
               # learning picking
               State(name='learning_pick_from_polygon', on_enter=[
-                    'state_learning_pick_from_polygon'], on_exit=[]),
-              State(name='learning_pick_from_feeder', on_enter=['state_learning_pick_from_feeder'],
-                    on_exit=['state_learning_pick_from_feeder_exit']),
-              State(name='learning_pick_object_id', on_enter=[
-                    'state_learning_pick_object_id'], on_exit=[]),
+                    'learning_load_block_id', 'state_learning_pick_from_polygon'], on_exit=[]),
+              State(name='learning_pick_from_feeder', on_enter=[
+                  'learning_load_block_id', 'state_learning_pick_from_feeder'],
+        on_exit=['state_learning_pick_from_feeder_exit']),
+        State(name='learning_pick_object_id', on_enter=[
+            'learning_load_block_id', 'state_learning_pick_object_id'], on_exit=[]),
 
-              State(name='learning_pick_from_polygon_run', on_enter=[
-                    'state_learning_pick_from_polygon_run'], on_exit=[]),
-              State(name='learning_pick_from_feeder_run', on_enter=['state_learning_pick_from_feeder_run'],
-                    on_exit=[]),
-              State(name='learning_pick_object_id_run', on_enter=[
-                    'state_learning_pick_object_id_run'], on_exit=[]),
+        State(name='learning_pick_from_polygon_run', on_enter=[
+            'learning_load_block_id', 'state_learning_pick_from_polygon_run'], on_exit=[]),
+        State(name='learning_pick_from_feeder_run', on_enter=[
+            'learning_load_block_id', 'state_learning_pick_from_feeder_run'],
+        on_exit=[]),
+        State(name='learning_pick_object_id_run', on_enter=[
+            'learning_load_block_id', 'state_learning_pick_object_id_run'], on_exit=[]),
 
-              # learning placing
-              State(name='learning_place_to_pose', on_enter=[
-                    'state_learning_place_to_pose'], on_exit=[]),
-              State(name='learning_place_to_pose_run', on_enter=[
-                    'state_learning_place_to_pose_run'], on_exit=[]),
-              State(name='learning_place_to_grid', on_enter=[
-                  'state_learning_place_to_grid'], on_exit=[]),
+        # learning placing
+        State(name='learning_place_to_pose', on_enter=[
+            'learning_load_block_id', 'state_learning_place_to_pose'], on_exit=[]),
+        State(name='learning_place_to_pose_run', on_enter=[
+            'learning_load_block_id', 'state_learning_place_to_pose_run'], on_exit=[]),
+        State(name='learning_place_to_grid', on_enter=[
+            'learning_load_block_id', 'state_learning_place_to_grid'], on_exit=[]),
 
-              State(name='learning_wait', on_enter=[
-                    'state_learning_wait'], on_exit=[]),
-              State(name='learning_step_done', on_enter=[
-                    'state_learning_step_done'], on_exit=[]),
-              State(name='learning_step_error', on_enter=[
-                    'state_learning_step_error'], on_exit=[]),
-              State(name='learning_done', on_enter=['state_learning_done'], on_exit=[])]
+        State(name='learning_wait', on_enter=[
+            'learning_load_block_id', 'state_learning_wait'], on_exit=[]),
+        State(name='learning_step_done', on_enter=[
+            'learning_load_block_id', 'state_learning_step_done'], on_exit=[]),
+        State(name='learning_step_error', on_enter=[
+            'learning_load_block_id', 'state_learning_step_error'], on_exit=[]),
+        State(name='learning_done', on_enter=[
+            'learning_load_block_id', 'state_learning_done'], on_exit=[])]
 
     def __init__(self):
         self.name = 'brain'

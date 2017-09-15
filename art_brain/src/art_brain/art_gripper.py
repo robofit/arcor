@@ -4,12 +4,14 @@ from art_msgs.msg import PickPlaceAction, PickPlaceGoal, PickPlaceResult, \
     ArmNavigationAction, ArmNavigationGoal, ArmNavigationResult
 from std_srvs.srv import Empty, Trigger, TriggerRequest, TriggerResponse
 import rospy
+from art_msgs.msg import ObjInstance
 
 
 class ArtGripper(object):
 
     def __init__(self, arm_id, drill_enabled, pp_client=None, manipulation_client=None, interaction_on_client=None,
-                 interaction_off_client=None, get_ready_client=None, move_to_user_client=None, gripper_link=None):
+                 interaction_off_client=None, get_ready_client=None, move_to_user_client=None, gripper_link=None,
+                 holding_object_topic=None):
         self.arm_id = arm_id
         self.gripper_link = gripper_link
 
@@ -32,6 +34,12 @@ class ArtGripper(object):
             rospy.loginfo("Connected to " + str(arm_id) + "'s gripper pick&place action client")
         else:
             self.manip_client = None
+
+        if holding_object_topic is not None:
+            self.holding_object_sub = rospy.Subscriber(holding_object_topic, ObjInstance, queue_size=1,
+                                                       callback=self.holding_object_cb)
+        else:
+            self.holding_object_sub = None
 
         self.holding_object = None
         self.last_pick_instruction_id = None
@@ -167,3 +175,17 @@ class ArtGripper(object):
             # TODO: check arm state, inform user
             return False, ArtBrainErrors.ERROR_LEARNING_GRIPPER_INTERACTION_MODE_SWITCH_FAILED
         return True, None
+
+    def holding_object_cb(self, obj):
+        """
+
+        :param obj:
+        :type obj: ObjInstance
+        :return:
+        """
+        rospy.logerr("holding obj cb")
+        rospy.logerr(obj)
+        if obj.object_type is None or obj.object_type == '':
+            self.holding_object = None
+        else:
+            self.holding_object = obj

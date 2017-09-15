@@ -9,7 +9,7 @@ import copy
 
 import actionlib
 from sensor_msgs.msg import JointState
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PointStamped
 
 
 class ArtArmNavigationActionServer(object):
@@ -39,6 +39,8 @@ class ArtArmNavigationActionServer(object):
                             char + '_forearm_roll_joint',
                             char + '_wrist_flex_joint',
                             char + '_wrist_roll_joint']
+
+        self.look_at_pub = rospy.Publisher("/art/robot/look_at", PointStamped, queue_size=1)
 
     def action_cb(self, goal):
         max_attempt = 3
@@ -76,6 +78,12 @@ class ArtArmNavigationActionServer(object):
         self._as.set_succeeded(self.result)
 
     def move_to_point(self, pose):
+
+        pt = PointStamped()
+        pt.header = pose.header
+        pt.point = pose.pose.position
+        self.look_at_pub.publish(pt)
+
         self.group.set_pose_target(pose)
         self.move_to_pose_pub.publish(pose)
         if not self.group.go(wait=True):

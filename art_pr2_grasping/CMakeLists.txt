@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   pr2_moveit_config
   roslaunch
   rostest
+  tf_conversions
 )
 
 find_package(Boost REQUIRED COMPONENTS thread)

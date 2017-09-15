@@ -190,6 +190,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
     objects_->setGrasped(goal->object, false);
     res.result = art_msgs::PickPlaceResult::SUCCESS;
     as_->setSucceeded(res);
+    ROS_INFO_NAMED(group_name_, "Placed");
   }
   break;
 

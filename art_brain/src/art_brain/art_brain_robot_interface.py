@@ -4,7 +4,8 @@ import abc
 import rospy
 from art_msgs.msg import InterfaceState, PickPlaceGoal
 import math
-from std_srvs.srv import TriggerRequest, TriggerResponse
+from std_srvs.srv import TriggerRequest, TriggerResponse, Trigger
+from art_msgs.srv import ReinitArms, ReinitArmsResponse, ReinitArmsRequest
 
 
 class ArtBrainRobotInterface:
@@ -26,12 +27,64 @@ class ArtBrainRobotInterface:
             self._arms.append(ArtGripper(arm_id,
                                          drill_enabled=drill_enabled,
                                          pp_client=robot_ns + "/" + arm_id + "/pp" if pp else None,
+                                         holding_object_topic=robot_ns + "/" + arm_id + "/grasped_object" if pp else None,
                                          manipulation_client=robot_ns + "/" + arm_id + "/manipulation" if manipulation else None,
                                          move_to_user_client=robot_ns + "/" + arm_id + "/move_to_user" if move_to_user else None,
                                          interaction_on_client=robot_ns + "/" + arm_id + "/interaction/on" if interactive_mode else None,
                                          interaction_off_client=robot_ns + "/" + arm_id + "/interaction/off" if interactive_mode else None,
                                          get_ready_client=robot_ns + "/" + arm_id + "/get_ready" if get_ready else None,
-                                         gripper_link=gripper_link))
+                                         gripper_link=gripper_link),)
+
+            # arm reinit service
+            self.reinit_srv = rospy.Service(robot_ns + "/" + arm_id + "/" + "reinit", ReinitArms, self.re_init_arm_cb)
+
+        # emergency stop and restore
+        self.emergency_stop_srv = rospy.Service(robot_ns + "/stop", Trigger, self.emergency_stop_cb)
+        self.restore_srv = rospy.Service(robot_ns + "/restore", Trigger, self.restore_cb)
+
+    def re_init_arm_cb(self, data):
+        """
+
+        Args:
+            data:
+        @type data: ReinitArmsRequest
+
+        Returns:
+
+        """
+        if len(data.arm_ids) == 0:
+            for arm in self._arms:
+                arm.re_init()
+        else:
+            for arm_id in data.arm_ids:
+                arm = self.get_arm_by_id(arm_id)  # type: ArtGripper
+                arm.re_init()
+
+    def emergency_stop_cb(self, _):
+        resp = TriggerResponse()
+        if self.emergency_stop():
+            resp.success = True
+        else:
+            resp.success = False
+            resp.message = "Failed to stop the robot"
+        return resp
+
+    def restore_cb(self, _):
+        resp = TriggerResponse()
+        if self.restore_robot():
+            resp.success = True
+        else:
+            resp.success = False
+            resp.message = "Failed to restore the robot"
+        return resp
+
+    @abc.abstractmethod
+    def emergency_stop(self):
+        pass
+
+    @abc.abstractmethod
+    def restore_robot(self):
+        pass
 
     def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False, from_feeder=False):
         print "pick_object"
@@ -58,9 +111,7 @@ class ArtBrainRobotInterface:
         rospy.logdebug("result: " + str(arm.pp_client.get_result()))
         rospy.logdebug("status: " + arm.pp_client.get_goal_status_text())
         rospy.logdebug("state: " + str(arm.pp_client.get_state()))
-
         if arm.pp_client.get_result().result == 0:
-            arm.holding_object = obj
             arm.last_pick_instruction_id = pick_instruction_id
             return None, None, arm_id
         else:
@@ -69,8 +120,10 @@ class ArtBrainRobotInterface:
     def place_object_to_pose(self, place_pose, arm_id, objects_frame_id="/marker", pick_only_y_axis=False):
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
+        if place_pose is None:
+            return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_PLACE_POSE_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)  # type: ArtGripper
-        if arm.holding_object is None or arm.holding_object.object_id is None or arm.holding_object.object_id == "":
+        if arm.holding_object is None or arm.holding_object.object_type is None or arm.holding_object.object_type == "":
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_NO_OBJECT_IN_GRIPPER, arm_id
         goal = PickPlaceGoal()
         goal.operation = goal.PLACE_TO_POSE
@@ -81,10 +134,7 @@ class ArtBrainRobotInterface:
         #    return False
         # TODO how to decide between 180 and 90 deg?
         # allow object to be rotated by 90 deg around z axis
-        if not pick_only_y_axis:
-            goal.z_axis_angle_increment = 3.14 / 2
-        else:
-            goal.z_axis_angle_increment = 3.14
+        # goal.z_axis_angle_increment = 3.14
 
         goal.pose = place_pose
         goal.pose.header.stamp = rospy.Time.now()
@@ -92,15 +142,11 @@ class ArtBrainRobotInterface:
         # TODO: how to deal with this?
         goal.pose.pose.position.z += 0.03
 
-        if pick_only_y_axis:
-            goal.pose.pose.orientation.x = math.sqrt(0.5)
-            goal.pose.pose.orientation.w = math.sqrt(0.5)
         rospy.logdebug("Place pose: " + str(goal.pose))
         arm.pp_client.send_goal(goal)
         arm.pp_client.wait_for_result()
         rospy.logdebug("Placing object with ID: " + str(arm.holding_object.object_id))
         if arm.pp_client.get_result().result == 0:
-            arm.holding_object = None
             return None, None, arm_id
         else:
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_PLACE_FAILED, None
@@ -174,7 +220,7 @@ class ArtBrainRobotInterface:
         if arm.holding_object is not None:
             rospy.logwarn(
                 "Pick: gripper " +
-                arm.name +
+                arm.id +
                 " already holding an object (" +
                 arm.holding_object.object_id +
                 ")")
@@ -213,12 +259,20 @@ class ArtBrainRobotInterface:
     def select_arm_for_pick_from_feeder(self, pick_pose, tf_listener):
         return
 
-    def select_arm_for_place(self, pick_instruction_ids):
+    def select_arm_for_place(self, obj_type, pick_instruction_ids):
         for arm in self._arms:
             if arm.last_pick_instruction_id in pick_instruction_ids:
                 return arm.arm_id
         else:
-            return None
+            rospy.logerr(obj_type)
+            for arm in self._arms:
+                rospy.logerr(arm.arm_id)
+                rospy.logerr(arm.holding_object)
+                if arm.holding_object is None:
+                    continue
+                if arm.holding_object.object_type == obj_type:
+                    return arm.arm_id
+        return None
 
     def get_arm_by_id(self, arm_id):
         """
