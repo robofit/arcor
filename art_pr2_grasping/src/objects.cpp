@@ -201,6 +201,9 @@ void Objects::detectedObjectsCallback(
 
 void Objects::publishObject(std::string object_id)
 {
+
+    boost::recursive_mutex::scoped_lock lock(mutex_);
+
     ROS_DEBUG_NAMED("objects", "Publishing object_id: %s", object_id.c_str());
 
     moveit_msgs::CollisionObject collision_obj;
