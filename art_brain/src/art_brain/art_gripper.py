@@ -36,7 +36,8 @@ class ArtGripper(object):
             self.manip_client = None
 
         if holding_object_topic is not None:
-            self.holding_object_sub = rospy.Subscriber(holding_object_topic, ObjInstance, queue_size=1)
+            self.holding_object_sub = rospy.Subscriber(holding_object_topic, ObjInstance, queue_size=1,
+                                                       callback=self.holding_object_cb)
         else:
             self.holding_object_sub = None
 
@@ -182,7 +183,9 @@ class ArtGripper(object):
         :type obj: ObjInstance
         :return:
         """
-        if obj.object_id is None or obj.object_id == "":
+        rospy.logerr("holding obj cb")
+        rospy.logerr(obj)
+        if obj.object_type is None or obj.object_type == '':
             self.holding_object = None
         else:
             self.holding_object = obj

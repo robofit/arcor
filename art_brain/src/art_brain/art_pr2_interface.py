@@ -16,10 +16,9 @@ class ArtPr2Interface(ArtBrainRobotInterface):
     LEFT_ARM = "left_arm"
     RIGHT_ARM = "right_arm"
 
-    def __init__(self, robot_parameters, robot_ns, gripper_usage=BOTH_ARM):
-
+    def __init__(self, robot_parameters, robot_ns):
+        self.gripper_usage = self.BOTH_ARM
         super(ArtPr2Interface, self).__init__(robot_parameters, robot_ns)
-        self.gripper_usage = gripper_usage
         self.motors_halted_sub = rospy.Subscriber(
             "/pr2_ethercat/motors_halted", Bool, self.motors_halted_cb)
         self.halt_motors_srv = rospy.ServiceProxy(
@@ -28,7 +27,7 @@ class ArtPr2Interface(ArtBrainRobotInterface):
         self.reset_motors_srv = rospy.ServiceProxy(
             '/pr2_ethercat/reset_motors', Empty)  # TODO wait for service? where?
 
-        self.look_at_srv = ArtBrainUtils.create_service_client(robot_ns + "look_at", PointStamped)
+        self.look_at_pub = rospy.Publisher(robot_ns + "/look_at", PointStamped, queue_size=10)
 
     def select_arm_for_pick(self, obj, objects_frame_id, tf_listener):
         free_arm = self.select_free_arm()
@@ -87,7 +86,8 @@ class ArtPr2Interface(ArtBrainRobotInterface):
                                                                                  self.RIGHT_ARM] else None  # type: ArtGripper
         if left_arm is None and right_arm is None:
             return None
-
+        rospy.logerr(left_arm.holding_object)
+        rospy.logerr(right_arm.holding_object)
         if self.gripper_usage == self.LEFT_ARM:
             if left_arm.holding_object:
                 return None
@@ -128,19 +128,20 @@ class ArtPr2Interface(ArtBrainRobotInterface):
         point.point.x = x
         point.point.y = y
         point.point.z = z
-        self.look_at_srv.call(point)
+        self.look_at_pub.publish(point)
 
     def look_at_point(self, point, frame_id="marker"):
-        self.look_at(point.pose.position.x, point.pose.position.y, point.pose.position.z, frame_id)
+        self.look_at(point.x, point.y, point.z, frame_id)
 
     def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False, from_feeder=False):
-        self.look_at_point(obj.pose.point)
-        super(ArtPr2Interface, self).pick_object(obj, pick_instruction_id, arm_id, pick_only_y_axis, from_feeder)
+        self.look_at_point(obj.pose.position)
+        return super(ArtPr2Interface, self).pick_object(obj, pick_instruction_id, arm_id, pick_only_y_axis, from_feeder)
 
     def place_object_to_pose(self, place_pose, arm_id, objects_frame_id="/marker", pick_only_y_axis=False):
-        self.look_at_point(place_pose.pose.point)
-        super(ArtPr2Interface, self).place_object_to_pose(place_pose, arm_id, objects_frame_id, pick_only_y_axis)
+        self.look_at_point(place_pose.pose.position)
+
+        return super(ArtPr2Interface, self).place_object_to_pose(place_pose, arm_id, objects_frame_id, pick_only_y_axis)
 
     def move_arm_to_pose(self, pose, arm_id=None):
-        self.look_at_point(pose.point)
-        super(ArtPr2Interface, self).move_arm_to_pose(pose, arm_id)
+        self.look_at_point(pose.pose.position)
+        return super(ArtPr2Interface, self).move_arm_to_pose(pose, arm_id)

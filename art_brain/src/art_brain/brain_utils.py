@@ -20,6 +20,7 @@ class ArtBrainUtils(object):
         rospy.logdebug("Object to pick: " + str(obj_type))
         if obj_type is None:
             return None
+        obj_type = obj_type[0]
         for obj in objects.instances:
 
             if obj.object_id == obj_type:
@@ -30,6 +31,8 @@ class ArtBrainUtils(object):
 
     @staticmethod
     def get_pick_obj_from_feeder(obj_type):
+        if obj_type is not None:
+            obj_type = obj_type[0]
         obj = ObjInstance()
         obj.object_id = None
         obj.object_type = obj_type
@@ -38,11 +41,14 @@ class ArtBrainUtils(object):
 
     @staticmethod
     def get_pick_obj_from_polygon(obj_type, polygon, objects):
+        if polygon is not None:
+            polygon = polygon[0]
         pick_polygon = []
         pol = None
         obj_ret = None
         if obj_type is None:
             return None
+        obj_type = obj_type[0]
         # TODO check frame_id and transform to table frame?
         for point in polygon.polygon.points:
             pick_polygon.append([point.x, point.y])

@@ -40,15 +40,15 @@ from art_brain.art_gripper import ArtGripper
 
 # TODO:
 # service pro reinicializaci ruky/rukou robota, vraceni do vychozi pozice, emergency stop | DONE, otestovat
-# pri startu zjistit co si robot myslí že drží za objekty | DONE, otestovat
-# zmenit interface z /art/pr2,/art/dobot na univerzalni /art/robot  | DONE, otestovat
-# koukat tam kam se bude pohybovat ruka
 # zjistovat jestli drzim objekt predtim nez zacnu neco vykonavat (typicky pick from feeder)  | DONE, otestovat
 
 # při place zkontrolovat place pose (jestli tam není jiný objekt)
 
 
 # update_state_manager - automaticky volat z machine
+
+# polygon se neuloži hned ale (asi) až při ukončení učení/programu - při run to tam cpe starou hodnotu -
+# v gui nebo v brainu - nenačte novou instrukci?
 
 class ArtBrain(object):
 
@@ -94,6 +94,7 @@ class ArtBrain(object):
         self.fsm.state_learning_done = self.state_learning_done
         self.fsm.state_learning_pick_from_feeder_exit = self.state_learning_pick_from_feeder_exit
         self.fsm.state_shutdown = self.state_shutdown
+        self.fsm.learning_load_block_id = self.learning_load_block_id
 
         self.block_id = None
         self.user_id = 0
@@ -368,7 +369,7 @@ class ArtBrain(object):
         if not self.check_robot():
             return
         rospy.logdebug('Current state: state_pick_object_id')
-        obj_type = self.ph.get_object(self.block_id, self.instruction.id)
+        obj_type, _ = self.ph.get_object(self.block_id, self.instruction.id)
         obj = ArtBrainUtils.get_pick_obj(obj_type, self.objects)
         if obj is None or obj.object_id is None:
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
@@ -435,7 +436,7 @@ class ArtBrain(object):
                            error=ArtBrainErrors.ERROR_OBJECT_NOT_DEFINED)
             return
         # TODO: Object ID saved in program??
-        obj = self.ph.get_object(self.block_id, self.instruction.id)
+        obj, _ = self.ph.get_object(self.block_id, self.instruction.id)
         if not ArtBrainUtils.object_exist(obj, self.objects):
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING)
@@ -612,6 +613,9 @@ class ArtBrain(object):
         self.learning = True
         self.fsm.init_done()
 
+    def learning_load_block_id(self, event):
+        self.block_id = self.state_manager.state.block_id
+
     def state_learning_run(self, event):
         rospy.logdebug('Current state: state_learning_run')
 
@@ -723,8 +727,8 @@ class ArtBrain(object):
 
     def pick_object_from_polygon(self, instruction, update_state_manager=True):
 
-        obj_type = self.ph.get_object(self.block_id, self.instruction.id)
-        polygon = self.ph.get_polygon(self.block_id, self.instruction.id)
+        obj_type, _ = self.ph.get_object(self.block_id, instruction.id)
+        polygon, _ = self.ph.get_polygon(self.block_id, instruction.id)
         obj = ArtBrainUtils.get_pick_obj_from_polygon(
             obj_type, polygon, self.objects)
         if obj is None or obj.object_id is None or obj.object_id == "":
@@ -739,31 +743,37 @@ class ArtBrain(object):
                 self.ph.get_program_id(), self.block_id, instruction, {
                     "SELECTED_OBJECT_ID": obj.object_id})
         arm_id = self.robot.select_arm_for_pick(obj.object_id, self.objects.header.frame_id, self.tf_listener)
+        rospy.logerr(obj)
+        rospy.logdebug(arm_id)
         severity, error, arm_id = self.robot.pick_object(obj, instruction.id, arm_id)
+        print "what the fuck"
         if error is not None:
             self.fsm.error(severity=severity, error=error)
-        else:
             self.try_robot_arms_get_ready([arm_id])
-            self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
-                           error=ArtBrainErrors.ERROR_PICK_FAILED)
+        else:
+            self.fsm.done(success=True)
 
     def pick_object_from_feeder(self, instruction):
 
-        if not self.ph.is_object_set(self.block_id, self.instruction.id):
+        if not self.ph.is_object_set(self.block_id, instruction.id):
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_OBJECT_NOT_DEFINED)
             return
-        obj_type = self.ph.get_object(self.block_id, self.instruction.id)
+        obj_type, _ = self.ph.get_object(self.block_id, instruction.id)
         obj = ArtBrainUtils.get_pick_obj_from_feeder(obj_type)
 
-        if not self.ph.is_pose_set(self.block_id, self.instruction.id):
+        if not self.ph.is_pose_set(self.block_id, instruction.id):
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_PICK_POSE_NOT_SELECTED)
             return
-        pick_pose = self.ph.get_pose(self.block_id, self.instruction.id)
-
+        pick_pose, _ = self.ph.get_pose(self.block_id, instruction.id)
+        if pick_pose is None:
+            self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
+                           error=ArtBrainErrors.ERROR_PICK_POSE_NOT_SELECTED)
+        else:
+            pick_pose = pick_pose[0]
         arm_id = self.robot.select_arm_for_pick_from_feeder(pick_pose, self.tf_listener)
-
+        rospy.logerr(arm_id)
         severity, error, arm_id = self.robot.move_arm_to_pose(pick_pose, arm_id)
         if error is not None:
             self.try_robot_arms_get_ready([arm_id])
@@ -803,14 +813,13 @@ class ArtBrain(object):
             self.fsm.done(success=True)
 
     def place_object_to_pose(self, instruction, update_state_manager=True, get_ready_after_place=False):
-        pose = ArtBrainUtils.get_place_pose(instruction)
 
         # TODO place pose
         if update_state_manager:
             self.state_manager.update_program_item(
                 self.ph.get_program_id(), self.block_id, instruction)
 
-        if pose is None or len(pose) < 1:
+        if not self.ph.is_pose_set(self.block_id, instruction.id):
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_PLACE_POSE_NOT_DEFINED)
 
@@ -822,8 +831,11 @@ class ArtBrain(object):
                     error=ArtBrainErrors.ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE)
 
                 return
-            arm_id = self.robot.select_arm_for_place(instruction.ref_id)
-            place_pose = self.ph.get_pose(self.block_id, self.instruction.id)
+            obj_type, _ = self.ph.get_object(self.block_id, instruction.ref_id[0])
+            obj_type = obj_type[0]
+            arm_id = self.robot.select_arm_for_place(obj_type, instruction.ref_id)
+            place_pose, _ = self.ph.get_pose(self.block_id, instruction.id)
+            place_pose = place_pose[0]
             severity, error, _ = self.robot.place_object_to_pose(place_pose, arm_id)
             if error is not None:
                 self.try_robot_arms_get_ready([arm_id])
@@ -1311,6 +1323,7 @@ class ArtBrain(object):
 
             # if self.is_learning_pick_from_feeder():
         '''
+        print state
         pass
 
     def projectors_calibrated_cb(self, msg):
