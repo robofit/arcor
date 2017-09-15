@@ -140,12 +140,12 @@ class ArtBrainRobotInterface:
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.header.frame_id = objects_frame_id
         # TODO: how to deal with this?
-        goal.pose.pose.position.z += 0.03
+        goal.pose.pose.position.z += 0.01
 
-        rospy.logdebug("Place pose: " + str(goal.pose))
+        rospy.logdebug("Placing object with ID: " + str(arm.holding_object.object_id))
         arm.pp_client.send_goal(goal)
         arm.pp_client.wait_for_result()
-        rospy.logdebug("Placing object with ID: " + str(arm.holding_object.object_id))
+
         if arm.pp_client.get_result().result == 0:
             return None, None, arm_id
         else:
