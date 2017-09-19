@@ -39,7 +39,6 @@ from art_brain.art_gripper import ArtGripper
 
 
 # TODO:
-# service pro reinicializaci ruky/rukou robota, vraceni do vychozi pozice, emergency stop | DONE, otestovat
 # zjistovat jestli drzim objekt predtim nez zacnu neco vykonavat (typicky pick from feeder)  | DONE, otestovat
 
 # při place zkontrolovat place pose (jestli tam není jiný objekt)
@@ -214,6 +213,8 @@ class ArtBrain(object):
             '/art/object_detector/flag/set', ObjectFlagSet)
 
         r = rospy.Rate(1)
+        if not self.system_calibrated or not self.projectors_calibrated:
+            self.robot.prepare_for_calibration()
         while not self.system_calibrated:
             if rospy.is_shutdown():
                 return
@@ -234,7 +235,8 @@ class ArtBrain(object):
 
             rospy.loginfo("Waiting for projectors to calibrate...")
             while not self.projectors_calibrated:
-
+                if rospy.is_shutdown():
+                    return
                 rospy.sleep(1)
 
         if not self.table_calibrated:
@@ -256,6 +258,8 @@ class ArtBrain(object):
                 attempt += 1
                 while not self.table_calibrated and self.table_calibrating:
                     rospy.sleep(1)
+
+        self.robot.arms_get_ready()
 
         self.initialized = True
         self.fsm.init()

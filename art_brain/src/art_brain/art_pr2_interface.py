@@ -4,7 +4,7 @@ import rospy
 from art_gripper import ArtGripper
 from brain_utils import ArtBrainUtils
 from art_msgs.srv import ReinitArmsRequest, ReinitArmsResponse
-from std_srvs.srv import TriggerResponse, TriggerRequest
+from std_srvs.srv import TriggerResponse, TriggerRequest, Trigger
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty, EmptyRequest
 from geometry_msgs.msg import PointStamped
@@ -28,6 +28,12 @@ class ArtPr2Interface(ArtBrainRobotInterface):
             '/pr2_ethercat/reset_motors', Empty)  # TODO wait for service? where?
 
         self.look_at_pub = rospy.Publisher(robot_ns + "/look_at", PointStamped, queue_size=10)
+
+        for arm in self._arms:  # type: ArtGripper
+            if arm.arm_id == self.LEFT_ARM:
+                arm.arm_up = ArtBrainUtils.create_service_client(robot_ns + "/" + self.LEFT_ARM + "/arm_up", Trigger)
+            elif arm.arm_id == self.RIGHT_ARM:
+                arm.arm_up = ArtBrainUtils.create_service_client(robot_ns + "/" + self.RIGHT_ARM + "/arm_up", Trigger)
 
     def select_arm_for_pick(self, obj, objects_frame_id, tf_listener):
         free_arm = self.select_free_arm()
@@ -145,3 +151,7 @@ class ArtPr2Interface(ArtBrainRobotInterface):
     def move_arm_to_pose(self, pose, arm_id=None):
         self.look_at_point(pose.pose.position)
         return super(ArtPr2Interface, self).move_arm_to_pose(pose, arm_id)
+
+    def prepare_for_calibration(self):
+        for arm in self._arms:  # type: ArtGripper
+            arm.arm_up.call(TriggerRequest())
