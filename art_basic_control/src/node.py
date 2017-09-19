@@ -48,12 +48,14 @@ class ArtBasicControl:
         self.left_interaction_on = rospy.Service(self.ns + "left_arm/interaction/on", Trigger, self.left_interaction_on_cb)
         self.left_interaction_off = rospy.Service(self.ns + "left_arm/interaction/off", Trigger, self.left_interaction_off_cb)
         self.left_get_ready = rospy.Service(self.ns + "left_arm/get_ready", Trigger, self.left_interaction_get_ready_cb)
+        self.left_arm_up = rospy.Service(self.ns + "left_arm/arm_up", Trigger, self.left_interaction_arm_up_cb)
         self.left_move_to_user = rospy.Service(self.ns + "left_arm/move_to_user", Trigger, self.left_interaction_move_to_user_cb)
         self.left_int_pub = rospy.Publisher(self.ns + "left_arm/interaction/state", Bool, queue_size=1, latch=True)
 
         self.right_interaction_on = rospy.Service(self.ns + "right_arm/interaction/on", Trigger, self.right_interaction_on_cb)
         self.right_interaction_off = rospy.Service(self.ns + "right_arm/interaction/off", Trigger, self.right_interaction_off_cb)
         self.right_get_ready = rospy.Service(self.ns + "right_arm/get_ready", Trigger, self.right_interaction_get_ready_cb)
+        self.right_arm_up = rospy.Service(self.ns + "right_arm/arm_up", Trigger, self.right_interaction_arm_up_cb)
         self.right_move_to_user = rospy.Service(self.ns + "right_arm/move_to_user", Trigger, self.right_interaction_move_to_user_cb)
         self.right_int_pub = rospy.Publisher(self.ns + "right_arm/interaction/state", Bool, queue_size=1, latch=True)
 
@@ -187,6 +189,19 @@ class ArtBasicControl:
 
         return resp
 
+    def left_interaction_arm_up_cb(self, req):
+
+        resp = TriggerResponse()
+
+        if self.left_arm_mann:
+            rospy.logerr('Left arm in interactive mode')
+            resp.success = False
+        else:
+
+            resp.success = self.move(self.group_left, target="up_left_arm")
+
+        return resp
+
     def left_interaction_move_to_user_cb(self, req):
 
         resp = TriggerResponse()
@@ -265,6 +280,19 @@ class ArtBasicControl:
         else:
 
             resp.success = self.move(self.group_right, target="tuck_right_arm")
+
+        return resp
+
+    def right_interaction_arm_up_cb(self, req):
+
+        resp = TriggerResponse()
+
+        if self.right_arm_mann:
+            rospy.logerr('Right arm in interactive mode')
+            resp.success = False
+        else:
+
+            resp.success = self.move(self.group_right, target="up_right_arm")
 
         return resp
 
