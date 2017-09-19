@@ -743,10 +743,7 @@ class ArtBrain(object):
                 self.ph.get_program_id(), self.block_id, instruction, {
                     "SELECTED_OBJECT_ID": obj.object_id})
         arm_id = self.robot.select_arm_for_pick(obj.object_id, self.objects.header.frame_id, self.tf_listener)
-        rospy.logerr(obj)
-        rospy.logdebug(arm_id)
         severity, error, arm_id = self.robot.pick_object(obj, instruction.id, arm_id)
-        print "what the fuck"
         if error is not None:
             self.fsm.error(severity=severity, error=error)
             self.try_robot_arms_get_ready([arm_id])
@@ -773,7 +770,6 @@ class ArtBrain(object):
         else:
             pick_pose = pick_pose[0]
         arm_id = self.robot.select_arm_for_pick_from_feeder(pick_pose, self.tf_listener)
-        rospy.logerr(arm_id)
         severity, error, arm_id = self.robot.move_arm_to_pose(pick_pose, arm_id)
         if error is not None:
             self.try_robot_arms_get_ready([arm_id])
@@ -911,7 +907,6 @@ class ArtBrain(object):
         rospy.logdebug(obj)
         goal = PickPlaceGoal()
         goal.operation = goal.PLACE_TO_POSE
-        print ("place_object", obj)
         goal.object = obj.object_id
         if not self.check_place_pose(place, obj):
             return False
@@ -1323,7 +1318,6 @@ class ArtBrain(object):
 
             # if self.is_learning_pick_from_feeder():
         '''
-        print state
         pass
 
     def projectors_calibrated_cb(self, msg):

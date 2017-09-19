@@ -87,12 +87,9 @@ class ArtBrainRobotInterface:
         pass
 
     def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False, from_feeder=False):
-        print "pick_object"
-        print arm_id
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)
-        print arm
         severity, error = self.check_arm_for_pick(arm)
         if error is not None:
             return severity, error, arm_id
@@ -155,8 +152,6 @@ class ArtBrainRobotInterface:
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)
-        print arm_id
-        print arm
 
         if not arm.move_to_pose(pose):
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED, arm_id
@@ -264,10 +259,7 @@ class ArtBrainRobotInterface:
             if arm.last_pick_instruction_id in pick_instruction_ids:
                 return arm.arm_id
         else:
-            rospy.logerr(obj_type)
             for arm in self._arms:
-                rospy.logerr(arm.arm_id)
-                rospy.logerr(arm.holding_object)
                 if arm.holding_object is None:
                     continue
                 if arm.holding_object.object_type == obj_type:
