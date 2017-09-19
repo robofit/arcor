@@ -67,13 +67,14 @@ class ArtGripper(object):
         rospy.loginfo("Arm " + str(arm_id) + " ready.")
 
     def re_init(self):
-        self.last_pick_instruction_id = None
-        self.holding_object = None
         if self.pp_client is not None:
             goal = PickPlaceGoal()
             goal.operation = goal.RESET
             self.pp_client.send_goal(goal)
             self.pp_client.wait_for_result()
+        self.last_pick_instruction_id = None
+        self.holding_object = None
+        self.get_ready()
 
     def get_ready(self):
         if self.get_ready_client is None:
