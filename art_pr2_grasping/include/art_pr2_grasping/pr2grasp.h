@@ -49,7 +49,7 @@ private:
   std::string default_target_;
   std::string gripper_state_topic_;
 
-  void publishObject(TObjectInfo obj = TObjectInfo());
+
 
 protected:
 
@@ -83,6 +83,8 @@ public:
   std::string getPlanningFrame();
 
   bool hasGraspedObject();
+
+  void publishObject(TObjectInfo obj = TObjectInfo());
 
   bool pick(const std::string& object_id, bool feeder=false);
 

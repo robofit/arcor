@@ -62,7 +62,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
     move_group_->detachObject();
     grasped_object_.reset();
     objects_->clear();
-
+    publishObject();
     // TODO(zdenekm) try to close gripper and check if there is no object
 
     res.result = art_msgs::PickPlaceResult::SUCCESS;
