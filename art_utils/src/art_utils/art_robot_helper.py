@@ -13,7 +13,7 @@ class RobotParametersNotOnParameterServer(Exception):
 
 class ArtRobotHelper(object):
 
-    def __init__(self, robot_ns):
+    def __init__(self, robot_ns="/art/robot"):
         self.robot_ns = robot_ns
         self.arms = []
         self.robot_parameters = rospy.get_param(self.robot_ns, None)
