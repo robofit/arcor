@@ -127,11 +127,11 @@ before_script:
   - git clone https://github.com/OpenKinect/libfreenect2.git
   - cd libfreenect2
   - cd depends; ./download_debs_trusty.sh
-  - apt-get install build-essential cmake pkg-config
-  - dpkg -i debs/libusb*deb
-  - apt-get install libturbojpeg libjpeg-turbo8-dev
-  - dpkg -i debs/libglfw3*deb; apt-get install -f; apt-get install 
-  - apt-get install libopenni2-dev
+  - sudo apt-get install build-essential cmake pkg-config
+  - sudo dpkg -i debs/libusb*deb
+  - sudo apt-get install libturbojpeg libjpeg-turbo8-dev
+  - sudo dpkg -i debs/libglfw3*deb; sudo apt-get install -f; sudo apt-get install 
+  - sudo apt-get install libopenni2-dev
   - cd ..
   - mkdir build && cd build
   - cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/freenect2 -DENABLE_CXX11=ON
