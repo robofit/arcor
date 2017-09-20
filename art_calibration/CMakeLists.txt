@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   ar_track_alvar
   tf
   roslaunch
+  roslint
 )
 
 find_package(catkin REQUIRED dynamic_reconfigure)
@@ -22,6 +23,10 @@ generate_dynamic_reconfigure_options(
   cfg/Calibration.cfg
 
 )
+
+set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
+roslint_python()
+roslint_add_test()
 
 catkin_package(
 #  INCLUDE_DIRS include
