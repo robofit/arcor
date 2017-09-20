@@ -16,7 +16,7 @@ class ArtBrainMachine(object):
               State(name='program_run', on_enter=[
                     'state_program_run'], on_exit=[]),
               State(name='program_paused', on_enter=[
-                  'state_program_paused'], on_exit=[]),
+                    'state_program_paused'], on_exit=[]),
 
               # basic instructions
               State(name='get_ready', on_enter=[
@@ -40,17 +40,17 @@ class ArtBrainMachine(object):
               State(name='place_to_pose', on_enter=[
                     'state_place_to_pose'], on_exit=[]),
               State(name='place_to_grid', on_enter=[
-                  'state_place_to_grid'], on_exit=[]),
+                    'state_place_to_grid'], on_exit=[]),
 
               # manipulation
               State(name='path_through_points', on_enter=[
-                  'state_path_through_points'], on_exit=[]),
+                    'state_path_through_points'], on_exit=[]),
               State(name='welding_points', on_enter=[
-                  'state_welding_points'], on_exit=[]),
+                    'state_welding_points'], on_exit=[]),
               State(name='welding_seam', on_enter=[
-                  'state_welding_seam'], on_exit=[]),
+                    'state_welding_seam'], on_exit=[]),
               State(name='drill_points', on_enter=[
-                  'state_drill_points'], on_exit=[]),
+                    'state_drill_points'], on_exit=[]),
 
               State(name='program_error', on_enter=[
                     'state_program_error'], on_exit=[]),
@@ -69,35 +69,54 @@ class ArtBrainMachine(object):
               State(name='learning_pick_from_polygon', on_enter=[
                     'learning_load_block_id', 'state_learning_pick_from_polygon'], on_exit=[]),
               State(name='learning_pick_from_feeder', on_enter=[
-                  'learning_load_block_id', 'state_learning_pick_from_feeder'],
-        on_exit=['state_learning_pick_from_feeder_exit']),
-        State(name='learning_pick_object_id', on_enter=[
-            'learning_load_block_id', 'state_learning_pick_object_id'], on_exit=[]),
+                    'learning_load_block_id', 'state_learning_pick_from_feeder'],
+                    on_exit=['state_learning_pick_from_feeder_exit']),
+              State(name='learning_pick_object_id', on_enter=[
+                    'learning_load_block_id', 'state_learning_pick_object_id'], on_exit=[]),
 
-        State(name='learning_pick_from_polygon_run', on_enter=[
-            'learning_load_block_id', 'state_learning_pick_from_polygon_run'], on_exit=[]),
-        State(name='learning_pick_from_feeder_run', on_enter=[
-            'learning_load_block_id', 'state_learning_pick_from_feeder_run'],
-        on_exit=[]),
-        State(name='learning_pick_object_id_run', on_enter=[
-            'learning_load_block_id', 'state_learning_pick_object_id_run'], on_exit=[]),
+              State(name='learning_pick_from_polygon_run', on_enter=[
+                    'learning_load_block_id', 'state_learning_pick_from_polygon_run'], on_exit=[]),
+              State(name='learning_pick_from_feeder_run', on_enter=[
+                    'learning_load_block_id', 'state_learning_pick_from_feeder_run'],
+                    on_exit=[]),
+              State(name='learning_pick_object_id_run', on_enter=[
+                    'learning_load_block_id', 'state_learning_pick_object_id_run'], on_exit=[]),
 
-        # learning placing
-        State(name='learning_place_to_pose', on_enter=[
-            'learning_load_block_id', 'state_learning_place_to_pose'], on_exit=[]),
-        State(name='learning_place_to_pose_run', on_enter=[
-            'learning_load_block_id', 'state_learning_place_to_pose_run'], on_exit=[]),
-        State(name='learning_place_to_grid', on_enter=[
-            'learning_load_block_id', 'state_learning_place_to_grid'], on_exit=[]),
+              # learning placing
+              State(name='learning_place_to_pose', on_enter=[
+                    'learning_load_block_id', 'state_learning_place_to_pose'], on_exit=[]),
+              State(name='learning_place_to_pose_run', on_enter=[
+                    'learning_load_block_id', 'state_learning_place_to_pose_run'], on_exit=[]),
+              State(name='learning_place_to_grid', on_enter=[
+                    'learning_load_block_id', 'state_learning_place_to_grid'], on_exit=[]),
 
-        State(name='learning_wait', on_enter=[
-            'learning_load_block_id', 'state_learning_wait'], on_exit=[]),
-        State(name='learning_step_done', on_enter=[
-            'learning_load_block_id', 'state_learning_step_done'], on_exit=[]),
-        State(name='learning_step_error', on_enter=[
-            'learning_load_block_id', 'state_learning_step_error'], on_exit=[]),
-        State(name='learning_done', on_enter=[
-            'learning_load_block_id', 'state_learning_done'], on_exit=[])]
+              # learning drilling and welding
+              State(name='learning_welding_point', on_enter=[
+                    'learning_load_block_id', 'state_learning_welding_point'], on_exit=[]),
+              State(name='learning_welding_point_run', on_enter=[
+                    'learning_load_block_id', 'state_learning_welding_point_run'], on_exit=[]),
+
+              State(name='learning_welding_seam', on_enter=[
+                    'learning_load_block_id', 'state_learning_welding_seam'], on_exit=[]),
+              State(name='learning_welding_seam_run', on_enter=[
+                    'learning_load_block_id', 'state_learning_welding_seam_run'], on_exit=[]),
+
+              State(name='learning_drill_points', on_enter=[
+                    'learning_load_block_id', 'state_learning_drill_points'], on_exit=[
+                    'state_learning_drill_points_exit']),
+              State(name='learning_drill_points_run', on_enter=[
+                    'learning_load_block_id', 'state_learning_drill_points_run'], on_exit=[]),
+
+              # learning others
+
+              State(name='learning_wait', on_enter=[
+                    'learning_load_block_id', 'state_learning_wait'], on_exit=[]),
+              State(name='learning_step_done', on_enter=[
+                    'learning_load_block_id', 'state_learning_step_done'], on_exit=[]),
+              State(name='learning_step_error', on_enter=[
+                    'learning_load_block_id', 'state_learning_step_error'], on_exit=[]),
+              State(name='learning_done', on_enter=[
+                    'learning_load_block_id', 'state_learning_done'], on_exit=[])]
 
     def __init__(self):
         self.name = 'brain'
@@ -310,6 +329,48 @@ class ArtBrainMachine(object):
             'done', 'learning_place_to_pose_run', 'learning_run')
         self.machine.add_transition(
             'error', 'learning_place_to_pose_run', 'learning_step_error')
+
+        # learning welding_point
+        self.machine.add_transition(
+            'welding_point', 'learning_run', 'learning_welding_point')
+        self.machine.add_transition(
+            'done', 'learning_welding_point', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_welding_point', 'learning_step_error')
+        self.machine.add_transition(
+            'welding_point_run', 'learning_run', 'learning_welding_point_run')
+        self.machine.add_transition(
+            'done', 'learning_welding_point_run', 'learning_run')
+        self.machine.add_transition(
+            'error', 'learning_welding_point_run', 'learning_step_error')
+
+        # learning welding_seam
+        self.machine.add_transition(
+            'welding_seam', 'learning_run', 'learning_welding_seam')
+        self.machine.add_transition(
+            'done', 'learning_welding_seam', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_welding_seam', 'learning_step_error')
+        self.machine.add_transition(
+            'welding_seam_run', 'learning_run', 'learning_welding_seam_run')
+        self.machine.add_transition(
+            'done', 'learning_welding_seam_run', 'learning_run')
+        self.machine.add_transition(
+            'error', 'learning_welding_seam_run', 'learning_step_error')
+
+        # learning drill_points
+        self.machine.add_transition(
+            'drill_points', 'learning_run', 'learning_drill_points')
+        self.machine.add_transition(
+            'done', 'learning_drill_points', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_drill_points', 'learning_step_error')
+        self.machine.add_transition(
+            'drill_points_run', 'learning_run', 'learning_drill_points_run')
+        self.machine.add_transition(
+            'done', 'learning_drill_points_run', 'learning_run')
+        self.machine.add_transition(
+            'error', 'learning_drill_points_run', 'learning_step_error')
 
         # learning place_to_grid
         self.machine.add_transition(
