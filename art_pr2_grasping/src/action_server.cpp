@@ -62,7 +62,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
     move_group_->detachObject();
     grasped_object_.reset();
     objects_->clear();
-
+    publishObject();
     // TODO(zdenekm) try to close gripper and check if there is no object
 
     res.result = art_msgs::PickPlaceResult::SUCCESS;
@@ -110,6 +110,7 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
       grasped = pick(goal->object, goal->operation == art_msgs::PickPlaceGoal::PICK_FROM_FEEDER);  // todo flag if it make sense to try again
 
       objects_->setPaused(false);
+      objects_->publishObject(goal->object);
 
       // (type of failure)
       if (grasped)

@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "pr2_pick_place");
 
-  ros::AsyncSpinner spinner(1);
+  ros::AsyncSpinner spinner(4);
   spinner.start();
 
   ROS_INFO("Starting...");

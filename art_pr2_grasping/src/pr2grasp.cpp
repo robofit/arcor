@@ -150,6 +150,7 @@ void artPr2Grasping::look_at(const geometry_msgs::PoseStamped& ps)
 bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
                            double z_axis_angle_increment, bool keep_orientation)
 {
+
   if (!hasGraspedObject())
   {
     ROS_ERROR_NAMED(group_name_, "No object to place.");
@@ -162,8 +163,6 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
   pose_stamped.pose = ps;
   pose_stamped.header.frame_id = getPlanningFrame();
   pose_stamped.header.stamp = ros::Time::now();
-
-  look_at(pose_stamped);
 
   shape_msgs::SolidPrimitive bb = grasped_object_->type.bbox;
 
@@ -202,10 +201,10 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
    tf::Matrix3x3 tmp(obj_tf_pose.getRotation());
    double rr, rp, ry;
    tmp.getRPY(rr, rp, ry);
-   std::cout << rr << " " << rp << " " << ry << std::endl;
+   // std::cout << rr << " " << rp << " " << ry << std::endl;
 
   // Create 360 degrees of place location rotated around a center
-  for (double y = -1; y <= 1; y+= 2)
+  for (int y = -1; y <= 1; y+= 2)
   for (double angle = 0; angle < 2 * M_PI; angle += z_axis_angle_increment)
   {
     geometry_msgs::PoseStamped pps = pose_stamped;
@@ -218,7 +217,7 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
     // TODO quick and dirty "fix"
     if (fabs(ry) > 1.0 && fabs(ry) < 2.0) {
 
-        std::cout << "x-axis correction ;)" << std::endl;
+        // std::cout << "x-axis correction ;)" << std::endl;
         tfq2 = tf::Quaternion(y*0.707, 0, 0, 0.707);
         yaw_ang = 0;
     }
@@ -232,7 +231,7 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps,
 
     tfq1 = tf::createQuaternionFromYaw(yaw + angle + yaw_ang);
 
-    std::cout << "yaw: " << yaw << " angle: " << angle << std::endl;
+    // std::cout << "yaw: " << yaw << " angle: " << angle << std::endl;
 
     tf::quaternionTFToMsg(tfq1 * tfq2, pps.pose.orientation);
 

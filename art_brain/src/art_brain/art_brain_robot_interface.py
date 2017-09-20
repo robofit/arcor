@@ -41,6 +41,7 @@ class ArtBrainRobotInterface:
         # emergency stop and restore
         self.emergency_stop_srv = rospy.Service(robot_ns + "/stop", Trigger, self.emergency_stop_cb)
         self.restore_srv = rospy.Service(robot_ns + "/restore", Trigger, self.restore_cb)
+        self.prepare_for_calibration_srv = rospy.Service(robot_ns + "/prepare_for_calibration", Trigger, self.prepare_for_calibration_cb)
 
     def re_init_arm_cb(self, data):
         """
@@ -52,6 +53,7 @@ class ArtBrainRobotInterface:
         Returns:
 
         """
+        print data
         if len(data.arm_ids) == 0:
             for arm in self._arms:
                 arm.re_init()
@@ -59,6 +61,7 @@ class ArtBrainRobotInterface:
             for arm_id in data.arm_ids:
                 arm = self.get_arm_by_id(arm_id)  # type: ArtGripper
                 arm.re_init()
+        return ReinitArmsResponse()
 
     def emergency_stop_cb(self, _):
         resp = TriggerResponse()
@@ -78,6 +81,19 @@ class ArtBrainRobotInterface:
             resp.message = "Failed to restore the robot"
         return resp
 
+    def prepare_for_calibration_cb(self, _):
+        resp = TriggerResponse()
+        if self.prepare_for_calibration():
+            resp.success = True
+        else:
+            resp.success = False
+            resp.message = "Failed to prepare for interaction"
+        return resp
+
+    @abc.abstractmethod
+    def prepare_for_calibration(self):
+        pass
+
     @abc.abstractmethod
     def emergency_stop(self):
         pass
@@ -87,12 +103,9 @@ class ArtBrainRobotInterface:
         pass
 
     def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False, from_feeder=False):
-        print "pick_object"
-        print arm_id
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)
-        print arm
         severity, error = self.check_arm_for_pick(arm)
         if error is not None:
             return severity, error, arm_id
@@ -140,12 +153,12 @@ class ArtBrainRobotInterface:
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.header.frame_id = objects_frame_id
         # TODO: how to deal with this?
-        goal.pose.pose.position.z += 0.03
+        goal.pose.pose.position.z += 0.01
 
-        rospy.logdebug("Place pose: " + str(goal.pose))
+        rospy.logdebug("Placing object with ID: " + str(arm.holding_object.object_id))
         arm.pp_client.send_goal(goal)
         arm.pp_client.wait_for_result()
-        rospy.logdebug("Placing object with ID: " + str(arm.holding_object.object_id))
+
         if arm.pp_client.get_result().result == 0:
             return None, None, arm_id
         else:
@@ -155,8 +168,6 @@ class ArtBrainRobotInterface:
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)
-        print arm_id
-        print arm
 
         if not arm.move_to_pose(pose):
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED, arm_id
@@ -264,10 +275,7 @@ class ArtBrainRobotInterface:
             if arm.last_pick_instruction_id in pick_instruction_ids:
                 return arm.arm_id
         else:
-            rospy.logerr(obj_type)
             for arm in self._arms:
-                rospy.logerr(arm.arm_id)
-                rospy.logerr(arm.holding_object)
                 if arm.holding_object is None:
                     continue
                 if arm.holding_object.object_type == obj_type:
