@@ -7,6 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   roslaunch
   rgbd_launch
   openni_launch
+  pr2_bringup
 )
 
 catkin_package(
