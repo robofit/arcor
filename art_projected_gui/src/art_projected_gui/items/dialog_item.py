@@ -72,3 +72,6 @@ class DialogItem(Item):
     def boundingRect(self):
 
         return QtCore.QRectF(0, 0, self.w, self.h)
+
+    def set_caption(self, caption):
+        self.desc.set_content(caption)
