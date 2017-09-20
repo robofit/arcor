@@ -1,17 +1,24 @@
 <?xml version="1.0"?>
 <package>
-  <name>art_pr2</name>
-  <version>0.0.0</version>
-  <description>The art_pr2 package</description>
+    <name>art_pr2</name>
+    <version>0.0.0</version>
+    <description>The art_pr2 package</description>
 
-  <maintainer email="ikapinus@todo.todo">ikapinus</maintainer>
+    <maintainer email="ikapinus@todo.todo">ikapinus</maintainer>
 
-  <license>TODO</license>
+    <license>TODO</license>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>pr2_moveit_config</build_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>pr2_moveit_config</run_depend>
+    <buildtool_depend>catkin</buildtool_depend>
+    <build_depend>roscpp</build_depend>
+    <build_depend>pr2_moveit_config</build_depend>
+    <build_depend>rgbd_launch</build_depend>
+    <build_depend>openni_launch</build_depend>
+
+    <run_depend>roscpp</run_depend>
+    <run_depend>pr2_moveit_config</run_depend>
+    <run_depend>rgbd_launch</run_depend>
+    <run_depend>openni_launch</run_depend>
+
+    <test_depend>roslaunch</test_depend>
 
 </package>

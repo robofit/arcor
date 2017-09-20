@@ -13,9 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   roslaunch
   roslint
+  dynamic_reconfigure
 )
-
-find_package(catkin REQUIRED dynamic_reconfigure)
 
 catkin_python_setup()
 

@@ -8,6 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   roslint
   roslaunch
+  tf
+  dobot
 )
 
 set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
@@ -17,7 +19,7 @@ roslint_add_test()
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES art_dobot_arm
-#  CATKIN_DEPENDS art_msgs geometry_msgs rospy std_msgs
+CATKIN_DEPENDS art_msgs geometry_msgs rospy std_msgs dobot
 #  DEPENDS system_lib
 )
 
