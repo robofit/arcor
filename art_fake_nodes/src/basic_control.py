@@ -40,7 +40,7 @@ class FakeUserState:
         self.look_at_sub = rospy.Subscriber("/art/robot/look_at", PointStamped, self.look_at_cb)
         self.spine_control_pub = rospy.Publisher("/art/pr2/torso_controller/command", JointTrajectory, queue_size=1)
 
-    def left_interaction_on_cb(self,  req):
+    def left_interaction_on_cb(self, req):
         resp = TriggerResponse()
         if self.left_arm_mann:
             rospy.logerr('Left arm already in interactive mode')
@@ -51,7 +51,7 @@ class FakeUserState:
             resp.success = True
         return resp
 
-    def left_interaction_off_cb(self,  req):
+    def left_interaction_off_cb(self, req):
         resp = TriggerResponse()
         if not self.left_arm_mann:
             rospy.logerr('Left arm already in normal mode')
@@ -62,7 +62,7 @@ class FakeUserState:
             resp.success = True
         return resp
 
-    def left_interaction_get_ready_cb(self,  req):
+    def left_interaction_get_ready_cb(self, req):
 
         if self.left_arm_mann:
             rospy.logerr('Left arm in interactive mode')
@@ -73,7 +73,7 @@ class FakeUserState:
         resp.success = True
         return resp
 
-    def left_interaction_move_to_user_cb(self,  req):
+    def left_interaction_move_to_user_cb(self, req):
 
         if self.left_arm_mann:
             rospy.logerr('Left arm in interactive mode')
@@ -83,7 +83,7 @@ class FakeUserState:
         resp.success = True
         return resp
 
-    def right_interaction_on_cb(self,  req):
+    def right_interaction_on_cb(self, req):
         resp = TriggerResponse()
 
         if self.right_arm_mann:
@@ -96,7 +96,7 @@ class FakeUserState:
 
         return resp
 
-    def right_interaction_off_cb(self,  req):
+    def right_interaction_off_cb(self, req):
         resp = TriggerResponse()
 
         if not self.right_arm_mann:
@@ -145,6 +145,7 @@ class FakeUserState:
     def look_at_cb(self, where):
         """ where: PoseStamped."""
         rospy.loginfo("I looked where you wanted to")
+
 
 if __name__ == '__main__':
     rospy.init_node('fake_basic_control')
