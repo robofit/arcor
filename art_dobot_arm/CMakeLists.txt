@@ -30,3 +30,6 @@ include_directories(
 if (CATKIN_ENABLE_TESTING)
   roslaunch_add_file_check(launch)
 endif()
+
+catkin_install_python(PROGRAMS src/dobot_client.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

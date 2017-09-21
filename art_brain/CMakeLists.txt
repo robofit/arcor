@@ -11,6 +11,11 @@ find_package(catkin REQUIRED COMPONENTS
   roslint
   roslaunch
   art_db
+  ar_track_alvar
+  art_calibration
+  art_arcode_detector
+  art_projected_gui
+  art_simple_tracker
 )
 
 set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
@@ -26,3 +31,6 @@ include_directories(
 if (CATKIN_ENABLE_TESTING)
   roslaunch_add_file_check(launch)
 endif()
+
+catkin_install_python(PROGRAMS src/node.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

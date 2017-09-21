@@ -16,12 +16,13 @@ import scipy
 import cv2
 import sys
 
+
 class TableLeap:
     def __init__(self):
         self.leap_sub = rospy.Subscriber("/leapmotion/data", leapros, self.leap_data_cb, queue_size=1)
         self.markers_pub = rospy.Publisher("/table_pointing_leap/visualize", Marker, queue_size=1)
         self.table_frame = "/table"
-        self.leap_data = None # leapros
+        self.leap_data = None  # leapros
         self.p_matrix = None
         self.calibrate()
 
@@ -129,7 +130,6 @@ class TableLeap:
         matr = cv2.getPerspectiveTransform(new_points, m_points)
         #self.h_matrix = np.matrix(h)
         self.p_matrix = np.matrix(matr, dtype="float32")
-
 
     def transform_leap_data(self, position, orientation=None):
         '''
