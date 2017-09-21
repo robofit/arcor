@@ -93,7 +93,6 @@ install:
   # source it to set the path variables.
   - cd ~/catkin_ws
   - catkin init
-  - source devel/setup.bash
   # Add the package under integration to the workspace using a symlink.
   - cd ~/catkin_ws/src
   - ln -s $CI_SOURCE_PATH .
