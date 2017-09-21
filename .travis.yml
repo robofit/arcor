@@ -146,10 +146,11 @@ before_script:
 # Compile and test.
 script:
   - cd ~/catkin_ws/
-  - catkin_lint $CI_SOURCE_PATH
+#  - catking config --install
   - catkin build
   - source devel/setup.bash
-  - cd $CI_SOURCE_PATH
+  - catkin_lint $CI_SOURCE_PATH
+  - cd ~/catkin_ws/src/artable
   - export ARTABLE=1
   - export ROBOT=pr2
   - ./run_tests.sh

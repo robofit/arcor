@@ -3,11 +3,11 @@ project(art_pr2)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  pr2_moveit_config
+  art_pr2_moveit_config
   roslaunch
   rgbd_launch
   openni_launch
-  pr2_bringup
+#  pr2_bringup
 )
 
 catkin_package(

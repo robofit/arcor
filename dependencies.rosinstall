@@ -7,5 +7,5 @@
 #- git: {local-name: pr2_common, uri: 'https://github.com/robofit/pr2_common.git', version: indigo-devel}
 - git: {local-name: iai_kinect2, uri: 'https://github.com/code-iai/iai_kinect2.git', version: master}
 - git: {local-name: dobot, uri: 'https://github.com/robofit/dobot', version: master}
-- git: {local-name: pr2_robot, uri: 'https://github.com/pr2/pr2_robot.git', version: indigo-devel}
+# - git: {local-name: pr2_robot, uri: 'https://github.com/pr2/pr2_robot.git', version: indigo-devel}
 # - git: {local-name: openni_tracker, uri: 'https://github.com/robofit/openni_tracker.git', version: hydro-devel}
