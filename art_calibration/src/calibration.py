@@ -5,7 +5,7 @@ from art_utils import ArtCalibrationHelper
 from tf import TransformBroadcaster, transformations
 import rospy
 from geometry_msgs.msg import Transform
-from art_calibration_cells import ArtRobotCalibration, ArtCellCalibration
+from art_calibration import ArtRobotCalibration, ArtCellCalibration
 from std_msgs.msg import Bool
 from art_msgs.srv import RecalibrateCell, RecalibrateCellRequest, RecalibrateCellResponse
 from pcl.registration import icp, icp_nl, gicp
