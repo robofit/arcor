@@ -805,8 +805,8 @@ class UICoreRos(UICore):
         elif msg.type == ProgIt.DRILL_POINTS:
 
             if state.edit_enabled and self.drill_dialog is None:
-                self.drill_dialog = DialogItem(self.scene, self.width / 2, 0.1, "Save gripper pose ("
-                                               + str(str(self.program_vis.get_poses_count())) + ")", [
+                self.drill_dialog = DialogItem(self.scene, self.width / 2, 0.1, "Save gripper pose (" +
+                                               str(str(self.program_vis.get_poses_count())) + ")", [
                                                    "Right arm", "Left arm", "Delete last pose", "Delete all poses"], self.save_gripper_pose_drill_cb)
 
             if self.ph.is_object_set(block_id, item_id):
