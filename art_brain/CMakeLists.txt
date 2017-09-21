@@ -32,5 +32,11 @@ if (CATKIN_ENABLE_TESTING)
   roslaunch_add_file_check(launch)
 endif()
 
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
+
+install(DIRECTORY robots/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/robots)
+
 catkin_install_python(PROGRAMS src/node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

@@ -144,7 +144,9 @@ script:
   - catkin_lint $CI_SOURCE_PATH
   - catkin_make_isolated --install
   - export ARTABLE=1
+  - export ROBOT=pr2
   - catkin_make_isolated --make-args test
+  - export ROBOT=dobot
   - export ARTABLE=2
   - catkin_make_isolated --make-args test
 
