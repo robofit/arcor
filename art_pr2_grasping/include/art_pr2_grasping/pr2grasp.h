@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <ros/ros.h>
 #include <moveit/robot_state/attached_body.h>
-    #include <eigen_stl_containers/eigen_stl_vector_container.h>
+#include <eigen_stl_containers/eigen_stl_vector_container.h>
 #include "tf/transform_datatypes.h"
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit_simple_grasps/simple_grasps.h>
@@ -49,10 +49,7 @@ private:
   std::string default_target_;
   std::string gripper_state_topic_;
 
-
-
 protected:
-
   boost::shared_ptr<tf::TransformListener> tfl_;
 
   boost::shared_ptr<move_group_interface::MoveGroup> move_group_;
@@ -69,16 +66,14 @@ protected:
   void look_at(const geometry_msgs::PoseStamped& ps);
 
 public:
-  artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl,
-                 boost::shared_ptr<Objects> objects, std::string group_name,
-                 std::string default_target, std::string gripper_state_topic);
+  artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl, boost::shared_ptr<Objects> objects,
+                 std::string group_name, std::string default_target, std::string gripper_state_topic);
 
   bool transformPose(geometry_msgs::PoseStamped& ps);
 
   bool getReady();
 
-  bool place(const geometry_msgs::Pose& ps, double z_axis_angle_increment = 0.0,
-             bool keep_orientation = false);
+  bool place(const geometry_msgs::Pose& ps, double z_axis_angle_increment = 0.0, bool keep_orientation = false);
 
   std::string getPlanningFrame();
 
@@ -86,10 +81,9 @@ public:
 
   void publishObject(TObjectInfo obj = TObjectInfo());
 
-  bool pick(const std::string& object_id, bool feeder=false);
+  bool pick(const std::string& object_id, bool feeder = false);
 
   bool addTable(std::string frame_id);
-
 };
 }  // namespace art_pr2_grasping
 #endif  // ART_PR2_GRASPING_PR2GRASP_H
