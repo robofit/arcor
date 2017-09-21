@@ -14,7 +14,7 @@
     <build_depend>rgbd_launch</build_depend>
     <build_depend>openni_launch</build_depend>
     <build_depend>pr2_bringup</build_depend>
-    <build_depend>openni_tracker</build_depend>
+    <!--build_depend>openni_tracker</build_depend-->
     <build_depend>pr2_description</build_depend>
     <build_depend>art_pr2_grasping</build_depend>
     <build_depend>art_basic_control</build_depend>
@@ -25,7 +25,7 @@
     <run_depend>rgbd_launch</run_depend>
     <run_depend>openni_launch</run_depend>
     <run_depend>pr2_bringup</run_depend>
-    <run_depend>openni_tracker</run_depend>
+    <!--run_depend>openni_tracker</run_depend-->
     <run_depend>pr2_description</run_depend>
     <run_depend>art_pr2_grasping</run_depend>
     <run_depend>art_basic_control</run_depend>
