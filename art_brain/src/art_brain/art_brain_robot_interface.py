@@ -164,6 +164,10 @@ class ArtBrainRobotInterface:
         else:
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_PLACE_FAILED, None
 
+    def drill_point(self, arm_id, pose, obj, obj_frame_id, drill_duration):
+        rospy.logerr("Not Implemented!")
+        return False
+
     def move_arm_to_pose(self, pose, arm_id=None):
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
@@ -268,6 +272,10 @@ class ArtBrainRobotInterface:
 
     @abc.abstractmethod
     def select_arm_for_pick_from_feeder(self, pick_pose, tf_listener):
+        return
+
+    @abc.abstractmethod
+    def select_arm_for_drill(self, obj_to_drill, tf_listener):
         return
 
     def select_arm_for_place(self, obj_type, pick_instruction_ids):

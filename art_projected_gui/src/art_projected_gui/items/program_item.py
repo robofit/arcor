@@ -596,6 +596,34 @@ class ProgramItem(Item):
 
         self._update_item()
 
+    def append_pose(self, ps):
+
+        msg = self.get_current_item()
+
+        msg.pose.append(ps)
+
+        self._update_item()
+
+    def remove_last_pose(self):
+
+        msg = self.get_current_item()
+
+        msg.pose.pop()
+
+        self._update_item()
+
+    def remove_all_poses(self):
+
+        msg = self.get_current_item()
+
+        msg.pose = []
+
+        self._update_item()
+
+    def get_poses_count(self):
+        msg = self.get_current_item()
+        return len(msg.pose)
+
     def set_object(self, obj):
 
         msg = self.get_current_item()
