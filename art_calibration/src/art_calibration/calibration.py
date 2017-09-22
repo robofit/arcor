@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import numpy as np
 from art_utils import ArtCalibrationHelper
 from tf import TransformBroadcaster, transformations
 import rospy
@@ -15,7 +14,6 @@ from std_msgs.msg import Header
 
 from dynamic_reconfigure.server import Server
 from art_calibration.cfg import CalibrationConfig
-
 
 from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 import sensor_msgs.point_cloud2 as pc2
@@ -145,19 +143,3 @@ class ArtCalibration(object):
             transformed_cloud = c.transform_pcloud(c.last_pc, translation2, rotation2,
                                                    c.world_frame, c.world_frame)
             c.pc_pub.publish(transformed_cloud)
-
-
-if __name__ == '__main__':
-    rospy.init_node('art_calibration', log_level=rospy.INFO)
-
-    try:
-        node = ArtCalibration()
-
-        rate = rospy.Rate(30)
-
-        while not rospy.is_shutdown():
-            node.publish_calibration()
-            # node.calculate_icp()
-            rate.sleep()
-    except rospy.ROSInterruptException:
-        pass

@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(art_calibration)
 
-
 find_package(catkin REQUIRED COMPONENTS
   art_msgs
   geometry_msgs
@@ -20,7 +19,6 @@ catkin_python_setup()
 
 generate_dynamic_reconfigure_options(
   cfg/Calibration.cfg
-
 )
 
 set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
@@ -34,8 +32,6 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
-
-
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
@@ -47,5 +43,5 @@ endif()
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
 
-catkin_install_python(PROGRAMS src/calibration.py
+catkin_install_python(PROGRAMS scripts/node
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

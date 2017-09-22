@@ -8,7 +8,7 @@
     
     <node name="static_tf_marker" pkg="tf" type="static_transform_publisher" args="$(arg x_offset) $(arg y_offset) $(arg z_offset) 0 0 0 /marker /marker_detected 100" />
 
-    <node name="art_calibration" pkg="art_calibration" type="calibration.py" respawn="false" output="screen">
+    <node name="art_calibration" pkg="art_calibration" type="node" respawn="false" output="screen">
       <param name="cells" value="$(arg cells)"/>
     </node>
 
