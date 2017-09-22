@@ -31,6 +31,8 @@ class ProgramListItem(Item):
         self.map_from_idx_to_program_id = {}
         self.map_from_program_id_to_idx = {}
 
+        self.program_headers.sort(key=lambda p: p.id)
+
         for ph in self.program_headers:
 
             data.append("ID: " + str(ph.id) + "\nName: " + ph.name)

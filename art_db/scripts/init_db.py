@@ -381,8 +381,8 @@ def main(args):
 
     p = ProgramItem()
     p.id = 2
-    p.on_success = 3
-    p.on_failure = 0
+    p.on_success = 2
+    p.on_failure = 3
     p.type = ProgramItem.DRILL_POINTS
     p.object.append("profile_20_60")
     pf = PoseStamped()
@@ -410,7 +410,7 @@ def main(args):
 
     p = ProgramItem()
     p.id = 3
-    p.on_success = 1
+    p.on_success = 3
     p.on_failure = 0
     p.type = ProgramItem.DRILL_POINTS
     p.object.append("profile_20_60")

@@ -165,8 +165,15 @@ class ArtBrainRobotInterface:
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_PLACE_FAILED, None
 
     def drill_point(self, arm_id, pose, obj, obj_frame_id, drill_duration):
-        rospy.logerr("Not Implemented!")
-        return False
+
+        if arm_id is None:
+            return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
+        arm = self.get_arm_by_id(arm_id)
+
+        if not arm.touch_poses(obj.object_id, pose, 2.0):
+            return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED, arm_id
+        else:
+            return None, None, arm_id
 
     def move_arm_to_pose(self, pose, arm_id=None):
         if arm_id is None:

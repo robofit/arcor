@@ -45,7 +45,7 @@ class PolygonItem(Item):
                 if pt[1] > max[1]:
                     max[1] = pt[1]
 
-            pad = 0.1
+            pad = 0.02
 
             min[0] -= pad
             min[1] -= pad

@@ -15,6 +15,8 @@ from geometry_msgs.msg import PoseStamped
 import actionlib
 from art_utils import array_from_param
 from art_utils import ArtRobotHelper, UnknownRobot, RobotParametersNotOnParameterServer
+import tf
+from math import sqrt
 
 translate = QtCore.QCoreApplication.translate
 
@@ -44,6 +46,8 @@ class UICoreRos(UICore):
 
         super(UICoreRos, self).__init__(
             origin[0], origin[1], size[0], size[1], rpm, port)
+
+        self.tfl = tf.TransformListener()
 
         QtCore.QObject.connect(self, QtCore.SIGNAL(
             'objects'), self.object_cb_evt)
@@ -236,9 +240,11 @@ class UICoreRos(UICore):
         rospy.logerr("callback - ok")
         if idx == 2:
             self.program_vis.remove_last_pose()
+            self.drill_dialog.set_caption("Save gripper pose (" + str(str(self.program_vis.get_poses_count())) + ")")
             return
         elif idx == 3:
             self.program_vis.remove_all_poses()
+            self.drill_dialog.set_caption("Save gripper pose (" + str(str(self.program_vis.get_poses_count())) + ")")
             return
 
         topics = ['/art/robot/right_arm/gripper/pose',
@@ -253,10 +259,40 @@ class UICoreRos(UICore):
                 translate("UICoreRos", "Failed to store gripper pose."), temp=False)
             return
 
-        self.notif(translate("UICoreRos", "Gripper pose stored."), temp=False)
-        self.program_vis.append_pose(ps)
-        rospy.logerr(self.program_vis.get_poses_count())
-        self.drill_dialog.set_caption("Save gripper pose (" + str(str(self.program_vis.get_poses_count())) + ")")
+        dist = None
+        c_obj = None
+        for obj in self.get_scene_items_by_type(ObjectItem):
+
+            d = sqrt((obj.position[0] - ps.pose.position.x)**2 + (obj.position[1] - ps.pose.position.y)**2 + (obj.position[2] - ps.pose.position.z)**2)
+
+            if dist is None or d < dist:
+
+                dist = d
+                c_obj = obj
+
+        rospy.logdebug("Closest object is: " + c_obj.object_id + " (dist: " + str(dist) + ")")
+
+        # TODO notification if something fails
+        if c_obj:
+
+            frame_id = "object_id_" + obj.object_id
+
+            try:
+                self.tfl.waitForTransform(frame_id, ps.header.frame_id, ps.header.stamp, rospy.Duration(2.0))
+                ps = self.tfl.transformPose(frame_id, ps)
+            except tf.Exception:
+
+                rospy.logerr("Failed to transform gripper pose (" + ps.header.frame_id + ") to object frame_id: " + frame_id)
+                return
+
+            self.notif(translate("UICoreRos", "Gripper pose stored."), temp=False)
+            self.program_vis.append_pose(ps)
+            rospy.logerr(self.program_vis.get_poses_count())
+            self.drill_dialog.set_caption("Save gripper pose (" + str(str(self.program_vis.get_poses_count())) + ")")
+
+        else:
+
+            rospy.logerr("Failed to find object...")
 
     def touch_calibration_points_cb(self, req):
 
@@ -1237,6 +1273,37 @@ class UICoreRos(UICore):
             self.program_vis.set_object(obj.object_id)
             self.select_object(obj.object_id)
 
+        elif msg.type == ProgIt.DRILL_POINTS:
+
+            if obj.object_type.name not in self.selected_object_types:
+
+                self.remove_scene_items_by_type(PolygonItem)
+
+                poly_points = []
+
+                self.program_vis.set_object(obj.object_type.name)
+                self.select_object_type(obj.object_type.name)
+
+                # TODO avoid code duplication with PICK_FROM_POLYGON
+                for ob in self.get_scene_items_by_type(ObjectItem):
+                    if ob.object_type.name != obj.object_type.name:
+                        continue
+
+                    sbr = ob.sceneBoundingRect()
+
+                    w = ob.pix2m(sbr.width())
+                    h = ob.pix2m(sbr.height())
+
+                    poly_points.append((ob.position[0] + w / 2.0, ob.position[1] + h / 2.0))
+                    poly_points.append((ob.position[0] - w / 2.0, ob.position[1] - h / 2.0))
+                    poly_points.append((ob.position[0] + w / 2.0, ob.position[1] - h / 2.0))
+                    poly_points.append((ob.position[0] - w / 2.0, ob.position[1] + h / 2.0))
+
+                self.add_polygon(translate("UICoreRos", "OBJECT TO BE DRILLED"),
+                                 poly_points, polygon_changed=self.polygon_changed)
+                self.notif(
+                    translate("UICoreRos", "Check and adjust area with objects to be drilled"), temp=True)
+
         elif msg.type == ProgIt.PICK_FROM_POLYGON:
 
             if obj.object_type.name not in self.selected_object_types:
@@ -1251,7 +1318,16 @@ class UICoreRos(UICore):
                 for ob in self.get_scene_items_by_type(ObjectItem):
                     if ob.object_type.name != obj.object_type.name:
                         continue
-                    poly_points.append(ob.get_pos())
+
+                    sbr = ob.sceneBoundingRect()
+
+                    w = ob.pix2m(sbr.width())
+                    h = ob.pix2m(sbr.height())
+
+                    poly_points.append((ob.position[0] + w / 2.0, ob.position[1] + h / 2.0))
+                    poly_points.append((ob.position[0] - w / 2.0, ob.position[1] - h / 2.0))
+                    poly_points.append((ob.position[0] + w / 2.0, ob.position[1] - h / 2.0))
+                    poly_points.append((ob.position[0] - w / 2.0, ob.position[1] + h / 2.0))
 
                 self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
                                  poly_points, polygon_changed=self.polygon_changed)

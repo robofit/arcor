@@ -9,6 +9,7 @@ from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import Pose
 from art_msgs.msg import InterfaceState, InstancesArray
 from geometry_msgs.msg import PoseStamped
+import random
 
 from enum import IntEnum  # sudo pip install enum34
 
@@ -40,12 +41,13 @@ class ArtBrainUtils(object):
         return obj
 
     @staticmethod
-    def get_pick_obj_from_polygon(obj_type, polygon, objects):
+    def get_objects_in_polygon(obj_type, polygon, objects):
+
         if polygon is not None:
             polygon = polygon[0]
         pick_polygon = []
         pol = None
-        obj_ret = None
+        obj_ret = []
         if obj_type is None:
             return None
         obj_type = obj_type[0]
@@ -57,33 +59,24 @@ class ArtBrainUtils(object):
         if len(pick_polygon) > 0:
             pol = mplPath.Path(np.array(pick_polygon), closed=True)
 
-        # shuffle the array to not get the same object each time
-        # random.shuffle(self.objects.instances)
-
         for obj in objects.instances:
 
-            if pol is None:
+            # test if some object is in polygon and take the first one
+            if pol.contains_point([obj.pose.position.x, obj.pose.position.y]):
+                obj_ret.append(copy.deepcopy(obj))
 
-                # if no pick polygon is specified - let's take the first
-                # object of that type
-                if obj.object_type == obj_type:
-                    obj_ret = copy.deepcopy(obj)
-                    break
-
-            else:
-
-                # test if some object is in polygon and take the first one
-                if pol.contains_point([obj.pose.position.x, obj.pose.position.y]):
-                    obj_ret = copy.deepcopy(obj)
-                    rospy.logdebug('Selected object: ' + obj.object_id)
-                    break
-
-        else:
-            if pol is not None:
-                rospy.logerr('No object in the specified polygon')
-
-            return None
         return obj_ret
+
+    @staticmethod
+    def get_pick_obj_from_polygon(obj_type, polygon, objects):
+
+        arr = random.shuffle(ArtBrainUtils.get_objects_in_polygon(obj_type, polygon, objects))
+        if len(arr) == 0:
+            rospy.logerr('No object in the specified polygon')
+            return None
+
+        rospy.logdebug('Selected object: ' + arr[0].object_id)
+        return arr[0]
 
     @staticmethod
     def object_exist(obj_id, objects):
