@@ -3,7 +3,11 @@ project(art_pr2)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  pr2_moveit_config
+  art_pr2_moveit_config
+  roslaunch
+  rgbd_launch
+  openni_launch
+#  pr2_bringup
 )
 
 catkin_package(
@@ -17,4 +21,12 @@ catkin_package(
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
+
+# TODO fix errors in pr2_bringup
+#if (CATKIN_ENABLE_TESTING)
+#  roslaunch_add_file_check(launch)
+#endif()
+
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
 

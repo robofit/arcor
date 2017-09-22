@@ -183,7 +183,7 @@ class ArtCellCalibration(object):
         try:
             print self.cell_frame
             print self.main_cell_frame
-            #translation, rotation = self.listener.lookupTransform(pc.header.frame_id, self.main_cell_frame, rospy.Time(0))
+            # translation, rotation = self.listener.lookupTransform(pc.header.frame_id, self.main_cell_frame, rospy.Time(0))
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return
         transform = TransformStamped()
@@ -191,7 +191,7 @@ class ArtCellCalibration(object):
         transformed_cloud = self.transform_pcloud(pcloud, tr.translation, tr.rotation,
                                                   self.cell_frame, self.world_frame)
 
-        #transformed_cloud = self.listener.transformPointCloud(self.world_frame, pc)
+        # transformed_cloud = self.listener.transformPointCloud(self.world_frame, pc)
 
         p = pcl.PointCloud(np.array(list(pc2.read_points(transformed_cloud, field_names=['x', 'y', 'z'],
                                                          skip_nans=True)), dtype=np.float32))

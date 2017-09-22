@@ -85,6 +85,32 @@ class ArtPr2Interface(ArtBrainRobotInterface):
         else:
             return self.LEFT_ARM
 
+    def select_arm_for_drill(self, obj_to_drill, objects_frame_id, tf_listener):
+        free_arm = self.select_free_arm()
+        if free_arm in [None, self.LEFT_ARM, self.RIGHT_ARM]:
+            return free_arm
+        objects_frame_id = ArtBrainUtils.normalize_frame_id(objects_frame_id)
+        if tf_listener.frameExists(
+                "base_link") and tf_listener.frameExists(ArtBrainUtils.normalize_frame_id(objects_frame_id)):
+            if obj is not None:
+                obj_pose = PoseStamped()
+                obj_pose.pose = obj.pose
+                obj_pose.header = objects_frame_id
+                # exact time does not matter in this case
+                obj_pose.header.stamp = rospy.Time(0)
+                tf_listener.waitForTransform(
+                    'base_link',
+                    obj_pose.header.frame_id,
+                    obj_pose.header.stamp,
+                    rospy.Duration(1))
+                obj_pose = tf_listener.transformPose(
+                    'base_link', obj_pose)
+                if obj_pose.pose.position.y < 0:
+                    return self.RIGHT_ARM
+                else:
+                    return self.LEFT_ARM
+        return self.LEFT_ARM
+
     def select_free_arm(self):
         left_arm = self.get_arm_by_id(self.LEFT_ARM) if self.gripper_usage in [self.BOTH_ARM,
                                                                                self.LEFT_ARM] else None  # type: ArtGripper

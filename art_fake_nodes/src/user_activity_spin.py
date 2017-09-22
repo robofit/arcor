@@ -29,6 +29,7 @@ class FakeUserState:
             rospy.loginfo("AWAY")
         self.activity_publisher.publish(self.act)
 
+
 if __name__ == '__main__':
     rospy.init_node('fake_user_activity_spin')
     ''',log_level=rospy.DEBUG'''
@@ -37,9 +38,9 @@ if __name__ == '__main__':
         node = FakeUserState()
         rate = rospy.Rate(1)
         while not rospy.is_shutdown():
-            
+
             node.change_activity()
-            
+
             rate.sleep()
     except rospy.ROSInterruptException:
         pass

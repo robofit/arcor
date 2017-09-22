@@ -14,6 +14,7 @@ from std_srvs.srv import Empty as EmptyService
 from geometry_msgs.msg import PoseStamped
 import actionlib
 from art_utils import array_from_param
+from art_utils import ArtRobotHelper, UnknownRobot, RobotParametersNotOnParameterServer
 
 translate = QtCore.QCoreApplication.translate
 
@@ -142,6 +143,7 @@ class UICoreRos(UICore):
         self.program_error_dialog = None
 
         self.grasp_dialog = None
+        self.drill_dialog = None
 
         self.emergency_stopped = False
 
@@ -166,6 +168,15 @@ class UICoreRos(UICore):
             '/art/interface/projected_gui/touch_calibration', TouchCalibrationPoints, self.touch_calibration_points_cb)
         self.notify_user_srv = rospy.Service(
             '/art/interface/projected_gui/notify_user', NotifyUser, self.notify_user_srv_cb)
+        try:
+            self.rh = ArtRobotHelper()
+        except UnknownRobot:
+            rospy.logerr("Unknown robot")
+        except RobotParametersNotOnParameterServer:
+            rospy.logerr("Robot parameters not on parameters server")
+            # TODO: what to do? wait until it is loaded?
+
+        self.robot_arms = self.rh.get_robot_arms()
 
         proj_calib = True
 
@@ -220,6 +231,32 @@ class UICoreRos(UICore):
 
         self.notif(translate("UICoreRos", "Gripper pose stored."), temp=False)
         self.program_vis.set_pose(ps)
+
+    def save_gripper_pose_drill_cb(self, idx):
+        rospy.logerr("callback - ok")
+        if idx == 2:
+            self.program_vis.remove_last_pose()
+            return
+        elif idx == 3:
+            self.program_vis.remove_all_poses()
+            return
+
+        topics = ['/art/robot/right_arm/gripper/pose',
+                  '/art/robot/left_arm/gripper/pose']
+
+        # wait for message, set pose
+        try:
+            ps = rospy.wait_for_message(topics[idx], PoseStamped, timeout=2)
+        except(rospy.ROSException) as e:
+            rospy.logerr(str(e))
+            self.notif(
+                translate("UICoreRos", "Failed to store gripper pose."), temp=False)
+            return
+
+        self.notif(translate("UICoreRos", "Gripper pose stored."), temp=False)
+        self.program_vis.append_pose(ps)
+        rospy.logerr(self.program_vis.get_poses_count())
+        self.drill_dialog.set_caption("Save gripper pose (" + str(str(self.program_vis.get_poses_count())) + ")")
 
     def touch_calibration_points_cb(self, req):
 
@@ -656,7 +693,7 @@ class UICoreRos(UICore):
                     pass
                 break
 
-            for it in [self.program_error_dialog, self.grasp_dialog, self.program_vis, self.program_list]:
+            for it in [self.program_error_dialog, self.grasp_dialog, self.drill_dialog, self.program_vis, self.program_list]:
 
                 if it is None:
                     continue
@@ -762,6 +799,22 @@ class UICoreRos(UICore):
             else:
                 self.notif(
                     translate("UICoreRos", "Select object type to be picked up"), temp=True)
+
+                # TODO show pick pose somehow (arrow??)
+
+        elif msg.type == ProgIt.DRILL_POINTS:
+
+            if state.edit_enabled and self.drill_dialog is None:
+                self.drill_dialog = DialogItem(self.scene, self.width / 2, 0.1, "Save gripper pose (" +
+                                               str(str(self.program_vis.get_poses_count())) + ")", [
+                                                   "Right arm", "Left arm", "Delete last pose", "Delete all poses"], self.save_gripper_pose_drill_cb)
+
+            if self.ph.is_object_set(block_id, item_id):
+
+                self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
+            else:
+                self.notif(
+                    translate("UICoreRos", "Select object type to be drilled"), temp=True)
 
                 # TODO show pick pose somehow (arrow??)
 
@@ -1016,6 +1069,10 @@ class UICoreRos(UICore):
 
                 self.scene.removeItem(self.grasp_dialog)
                 self.grasp_dialog = None
+
+            if self.drill_dialog is not None:
+                self.scene.removeItem(self.drill_dialog)
+                self.drill_dialog = None
 
         elif req == LearningRequestGoal.EXECUTE_ITEM:
             self.notif(

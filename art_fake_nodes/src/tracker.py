@@ -52,6 +52,7 @@ class FakeObjectTracker:
         objs.header.frame_id = "marker"
         self.object_publisher.publish(objs)
 
+
 if __name__ == '__main__':
     rospy.init_node('fake_tracker')
     ''',log_level=rospy.DEBUG'''
