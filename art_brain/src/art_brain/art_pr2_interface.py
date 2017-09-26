@@ -4,7 +4,7 @@ import rospy
 from art_gripper import ArtGripper
 from brain_utils import ArtBrainUtils
 from art_msgs.srv import ReinitArmsRequest, ReinitArmsResponse
-from std_srvs.srv import TriggerResponse, TriggerRequest
+from std_srvs.srv import TriggerResponse, TriggerRequest, Trigger
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty, EmptyRequest
 from geometry_msgs.msg import PointStamped
@@ -28,6 +28,12 @@ class ArtPr2Interface(ArtBrainRobotInterface):
             '/pr2_ethercat/reset_motors', Empty)  # TODO wait for service? where?
 
         self.look_at_pub = rospy.Publisher(robot_ns + "/look_at", PointStamped, queue_size=10)
+
+        for arm in self._arms:  # type: ArtGripper
+            if arm.arm_id == self.LEFT_ARM:
+                arm.arm_up = ArtBrainUtils.create_service_client(robot_ns + "/" + self.LEFT_ARM + "/arm_up", Trigger)
+            elif arm.arm_id == self.RIGHT_ARM:
+                arm.arm_up = ArtBrainUtils.create_service_client(robot_ns + "/" + self.RIGHT_ARM + "/arm_up", Trigger)
 
     def select_arm_for_pick(self, obj, objects_frame_id, tf_listener):
         free_arm = self.select_free_arm()
@@ -74,6 +80,32 @@ class ArtPr2Interface(ArtBrainRobotInterface):
             return self.RIGHT_ARM
         else:
             return self.LEFT_ARM
+
+    def select_arm_for_drill(self, obj_to_drill, objects_frame_id, tf_listener):
+        free_arm = self.select_free_arm()
+        if free_arm in [None, self.LEFT_ARM, self.RIGHT_ARM]:
+            return free_arm
+        objects_frame_id = ArtBrainUtils.normalize_frame_id(objects_frame_id)
+        if tf_listener.frameExists(
+                "base_link") and tf_listener.frameExists(ArtBrainUtils.normalize_frame_id(objects_frame_id)):
+            if obj is not None:
+                obj_pose = PoseStamped()
+                obj_pose.pose = obj.pose
+                obj_pose.header = objects_frame_id
+                # exact time does not matter in this case
+                obj_pose.header.stamp = rospy.Time(0)
+                tf_listener.waitForTransform(
+                    'base_link',
+                    obj_pose.header.frame_id,
+                    obj_pose.header.stamp,
+                    rospy.Duration(1))
+                obj_pose = tf_listener.transformPose(
+                    'base_link', obj_pose)
+                if obj_pose.pose.position.y < 0:
+                    return self.RIGHT_ARM
+                else:
+                    return self.LEFT_ARM
+        return self.LEFT_ARM
 
     def select_free_arm(self):
         left_arm = self.get_arm_by_id(self.LEFT_ARM) if self.gripper_usage in [self.BOTH_ARM,
@@ -139,3 +171,7 @@ class ArtPr2Interface(ArtBrainRobotInterface):
     def move_arm_to_pose(self, pose, arm_id=None):
         self.look_at_point(pose.pose.position)
         return super(ArtPr2Interface, self).move_arm_to_pose(pose, arm_id)
+
+    def prepare_for_calibration(self):
+        for arm in self._arms:  # type: ArtGripper
+            arm.arm_up.call(TriggerRequest())

@@ -41,6 +41,7 @@ class ArtBrainRobotInterface:
         # emergency stop and restore
         self.emergency_stop_srv = rospy.Service(robot_ns + "/stop", Trigger, self.emergency_stop_cb)
         self.restore_srv = rospy.Service(robot_ns + "/restore", Trigger, self.restore_cb)
+        self.prepare_for_calibration_srv = rospy.Service(robot_ns + "/prepare_for_calibration", Trigger, self.prepare_for_calibration_cb)
 
     def re_init_arm_cb(self, data):
         """
@@ -52,6 +53,7 @@ class ArtBrainRobotInterface:
         Returns:
 
         """
+        print data
         if len(data.arm_ids) == 0:
             for arm in self._arms:
                 arm.re_init()
@@ -59,6 +61,7 @@ class ArtBrainRobotInterface:
             for arm_id in data.arm_ids:
                 arm = self.get_arm_by_id(arm_id)  # type: ArtGripper
                 arm.re_init()
+        return ReinitArmsResponse()
 
     def emergency_stop_cb(self, _):
         resp = TriggerResponse()
@@ -77,6 +80,19 @@ class ArtBrainRobotInterface:
             resp.success = False
             resp.message = "Failed to restore the robot"
         return resp
+
+    def prepare_for_calibration_cb(self, _):
+        resp = TriggerResponse()
+        if self.prepare_for_calibration():
+            resp.success = True
+        else:
+            resp.success = False
+            resp.message = "Failed to prepare for interaction"
+        return resp
+
+    @abc.abstractmethod
+    def prepare_for_calibration(self):
+        pass
 
     @abc.abstractmethod
     def emergency_stop(self):
@@ -147,6 +163,10 @@ class ArtBrainRobotInterface:
             return None, None, arm_id
         else:
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_PLACE_FAILED, None
+
+    def drill_point(self, arm_id, pose, obj, obj_frame_id, drill_duration):
+        rospy.logerr("Not Implemented!")
+        return False
 
     def move_arm_to_pose(self, pose, arm_id=None):
         if arm_id is None:
@@ -252,6 +272,10 @@ class ArtBrainRobotInterface:
 
     @abc.abstractmethod
     def select_arm_for_pick_from_feeder(self, pick_pose, tf_listener):
+        return
+
+    @abc.abstractmethod
+    def select_arm_for_drill(self, obj_to_drill, tf_listener):
         return
 
     def select_arm_for_place(self, obj_type, pick_instruction_ids):
