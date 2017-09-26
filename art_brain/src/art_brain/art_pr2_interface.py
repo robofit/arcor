@@ -60,10 +60,6 @@ class ArtPr2Interface(ArtBrainRobotInterface):
         free_arm = self.select_free_arm()
         if free_arm in [None, self.LEFT_ARM, self.RIGHT_ARM]:
             return free_arm
-        print pick_pose.header.frame_id
-        print tf_listener.frameExists("base_link")
-        print tf_listener.frameExists(pick_pose.header.frame_id)
-        print pick_pose
         # if tf_listener.frameExists("base_link") and tf_listener.frameExists(pick_pose.header.frame_id) \
         #        and pick_pose is not None:
         pick_pose.header.stamp = rospy.Time(0)
@@ -86,8 +82,6 @@ class ArtPr2Interface(ArtBrainRobotInterface):
                                                                                  self.RIGHT_ARM] else None  # type: ArtGripper
         if left_arm is None and right_arm is None:
             return None
-        rospy.logerr(left_arm.holding_object)
-        rospy.logerr(right_arm.holding_object)
         if self.gripper_usage == self.LEFT_ARM:
             if left_arm.holding_object:
                 return None
