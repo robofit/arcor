@@ -46,6 +46,8 @@ class ArtArmNavigationActionServer(object):
         max_attempt = 3
 
         self.feedback.attempt = 1
+        rospy.loginfo("Got goal with " + str(len(goal.poses)) + "poses.")
+
         if goal.operation == ArmNavigationGoal.MOVE_THROUGH_POSES:
             for idx, p in enumerate(goal.poses):
                 attempt = 1
@@ -61,8 +63,11 @@ class ArtArmNavigationActionServer(object):
             for idx, p in enumerate(goal.poses):
                 attempt = 1
                 self._as.publish_feedback(self.feedback)
+
+                # TODO it would be better to only repeat failed step (e.g. go3)
                 while not self.touch_point(p, goal.drill_duration):
                     attempt += 1
+                    rospy.loginfo("Attempt " + str(attempt) + " out of " + str(max_attempt) + ".")
                     if attempt > max_attempt:
                         self.result.result = self.result.FAILURE
                         self._as.set_aborted(self.result)
@@ -93,22 +98,28 @@ class ArtArmNavigationActionServer(object):
     def touch_point(self, pose, drill_duration):
         rospy.loginfo("Touch point in")
         pre_touch_pose = copy.deepcopy(pose)
+
+        # TODO this works only for world frame_id (marker) -> in general, this pre_touch translation should be done with respect to x-axis of the gripper!
         pre_touch_pose.pose.position.z += 0.1  # 10cm above desired pose
         self.group.set_pose_target(pre_touch_pose)
         rospy.loginfo("Touch point go1")
         if not self.group.go(wait=True):
+            rospy.logerr("go1 failed")
             return False
         self.group.set_pose_target(pose)
         rospy.loginfo("Touch point go2")
         if not self.group.go(wait=True):
+            rospy.logerr("go2 failed")
             return False
         rospy.sleep(1)
         self.rotate_gripper(drill_duration)
         self.group.set_pose_target(pre_touch_pose)
         rospy.loginfo("Touch point go3")
         if not self.group.go(wait=True):
+            rospy.logerr("go3 failed")
             return False
         rospy.loginfo("Touch point out")
+        return True
 
     def rotate_gripper(self, duration):
         rospy.loginfo("rotate in, duration = " + str(duration))

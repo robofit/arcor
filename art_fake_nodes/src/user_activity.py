@@ -29,6 +29,7 @@ class FakeUserState:
             rospy.loginfo("AWAY")
         self.activity_publisher.publish(self.act)
 
+
 if __name__ == '__main__':
     rospy.init_node('fake_user_activity')
     ''',log_level=rospy.DEBUG'''

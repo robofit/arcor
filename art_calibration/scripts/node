@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+
+import rospy
+from art_calibration import ArtCalibration
+
+if __name__ == '__main__':
+    rospy.init_node('art_calibration', log_level=rospy.INFO)
+
+    try:
+        node = ArtCalibration()
+
+        rate = rospy.Rate(30)
+
+        while not rospy.is_shutdown():
+            node.publish_calibration()
+            # node.calculate_icp()
+            rate.sleep()
+    except rospy.ROSInterruptException:
+        pass

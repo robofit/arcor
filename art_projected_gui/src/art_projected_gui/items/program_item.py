@@ -616,7 +616,7 @@ class ProgramItem(Item):
 
         msg = self.get_current_item()
 
-        msg.pose = []
+        msg.pose = []  # TODO empty array -> invalid program
 
         self._update_item()
 

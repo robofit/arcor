@@ -6,7 +6,7 @@ from art_msgs.msg import PickPlaceAction, PickPlaceGoal, PickPlaceResult
 from geometry_msgs.msg import PoseStamped
 
 
-def pick_object_id(client,  object_id):
+def pick_object_id(client, object_id):
 
     rospy.loginfo('pick_object_id: ' + str(object_id))
     goal = PickPlaceGoal()
@@ -42,7 +42,7 @@ def place_object(client, x, y):
     return send_goal(client, goal)
 
 
-def send_goal(client,  goal):
+def send_goal(client, goal):
 
     rospy.loginfo('sending goal')
     client.send_goal(goal)
@@ -54,7 +54,7 @@ def send_goal(client,  goal):
     print "status: " + client.get_goal_status_text()
     print "state: " + str(client.get_state())
     print
-    
+
     return client.get_result().result
 
 
@@ -68,17 +68,18 @@ def main():
 
     if pick_object_id(arm_client, "obj") != PickPlaceResult.SUCCESS:
         return
-        
+
     if get_ready(arm_client) != PickPlaceResult.SUCCESS:
         return
 
-    if place_object(arm_client,  -0.025, -0.288) != PickPlaceResult.SUCCESS:
+    if place_object(arm_client, -0.025, -0.288) != PickPlaceResult.SUCCESS:
         return
-    
+
     if get_ready(arm_client) != PickPlaceResult.SUCCESS:
         return
 
     rospy.loginfo("Done!")
+
 
 if __name__ == '__main__':
     try:

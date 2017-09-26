@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES art_bridge
-#  CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs
+   CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
@@ -30,3 +30,6 @@ include_directories(
 # target_link_libraries(art_bridge_node
 #   ${catkin_LIBRARIES}
 # )
+
+catkin_install_python(PROGRAMS src/bridge_to_json_msg.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

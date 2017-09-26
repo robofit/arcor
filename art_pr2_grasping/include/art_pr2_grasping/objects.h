@@ -15,6 +15,7 @@
 #include <boost/thread/recursive_mutex.hpp>
 #include <moveit_visual_tools/visual_tools.h>
 #include <stdexcept>
+#include <vector>
 
 namespace art_pr2_grasping
 {
@@ -24,15 +25,14 @@ typedef struct
   geometry_msgs::PoseStamped pose;
   art_msgs::ObjectType type;
 }
-  TObjectInfo;
+TObjectInfo;
 
 typedef std::map<std::string, TObjectInfo> TObjectMap;
 
 class Objects
 {
 public:
-  Objects(boost::shared_ptr<tf::TransformListener> tfl,
-          std::string target_frame);
+  Objects(boost::shared_ptr<tf::TransformListener> tfl, std::string target_frame);
 
   bool isKnownObject(std::string id);
 
@@ -74,7 +74,6 @@ private:
   std::set<std::string> grasped_objects_;
 
   bool paused_;
-
 };
 
 }  // namespace art_pr2_grasping

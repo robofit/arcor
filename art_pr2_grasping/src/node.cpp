@@ -19,14 +19,13 @@ GraspingNode::GraspingNode() : target_frame_("odom_combined"), nh_("~")
   nh_.getParam("gripper_state_topics", gripper_state_topics);
   nh_.getParam("default_poses", default_poses);
 
-  ROS_ASSERT(groups.size() == gripper_state_topics.size() &&
-             groups.size() == default_poses.size() && groups.size() > 0);
+  ROS_ASSERT(groups.size() == gripper_state_topics.size() && groups.size() == default_poses.size() &&
+             groups.size() > 0);
 
   for (int i = 0; i < groups.size(); i++)
   {
     action_servers_.push_back(boost::shared_ptr<artActionServer>(
-        new artActionServer(tfl_, objects_, groups[i], default_poses[i],
-                            gripper_state_topics[i])));
+        new artActionServer(tfl_, objects_, groups[i], default_poses[i], gripper_state_topics[i])));
   }
 
   // TODO(ZdenekM): visual_tools + callback from objects + publish/remove

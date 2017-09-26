@@ -127,6 +127,9 @@ class ArtGripper(object):
             return False
 
     def touch_poses(self, object_id, poses, drill_duration=0):
+
+        assert isinstance(poses, list)
+
         if self.manip_client is None:
             return False
         if not self.drill_enabled and drill_duration > 0:
@@ -136,8 +139,9 @@ class ArtGripper(object):
         goal.operation = goal.TOUCH_POSES
         goal.drill_duration = drill_duration
         goal.poses = poses
+
         for pose in goal.poses:  # type: PoseStamped
-            pose.header.frame_id = object_id
+            pose.header.frame_id = "object_id_" + object_id
         self.manip_client.send_goal(goal)
         rospy.sleep(1)
         self.manip_client.wait_for_result()

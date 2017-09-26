@@ -56,6 +56,7 @@ class FakeCalibration:
         self.calib_table = True
         return EmptyResponse()
 
+
 if __name__ == '__main__':
     rospy.init_node('fake_calibration')
     ''',log_level=rospy.DEBUG'''
