@@ -12,36 +12,31 @@ class ArtBrainRobotInterface:
 
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, robot_parameters, robot_ns):
+    def __init__(self, robot_helper):
         self._arms = []
         self.halted = False
-        for arm_id, parameters in robot_parameters.get("arms", []).iteritems():
-            pp = parameters.get("capabilities", {}).get("pick_place", False)
-            manipulation = parameters.get("capabilities", {}).get("manipulation", False)
-            move_to_user = parameters.get("capabilities", {}).get("move_to_user", False)
-            interactive_mode = parameters.get("capabilities", {}).get("interactive_mode", False)
-            get_ready = parameters.get("capabilities", {}).get("get_ready", False)
-            drill_enabled = parameters.get("capabilities", {}).get("drill", False)
+        self.rh = robot_helper
+        for arm in self.rh.arms:
 
-            gripper_link = parameters.get("gripper_link", None)
-            self._arms.append(ArtGripper(arm_id,
-                                         drill_enabled=drill_enabled,
-                                         pp_client=robot_ns + "/" + arm_id + "/pp" if pp else None,
-                                         holding_object_topic=robot_ns + "/" + arm_id + "/grasped_object" if pp else None,
-                                         manipulation_client=robot_ns + "/" + arm_id + "/manipulation" if manipulation else None,
-                                         move_to_user_client=robot_ns + "/" + arm_id + "/move_to_user" if move_to_user else None,
-                                         interaction_on_client=robot_ns + "/" + arm_id + "/interaction/on" if interactive_mode else None,
-                                         interaction_off_client=robot_ns + "/" + arm_id + "/interaction/off" if interactive_mode else None,
-                                         get_ready_client=robot_ns + "/" + arm_id + "/get_ready" if get_ready else None,
-                                         gripper_link=gripper_link),)
+            self._arms.append(ArtGripper(arm.arm_id,
+                                         drill_enabled=arm.drill_enabled(),
+                                         pp_client=arm.get_pick_place_action_name(),
+                                         holding_object_topic=arm.get_holding_object_topic_name(),
+                                         manipulation_client=arm.get_manipulation_action_name(),
+                                         move_to_user_client=arm.get_move_to_user_service_name(),
+                                         interaction_on_client=arm.get_interaction_on_service_name(),
+                                         interaction_off_client=arm.get_interaction_off_service_name(),
+                                         get_ready_client=arm.get_get_ready_service_name(),
+                                         interaction_state=arm.get_interaction_state_topic_name(),
+                                         gripper_link=arm.get_gripper_link()),)
 
             # arm reinit service
-            self.reinit_srv = rospy.Service(robot_ns + "/" + arm_id + "/" + "reinit", ReinitArms, self.re_init_arm_cb)
+            self.reinit_srv = rospy.Service(arm.get_reinit_service_name(), ReinitArms, self.re_init_arm_cb)
 
         # emergency stop and restore
-        self.emergency_stop_srv = rospy.Service(robot_ns + "/stop", Trigger, self.emergency_stop_cb)
-        self.restore_srv = rospy.Service(robot_ns + "/restore", Trigger, self.restore_cb)
-        self.prepare_for_calibration_srv = rospy.Service(robot_ns + "/prepare_for_calibration", Trigger, self.prepare_for_calibration_cb)
+        self.emergency_stop_srv = rospy.Service(self.rh.get_emergency_stop_service_name(), Trigger, self.emergency_stop_cb)
+        self.restore_srv = rospy.Service(self.rh.get_robot_restore_service_name(), Trigger, self.restore_cb)
+        self.prepare_for_calibration_srv = rospy.Service(self.rh.get_prepare_for_calibration_service_name(), Trigger, self.prepare_for_calibration_cb)
 
     def re_init_arm_cb(self, data):
         """
@@ -152,8 +147,8 @@ class ArtBrainRobotInterface:
         goal.pose = place_pose
         goal.pose.header.stamp = rospy.Time.now()
         goal.pose.header.frame_id = objects_frame_id
-        # TODO: how to deal with this?
-        goal.pose.pose.position.z += 0.01
+        # no need to alter place pose z - contacts between attached object and support surface (table) are allowed
+        # goal.pose.pose.position.z += 0.01
 
         rospy.logdebug("Placing object with ID: " + str(arm.holding_object.object_id))
         arm.pp_client.send_goal(goal)
@@ -170,7 +165,7 @@ class ArtBrainRobotInterface:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)
 
-        if not arm.touch_poses(obj.object_id, pose, 2.0):
+        if not arm.touch_poses(obj.object_id, pose, drill_duration):
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED, arm_id
         else:
             return None, None, arm_id

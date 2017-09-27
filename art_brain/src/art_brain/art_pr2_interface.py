@@ -16,9 +16,9 @@ class ArtPr2Interface(ArtBrainRobotInterface):
     LEFT_ARM = "left_arm"
     RIGHT_ARM = "right_arm"
 
-    def __init__(self, robot_parameters, robot_ns):
+    def __init__(self, robot_helper):
         self.gripper_usage = self.BOTH_ARM
-        super(ArtPr2Interface, self).__init__(robot_parameters, robot_ns)
+        super(ArtPr2Interface, self).__init__(robot_helper)
         self.motors_halted_sub = rospy.Subscriber(
             "/pr2_ethercat/motors_halted", Bool, self.motors_halted_cb)
         self.halt_motors_srv = rospy.ServiceProxy(
@@ -27,13 +27,13 @@ class ArtPr2Interface(ArtBrainRobotInterface):
         self.reset_motors_srv = rospy.ServiceProxy(
             '/pr2_ethercat/reset_motors', Empty)  # TODO wait for service? where?
 
-        self.look_at_pub = rospy.Publisher(robot_ns + "/look_at", PointStamped, queue_size=10)
+        self.look_at_pub = rospy.Publisher(robot_helper.robot_ns + "/look_at", PointStamped, queue_size=10)
 
         for arm in self._arms:  # type: ArtGripper
             if arm.arm_id == self.LEFT_ARM:
-                arm.arm_up = ArtBrainUtils.create_service_client(robot_ns + "/" + self.LEFT_ARM + "/arm_up", Trigger)
+                arm.arm_up = ArtBrainUtils.create_service_client(robot_helper.robot_ns + "/" + self.LEFT_ARM + "/arm_up", Trigger)
             elif arm.arm_id == self.RIGHT_ARM:
-                arm.arm_up = ArtBrainUtils.create_service_client(robot_ns + "/" + self.RIGHT_ARM + "/arm_up", Trigger)
+                arm.arm_up = ArtBrainUtils.create_service_client(robot_helper.robot_ns + "/" + self.RIGHT_ARM + "/arm_up", Trigger)
 
     def select_arm_for_pick(self, obj, objects_frame_id, tf_listener):
         free_arm = self.select_free_arm()

@@ -145,11 +145,12 @@ class ArtBrain(object):
                 rospy.signal_shutdown("Unknown robot")
             except RobotParametersNotOnParameterServer:
                 rospy.logerr("Robot parameters not on parameters server")
+                rospy.sleep(1)
 
         if self.rh.get_robot_type() == "pr2":
-            self.robot = ArtPr2Interface(self.robot_parameters, self.robot_ns)
+            self.robot = ArtPr2Interface(self.rh)
         elif self.get_robot_type() == "dobot":
-            self.robot = ArtDobotInterface(self.robot_parameters, self.robot_ns)
+            self.robot = ArtDobotInterface(self.rh)
         else:
             rospy.logerr("Robot " + str(self.robot_type) + " unknown")
             rospy.signal_shutdown("Robot " + str(self.robot_type) + " unknown")
@@ -777,6 +778,9 @@ class ArtBrain(object):
 
     def pick_object_from_feeder(self, instruction):
 
+        self.state_manager.update_program_item(
+            self.ph.get_program_id(), self.block_id, instruction)
+
         if not self.ph.is_object_set(self.block_id, instruction.id):
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_OBJECT_NOT_DEFINED)
@@ -888,10 +892,6 @@ class ArtBrain(object):
             return
         obj_type = self.ph.get_object(self.block_id, instruction.id)[0][0]
 
-        # self.state_manager.update_program_item(
-        #    self.ph.get_program_id(), self.block_id, self.instruction, {
-        #        "SELECTED_OBJECT_ID": obj})
-
         obj_to_drill = None
 
         for obj in ArtBrainUtils.get_objects_in_polygon(obj_type, self.ph.get_polygon(self.block_id, instruction.id)[0], self.objects):
@@ -914,7 +914,9 @@ class ArtBrain(object):
             # self.try_robot_arms_get_ready([arm_id])
             self.fsm.done(success=False)
             return
-
+        self.state_manager.update_program_item(
+            self.ph.get_program_id(), self.block_id, self.instruction, {
+                "SELECTED_OBJECT_ID": obj_to_drill.object_id})
         arm_id = self.robot.select_arm_for_drill(obj_to_drill, self.objects.header.frame_id, self.tf_listener)
 
         rospy.loginfo("Drilling object: " + obj_to_drill.object_id)
@@ -934,7 +936,7 @@ class ArtBrain(object):
             self.state_manager.update_program_item(
                 self.ph.get_program_id(), self.block_id, self.instruction, {
                     "DRILLED_HOLE_NUMBER": str(hole_number + 1)})
-            if not self.robot.drill_point(arm_id, [pose], obj_to_drill, "TODO", drill_duration=2):
+            if not self.robot.drill_point(arm_id, [pose], obj_to_drill, "TODO", drill_duration=0):
                 rospy.logwarn("Drilling failed...")
                 self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                                error=ArtBrainErrors.ERROR_DRILL_FAILED)

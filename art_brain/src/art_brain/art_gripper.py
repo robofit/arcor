@@ -5,15 +5,17 @@ from art_msgs.msg import PickPlaceAction, PickPlaceGoal, PickPlaceResult, \
 from std_srvs.srv import Empty, Trigger, TriggerRequest, TriggerResponse
 import rospy
 from art_msgs.msg import ObjInstance
+from std_msgs.msg import Bool
 
 
 class ArtGripper(object):
 
     def __init__(self, arm_id, drill_enabled, pp_client=None, manipulation_client=None, interaction_on_client=None,
                  interaction_off_client=None, get_ready_client=None, move_to_user_client=None, gripper_link=None,
-                 holding_object_topic=None):
+                 holding_object_topic=None, interaction_state=None):
         self.arm_id = arm_id
         self.gripper_link = gripper_link
+        self.interaction_state = False
 
         self.pp_client_name = pp_client
         self.manip_client_name = manipulation_client
@@ -63,6 +65,17 @@ class ArtGripper(object):
                 move_to_user_client, Trigger)
         else:
             self.move_to_user_client = None
+
+        if interaction_state is not None:
+            rospy.loginfo("Waiting for arm interaction state message")
+            self.interaction_state = rospy.wait_for_message(interaction_state, Bool).data
+            if self.interaction_state:
+                self.interaction_off()
+            rospy.loginfo("Got it")
+            self.interaction_state_sub = rospy.Subscriber(interaction_state, Bool, self.interaction_state_cb)
+
+        else:
+            self.interaction_state_sub = None
 
         rospy.loginfo("Arm " + str(arm_id) + " ready.")
 
@@ -194,3 +207,6 @@ class ArtGripper(object):
             self.holding_object = None
         else:
             self.holding_object = obj
+
+    def interaction_state_cb(self, data):
+        self.interaction_state = data.data

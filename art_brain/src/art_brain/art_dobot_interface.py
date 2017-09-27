@@ -6,7 +6,7 @@ class ArtDobotInterface(ArtBrainRobotInterface):
 
     DOBOT_ARM = 0
 
-    def __init__(self, robot_parameters, robot_ns):
+    def __init__(self, robot_helper):
         super(ArtDobotInterface, self).__init__(robot_parameters, robot_ns)
 
         self._arms.append(ArtGripper(self.DOBOT_ARM, "Dobot arm", True, False, "/art/dobot/pp_client", None,
