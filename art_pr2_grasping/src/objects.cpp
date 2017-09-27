@@ -177,7 +177,8 @@ void Objects::detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr& ms
       TObjectInfo obj;
       obj.object_id = msg->instances[i].object_id;
       obj.pose = ps;
-      objects_[msg->instances[i].object_id].type = srv.response.object_type;
+      obj.type = srv.response.object_type;
+      objects_[msg->instances[i].object_id] = obj;
     }
   }
 
