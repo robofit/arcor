@@ -440,6 +440,47 @@ bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
     return false;
   }
 
+  if (feeder) {
+
+    geometry_msgs::PoseStamped ps;
+    ps.header.frame_id = move_group_->getEndEffectorLink(); // this seems to be ignored...
+    ps.pose.position.x = -0.2; // TODO try 0.3, 0.2, 0.1 ?
+    ps.pose.orientation.w = 1.0;
+
+    if (transformPose(ps)) {
+
+        move_group_->clearPoseTargets();
+        move_group_->clearPathConstraints();
+        move_group_->setStartStateToCurrentState();
+
+        moveit_msgs::OrientationConstraint ocm;
+        ocm.link_name = move_group_->getEndEffectorLink();
+        ocm.header.frame_id = getPlanningFrame();
+        ocm.orientation = move_group_->getCurrentPose().pose.orientation;
+        ocm.absolute_x_axis_tolerance = 0.2;
+        ocm.absolute_y_axis_tolerance = 0.2;
+        ocm.absolute_z_axis_tolerance = 0.2;
+        ocm.weight = 1.0;
+
+        moveit_msgs::Constraints c;
+        c.orientation_constraints.push_back(ocm);
+
+        move_group_->setPathConstraints(c);
+
+        if (move_group_->setPoseTarget(ps)) {
+
+            if (!move_group_->move()) {
+
+                ROS_WARN_NAMED(group_name_, "Retreat failed...");
+            }
+        }
+
+        }
+
+    move_group_->clearPathConstraints();
+
+  }
+
   ROS_INFO_NAMED(group_name_, "Picked the object.");
   publishObject(obj);
   return true;

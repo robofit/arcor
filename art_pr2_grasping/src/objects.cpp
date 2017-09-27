@@ -174,6 +174,12 @@ void Objects::detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr& ms
         continue;
       }
 
+      if (!srv.response.success) {
+
+        ROS_ERROR_NAMED("objects", "Call to object_type service returned failure.");
+        continue;
+      }
+
       TObjectInfo obj;
       obj.object_id = msg->instances[i].object_id;
       obj.pose = ps;

@@ -43,7 +43,7 @@ left_arm:
     # how deep can the grasp pose go into an object
     grasp_depth: 0.01
     approach_retreat_desired_dist: 0.05
-    approach_retreat_min_dist: 0.01
+    approach_retreat_min_dist: 0.02
 
 # =====================================================
 right_arm:
@@ -79,4 +79,4 @@ right_arm:
 
     grasp_depth: 0.01
     approach_retreat_desired_dist: 0.05
-    approach_retreat_min_dist: 0.01
+    approach_retreat_min_dist: 0.02

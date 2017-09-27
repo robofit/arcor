@@ -105,11 +105,12 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
                                                                                                      // try again
 
         objects_->setPaused(false);
-        objects_->publishObject(goal->object);
 
         // (type of failure)
         if (grasped)
           break;
+
+        objects_->publishObject(goal->object);
       }
 
       if (as_->isPreemptRequested())
