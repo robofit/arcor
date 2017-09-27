@@ -872,23 +872,41 @@ class UICoreRos(UICore):
 
             else:
 
-                object_type_name = self.ph.get_object(block_id, item_id)[0][0]
+                for it_id in self.ph.get_items_ids(block_id):
 
-                object_type = self.art.get_object_type(object_type_name)
-                object_id = None
-                self.select_object_type(object_type_name)
+                    if self.ph.get_item_msg(block_id, it_id).type != ProgIt.PLACE_TO_POSE:
 
-                if self.ph.is_pose_set(block_id, item_id):
+                        continue
 
-                    if object_type is not None:
-                        self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),
-                                       msg.pose[0], object_type, object_id, place_cb=self.place_pose_changed,
-                                       fixed=read_only)
-                else:
-                    self.notif(
-                        translate("UICoreRos", "Set where to place picked object"))
-                    self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"), self.get_def_pose(
-                    ), object_type, object_id, place_cb=self.place_pose_changed, fixed=read_only)
+                    object_type = None
+                    object_id = None
+
+                    if self.ph.is_object_set(block_id, it_id):
+
+                        object_type = self.art.get_object_type(self.ph.get_object(block_id, it_id)[0][0])
+
+                    if it_id == item_id:
+
+                        if self.ph.is_pose_set(block_id, item_id):
+
+                            if object_type is not None:
+
+                                self.select_object_type(object_type.name)
+                                self.add_place(translate("UICoreRos", "PLACE POSE"),
+                                               self.ph.get_pose(block_id, it_id)[0][0], object_type, object_id, place_cb=self.place_pose_changed,
+                                               fixed=read_only)
+                        else:
+                            self.notif(
+                                translate("UICoreRos", "Set where to place picked object"))
+                            self.add_place(translate("UICoreRos", "PLACE POSE"), self.get_def_pose(
+                            ), object_type, object_id, place_cb=self.place_pose_changed, fixed=read_only)
+
+                        continue
+
+                    if self.ph.is_pose_set(block_id, it_id):
+
+                        self.add_place(str(translate("UICoreRos", "PLACE POSE")) + " (" + str(it_id) + ")",
+                                       self.ph.get_pose(block_id, it_id)[0][0], object_type, object_id, fixed=True)
 
         elif msg.type == ProgIt.PLACE_TO_GRID:
 
@@ -1157,7 +1175,15 @@ class UICoreRos(UICore):
 
     def object_raw_cb_evt(self, msg):
 
-        self.objects_by_sensor[msg.header.frame_id] = [len(msg.instances), msg.header.stamp]
+        cnt = 0
+
+        for obj in msg.instances:
+
+            if obj.object_type in self.selected_object_types:
+
+                cnt += 1
+
+        self.objects_by_sensor[msg.header.frame_id] = [cnt, msg.header.stamp]
 
         now = rospy.Time.now()
 
@@ -1172,11 +1198,16 @@ class UICoreRos(UICore):
         # TODO do this in timer...
         if self.grasp_dialog is not None:
 
-            # TODO do it in smarter way
-            if "/r_forearm_cam_optical_frame" in self.objects_by_sensor:
-                self.grasp_dialog.items[0].set_caption("Right arm (" + str(self.objects_by_sensor["/r_forearm_cam_optical_frame"][0]) + ")")
-            if "/l_forearm_cam_optical_frame" in self.objects_by_sensor:
-                self.grasp_dialog.items[1].set_caption("Left arm (" + str(self.objects_by_sensor["/l_forearm_cam_optical_frame"][0]) + ")")
+            frames = ["/r_forearm_cam_optical_frame", "/l_forearm_cam_optical_frame"]
+            names = ["Right arm", "Left arm"]
+
+            for i in range(0, len(frames)):
+
+                if frames[i] in self.objects_by_sensor:
+
+                    cnt = self.objects_by_sensor[frames[i]][0]
+                    self.grasp_dialog.items[i].set_enabled(cnt > 0)
+                    self.grasp_dialog.items[i].set_caption(names[i] + " (" + str(cnt) + ")")
 
     def object_raw_cb(self, msg):
 
