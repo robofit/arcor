@@ -676,25 +676,25 @@ class ProgramItem(Item):
 
     def _update_item(self, block_id=None, item_id=None):
 
-        if block_id is None and item_id is None:
+        if block_id is None:
             block_id = self.block_id
-            item_id = self.item_id
 
-        idx = self.items_map_rev[item_id]
+        # need to update all items in block as there might be various dependencies (ref_id)
+        for idx, item_id in self.items_map.iteritems():
 
-        if self.ph.item_learned(block_id, item_id):
-            self.items_list.items[idx].set_background_color()
-        else:
-            self.items_list.items[idx].set_background_color(QtCore.Qt.red)
+            if self.ph.item_learned(block_id, item_id):
+                self.items_list.items[idx].set_background_color()
+            else:
+                self.items_list.items[idx].set_background_color(QtCore.Qt.red)
 
-        self.items_list.items[idx].set_caption(
-            self.get_text_for_item(block_id, item_id))
+            self.items_list.items[idx].set_caption(
+                self.get_text_for_item(block_id, item_id))
 
         self._update_block(block_id)
 
     def get_current_item(self):
 
-        if (self.block_id is not None and self.item_id is not None):
+        if self.block_id is not None and self.item_id is not None:
 
             return self.ph.get_item_msg(self.block_id, self.item_id)
 
