@@ -279,7 +279,7 @@ class UICore(QtCore.QObject):
         return None
 
     def add_place(self, caption, pose_stamped, object_type,
-                  object_id=None, place_cb=None, fixed=False):
+                  object_id=None, place_cb=None, fixed=False, dashed=False):
 
         # TODO check frame_id in pose_stamped and transform if needed
         PlaceItem(
@@ -292,7 +292,8 @@ class UICore(QtCore.QObject):
             object_type,
             object_id,
             place_pose_changed=place_cb,
-            fixed=fixed
+            fixed=fixed,
+            dashed=dashed
         )
 
     def add_polygon(self, caption, obj_coords=[], poly_points=[],

@@ -7,7 +7,7 @@ from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem
 from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, TouchPointsItem, LabelItem, TouchTableItem, ProgramListItem, ProgramItem, DialogItem, PolygonItem
 from art_projected_gui.helpers import ProjectorHelper, conversions, error_strings
 from art_utils import InterfaceStateManager, ArtApiHelper, ProgramHelper
-from art_msgs.srv import TouchCalibrationPoints, TouchCalibrationPointsResponse, NotifyUser, NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest, ProgramIdTrigger, ProgramIdTriggerRequest
+from art_msgs.srv import TouchCalibrationPoints, TouchCalibrationPointsResponse, NotifyUser, NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest, ProgramIdTrigger, ProgramIdTriggerRequest, NotifyUserRequest
 from std_msgs.msg import Empty, Bool
 from std_srvs.srv import Trigger, TriggerResponse
 from std_srvs.srv import Empty as EmptyService
@@ -230,14 +230,14 @@ class UICoreRos(UICore):
         except(rospy.ROSException) as e:
             rospy.logerr(str(e))
             self.notif(
-                translate("UICoreRos", "Failed to store gripper pose."), temp=False)
+                translate("UICoreRos", "Failed to store gripper pose."), temp=True, message_type=NotifyUserRequest.WARN)
             return
 
-        self.notif(translate("UICoreRos", "Gripper pose stored."), temp=False)
+        self.notif(translate("UICoreRos", "Gripper pose stored."), temp=True)
         self.program_vis.set_pose(ps)
 
     def save_gripper_pose_drill_cb(self, idx):
-        rospy.logerr("callback - ok")
+
         if idx == 2:
             self.program_vis.remove_last_pose()
             self.drill_dialog.set_caption("Save gripper pose (" + str(str(self.program_vis.get_poses_count())) + ")")
@@ -256,7 +256,7 @@ class UICoreRos(UICore):
         except(rospy.ROSException) as e:
             rospy.logerr(str(e))
             self.notif(
-                translate("UICoreRos", "Failed to store gripper pose."), temp=False)
+                translate("UICoreRos", "Failed to get gripper pose."), temp=True, message_type=NotifyUserRequest.WARN)
             return
 
         dist = None
@@ -270,10 +270,9 @@ class UICoreRos(UICore):
                 dist = d
                 c_obj = obj
 
-        rospy.logdebug("Closest object is: " + c_obj.object_id + " (dist: " + str(dist) + ")")
-
-        # TODO notification if something fails
         if c_obj:
+
+            rospy.logdebug("Closest object is: " + c_obj.object_id + " (dist: " + str(dist) + ")")
 
             frame_id = "object_id_" + obj.object_id
 
@@ -285,14 +284,14 @@ class UICoreRos(UICore):
                 rospy.logerr("Failed to transform gripper pose (" + ps.header.frame_id + ") to object frame_id: " + frame_id)
                 return
 
-            self.notif(translate("UICoreRos", "Gripper pose stored."), temp=False)
+            self.notif(translate("UICoreRos", "Gripper pose stored."), temp=True)
             self.program_vis.append_pose(ps)
-            rospy.logerr(self.program_vis.get_poses_count())
             self.drill_dialog.set_caption("Save gripper pose (" + str(str(self.program_vis.get_poses_count())) + ")")
 
         else:
 
-            rospy.logerr("Failed to find object...")
+            self.notif(
+                translate("UICoreRos", "Failed to find object near gripper."), temp=True, message_type=NotifyUserRequest.WARN)
 
     def touch_calibration_points_cb(self, req):
 
@@ -410,7 +409,7 @@ class UICoreRos(UICore):
         except rospy.service.ServiceException:
 
             self.notif(
-                translate("UICoreRos", "Failed to stop/run robot."), temp=True)
+                translate("UICoreRos", "Failed to stop/run robot."), temp=True, message_type=NotifyUserRequest.ERROR)
 
     def program_error_dialog_cb(self, idx):
 
@@ -425,7 +424,7 @@ class UICoreRos(UICore):
         if resp is None or not resp.success:
 
             self.notif(
-                translate("UICoreRos", "System failure: failed to resolve error."), temp=True)
+                translate("UICoreRos", "System failure: failed to resolve error."), temp=True, message_type=NotifyUserRequest.ERROR)
 
         self.scene.removeItem(self.program_error_dialog)
         self.program_error_dialog = None
@@ -450,7 +449,7 @@ class UICoreRos(UICore):
             if state.error_severity == InterfaceState.INFO:
 
                 self.notif(translate("UICoreRos", "Error occurred: ") +
-                           error_strings.get_error_string(state.error_code), temp=True)
+                           error_strings.get_error_string(state.error_code), temp=True, message_type=NotifyUserRequest.ERROR)
 
             elif state.error_severity == InterfaceState.WARNING:
 
@@ -509,7 +508,7 @@ class UICoreRos(UICore):
             if not self.ph.load(self.art.load_program(state.program_id)):
 
                 self.notif(
-                    translate("UICoreRos", "Failed to load program from database."))
+                    translate("UICoreRos", "Failed to load program from database."), message_type=NotifyUserRequest.ERROR)
 
                 # TODO what to do?
                 return
@@ -575,8 +574,8 @@ class UICoreRos(UICore):
 
         elif it.type == ProgIt.PICK_FROM_FEEDER:
 
-            # TODO PICK_FROM_FEEDER
-            pass
+            self.notif(
+                translate("UICoreRos", "Picking object from feeder."))
 
         elif it.type == ProgIt.PICK_OBJECT_ID:
 
@@ -619,20 +618,19 @@ class UICoreRos(UICore):
 
         elif it.type == ProgIt.DRILL_POINTS:
 
-            # TODO pres nejaky flag zobrazit kolikata dira se vrta?
             polygons = self.ph.get_polygon(state.block_id, it.id)[0]
             poses = self.ph.get_pose(state.block_id, it.id)[0]
 
-            obj_id = None
             try:
-                obj_id = flags["SELECTED_OBJECT_ID"]
-            except KeyError:
+                self.select_object(flags["SELECTED_OBJECT_ID"])
+                self.notif(
+                    translate("UICoreRos", "Going to drill {0}. hole out of {1} into object ID={2}.").format(flags[
+                        "DRILLED_HOLE_NUMBER"], str(len(poses)),
+                        flags[
+                        "SELECTED_OBJECT_ID"]))
+            except KeyError as e:
                 rospy.logerr(
-                    "DRILL_POINTS: SELECTED_OBJECT_ID flag not set")
-
-            if obj_id is not None:
-                self.select_object(obj_id)
-                self.notif(translate("UICoreRos", "Going to drill {0} hole(s) into object ID={1}").format(str(len(poses)), obj_id))
+                    "DRILL_POINTS - flag not set: " + str(e))
 
             self.add_polygon(translate("UICoreRos", "Objects to be drilled"),
                              poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)
@@ -660,7 +658,7 @@ class UICoreRos(UICore):
                 return True
             else:
                 self.notif(
-                    translate("UICoreRos", "Failed to resume program."), temp=True)
+                    translate("UICoreRos", "Failed to resume program."), temp=True, message_type=NotifyUserRequest.ERROR)
                 return False
 
         elif self.state_manager.state.system_state == InterfaceState.STATE_PROGRAM_RUNNING:
@@ -678,7 +676,7 @@ class UICoreRos(UICore):
             else:
 
                 self.notif(
-                    translate("UICoreRos", "Failed to pause program."), temp=True)
+                    translate("UICoreRos", "Failed to pause program."), temp=True, message_type=NotifyUserRequest.ERROR)
                 return True
 
         else:
@@ -703,7 +701,7 @@ class UICoreRos(UICore):
             else:
 
                 self.notif(
-                    translate("UICoreRos", "Failed to stop program."), temp=True)
+                    translate("UICoreRos", "Failed to stop program."), temp=True, message_type=NotifyUserRequest.ERROR)
                 return True
 
         else:
@@ -745,7 +743,7 @@ class UICoreRos(UICore):
             if not self.ph.load(self.art.load_program(state.program_id)):
 
                 self.notif(
-                    translate("UICoreRos", "Failed to load program from database."))
+                    translate("UICoreRos", "Failed to load program from database."), message_type=NotifyUserRequest.ERROR)
 
                 # TODO what to do?
                 return
@@ -840,19 +838,23 @@ class UICoreRos(UICore):
 
         elif msg.type == ProgIt.DRILL_POINTS:
 
+            # TODO nezobrazovat dialog dokud neni vybrany objekt
             if state.edit_enabled and self.drill_dialog is None:
                 self.drill_dialog = DialogItem(self.scene, self.width / 2, 0.1, "Save gripper pose (" +
                                                str(str(self.program_vis.get_poses_count())) + ")", [
                                                    "Right arm", "Left arm", "Delete last pose", "Delete all poses"], self.save_gripper_pose_drill_cb)
 
+            # TODO check if object is to be set here or somewhere else!
             if self.ph.is_object_set(block_id, item_id):
 
                 self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
+
             else:
+
+                # TODO pokud nema byt nastaveny v teto instrukci - rict kde je potreba ho nastavit
+                # TODO pokud tam neni vybrany, ani nedovolit editaci - neni co editovat
                 self.notif(
                     translate("UICoreRos", "Select object type to be drilled"), temp=True)
-
-                # TODO show pick pose somehow (arrow??)
 
         elif msg.type == ProgIt.PICK_OBJECT_ID:
             if self.ph.is_object_set(block_id, item_id):
@@ -905,8 +907,8 @@ class UICoreRos(UICore):
 
                     if self.ph.is_pose_set(block_id, it_id):
 
-                        self.add_place(str(translate("UICoreRos", "PLACE POSE")) + " (" + str(it_id) + ")",
-                                       self.ph.get_pose(block_id, it_id)[0][0], object_type, object_id, fixed=True)
+                        self.add_place(unicode(translate("UICoreRos", "PLACE POSE")) + " (" + str(it_id) + ")",
+                                       self.ph.get_pose(block_id, it_id)[0][0], object_type, object_id, fixed=True, dashed=True)
 
         elif msg.type == ProgIt.PLACE_TO_GRID:
 
@@ -1021,7 +1023,7 @@ class UICoreRos(UICore):
         if not self.art.store_program(prog):
 
             self.notif(
-                translate("UICoreRos", "Failed to store program"), temp=True)
+                translate("UICoreRos", "Failed to store program"), temp=True, message_type=NotifyUserRequest.ERROR)
             # TODO what to do?
 
         self.notif(translate("UICoreRos", "Program stored with ID=") +
@@ -1049,7 +1051,7 @@ class UICoreRos(UICore):
             (started, error) = self.art.start_program(prog_id)
 
             if not started:
-                self.notif(translate("UICoreRos", "Failed to start program."))
+                self.notif(translate("UICoreRos", "Failed to start program."), message_type=NotifyUserRequest.ERROR)
                 rospy.logerr("Brain refused to start program: " + error)
                 return
 
@@ -1062,7 +1064,7 @@ class UICoreRos(UICore):
             if not self.ph.load(self.art.load_program(prog_id), template):
 
                 self.notif(
-                    translate("UICoreRos", "Failed to load program from database."))
+                    translate("UICoreRos", "Failed to load program from database."), message_type=NotifyUserRequest.ERROR)
 
                 # TODO what to do?
                 return
@@ -1103,7 +1105,7 @@ class UICoreRos(UICore):
             if resp is None or not resp.success:
 
                 self.notif(
-                    translate("UICoreRos", "Failed to start edit mode."))
+                    translate("UICoreRos", "Failed to start edit mode."), message_type=NotifyUserRequest.ERROR)
 
             # else:
                 # self.clear_all()
@@ -1306,6 +1308,7 @@ class UICoreRos(UICore):
 
         elif msg.type == ProgIt.DRILL_POINTS:
 
+            # TODO what if polygon is not set? what if polygon is to be set somewhere else (ref_id)?!
             if obj.object_type.name not in self.selected_object_types:
 
                 self.remove_scene_items_by_type(PolygonItem)
@@ -1330,7 +1333,8 @@ class UICoreRos(UICore):
                     poly_points.append((ob.position[0] + w / 2.0, ob.position[1] - h / 2.0))
                     poly_points.append((ob.position[0] - w / 2.0, ob.position[1] + h / 2.0))
 
-                self.add_polygon(translate("UICoreRos", "OBJECT TO BE DRILLED"),
+                print poly_points
+                self.add_polygon(translate("UICoreRos", "OBJECTS TO BE DRILLED"),
                                  poly_points, polygon_changed=self.polygon_changed)
                 self.notif(
                     translate("UICoreRos", "Check and adjust area with objects to be drilled"), temp=True)

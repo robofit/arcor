@@ -25,7 +25,7 @@ class PlaceItem(ObjectItem):
 
     """
 
-    def __init__(self, scene, caption, x, y, z, quaternion, object_type, object_id=None, place_pose_changed=None, selected=False, fixed=False, txt=True, rot=True, rot_point=None, rotation_changed=None, parent=None, horizontal=False):
+    def __init__(self, scene, caption, x, y, z, quaternion, object_type, object_id=None, place_pose_changed=None, selected=False, fixed=False, txt=True, rot=True, rot_point=None, rotation_changed=None, parent=None, horizontal=False, dashed=False):
 
         self.in_collision = False
         self.caption = caption
@@ -36,7 +36,7 @@ class PlaceItem(ObjectItem):
         self.rot_point = rot_point
         self.other_items = []
 
-        super(PlaceItem, self).__init__(scene, object_id, object_type, x, y, z, quaternion, parent=parent, horizontal=horizontal)
+        super(PlaceItem, self).__init__(scene, object_id, object_type, x, y, z, quaternion, parent=parent, horizontal=horizontal, dashed=dashed)
 
         self.update_text()
         self.fixed = fixed
@@ -164,14 +164,13 @@ class PlaceItem(ObjectItem):
 
         desc = self.caption
 
-        if self.object_id is not None:
-            desc += "\n" + translate("ObjectItem", "ID: ") + str(self.object_id)
-        else:
-            desc += "\n" + translate("ObjectItem", "TYPE: ") + self.object_type.name
-
         if self.hover:
 
-            desc += "\n" + self.get_pos_str()
+            # desc += "\n" + self.get_pos_str()
+            if self.object_id is not None:
+                desc += "\n" + translate("ObjectItem", "ID: ") + str(self.object_id)
+            else:
+                desc += "\n" + self.object_type.name
 
         self.desc.set_content(desc)
 

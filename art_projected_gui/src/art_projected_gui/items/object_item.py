@@ -25,7 +25,7 @@ class ObjectItem(Item):
     """
 
     def __init__(self, scene, object_id, object_type, x,
-                 y, z, quaternion=(0, 0, 0, 1), sel_cb=None, selected=False, parent=None, horizontal=False):
+                 y, z, quaternion=(0, 0, 0, 1), sel_cb=None, selected=False, parent=None, horizontal=False, dashed=False):
 
         self.object_id = object_id
         self.selected = selected
@@ -38,6 +38,7 @@ class ObjectItem(Item):
         self.def_color = QtCore.Qt.gray
         self.lx = 0
         self.ly = 0
+        self.dashed = dashed
 
         self.desc = None
         self.quaternion = (0, 0, 0, 1)
@@ -194,7 +195,10 @@ class ObjectItem(Item):
         rr = 10
 
         painter.setBrush(QtCore.Qt.NoBrush)
-        pen = QtGui.QPen(self.def_color, 5, QtCore.Qt.SolidLine, QtCore.Qt.RoundCap)
+        line = QtCore.Qt.SolidLine
+        if self.dashed:
+            line = QtCore.Qt.DashLine
+        pen = QtGui.QPen(self.def_color, 5, line, QtCore.Qt.RoundCap)
 
         if self.selected:
 
