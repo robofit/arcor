@@ -69,6 +69,10 @@ class ArtBasicControl:
         self.right_gripper_pose_pub = rospy.Publisher(self.ns + "right_arm/gripper/pose", PoseStamped, queue_size=1)
         self.gripper_pose_timer = rospy.Timer(rospy.Duration(0.2), self.gripper_pose_timer_cb)
 
+        # TODO check actual state
+        self.left_int_pub.publish(False)
+        self.right_int_pub.publish(False)
+
         rospy.loginfo("Server ready")
 
     def publish_gripper_pose(self, frame_id, publisher):
