@@ -10,6 +10,7 @@ import copy
 import actionlib
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import PoseStamped, PointStamped
+from tf import TransformListener
 
 
 class ArtArmNavigationActionServer(object):
@@ -22,6 +23,7 @@ class ArtArmNavigationActionServer(object):
         self._as = actionlib.SimpleActionServer(server_prefix + self.group_name + "/manipulation",
                                                 ArmNavigationAction, self.action_cb)
         self._as.start()
+
         char = self.group_name[0]
         self.jta = actionlib.SimpleActionClient('/' + char + '_arm_controller/joint_trajectory_action',
                                                 JointTrajectoryAction)
@@ -39,6 +41,8 @@ class ArtArmNavigationActionServer(object):
                             char + '_forearm_roll_joint',
                             char + '_wrist_flex_joint',
                             char + '_wrist_roll_joint']
+
+        self.tf_listener = TransformListener()
 
         self.look_at_pub = rospy.Publisher("/art/robot/look_at", PointStamped, queue_size=1)
 
@@ -65,9 +69,13 @@ class ArtArmNavigationActionServer(object):
                 self._as.publish_feedback(self.feedback)
 
                 # TODO it would be better to only repeat failed step (e.g. go3)
-                while not self.touch_point(p, goal.drill_duration):
-                    attempt += 1
+                world_frame = rospy.get_param("/art/conf/world_frame", "marker")
+                p.header.stamp = rospy.Time(0)
+                p_marker = self.tf_listener.transformPose(world_frame, p)
+                while not self.touch_point(p_marker, goal.drill_duration):
+
                     rospy.loginfo("Attempt " + str(attempt) + " out of " + str(max_attempt) + ".")
+                    attempt += 1
                     if attempt > max_attempt:
                         self.result.result = self.result.FAILURE
                         self._as.set_aborted(self.result)
@@ -111,7 +119,6 @@ class ArtArmNavigationActionServer(object):
         if not self.group.go(wait=True):
             rospy.logerr("go2 failed")
             return False
-        rospy.sleep(1)
         self.rotate_gripper(drill_duration)
         self.group.set_pose_target(pre_touch_pose)
         rospy.loginfo("Touch point go3")
