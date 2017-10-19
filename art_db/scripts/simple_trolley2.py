@@ -55,8 +55,8 @@ def main(args):
     pb.items.append(place_item(10, ref_id=[9], on_failure=10))
 
     # after p&p, let's drill holes
-    pb.items.append(drill_item(11, on_success=11, on_failure=12, obj_type="p40x40x400"))
-    pb.items.append(drill_item(12, on_success=12, on_failure=13, obj_type="p40x40x200"))
+    pb.items.append(drill_item(11, on_success=11, on_failure=12, obj_type=["p40x40x400"]))
+    pb.items.append(drill_item(12, on_success=12, on_failure=13, obj_type=["p40x40x200"]))
 
     pb.items.append(item(13, ProgramItem.GET_READY, on_success=0, on_failure=13))
 
