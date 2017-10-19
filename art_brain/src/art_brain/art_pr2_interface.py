@@ -92,9 +92,9 @@ class ArtPr2Interface(ArtBrainRobotInterface):
         objects_frame_id = ArtBrainUtils.normalize_frame_id(objects_frame_id)
         if tf_listener.frameExists(
                 "base_link") and tf_listener.frameExists(ArtBrainUtils.normalize_frame_id(objects_frame_id)):
-            if obj is not None:
+            if obj_to_drill is not None:
                 obj_pose = PoseStamped()
-                obj_pose.pose = obj.pose
+                obj_pose.pose = obj_to_drill.pose
                 obj_pose.header = objects_frame_id
                 # exact time does not matter in this case
                 obj_pose.header.stamp = rospy.Time(0)

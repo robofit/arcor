@@ -277,9 +277,8 @@ class ArtBrain(object):
                 attempt += 1
                 while not self.table_calibrated and self.table_calibrating:
                     rospy.sleep(1)
-
         self.robot.arms_get_ready()
-
+        rospy.loginfo("Brain init done")
         self.initialized = True
         self.fsm.init()
 
@@ -699,8 +698,8 @@ class ArtBrain(object):
 
     def state_learning_drill_points_run(self, event):
         rospy.logdebug('Current state: state_learning_drill_points_run')
-        rospy.sleep(2)
-        self.fsm.done()
+        instruction = self.state_manager.state.program_current_item  # type: ProgramItem
+        self.drill_points(instruction, set_drilled_flag=False)
 
     def state_learning_wait(self, event):
         rospy.logdebug('Current state: state_learning_wait')
@@ -859,6 +858,10 @@ class ArtBrain(object):
             obj_type, _ = self.ph.get_object(self.block_id, instruction.ref_id[0])
             obj_type = obj_type[0]
             arm_id = self.robot.select_arm_for_place(obj_type, instruction.ref_id)
+            if update_state_manager:
+                self.state_manager.update_program_item(
+                    self.ph.get_program_id(), self.block_id, instruction, {
+                        "SELECTED_OBJECT_ID": self.robot.get_arm_holding_object(arm_id).object_id})
             place_pose, _ = self.ph.get_pose(self.block_id, instruction.id)
             place_pose = place_pose[0]
             severity, error, _ = self.robot.place_object_to_pose(place_pose, arm_id)
@@ -872,7 +875,7 @@ class ArtBrain(object):
                 self.fsm.done(success=True)
                 return
 
-    def drill_points(self, instruction):
+    def drill_points(self, instruction, set_drilled_flag=True):
 
         # TODO drill_enabled() je metoda ArtRobotArmHelper - jenze tady jeste nevim ktere rameno se bude pouzivat
         # TODO ERROR_NOT_IMPLEMENTED -> myslim ze by bylo lepsi zkontrolovat program pri pozadavku na spusteni - jestli neobsahuje robotem nepodporovane instrukce a pak uz se tim nezabyvat - ke spusteni programu s instrukci co robot nepodporuje by vubec nemelo dojit
@@ -883,6 +886,7 @@ class ArtBrain(object):
 
         if not self.check_robot():
             return
+        print instruction
         objects, _ = self.ph.get_object(self.block_id, instruction.id)
 
         # TODO tohle nemuze nastat - kontroluje program helper
@@ -915,7 +919,7 @@ class ArtBrain(object):
             self.fsm.done(success=False)
             return
         self.state_manager.update_program_item(
-            self.ph.get_program_id(), self.block_id, self.instruction, {
+            self.ph.get_program_id(), self.block_id, instruction, {
                 "SELECTED_OBJECT_ID": obj_to_drill.object_id})
         arm_id = self.robot.select_arm_for_drill(obj_to_drill, self.objects.header.frame_id, self.tf_listener)
 
@@ -934,32 +938,35 @@ class ArtBrain(object):
                 while self.program_paused:
                     r.sleep()
             self.state_manager.update_program_item(
-                self.ph.get_program_id(), self.block_id, self.instruction, {
+                self.ph.get_program_id(), self.block_id, instruction, {
                     "DRILLED_HOLE_NUMBER": str(hole_number + 1)})
-            if not self.robot.drill_point(arm_id, [pose], obj_to_drill, "TODO", drill_duration=0):
+            severity, error, arm_id = self.robot.drill_point(arm_id, [pose], obj_to_drill, "TODO", drill_duration=0)
+            if error:
                 rospy.logwarn("Drilling failed...")
-                self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
-                               error=ArtBrainErrors.ERROR_DRILL_FAILED)
+                self.fsm.error(severity=severity,
+                               error=error)
                 return
 
-        req = ObjectFlagSetRequest()
-        req.object_id = obj_to_drill.object_id
-        req.flag.key = "drilled"
-        req.flag.value = "true"
+        if set_drilled_flag:
+            req = ObjectFlagSetRequest()
+            req.object_id = obj_to_drill.object_id
+            req.flag.key = "drilled"
+            req.flag.value = "true"
 
-        ret = self.set_object_flag_srv_client.call(req)
+            ret = self.set_object_flag_srv_client.call(req)
 
-        if not ret.success:
+            if not ret.success:
 
-            rospy.logerr("Failed to set flag!")
+                rospy.logerr("Failed to set flag!")
 
-        st = copy.deepcopy(self.objects.header.stamp)
-        # need to wait (for new message from tracker) until flag is really set - otherwise object might be drilled again...
-        # TODO check object flags insted of stamp? or remember that object was drilled e.g. in self.drilled_objects ?
-        while self.objects.header.stamp == st:
-            rospy.sleep(0.1)
+            st = copy.deepcopy(self.objects.header.stamp)
+            # need to wait (for new message from tracker) until flag is really set - otherwise object might be drilled again...
+            # TODO check object flags insted of stamp? or remember that object was drilled e.g. in self.drilled_objects ?
+            while self.objects.header.stamp == st:
+                rospy.sleep(0.1)
 
         rospy.loginfo("Object drilled: " + obj_to_drill.object_id)
+
         self.fsm.done(success=True)
 
     def place_object_to_grid(self, instruction, update_state_manager=True, get_ready_after_place=True):

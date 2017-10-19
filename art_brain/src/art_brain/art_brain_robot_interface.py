@@ -318,3 +318,6 @@ class ArtBrainRobotInterface:
 
     def is_halted(self):
         return self.halted
+
+    def get_arm_holding_object(self, arm_id):
+        return self.get_arm_by_id(arm_id).holding_object
