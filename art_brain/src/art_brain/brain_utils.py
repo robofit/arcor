@@ -32,8 +32,7 @@ class ArtBrainUtils(object):
 
     @staticmethod
     def get_pick_obj_from_feeder(obj_type):
-        if obj_type is not None:
-            obj_type = obj_type[0]
+        assert isinstance(obj_type, str)
         obj = ObjInstance()
         obj.object_id = None
         obj.object_type = obj_type
@@ -42,15 +41,15 @@ class ArtBrainUtils(object):
 
     @staticmethod
     def get_objects_in_polygon(obj_type, polygon, objects):
+        assert isinstance(obj_type, str)
 
-        if polygon is not None:
-            polygon = polygon[0]
         pick_polygon = []
         pol = None
         obj_ret = []
-        if obj_type is None:
-            return None
-        obj_type = obj_type[0]
+        if obj_type is None or len(obj_type) == 0:
+            rospy.logerr("what the fuck?")
+            return []
+        #obj_type = obj_type[0]
         # TODO check frame_id and transform to table frame?
         for point in polygon.polygon.points:
             pick_polygon.append([point.x, point.y])
@@ -60,7 +59,8 @@ class ArtBrainUtils(object):
             pol = mplPath.Path(np.array(pick_polygon), closed=True)
 
         for obj in objects.instances:
-
+            if obj.object_type != obj_type:
+                continue
             # test if some object is in polygon and take the first one
             if pol.contains_point([obj.pose.position.x, obj.pose.position.y]):
                 obj_ret.append(copy.deepcopy(obj))
@@ -69,8 +69,8 @@ class ArtBrainUtils(object):
 
     @staticmethod
     def get_pick_obj_from_polygon(obj_type, polygon, objects):
-
-        arr = random.shuffle(ArtBrainUtils.get_objects_in_polygon(obj_type, polygon, objects))
+        arr = ArtBrainUtils.get_objects_in_polygon(obj_type, polygon, objects)
+        random.shuffle(arr)
         if len(arr) == 0:
             rospy.logerr('No object in the specified polygon')
             return None

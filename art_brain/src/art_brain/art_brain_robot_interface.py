@@ -203,9 +203,9 @@ class ArtBrainRobotInterface:
 
         else:
             arm = self.get_arm_by_id(arm_id)  # type: ArtGripper
-            severity, error = arm.move_to_user()
-            if error is not None:
-                return severity, error, arm_id
+            #severity, error = arm.move_to_user()
+            # if error is not None:
+            #    return severity, error, arm_id
             severity, error = arm.interaction_on()
             if error is not None:
                 return severity, error, arm_id

@@ -105,7 +105,7 @@ class ArtPr2Interface(ArtBrainRobotInterface):
                     rospy.Duration(1))
                 obj_pose = tf_listener.transformPose(
                     'base_link', obj_pose)
-                if obj_pose.pose.position.y < 0:
+                if obj_pose.pose.positiFon.y < 0:
                     return self.RIGHT_ARM
                 else:
                     return self.LEFT_ARM

@@ -699,6 +699,7 @@ class ArtBrain(object):
     def state_learning_drill_points_run(self, event):
         rospy.logdebug('Current state: state_learning_drill_points_run')
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
+
         self.drill_points(instruction, set_drilled_flag=False)
 
     def state_learning_wait(self, event):
@@ -752,8 +753,9 @@ class ArtBrain(object):
 
     def pick_object_from_polygon(self, instruction, update_state_manager=True):
 
-        obj_type, _ = self.ph.get_object(self.block_id, instruction.id)
-        polygon, _ = self.ph.get_polygon(self.block_id, instruction.id)
+        obj_type = self.ph.get_object(self.block_id, instruction.id)[0][0]
+        polygon = self.ph.get_polygon(self.block_id, instruction.id)[0][0]
+
         obj = ArtBrainUtils.get_pick_obj_from_polygon(
             obj_type, polygon, self.objects)
         if obj is None or obj.object_id is None or obj.object_id == "":
@@ -784,7 +786,7 @@ class ArtBrain(object):
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_OBJECT_NOT_DEFINED)
             return
-        obj_type, _ = self.ph.get_object(self.block_id, instruction.id)
+        obj_type = self.ph.get_object(self.block_id, instruction.id)[0][0]
         obj = ArtBrainUtils.get_pick_obj_from_feeder(obj_type)
 
         if not self.ph.is_pose_set(self.block_id, instruction.id):
@@ -855,8 +857,8 @@ class ArtBrain(object):
                     error=ArtBrainErrors.ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE)
 
                 return
-            obj_type, _ = self.ph.get_object(self.block_id, instruction.ref_id[0])
-            obj_type = obj_type[0]
+            obj_type = self.ph.get_object(self.block_id, instruction.id)[0][0]
+
             arm_id = self.robot.select_arm_for_place(obj_type, instruction.ref_id)
             if update_state_manager:
                 self.state_manager.update_program_item(
@@ -897,8 +899,13 @@ class ArtBrain(object):
         obj_type = self.ph.get_object(self.block_id, instruction.id)[0][0]
 
         obj_to_drill = None
+        objects_in_polygon = ArtBrainUtils.get_objects_in_polygon(obj_type, self.ph.get_polygon(self.block_id, instruction.id)[0][0], self.objects)
+        if not objects_in_polygon:
+            self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
+                           error=ArtBrainErrors.ERROR_OBJECT_MISSING_IN_POLYGON)
+            return
 
-        for obj in ArtBrainUtils.get_objects_in_polygon(obj_type, self.ph.get_polygon(self.block_id, instruction.id)[0], self.objects):
+        for obj in objects_in_polygon:
 
             drilled = False
             for flag in obj.flags:
@@ -1496,6 +1503,7 @@ class ArtBrain(object):
         rospy.logdebug("Learning_request goal: " + str(goal.request))
 
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
+        self.instruction = instruction
 
         self.state_manager.state.edit_enabled = False
         self.state_manager.send()
@@ -1539,6 +1547,7 @@ class ArtBrain(object):
                 return
                 # TODO: handle error
         elif goal.request == LearningRequestGoal.EXECUTE_ITEM:
+            self.ph.set_item_msg(self.state_manager.state.block_id, instruction)
 
             # TODO let ui(s) know that item is being executed
 
