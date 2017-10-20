@@ -7,6 +7,21 @@ from shape_msgs.msg import SolidPrimitive
 from geometry_msgs.msg import PoseStamped, PolygonStamped
 
 
+def polygon_item(it_id, on_success=None, on_failure=0, obj_type="", ref_id=[]):
+
+    p = item(it_id, ProgramItem.PICK_FROM_POLYGON, on_success, on_failure, ref_id=ref_id)
+
+    pp = PolygonStamped()
+    pp.header.frame_id = "marker"
+    p.polygon.append(pp)
+
+    if len(ref_id) == 0:
+
+        p.object.append(obj_type)
+
+    return p
+
+
 def feeder_item(it_id, on_success=None, on_failure=0, obj_type="", ref_id=[]):
 
     p = item(it_id, ProgramItem.PICK_FROM_FEEDER, on_success, on_failure, ref_id=ref_id)
@@ -66,9 +81,9 @@ def drill_item(it_id, ref_id=[], on_success=None, on_failure=0, holes=2, obj_typ
     return p
 
 
-def wait_item(it_id, on_success=None, on_failure=0):
+def wait_item(it_id, ref_id=[], on_success=None, on_failure=0):
 
-    p = item(it_id, ProgramItem.WAIT_UNTIL_USER_FINISHES, on_success, on_failure)
+    p = item(it_id, ProgramItem.WAIT_UNTIL_USER_FINISHES, on_success, on_failure, ref_id=ref_id)
     pp = PolygonStamped()
     pp.header.frame_id = "marker"
     p.polygon.append(pp)
