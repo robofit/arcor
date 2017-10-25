@@ -32,7 +32,7 @@ class ArtArmNavigationActionServer(object):
         rospy.loginfo('Got it')
         self.joint_state_sub = rospy.Subscriber("/joint_states", JointState, self.js_cb, queue_size=1)
         self.angles = None
-        self.move_to_pose_pub = rospy.Publisher("/pr2_arm_navigation/move_to_pose", PoseStamped, queue_size=1)
+        self.move_to_pose_pub = rospy.Publisher("/pr2_arm_navigation/move_to_pose", PoseStamped, queue_size=10, latch=True)
 
         self.joint_names = [char + '_shoulder_pan_joint',
                             char + '_shoulder_lift_joint',
@@ -111,17 +111,20 @@ class ArtArmNavigationActionServer(object):
         pre_touch_pose.pose.position.z += 0.1  # 10cm above desired pose
         self.group.set_pose_target(pre_touch_pose)
         rospy.loginfo("Touch point go1")
+        self.move_to_pose_pub.publish(pre_touch_pose)
         if not self.group.go(wait=True):
             rospy.logerr("go1 failed")
             return False
         self.group.set_pose_target(pose)
         rospy.loginfo("Touch point go2")
+        self.move_to_pose_pub.publish(pose)
         if not self.group.go(wait=True):
             rospy.logerr("go2 failed")
             return False
         self.rotate_gripper(drill_duration)
         self.group.set_pose_target(pre_touch_pose)
         rospy.loginfo("Touch point go3")
+        self.move_to_pose_pub.publish(pre_touch_pose)
         if not self.group.go(wait=True):
             rospy.logerr("go3 failed")
             return False
