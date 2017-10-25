@@ -947,6 +947,9 @@ class ArtBrain(object):
             self.state_manager.update_program_item(
                 self.ph.get_program_id(), self.block_id, instruction, {
                     "DRILLED_HOLE_NUMBER": str(hole_number + 1)})
+
+            self.robot.look_at_point(pose.pose.position, "object_id_" + obj_to_drill.object_id)
+
             severity, error, arm_id = self.robot.drill_point(arm_id, [pose], obj_to_drill, "TODO", drill_duration=0)
             if error:
                 rospy.logwarn("Drilling failed...")
