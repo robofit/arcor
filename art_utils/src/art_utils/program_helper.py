@@ -365,12 +365,16 @@ class ProgramHelper():
 
         return None
 
-    def is_pose_set(self, block_id, item_id):
+    def is_pose_set(self, block_id, item_id, idx=None):
 
         ret = self.get_pose(block_id, item_id)
 
         if ret is None:
             return ValueError("'pose' does not exist in item or its refs.")
+
+        if idx is not None:
+
+            return ret[0][idx].pose != Pose()
 
         for p in ret[0]:
             if p.pose == Pose():
