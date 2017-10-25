@@ -35,6 +35,7 @@ class PlaceItem(ObjectItem):
         self.rot = rot
         self.rot_point = rot_point
         self.other_items = []
+        self.point = None
 
         super(PlaceItem, self).__init__(scene, object_id, object_type, x, y, z, quaternion, parent=parent, horizontal=horizontal, dashed=dashed)
 
@@ -55,6 +56,7 @@ class PlaceItem(ObjectItem):
                     self.point = PointItem(scene, 0, 0, self, self.point_changed)  # TODO option to pass pixels?
                     self.point.setPos(self.boundingRect().topLeft())
 
+                    '''
                     self.dialog = DialogItem(self.scene(),
                                              self.pix2m(self.scene().width() / 2),
                                              0.1,
@@ -68,6 +70,7 @@ class PlaceItem(ObjectItem):
                             "Place item", "Rotate --")
                     ],
                         self.dialog_cb)
+                    '''
 
                 else:
                     self.point = PointItem(scene, self.rot_point[0], self.rot_point[1], self, self.point_changed)
@@ -76,6 +79,10 @@ class PlaceItem(ObjectItem):
 
             self.position[2] = self.object_type.bbox.dimensions[self.get_yaw_axis()] / 2
             self.set_orientation(self.quaternion)
+
+        # TODO remove this - it is only temp "fix" until rotations and related stuff is fully fixed
+        if quaternion == (0, 0, 0, 1):
+            self.dialog_cb(0)
 
     def dialog_cb(self, idx):
 
@@ -130,7 +137,8 @@ class PlaceItem(ObjectItem):
 
         self.set_orientation(fin_q)
 
-        self.point.setPos(self.boundingRect().topLeft())
+        if self.point:
+            self.point.setPos(self.boundingRect().topLeft())
         self._update_desc_pos()
 
     def itemChange(self, change, value):

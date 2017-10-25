@@ -147,7 +147,11 @@ class UICoreRos(UICore):
         self.program_error_dialog = None
 
         self.grasp_dialog = None
+        self.grasp_dialog_timer = QtCore.QTimer()
+        self.grasp_dialog_timer.timeout.connect(self.grasp_dialog_timer_tick)
+        self.grasp_dialog_timer.start(1000)
         self.drill_dialog = None
+        self.drill_pose_idx = 0
 
         self.emergency_stopped = False
 
@@ -238,13 +242,22 @@ class UICoreRos(UICore):
 
     def save_gripper_pose_drill_cb(self, idx):
 
-        if idx == 2:
-            self.program_vis.remove_last_pose()
-            self.drill_dialog.set_caption("Save gripper pose (" + str(str(self.program_vis.get_poses_count())) + ")")
-            return
-        elif idx == 3:
-            self.program_vis.remove_all_poses()
-            self.drill_dialog.set_caption("Save gripper pose (" + str(str(self.program_vis.get_poses_count())) + ")")
+        # "Right arm", "Left arm", "Prev pose", "Next pose"
+
+        if idx in [2, 3]:
+
+            if idx == 3:
+                self.drill_pose_idx += 1
+                if self.drill_pose_idx >= self.program_vis.get_poses_count():
+                    self.drill_pose_idx = 0
+            else:
+
+                self.drill_pose_idx -= 1
+                if self.drill_pose_idx < 0:
+                    self.drill_pose_idx = self.program_vis.get_poses_count() - 1
+
+            self.drill_dialog.set_caption(self.get_drill_caption())
+
             return
 
         topics = ['/art/robot/right_arm/gripper/pose',
@@ -284,9 +297,14 @@ class UICoreRos(UICore):
                 rospy.logerr("Failed to transform gripper pose (" + ps.header.frame_id + ") to object frame_id: " + frame_id)
                 return
 
-            self.notif(translate("UICoreRos", "Gripper pose stored."), temp=True)
-            self.program_vis.append_pose(ps)
-            self.drill_dialog.set_caption("Save gripper pose (" + str(str(self.program_vis.get_poses_count())) + ")")
+            self.notif(translate("UICoreRos", "Gripper pose relative to object {0} stored".format(c_obj.object_id)), temp=True)
+            self.program_vis.update_pose(ps, self.drill_pose_idx)
+
+            self.drill_pose_idx += 1
+            if self.drill_pose_idx >= self.program_vis.get_poses_count():
+                self.drill_pose_idx = 0
+
+            self.drill_dialog.set_caption(self.get_drill_caption())
 
         else:
 
@@ -603,6 +621,10 @@ class UICoreRos(UICore):
                 self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),
                                place_pose, obj.object_type, obj_id, fixed=True)
 
+            else:
+
+                rospy.logerr("Selected object_id not found: " + obj_id)
+
         elif it.type == ProgIt.PLACE_TO_GRID:
 
             polygons = self.ph.get_polygon(state.block_id, it.id)[0]
@@ -624,10 +646,10 @@ class UICoreRos(UICore):
             try:
                 self.select_object(flags["SELECTED_OBJECT_ID"])
                 self.notif(
-                    translate("UICoreRos", "Going to drill {0}. hole out of {1} into object ID={2}.").format(flags[
+                    translate("UICoreRos", "Going to drill {0}. hole out of {1} into object ID={2}.".format(flags[
                         "DRILLED_HOLE_NUMBER"], str(len(poses)),
                         flags[
-                        "SELECTED_OBJECT_ID"]))
+                        "SELECTED_OBJECT_ID"])))
             except KeyError as e:
                 rospy.logerr(
                     "DRILL_POINTS - flag not set: " + str(e))
@@ -823,13 +845,14 @@ class UICoreRos(UICore):
 
         elif msg.type == ProgIt.PICK_FROM_FEEDER:
 
-            if state.edit_enabled and self.grasp_dialog is None:
-                self.grasp_dialog = DialogItem(self.scene, self.width / 2, 0.1, "Save gripper pose", [
-                    "Right arm (0)", "Left arm (0)"], self.save_gripper_pose_cb)
-
             if self.ph.is_object_set(block_id, item_id):
 
                 self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
+
+                if state.edit_enabled:
+
+                    self.create_grasp_dialog()
+
             else:
                 self.notif(
                     translate("UICoreRos", "Select object type to be picked up"), temp=True)
@@ -838,16 +861,21 @@ class UICoreRos(UICore):
 
         elif msg.type == ProgIt.DRILL_POINTS:
 
-            # TODO nezobrazovat dialog dokud neni vybrany objekt
-            if state.edit_enabled and self.drill_dialog is None:
-                self.drill_dialog = DialogItem(self.scene, self.width / 2, 0.1, "Save gripper pose (" +
-                                               str(str(self.program_vis.get_poses_count())) + ")", [
-                                                   "Right arm", "Left arm", "Delete last pose", "Delete all poses"], self.save_gripper_pose_drill_cb)
-
             # TODO check if object is to be set here or somewhere else!
             if self.ph.is_object_set(block_id, item_id):
 
                 self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
+
+                if state.edit_enabled:
+
+                    self.create_drill_dialog()
+
+                if self.ph.is_polygon_set(block_id, item_id):
+                    polygons = self.ph.get_polygon(block_id, item_id)[0]
+
+                    self.add_polygon(translate("UICoreRos", "OBJECTS TO BE DRILLED"),
+                                     poly_points=conversions.get_pick_polygon_points(polygons),
+                                     polygon_changed=self.polygon_changed, fixed=read_only)
 
             else:
 
@@ -921,6 +949,29 @@ class UICoreRos(UICore):
             self.notif(translate("UICoreRos", "Place grid"))
             self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
                             0.075, object_type, poses, grid_points=conversions.get_pick_polygon_points(polygons), square_changed=self.square_changed, fixed=read_only)
+
+    def get_drill_caption(self):
+
+        return translate("UICoreRos", "Save gripper pose ({0}/{1})".format(self.drill_pose_idx + 1, self.program_vis.get_poses_count()))
+
+    def create_drill_dialog(self):
+
+        if not self.drill_dialog:
+
+            self.drill_pose_idx = 0
+            self.drill_dialog = DialogItem(self.scene, self.width / 2, 0.1, self.get_drill_caption(), [
+                "Right arm", "Left arm", "Prev pose", "Next pose"],
+                self.save_gripper_pose_drill_cb)
+
+    def create_grasp_dialog(self):
+
+        if not self.grasp_dialog:
+
+            self.grasp_dialog = DialogItem(self.scene, self.width / 2, 0.1, "Save gripper pose", [
+                "Right arm (0)", "Left arm (0)"], self.save_gripper_pose_cb)
+
+            for it in self.grasp_dialog.items:
+                it.set_enabled(False)
 
     def active_item_switched(self, block_id, item_id, read_only=True):
 
@@ -1121,12 +1172,12 @@ class UICoreRos(UICore):
             self.notif(
                 translate("UICoreRos", "Robot is getting into default state"))
 
-            if self.grasp_dialog is not None:
+            if self.grasp_dialog:
 
                 self.scene.removeItem(self.grasp_dialog)
                 self.grasp_dialog = None
 
-            if self.drill_dialog is not None:
+            if self.drill_dialog:
                 self.scene.removeItem(self.drill_dialog)
                 self.drill_dialog = None
 
@@ -1187,29 +1238,32 @@ class UICoreRos(UICore):
 
         self.objects_by_sensor[msg.header.frame_id] = [cnt, msg.header.stamp]
 
-        now = rospy.Time.now()
+    def grasp_dialog_timer_tick(self):
 
-        to_delete = []
+        now = rospy.Time.now()
 
         for k, v in self.objects_by_sensor.iteritems():
 
-            if now - v[1] > rospy.Duration(2.0):
-
+            if now - v[1] > rospy.Duration(1.0):
                 v[0] = 0
 
-        # TODO do this in timer...
-        if self.grasp_dialog is not None:
+        if self.grasp_dialog:
 
             frames = ["/r_forearm_cam_optical_frame", "/l_forearm_cam_optical_frame"]
-            names = ["Right arm", "Left arm"]
+            names = [translate("UICoreRos", "Right arm"), translate("UICoreRos", "Left arm")]
 
-            for i in range(0, len(frames)):
+            for i in range(len(frames)):
 
                 if frames[i] in self.objects_by_sensor:
 
                     cnt = self.objects_by_sensor[frames[i]][0]
-                    self.grasp_dialog.items[i].set_enabled(cnt > 0)
-                    self.grasp_dialog.items[i].set_caption(names[i] + " (" + str(cnt) + ")")
+
+                else:
+
+                    cnt = 0
+
+                self.grasp_dialog.items[i].set_enabled(cnt > 0)
+                self.grasp_dialog.items[i].set_caption(names[i] + " (" + str(cnt) + ")")
 
     def object_raw_cb(self, msg):
 
@@ -1248,6 +1302,21 @@ class UICoreRos(UICore):
                 else:
 
                     rospy.logerr("Failed to get object type (" + inst.object_type + ") for ID=" + str(inst.object_id))
+
+        for dialog in [self.drill_dialog, self.grasp_dialog]:
+
+            if dialog:
+
+                # TODO there might be object not visible on the table - how to solve?
+                sel_obj_type = self.ph.get_object(self.program_vis.block_id, self.program_vis.get_current_item().id)[0][0]
+
+                for obj in msg.instances:
+
+                    if obj.object_type == sel_obj_type:
+                        dialog.set_enabled(True)
+                        break
+                else:
+                    dialog.set_enabled(False)
 
     def polygon_changed(self, pts):
 
@@ -1300,6 +1369,7 @@ class UICoreRos(UICore):
 
             self.program_vis.set_object(obj.object_type.name)
             self.select_object_type(obj.object_type.name)
+            self.create_grasp_dialog()
 
         elif msg.type == ProgIt.PICK_OBJECT_ID:
 
@@ -1308,8 +1378,9 @@ class UICoreRos(UICore):
 
         elif msg.type == ProgIt.DRILL_POINTS:
 
-            # TODO what if polygon is not set? what if polygon is to be set somewhere else (ref_id)?!
-            if obj.object_type.name not in self.selected_object_types:
+            # polygon is not from some other instruction (through ref_id)
+            # and new object type was selected
+            if msg.polygon and obj.object_type.name != self.ph.get_object(self.program_vis.block_id, msg.id)[0][0]:
 
                 self.remove_scene_items_by_type(PolygonItem)
 
@@ -1333,11 +1404,12 @@ class UICoreRos(UICore):
                     poly_points.append((ob.position[0] + w / 2.0, ob.position[1] - h / 2.0))
                     poly_points.append((ob.position[0] - w / 2.0, ob.position[1] + h / 2.0))
 
-                print poly_points
                 self.add_polygon(translate("UICoreRos", "OBJECTS TO BE DRILLED"),
                                  poly_points, polygon_changed=self.polygon_changed)
                 self.notif(
                     translate("UICoreRos", "Check and adjust area with objects to be drilled"), temp=True)
+
+                self.create_drill_dialog()
 
         elif msg.type == ProgIt.PICK_FROM_POLYGON:
 

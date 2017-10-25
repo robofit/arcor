@@ -3,7 +3,7 @@
 from PyQt4 import QtGui, QtCore
 from item import Item
 from art_msgs.msg import ProgramItem as ProgIt, LearningRequestGoal
-from geometry_msgs.msg import Point32
+from geometry_msgs.msg import Point32, Pose
 from button_item import ButtonItem
 from art_projected_gui.helpers import conversions
 from list_item import ListItem
@@ -273,7 +273,7 @@ class ProgramItem(Item):
 
             (obj, ref_id) = self.ph.get_object(block_id, item_id)
 
-            text += "\nobject="
+            text += "\nobject: "
 
             if self.ph.is_object_set(block_id, item_id):
 
@@ -286,6 +286,19 @@ class ProgramItem(Item):
             if ref_id != item_id:
 
                 text += " (" + str(ref_id) + ")"
+
+        if item.type == ProgIt.DRILL_POINTS:
+
+            ps, ref_id = self.ph.get_pose(block_id, item_id)
+            ps_learned = 0.0
+
+            for i in range(len(ps)):
+
+                if self.ph.is_pose_set(block_id, item_id, i):
+                    ps_learned += 1
+
+            text += QtCore.QCoreApplication.translate(
+                "ProgramItem", " learned poses: {0}%".format(ps_learned / len(ps) * 100.0))
 
         return text
 
@@ -596,28 +609,10 @@ class ProgramItem(Item):
 
         self._update_item()
 
-    def append_pose(self, ps):
+    def update_pose(self, ps, idx):
 
         msg = self.get_current_item()
-
-        msg.pose.append(ps)
-
-        self._update_item()
-
-    def remove_last_pose(self):
-
-        msg = self.get_current_item()
-
-        msg.pose.pop()
-
-        self._update_item()
-
-    def remove_all_poses(self):
-
-        msg = self.get_current_item()
-
-        msg.pose = []  # TODO empty array -> invalid program
-
+        msg.pose[idx] = ps
         self._update_item()
 
     def get_poses_count(self):
