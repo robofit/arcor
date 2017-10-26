@@ -4,6 +4,7 @@ import rospy
 from art_gripper import ArtGripper
 from brain_utils import ArtBrainUtils
 from art_msgs.srv import ReinitArmsRequest, ReinitArmsResponse
+from art_msgs.msg import ObjInstance
 from std_srvs.srv import TriggerResponse, TriggerRequest, Trigger
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty, EmptyRequest
@@ -36,42 +37,40 @@ class ArtPr2Interface(ArtBrainRobotInterface):
                 arm.arm_up = ArtBrainUtils.create_service_client(robot_helper.robot_ns + "/" + self.RIGHT_ARM + "/arm_up", Trigger)
 
     def select_arm_for_pick(self, obj, objects_frame_id, tf_listener):
+
+        assert isinstance(obj, ObjInstance)
+
         free_arm = self.select_free_arm()
         if free_arm in [None, self.LEFT_ARM, self.RIGHT_ARM]:
             return free_arm
         objects_frame_id = ArtBrainUtils.normalize_frame_id(objects_frame_id)
-        if tf_listener.frameExists(
-                "base_link") and tf_listener.frameExists(ArtBrainUtils.normalize_frame_id(objects_frame_id)):
-            if obj is not None:
-                obj_pose = PoseStamped()
-                obj_pose.pose = obj.pose
-                obj_pose.header = objects_frame_id
-                # exact time does not matter in this case
-                obj_pose.header.stamp = rospy.Time(0)
-                tf_listener.waitForTransform(
-                    'base_link',
-                    obj_pose.header.frame_id,
-                    obj_pose.header.stamp,
-                    rospy.Duration(1))
-                obj_pose = tf_listener.transformPose(
-                    'base_link', obj_pose)
-                if obj_pose.pose.position.y < 0:
-                    return self.RIGHT_ARM
-                else:
-                    return self.LEFT_ARM
-        return self.LEFT_ARM
+
+        obj_pose = PoseStamped()
+        obj_pose.pose = obj.pose
+        obj_pose.header.frame_id = objects_frame_id
+        # exact time does not matter in this case
+        obj_pose.header.stamp = rospy.Time(0)
+        tf_listener.waitForTransform(
+            'base_link',
+            obj_pose.header.frame_id,
+            obj_pose.header.stamp,
+            rospy.Duration(1))
+        obj_pose = tf_listener.transformPose(
+            'base_link', obj_pose)
+        if obj_pose.pose.position.y < 0:
+            return self.RIGHT_ARM
+        else:
+            return self.LEFT_ARM
 
     def select_arm_for_pick_from_feeder(self, pick_pose, tf_listener):
+
+        assert isinstance(pick_pose, PoseStamped)
+
         pick_pose.header.frame_id = ArtBrainUtils.normalize_frame_id(pick_pose.header.frame_id)
         free_arm = self.select_free_arm()
         if free_arm in [None, self.LEFT_ARM, self.RIGHT_ARM]:
             return free_arm
-        print pick_pose.header.frame_id
-        print tf_listener.frameExists("base_link")
-        print tf_listener.frameExists(pick_pose.header.frame_id)
-        print pick_pose
-        # if tf_listener.frameExists("base_link") and tf_listener.frameExists(pick_pose.header.frame_id) \
-        #        and pick_pose is not None:
+
         pick_pose.header.stamp = rospy.Time(0)
         tf_listener.waitForTransform(
             'base_link',
@@ -86,6 +85,9 @@ class ArtPr2Interface(ArtBrainRobotInterface):
             return self.LEFT_ARM
 
     def select_arm_for_drill(self, obj_to_drill, objects_frame_id, tf_listener):
+
+        assert isinstance(obj_to_drill, ObjInstance)
+
         free_arm = self.select_free_arm()
         if free_arm in [None, self.LEFT_ARM, self.RIGHT_ARM]:
             return free_arm
@@ -167,15 +169,19 @@ class ArtPr2Interface(ArtBrainRobotInterface):
         self.look_at(point.x, point.y, point.z, frame_id)
 
     def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False, from_feeder=False):
+        assert isinstance(obj, ObjInstance)
         self.look_at_point(obj.pose.position)
         return super(ArtPr2Interface, self).pick_object(obj, pick_instruction_id, arm_id, pick_only_y_axis, from_feeder)
 
     def place_object_to_pose(self, place_pose, arm_id, objects_frame_id="/marker", pick_only_y_axis=False):
+
+        assert isinstance(place_pose, PoseStamped)
         self.look_at_point(place_pose.pose.position)
 
         return super(ArtPr2Interface, self).place_object_to_pose(place_pose, arm_id, objects_frame_id, pick_only_y_axis)
 
     def move_arm_to_pose(self, pose, arm_id=None):
+        assert isinstance(pose, PoseStamped)
         self.look_at_point(pose.pose.position)
         return super(ArtPr2Interface, self).move_arm_to_pose(pose, arm_id)
 

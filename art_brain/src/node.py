@@ -402,7 +402,7 @@ class ArtBrain(object):
         self.state_manager.update_program_item(
             self.ph.get_program_id(), self.block_id, self.instruction, {
                 "SELECTED_OBJECT_ID": obj.object_id})
-        arm_id = self.robot.select_arm_for_pick(obj.object_id, self.objects.header.frame_id, self.tf_listener)
+        arm_id = self.robot.select_arm_for_pick(obj, self.objects.header.frame_id, self.tf_listener)
         severity, error, arm_id = self.robot.pick_object(obj, arm_id)
         if error is not None:
             self.fsm.error(severity=severity, error=error)
@@ -769,7 +769,7 @@ class ArtBrain(object):
             self.state_manager.update_program_item(
                 self.ph.get_program_id(), self.block_id, instruction, {
                     "SELECTED_OBJECT_ID": obj.object_id})
-        arm_id = self.robot.select_arm_for_pick(obj.object_id, self.objects.header.frame_id, self.tf_listener)
+        arm_id = self.robot.select_arm_for_pick(obj, self.objects.header.frame_id, self.tf_listener)
         severity, error, arm_id = self.robot.pick_object(obj, instruction.id, arm_id)
         if error is not None:
             self.fsm.error(severity=severity, error=error)
@@ -925,9 +925,7 @@ class ArtBrain(object):
             # self.try_robot_arms_get_ready([arm_id])
             self.fsm.done(success=False)
             return
-        self.state_manager.update_program_item(
-            self.ph.get_program_id(), self.block_id, instruction, {
-                "SELECTED_OBJECT_ID": obj_to_drill.object_id})
+
         arm_id = self.robot.select_arm_for_drill(obj_to_drill, self.objects.header.frame_id, self.tf_listener)
 
         rospy.loginfo("Drilling object: " + obj_to_drill.object_id)
@@ -946,7 +944,7 @@ class ArtBrain(object):
                     r.sleep()
             self.state_manager.update_program_item(
                 self.ph.get_program_id(), self.block_id, instruction, {
-                    "DRILLED_HOLE_NUMBER": str(hole_number + 1)})
+                    "SELECTED_OBJECT_ID": obj_to_drill.object_id, "DRILLED_HOLE_NUMBER": str(hole_number + 1)})
 
             self.robot.look_at_point(pose.pose.position, "object_id_" + obj_to_drill.object_id)
 
