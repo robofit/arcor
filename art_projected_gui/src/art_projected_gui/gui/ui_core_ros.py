@@ -17,6 +17,8 @@ from art_utils import array_from_param
 from art_utils import ArtRobotHelper, UnknownRobot, RobotParametersNotOnParameterServer
 import tf
 from math import sqrt
+import matplotlib.path as mplPath
+import numpy as np
 
 translate = QtCore.QCoreApplication.translate
 
@@ -263,6 +265,8 @@ class UICoreRos(UICore):
         topics = ['/art/robot/right_arm/gripper/pose',
                   '/art/robot/left_arm/gripper/pose']
 
+        rospy.logdebug("Getting pose from topic: " + topics[idx])
+
         # wait for message, set pose
         try:
             ps = rospy.wait_for_message(topics[idx], PoseStamped, timeout=2)
@@ -272,9 +276,24 @@ class UICoreRos(UICore):
                 translate("UICoreRos", "Failed to get gripper pose."), temp=True, message_type=NotifyUserRequest.WARN)
             return
 
+        assert ps.header.frame_id == "/marker"
+
+        obj_type = self.ph.get_object(self.program_vis.block_id, self.program_vis.get_current_item().id)[0][0]
+        polygon = self.ph.get_polygon(self.program_vis.block_id, self.program_vis.get_current_item().id)[0][0]
+        pp = []
+
+        for point in polygon.polygon.points:
+            pp.append([point.x, point.y])
+        pp.append([0, 0])
+        pol = mplPath.Path(np.array(pp), closed=True)
+
         dist = None
         c_obj = None
         for obj in self.get_scene_items_by_type(ObjectItem):
+
+            # skip objects of different type or outside of polygon
+            if obj.object_type.name != obj_type or not pol.contains_point([obj.position[0], obj.position[1]]):
+                continue
 
             d = sqrt((obj.position[0] - ps.pose.position.x)**2 + (obj.position[1] - ps.pose.position.y)**2 + (obj.position[2] - ps.pose.position.z)**2)
 
@@ -287,7 +306,13 @@ class UICoreRos(UICore):
 
             rospy.logdebug("Closest object is: " + c_obj.object_id + " (dist: " + str(dist) + ")")
 
-            frame_id = "object_id_" + obj.object_id
+        else:
+
+            rospy.logdebug("No object of type " + obj_type + " found.")
+
+        if c_obj and dist < 0.4:
+
+            frame_id = "object_id_" + c_obj.object_id
 
             try:
                 self.tfl.waitForTransform(frame_id, ps.header.frame_id, ps.header.stamp, rospy.Duration(2.0))
@@ -1303,20 +1328,38 @@ class UICoreRos(UICore):
 
                     rospy.logerr("Failed to get object type (" + inst.object_type + ") for ID=" + str(inst.object_id))
 
-        for dialog in [self.drill_dialog, self.grasp_dialog]:
+        if self.grasp_dialog or self.drill_dialog:
 
-            if dialog:
+            sel_obj_type = self.ph.get_object(self.program_vis.block_id, self.program_vis.get_current_item().id)[0][0]
 
-                # TODO there might be object not visible on the table - how to solve?
-                sel_obj_type = self.ph.get_object(self.program_vis.block_id, self.program_vis.get_current_item().id)[0][0]
+            if self.grasp_dialog:
 
                 for obj in msg.instances:
 
                     if obj.object_type == sel_obj_type:
-                        dialog.set_enabled(True)
+                        self.grasp_dialog.set_enabled(True)
                         break
                 else:
-                    dialog.set_enabled(False)
+                    self.grasp_dialog.set_enabled(False)
+
+            if self.drill_dialog:
+
+                polygon = self.ph.get_polygon(self.program_vis.block_id, self.program_vis.get_current_item().id)[0][0]
+                pp = []
+
+                for point in polygon.polygon.points:
+                    pp.append([point.x, point.y])
+                pp.append([0, 0])
+                pol = mplPath.Path(np.array(pp), closed=True)
+
+                for obj in msg.instances:
+
+                    if obj.object_type == sel_obj_type and pol.contains_point([obj.pose.position.x, obj.pose.position.y]):
+                        self.drill_dialog.set_enabled(True)
+                        break
+
+                else:
+                    self.drill_dialog.set_enabled(False)
 
     def polygon_changed(self, pts):
 

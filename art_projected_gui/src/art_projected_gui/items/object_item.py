@@ -25,12 +25,11 @@ class ObjectItem(Item):
     """
 
     def __init__(self, scene, object_id, object_type, x,
-                 y, z, quaternion=(0, 0, 0, 1), sel_cb=None, selected=False, parent=None, horizontal=False, dashed=False):
+                 y, z, quaternion=(0, 0, 0, 1), sel_cb=None, selected=False, parent=None, dashed=False):
 
         self.object_id = object_id
         self.selected = selected
         self.sel_cb = sel_cb
-        self.horizontal = horizontal
         # TODO check bbox type and use rectangle (used now) / ellipse, consider
         # other angles
         self.object_type = object_type
@@ -92,16 +91,23 @@ class ObjectItem(Item):
 
         ax = ((1, 0, 0), (0, 1, 0), (0, 0, 1))
 
-        for idx in range(0, len(ax)):
+        c_idx = None
+        c_dist = None
+
+        for idx in range(len(ax)):
 
             res = conversions.qv_mult(self.quaternion, ax[idx])
 
-            # TODO euclid dist
-            if conversions.is_close(res[0], 0, abs_tol=0.1) and conversions.is_close(res[1], 0, abs_tol=0.1):
+            dist = math.sqrt(res[0]**2 + res[1]**2)
 
-                return idx
+            if c_dist is None or c_dist > dist:
 
-        return -1
+                c_dist = dist
+                c_idx = idx
+
+        # TODO disable object (return -1) if dist is too high?
+
+        return c_idx
 
     def set_orientation(self, q):
 
@@ -171,8 +177,6 @@ class ObjectItem(Item):
 
             return QtCore.QRectF()
 
-        if self.horizontal:
-            self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[2])
         p = 10.0
         return QtCore.QRectF(-self.lx / 2 - p, -self.ly / 2 - p, self.lx + 2 * p, self.ly + 2 * p)
 
@@ -186,11 +190,6 @@ class ObjectItem(Item):
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-
-        # if not self.horizontal:
-        #     self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[1])
-        # else:
-        #     self.ly = self.m2pix(self.inflate + self.object_type.bbox.dimensions[2])
 
         rr = 10
 
