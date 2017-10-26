@@ -25,6 +25,8 @@ class ArtApiHelper(object):
         if not self.brain:
             self.start_program_srv = rospy.ServiceProxy('/art/brain/program/start', ProgramIdTrigger)
 
+        self._object_type_cache = {}
+
     def wait_for_api(self):
 
         self.get_prog_srv.wait_for_service()
@@ -113,16 +115,20 @@ class ArtApiHelper(object):
 
     def get_object_type(self, name):
 
-        try:
-            resp = self.get_obj_type_srv(name)
-        except rospy.ServiceException as e:
-            print "Service call failed: %s" % e
-            return None
+        if name not in self._object_type_cache:
 
-        if not resp.success:
-            return None
-        else:
-            return resp.object_type
+            try:
+                resp = self.get_obj_type_srv(name)
+            except rospy.ServiceException as e:
+                print "Service call failed: %s" % e
+                return None
+
+            if not resp.success:
+                return None
+            else:
+                self._object_type_cache[name] = resp.object_type
+
+        return self._object_type_cache[name]
 
     def store_object_type(self, ot):
 

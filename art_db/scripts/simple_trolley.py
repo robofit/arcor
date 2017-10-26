@@ -13,13 +13,15 @@ def main(args):
     rospy.init_node('simple_trolley_init_script', anonymous=True)
 
     art = ArtApiHelper()
-    art.wait_for_api()
+    # art.wait_for_api()
 
     # delete all created programs
-    for h in art.get_program_headers():
+    ph = art.get_program_headers()
+    if ph:
+        for h in ph:
 
-        art.program_clear_ro(h.id)
-        art.delete_program(h.id)
+            art.program_clear_ro(h.id)
+            art.delete_program(h.id)
 
     # -------------------------------------------------------------------------------------------
     # Training program 1

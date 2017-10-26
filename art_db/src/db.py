@@ -6,6 +6,7 @@ from art_msgs.srv import getProgram, getProgramResponse, getProgramHeaders, getP
 import sys
 import rospy
 from art_utils import ProgramHelper
+import threading
 
 from mongodb_store.message_store import MessageStoreProxy
 
@@ -15,6 +16,7 @@ class ArtDB:
     def __init__(self):
 
         self.db = MessageStoreProxy()
+        self.lock = threading.RLock()
 
         self.srv_get_program = rospy.Service('/art/db/program/get', getProgram, self.srv_get_program_cb)
         self.srv_get_program_headers = rospy.Service('/art/db/program_headers/get', getProgramHeaders, self.srv_get_program_headers_cb)
@@ -31,26 +33,28 @@ class ArtDB:
 
     def _program_set_ro(self, program_id, ro):
 
-        name = "program:" + str(program_id)
-        resp = ProgramIdTriggerResponse()
-        resp.success = False
+        with self.lock:
 
-        try:
-            prog = self.db.query_named(name, Program._type)[0]
-        except rospy.ServiceException as e:
-            resp.error = str(e)
+            name = "program:" + str(program_id)
+            resp = ProgramIdTriggerResponse()
+            resp.success = False
+
+            try:
+                prog = self.db.query_named(name, Program._type)[0]
+            except rospy.ServiceException as e:
+                resp.error = str(e)
+                return resp
+
+            prog.header.readonly = ro
+
+            try:
+                ret = self.db.update_named(name, prog, upsert=True)
+            except rospy.ServiceException as e:
+                resp.error = str(e)
+                return resp
+
+            resp.success = ret.success
             return resp
-
-        prog.header.readonly = ro
-
-        try:
-            ret = self.db.update_named(name, prog, upsert=True)
-        except rospy.ServiceException as e:
-            resp.error = str(e)
-            return resp
-
-        resp.success = ret.success
-        return resp
 
     def srv_ro_set_program_cb(self, req):
 
@@ -62,122 +66,131 @@ class ArtDB:
 
     def srv_get_program_headers_cb(self, req):
 
-        resp = getProgramHeadersResponse()
+        with self.lock:
 
-        programs = []
+            resp = getProgramHeadersResponse()
 
-        try:
-            programs = self.db.query(Program._type)
-        except rospy.ServiceException as e:
-            print "Service call failed: " + str(e)
+            programs = []
 
-        for prog in programs:
-            if len(req.ids) == 0 or prog[0].header.id in req.ids:
-                resp.headers.append(prog[0].header)
+            try:
+                programs = self.db.query(Program._type)
+            except rospy.ServiceException as e:
+                print "Service call failed: " + str(e)
 
-        return resp
+            for prog in programs:
+                if len(req.ids) == 0 or prog[0].header.id in req.ids:
+                    resp.headers.append(prog[0].header)
+
+            return resp
 
     def srv_delete_program_cb(self, req):
 
-        resp = ProgramIdTriggerResponse()
-        resp.success = False
-        name = "program:" + str(req.program_id)
+        with self.lock:
 
-        try:
+            resp = ProgramIdTriggerResponse()
+            resp.success = False
+            name = "program:" + str(req.program_id)
 
-            meta = self.db.query_named(name, Program._type)[1]
+            try:
 
-            if self.db.delete(str(meta["_id"])):
-                resp.success = True
-        except rospy.ServiceException as e:
-            pass
+                meta = self.db.query_named(name, Program._type)[1]
 
-        return resp
+                if self.db.delete(str(meta["_id"])):
+                    resp.success = True
+            except rospy.ServiceException as e:
+                pass
+
+            return resp
 
     def srv_get_program_cb(self, req):
 
-        resp = getProgramResponse()
-        resp.success = False
-        name = "program:" + str(req.id)
+        with self.lock:
 
-        prog = None
+            resp = getProgramResponse()
+            resp.success = False
+            name = "program:" + str(req.id)
 
-        try:
-            prog = self.db.query_named(name, Program._type)[0]
-        except rospy.ServiceException as e:
-            print "Service call failed: " + str(e)
+            prog = None
 
-        if prog is not None:
+            try:
+                prog = self.db.query_named(name, Program._type)[0]
+            except rospy.ServiceException as e:
+                print "Service call failed: " + str(e)
 
-            resp.program = prog
-            resp.success = True
+            if prog is not None:
 
-        return resp
+                resp.program = prog
+                resp.success = True
+
+            return resp
 
     def srv_store_program_cb(self, req):
 
-        resp = storeProgramResponse()
-        resp.success = False
-        name = "program:" + str(req.program.header.id)
+        with self.lock:
 
-        try:
-            prog = self.db.query_named(name, Program._type)[0]
-        except rospy.ServiceException as e:
-            print "Service call failed: " + str(e)
+            resp = storeProgramResponse()
+            resp.success = False
+            name = "program:" + str(req.program.header.id)
+
+            try:
+                prog = self.db.query_named(name, Program._type)[0]
+            except rospy.ServiceException as e:
+                print "Service call failed: " + str(e)
+                return resp
+
+            if prog is not None and prog.header.readonly:
+                resp.error = "Readonly program."
+                return resp
+
+            ph = ProgramHelper()
+            if not ph.load(req.program):
+
+                resp.error = "Invalid program"
+                return resp
+
+            try:
+                ret = self.db.update_named(name, req.program, upsert=True)
+            except rospy.ServiceException as e:
+                print "Service call failed: " + str(e)
+                return resp
+
+            resp.success = ret.success
             return resp
-
-        if prog is not None and prog.header.readonly:
-            resp.error = "Readonly program."
-            return resp
-
-        ph = ProgramHelper()
-        if not ph.load(req.program):
-
-            resp.error = "Invalid program"
-            return resp
-
-        try:
-            ret = self.db.update_named(name, req.program, upsert=True)
-        except rospy.ServiceException as e:
-            print "Service call failed: " + str(e)
-            return resp
-
-        resp.success = ret.success
-        return resp
 
     def srv_get_object_cb(self, req):
 
-        resp = getObjectTypeResponse()
-        resp.success = False
-        name = "object_type:" + str(req.name)
-        object_type = None
+        with self.lock:
 
-        try:
-            object_type = self.db.query_named(name, ObjectType._type)[0]
-        except rospy.ServiceException as e:
-            print "Service call failed: " + str(e)
+            resp = getObjectTypeResponse()
+            resp.success = False
+            name = "object_type:" + str(req.name)
 
-        if object_type is not None:
+            try:
+                object_type = self.db.query_named(name, ObjectType._type)[0]
+            except rospy.ServiceException as e:
+                print "Service call failed: " + str(e)
+                return resp
 
             resp.success = True
             resp.object_type = object_type
-
-        return resp
+            return resp
 
     def srv_store_object_cb(self, req):
 
-        resp = storeObjectTypeResponse()
-        name = "object_type:" + str(req.object_type.name)
+        with self.lock:
 
-        try:
-            ret = self.db.update_named(name, req.object_type, upsert=True)
-        except rospy.ServiceException as e:
-            print "Service call failed: " + str(e)
-            resp.success = False
+            resp = storeObjectTypeResponse()
+            name = "object_type:" + str(req.object_type.name)
+
+            try:
+                ret = self.db.update_named(name, req.object_type, upsert=True)
+            except rospy.ServiceException as e:
+                print "Service call failed: " + str(e)
+                resp.success = False
+                return resp
+
+            resp.success = ret.success
             return resp
-
-        resp.success = ret.success
-        return resp
 
 
 def main(args):
