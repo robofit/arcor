@@ -860,12 +860,16 @@ class ArtBrain(object):
             obj_type = self.ph.get_object(self.block_id, instruction.id)[0][0]
 
             arm_id = self.robot.select_arm_for_place(obj_type, instruction.ref_id)
+            if arm_id is None:
+                self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
+                               error=InterfaceState.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
+                return
             if update_state_manager:
                 self.state_manager.update_program_item(
                     self.ph.get_program_id(), self.block_id, instruction, {
                         "SELECTED_OBJECT_ID": self.robot.get_arm_holding_object(arm_id).object_id})
-            place_pose, _ = self.ph.get_pose(self.block_id, instruction.id)
-            place_pose = place_pose[0]
+            place_pose = self.ph.get_pose(self.block_id, instruction.id)[0][0]
+
             severity, error, _ = self.robot.place_object_to_pose(place_pose, arm_id)
             if error is not None:
                 self.try_robot_arms_get_ready([arm_id])
