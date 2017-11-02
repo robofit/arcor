@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<multimarker markers="9">
-    <marker index="2001" status="1">
+<multimarker markers="3">
+    <marker index="2002" status="1">
         <corner x="-1.9" y="-1.9" z="14.9" />
         <corner x="1.9" y="-1.9" z="14.9" />
         <corner x="1.9" y="1.9" z="14.9" />
         <corner x="-1.9" y="1.9" z="14.9" />
     </marker>
 	
-    <marker index="150" status="1">
-        <corner x="-2.3" y="1.9" z="0.5" />
-        <corner x="-2.3" y="-1.9" z="0.5" />
-        <corner x="-2.3" y="-1.9" z="4.3" />
-        <corner x="-2.3" y="1.9" z="4.3" />
+    <marker index="219" status="1">
+        <corner x="-2.3" y="1.9" z="-0.5" />
+        <corner x="-2.3" y="-1.9" z="-0.5" />
+        <corner x="-2.3" y="-1.9" z="3.3" />
+        <corner x="-2.3" y="1.9" z="3.3" />
     </marker>
 
-    <marker index="171" status="1">
-        <corner x="-1.9" y="-2.3" z="0.5" />
-        <corner x="1.9" y="-2.3" z="0.5" />
-        <corner x="1.9" y="-2.3" z="4.8" />
-        <corner x="-1.9" y="-2.3" z="4.8" />
+    <marker index="237" status="1">
+        <corner x="-1.9" y="-2.3" z="-0.5" />
+        <corner x="1.9" y="-2.3" z="-0.5" />
+        <corner x="1.9" y="-2.3" z="3.3" />
+        <corner x="-1.9" y="-2.3" z="3.3" />
     </marker>
 
 
