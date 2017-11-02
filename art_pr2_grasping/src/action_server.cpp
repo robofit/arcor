@@ -52,11 +52,12 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
   {
     case art_msgs::PickPlaceGoal::RESET:
     {
+      ROS_INFO_NAMED(group_name_, "RESET");
+      objects_->setPaused(false);
       move_group_->detachObject();
       grasped_object_.reset();
       objects_->clear();
-      publishObject();
-      // TODO(zdenekm) try to close gripper and check if there is no object
+      // publishObject(); // WTF?
 
       res.result = art_msgs::PickPlaceResult::SUCCESS;
       as_->setSucceeded(res);
@@ -93,7 +94,8 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
 
       bool grasped = false;
 
-      while (tries > 0 && !as_->isPreemptRequested())
+      dont_try_again_ = false;
+      while (tries > 0 && !as_->isPreemptRequested() && !dont_try_again_)
       {
         f.attempt = (max_attempts_ - tries) + 1;
         ROS_INFO_NAMED(group_name_, "Pick %d", f.attempt);
@@ -157,7 +159,9 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
 
       bool placed = false;
 
-      while (tries > 0 && !as_->isPreemptRequested())
+      dont_try_again_ = false;
+
+      while (tries > 0 && !as_->isPreemptRequested() && !dont_try_again_)
       {
         f.attempt = (max_attempts_ - tries) + 1;
         ROS_INFO_NAMED(group_name_, "Place %d", f.attempt);

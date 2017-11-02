@@ -171,8 +171,13 @@ class ArtDB:
                 print "Service call failed: " + str(e)
                 return resp
 
-            resp.success = True
-            resp.object_type = object_type
+            if object_type:
+
+                resp.success = True
+                resp.object_type = object_type
+                return resp
+
+            rospy.logerr("Unknown object type: " + req.name)
             return resp
 
     def srv_store_object_cb(self, req):

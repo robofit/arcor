@@ -153,7 +153,9 @@ class ArtPr2Interface(ArtBrainRobotInterface):
     def motors_halted_cb(self, req):
 
         if self.is_halted() and not req.data:
-            self.arms_get_ready()
+            rospy.loginfo("Getting ready after halt...")
+            for arm in self._arms:
+                arm.re_init()
 
         self.set_halted(req.data)
 

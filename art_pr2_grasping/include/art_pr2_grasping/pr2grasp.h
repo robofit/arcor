@@ -18,6 +18,7 @@
 #include <moveit_simple_grasps/grasp_filter.h>
 #include "art_pr2_grasping/objects.h"
 #include <std_msgs/String.h>
+#include <std_msgs/Bool.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/Pose.h>
@@ -62,8 +63,11 @@ protected:
   boost::shared_ptr<TObjectInfo> grasped_object_;
 
   float getGripperValue();
+  bool isRobotHalted();
 
   void look_at(const geometry_msgs::PoseStamped& ps);
+
+  bool dont_try_again_;
 
 public:
   artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl, boost::shared_ptr<Objects> objects,
