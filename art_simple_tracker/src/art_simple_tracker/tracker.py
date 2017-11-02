@@ -189,8 +189,8 @@ class ArtSimpleTracker:
         self.pub = rospy.Publisher(
             "/art/object_detector/object_filtered", InstancesArray, queue_size=10, latch=True)
         self.timer = rospy.Timer(rospy.Duration(0.1), self.timer_cb)
-        self.meas_max_age = rospy.Duration(2.0)
-        self.prune_timer = rospy.Timer(self.meas_max_age, self.prune_timer_cb)
+        self.meas_max_age = rospy.Duration(5.0)
+        self.prune_timer = rospy.Timer(rospy.Duration(1.0), self.prune_timer_cb)
         self.objects = {}
         self.br = tf.TransformBroadcaster()
 
