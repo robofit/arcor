@@ -67,6 +67,8 @@ protected:
 
   void look_at(const geometry_msgs::PoseStamped& ps);
 
+  bool dont_try_again_;
+
 public:
   artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl, boost::shared_ptr<Objects> objects,
                  std::string group_name, std::string default_target, std::string gripper_state_topic);

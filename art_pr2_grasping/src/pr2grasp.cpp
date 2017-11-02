@@ -319,9 +319,13 @@ bool artPr2Grasping::hasGraspedObject()
 
 bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
 {
+
+  dont_try_again_ = false;
+
   if (hasGraspedObject())
   {
     ROS_ERROR_NAMED(group_name_, "Can't grasp another object.");
+    dont_try_again_ = true;
     return false;
   }
 
@@ -334,6 +338,7 @@ bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
   catch (const std::invalid_argument& e)
   {
     ROS_ERROR_NAMED(group_name_, "Unknown object_id: %s", object_id.c_str());
+    dont_try_again_ = true;
     return false;
   }
 
@@ -447,6 +452,7 @@ bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
       ROS_WARN_NAMED(group_name_, "Failed to pick - robot halted.");
       grasped_object_.reset();
       publishObject();
+      dont_try_again_ = true;
       return false;
   }
 
