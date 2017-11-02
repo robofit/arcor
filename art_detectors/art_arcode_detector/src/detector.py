@@ -37,7 +37,9 @@ class ArCodeDetector:
 
             # list of allowed object ids
             # TODO load from param
-            if aid not in [50, 51, 52, 53, 54, 55, 56, 57, 60, 61, 62, 63, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 2001, 2002, 2003, 2004]:
+            if aid not in [50, 51, 52, 53, 54, 55, 56, 57, 60, 61, 62, 63, 1001, 1002, 1003, 1004, 1005, 1006, 1007,
+                           1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 2001, 2002, 2003, 2004, 3001,
+                           3002, 3003, 3004]:
                 continue
 
             if aid not in self.objects_cache:
@@ -47,10 +49,13 @@ class ArCodeDetector:
 
                 object_type = None
 
-                if aid in [50, 51, 52, 53, 54, 55, 56, 57, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008]:
+                if aid in [50, 51, 52, 53, 54, 55, 56, 57, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010,
+                           1011, 1012, 1013, 1014, 1015, 1016, 1017]:
                     object_type = self.art.get_object_type("wood_46_150")
                 elif aid in [60, 61, 62, 63, 2001, 2002, 2003, 2004]:
                     object_type = self.art.get_object_type("wood_46_300")
+                elif aid in [60, 61, 62, 63, 3001, 3002, 3003, 3004]:
+                    object_type = self.art.get_object_type("wood_46_400")
 
                 if object_type is None:
 
