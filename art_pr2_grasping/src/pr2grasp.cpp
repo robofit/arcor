@@ -143,9 +143,13 @@ void artPr2Grasping::look_at(const geometry_msgs::PoseStamped& ps)
 
 bool artPr2Grasping::place(const geometry_msgs::Pose& ps, double z_axis_angle_increment, bool keep_orientation)
 {
+
+  dont_try_again_ = false;
+
   if (!hasGraspedObject())
   {
     ROS_ERROR_NAMED(group_name_, "No object to place.");
+    dont_try_again_ = true;
     return false;
   }
 
@@ -302,6 +306,8 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps, double z_axis_angle_in
     move_group_->clearPathConstraints();
     return true;
   }
+
+  if (isRobotHalted()) dont_try_again_ = true;
 
   ROS_WARN_NAMED(group_name_, "Failed to place");
   return false;

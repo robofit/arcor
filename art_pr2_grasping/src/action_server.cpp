@@ -159,7 +159,9 @@ void artActionServer::executeCB(const art_msgs::PickPlaceGoalConstPtr& goal)
 
       bool placed = false;
 
-      while (tries > 0 && !as_->isPreemptRequested())
+      dont_try_again_ = false;
+
+      while (tries > 0 && !as_->isPreemptRequested() && !dont_try_again_)
       {
         f.attempt = (max_attempts_ - tries) + 1;
         ROS_INFO_NAMED(group_name_, "Place %d", f.attempt);
