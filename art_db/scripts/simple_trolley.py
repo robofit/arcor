@@ -38,9 +38,10 @@ def main(args):
     pb.on_failure = 0
     prog.blocks.append(pb)
 
-    pb.items.append(wait_item(1, ref_id=[3], on_failure=1))
-    pb.items.append(polygon_item(2))
-    pb.items.append(place_item(3, ref_id=[2], on_success=1, on_failure=1))
+    pb.items.append(polygon_item(1))
+    pb.items.append(place_item(2, ref_id=[1], on_success=3, on_failure=0))
+    pb.items.append(item(3, ProgramItem.GET_READY, on_success=4, on_failure=0))
+    pb.items.append(wait_item(4, ref_id=[2], on_success=1, on_failure=0))
 
     art.store_program(prog)
     art.program_set_ro(prog.header.id)
@@ -60,9 +61,10 @@ def main(args):
     pb.on_failure = 0
     prog.blocks.append(pb)
 
-    pb.items.append(wait_item(1, ref_id=[3], on_failure=1))
-    pb.items.append(feeder_item(2))
-    pb.items.append(place_item(3, ref_id=[2], on_success=1, on_failure=1))
+    pb.items.append(feeder_item(1))
+    pb.items.append(place_item(2, ref_id=[1], on_success=3, on_failure=0))
+    pb.items.append(item(3, ProgramItem.GET_READY, on_success=4, on_failure=0))
+    pb.items.append(wait_item(4, ref_id=[2], on_success=1, on_failure=0))
 
     art.store_program(prog)
     art.program_set_ro(prog.header.id)
@@ -83,7 +85,9 @@ def main(args):
     prog.blocks.append(pb)
 
     pb.items.append(drill_item(1, on_success=1, on_failure=2, obj_type=[""]))
-    pb.items.append(drill_item(2, on_success=2, on_failure=0, obj_type=[""]))
+    pb.items.append(item(2, ProgramItem.GET_READY, on_success=3, on_failure=0))
+    pb.items.append(drill_item(3, on_success=3, on_failure=4, obj_type=[""]))
+    pb.items.append(item(4, ProgramItem.GET_READY, on_success=0, on_failure=0))
 
     art.store_program(prog)
     art.program_set_ro(prog.header.id)
@@ -94,6 +98,7 @@ def main(args):
 
     art.store_object_type(obj_type("wood_46_150", 0.046, 0.046, 0.154))
     art.store_object_type(obj_type("wood_46_300", 0.046, 0.046, 0.298))
+    art.store_object_type(obj_type("wood_46_400", 0.046, 0.046, 0.398))
 
     # -------------------------------------------------------------------------------------------
     # Simplified trolley assembly: program
