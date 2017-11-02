@@ -86,11 +86,13 @@ class UICoreRos(UICore):
         TouchTableItem(self.scene, '/art/interface/touchtable/touch',
                        list(self.get_scene_items_by_type(PoseStampedCursorItem)), show_touch_points=rospy.get_param("~show_touch_points", False))
 
-        self.stop_btn = ButtonItem(self.scene, 0, 0, "STOP",
-                                   None, self.stop_btn_clicked, 2.0, QtCore.Qt.red)
-        self.stop_btn.setPos(self.scene.width() - self.stop_btn.boundingRect().width() -
-                             300, self.scene.height() - self.stop_btn.boundingRect().height() - 60)
-        self.stop_btn.set_enabled(True)
+        self.stop_btn = None
+        # self.stop_btn = ButtonItem(self.scene, 0, 0, "STOP", None, self.stop_btn_clicked, 2.0, QtCore.Qt.red)
+
+        if self.stop_btn:
+            self.stop_btn.setPos(self.scene.width() - self.stop_btn.boundingRect().width() -
+                                 300, self.scene.height() - self.stop_btn.boundingRect().height() - 60)
+            self.stop_btn.set_enabled(True)
 
         self.projectors = []
 
@@ -138,6 +140,7 @@ class UICoreRos(UICore):
             '/pr2_ethercat/reset_motors', EmptyService)  # TODO wait for service? where?
 
         self.robot_halted = None
+        # TODO read status of robot from InterfaceState
         self.motors_halted_sub = rospy.Subscriber(
             "/pr2_ethercat/motors_halted", Bool, self.motors_halted_cb)
 
@@ -424,12 +427,14 @@ class UICoreRos(UICore):
             if halted:
 
                 self.notif(translate("UICoreRos", "Robot is halted."))
-                self.stop_btn.set_enabled(False)
+                if self.stop_btn:
+                    self.stop_btn.set_enabled(False)
 
             else:
 
                 self.notif(translate("UICoreRos", "Robot is up again."))
-                self.stop_btn.set_enabled(True)
+                if self.stop_btn:
+                    self.stop_btn.set_enabled(True)
 
     def stop_btn_clicked(self, btn):
 
@@ -842,13 +847,6 @@ class UICoreRos(UICore):
             self.notif(
                 translate("UICoreRos", "This program item seems to be done"))
 
-        else:
-
-            if msg.type in [ProgIt.PICK_FROM_POLYGON, ProgIt.PICK_FROM_FEEDER,
-                            ProgIt.PICK_OBJECT_ID, ProgIt.PLACE_TO_POSE]:
-                self.notif(
-                    translate("UICoreRos", "Program current manipulation task"))
-
         if msg.type == ProgIt.PICK_FROM_POLYGON:
 
             if not self.ph.is_object_set(block_id, item_id):
@@ -991,6 +989,9 @@ class UICoreRos(UICore):
     def create_grasp_dialog(self):
 
         if not self.grasp_dialog:
+
+            self.notif(
+                translate("UICoreRos", "Use robot's arm to teach pose enabling part detection."))
 
             self.grasp_dialog = DialogItem(self.scene, self.width / 2, 0.1, "Save gripper pose", [
                 "Right arm (0)", "Left arm (0)"], self.save_gripper_pose_cb)
@@ -1303,8 +1304,7 @@ class UICoreRos(UICore):
         for obj_id in msg.lost_objects:
 
             self.remove_object(obj_id)
-            self.notif(translate("UICoreRos", "Object") + " ID=" + str(obj_id) +
-                       " " + translate("UICoreRos", "disappeared"), temp=True)
+            # self.notif(translate("UICoreRos", "Object") + " ID=" + str(obj_id) + " " + translate("UICoreRos", "disappeared"), temp=True)
 
         for inst in msg.instances:
 
@@ -1321,8 +1321,7 @@ class UICoreRos(UICore):
 
                     self.add_object(inst.object_id, obj_type, inst.pose.position.x, inst.pose.position.y, inst.pose.position.z,
                                     conversions.q2a(inst.pose.orientation), self.object_selected)
-                    self.notif(translate("UICoreRos", "New object") +
-                               " ID=" + str(inst.object_id), temp=True)
+                    # self.notif(translate("UICoreRos", "New object") + " ID=" + str(inst.object_id), temp=True)
 
                 else:
 
