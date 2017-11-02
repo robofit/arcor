@@ -542,6 +542,7 @@ class ArtBrain(object):
         rospy.logdebug('Current state: state_program_finished')
         self.state_manager.set_system_state(
             InterfaceState.STATE_PROGRAM_FINISHED)
+        self.robot.arms_reinit()
         self.state_manager.send()
         self.executing_program = False
         self.robot.arms_reinit()
@@ -846,18 +847,19 @@ class ArtBrain(object):
 
     def place_object_to_pose(self, instruction, update_state_manager=True, get_ready_after_place=False):
 
-        # TODO place pose
-        if update_state_manager:
-            self.state_manager.update_program_item(
-                self.ph.get_program_id(), self.block_id, instruction)
-
         if not self.ph.is_pose_set(self.block_id, instruction.id):
+            if update_state_manager:
+                self.state_manager.update_program_item(
+                    self.ph.get_program_id(), self.block_id, instruction)
             self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                            error=ArtBrainErrors.ERROR_PLACE_POSE_NOT_DEFINED)
 
             return
         else:
             if len(instruction.ref_id) < 1:
+                if update_state_manager:
+                    self.state_manager.update_program_item(
+                        self.ph.get_program_id(), self.block_id, instruction)
                 self.fsm.error(
                     severity=ArtBrainErrorSeverities.ERROR,
                     error=ArtBrainErrors.ERROR_NO_PICK_INSTRUCTION_ID_FOR_PLACE)
@@ -867,6 +869,9 @@ class ArtBrain(object):
 
             arm_id = self.robot.select_arm_for_place(obj_type, instruction.ref_id)
             if arm_id is None:
+                if update_state_manager:
+                    self.state_manager.update_program_item(
+                        self.ph.get_program_id(), self.block_id, instruction)
                 self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                                error=InterfaceState.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
                 return
