@@ -94,7 +94,7 @@ class ListItem(Item):
             else:
                 self.up_btn.set_enabled(True)
 
-            if (idx < len(self.items) - 2):
+            if idx < len(self.items) - 2:
                 self.down_btn.set_enabled(True)
             else:
                 self.down_btn.set_enabled(False)
@@ -112,12 +112,12 @@ class ListItem(Item):
         self.items[self.middle_item_idx].setVisible(True)
 
         if select:
-            self.items[self.middle_item_idx].set_pressed(True)
+            self.items[self.selected_item_idx].set_pressed(True)
 
         # how much vert. space is used
         vspace = self.items[self.middle_item_idx].boundingRect().height()
 
-        # fill space above selected item
+        # fill space above middle item
         for idx in range(self.middle_item_idx - 1, -1, -1):
 
             h = self.items[idx].boundingRect().height()
@@ -130,7 +130,7 @@ class ListItem(Item):
             self.items[idx].setVisible(True)
             vspace += self.sp + h
 
-        # fill space below selected item
+        # fill space below middle item
         for idx in range(self.middle_item_idx + 1, len(self.items)):
 
             h = self.items[idx].boundingRect().height()

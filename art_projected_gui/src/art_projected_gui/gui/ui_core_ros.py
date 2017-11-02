@@ -477,6 +477,9 @@ class UICoreRos(UICore):
         self.scene.removeItem(self.program_error_dialog)
         self.program_error_dialog = None
 
+        if self.program_vis:
+            self.program_vis.set_program_btns_enabled(True)
+
     def interface_state_evt(self, old_state, state, flags):
 
         system_state_changed = old_state.system_state != state.system_state
@@ -490,6 +493,8 @@ class UICoreRos(UICore):
             # hide dialog
             self.scene.removeItem(self.program_error_dialog)
             self.program_error_dialog = None
+            if self.program_vis:
+                self.program_vis.set_program_btns_enabled(True)
 
         # display info/warning/error if there is any - only once (on change)
         if state.error_severity != old_state.error_severity:
@@ -500,6 +505,9 @@ class UICoreRos(UICore):
                            error_strings.get_error_string(state.error_code), temp=True, message_type=NotifyUserRequest.ERROR)
 
             elif state.error_severity == InterfaceState.WARNING:
+
+                if self.program_vis:
+                    self.program_vis.set_program_btns_enabled(False)
 
                 # TODO translate error number to error message
                 self.program_error_dialog = DialogItem(self.scene,

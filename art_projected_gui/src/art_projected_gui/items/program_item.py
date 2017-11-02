@@ -178,6 +178,10 @@ class ProgramItem(Item):
 
         self.update()
 
+    def set_program_btns_enabled(self, state):
+
+        group_enable((self.pr_pause_btn, self.pr_cancel_btn), state)
+
     def set_active(self, block_id, item_id):
 
         old_block_id = self.block_id
@@ -315,9 +319,8 @@ class ProgramItem(Item):
             item_id = bmsg.items[i].id
 
             idata.append(self.get_text_for_item(self.block_id, item_id))
-            idx = len(idata) - 1
-            self.items_map[idx] = item_id
-            self.items_map_rev[item_id] = idx
+            self.items_map[i] = item_id
+            self.items_map_rev[item_id] = i
 
         self.items_list = ListItem(self.scene(
         ), 0, 0, 0.2 - 2 * 0.005, idata, self.item_selected_cb, parent=self)
