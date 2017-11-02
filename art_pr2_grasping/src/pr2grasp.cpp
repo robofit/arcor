@@ -519,7 +519,7 @@ bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
 // TODO(ZdenekM): move to Objects? Or somewhere else?
 bool artPr2Grasping::addTable(std::string frame_id)
 {
-  visual_tools_->cleanupCO("table");
+  // visual_tools_->cleanupCO("table");
 
   geometry_msgs::PoseStamped ps;
   ps.header.frame_id = frame_id;
