@@ -56,6 +56,8 @@ class ArtBrain(object):
         self.fsm = ArtBrainMachine()
 
         # map callbacks to fsm
+        self.fsm.check_robot_in = self.check_robot_in
+        self.fsm.check_robot_out = self.check_robot_out
         self.fsm.is_everything_calibrated = self.is_everything_calibrated
         self.fsm.state_init_ros = self.state_init_ros
         self.fsm.state_waiting_for_action = self.state_waiting_for_action
@@ -542,6 +544,7 @@ class ArtBrain(object):
             InterfaceState.STATE_PROGRAM_FINISHED)
         self.state_manager.send()
         self.executing_program = False
+        self.robot.arms_reinit()
         self.fsm.done()
 
     def state_program_error(self, event):
@@ -772,8 +775,10 @@ class ArtBrain(object):
         arm_id = self.robot.select_arm_for_pick(obj, self.objects.header.frame_id, self.tf_listener)
         severity, error, arm_id = self.robot.pick_object(obj, instruction.id, arm_id)
         if error is not None:
+            if error is not ArtBrainErrors.ERROR_ROBOT_HALTED:
+                self.try_robot_arms_get_ready([arm_id])
             self.fsm.error(severity=severity, error=error)
-            self.try_robot_arms_get_ready([arm_id])
+
         else:
             self.fsm.done(success=True)
 
@@ -802,7 +807,8 @@ class ArtBrain(object):
         arm_id = self.robot.select_arm_for_pick_from_feeder(pick_pose, self.tf_listener)
         severity, error, arm_id = self.robot.move_arm_to_pose(pick_pose, arm_id)
         if error is not None:
-            self.try_robot_arms_get_ready([arm_id])
+            if error is not ArtBrainErrors.ERROR_ROBOT_HALTED:
+                self.try_robot_arms_get_ready([arm_id])
             self.fsm.error(severity=severity, error=error)
             return
 
@@ -1090,6 +1096,12 @@ class ArtBrain(object):
     # ***************************************************************************************
     #                                        OTHERS
     # ***************************************************************************************
+
+    def check_robot_in(self, event):
+        self.check_robot()
+
+    def check_robot_out(self, event):
+        self.check_robot()
 
     def program_start_timer_cb(self, event):
         self.fsm.program_start()

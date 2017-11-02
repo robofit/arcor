@@ -6,6 +6,7 @@ from art_msgs.msg import InterfaceState, PickPlaceGoal
 import math
 from std_srvs.srv import TriggerRequest, TriggerResponse, Trigger
 from art_msgs.srv import ReinitArms, ReinitArmsResponse, ReinitArmsRequest
+from actionlib.simple_action_client import SimpleGoalState
 
 
 class ArtBrainRobotInterface:
@@ -97,6 +98,16 @@ class ArtBrainRobotInterface:
     def restore_robot(self):
         pass
 
+    def arms_reinit(self, arm_ids=[]):
+        assert isinstance(arm_ids, list)
+
+        if len(arm_ids) > 0:
+            for arm_id in arm_ids:
+                arm = self.get_arm_by_id(arm_id)
+                arm.re_init()
+        for arm in self._arms:
+            arm.re_init()
+
     def pick_object(self, obj, pick_instruction_id, arm_id=None, pick_only_y_axis=False, from_feeder=False):
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
@@ -113,7 +124,11 @@ class ArtBrainRobotInterface:
         goal.pick_only_y_axis = pick_only_y_axis
         rospy.logdebug("Picking object with ID: " + str(obj.object_id))
         arm.pp_client.send_goal(goal)
-        arm.pp_client.wait_for_result()
+        # arm.pp_client.wait_for_result()
+        severity, error, _ = self.wait_for_action_result(arm.pp_client)
+        if error is not None:
+            print "returning 2"
+            return severity, error, arm_id
         # TODO: make some error msg etc
         rospy.logdebug('Results from p&p server')
         rospy.logdebug("result: " + str(arm.pp_client.get_result()))
@@ -152,12 +167,25 @@ class ArtBrainRobotInterface:
 
         rospy.logdebug("Placing object with ID: " + str(arm.holding_object.object_id))
         arm.pp_client.send_goal(goal)
-        arm.pp_client.wait_for_result()
+        severity, error, _ = self.wait_for_action_result(arm.pp_client)
+        if error is not None:
+            return severity, error, arm_id
 
         if arm.pp_client.get_result().result == 0:
             return None, None, arm_id
         else:
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_PLACE_FAILED, None
+
+    def wait_for_action_result(self, action_client):
+        r = rospy.Rate(5)
+        while not rospy.is_shutdown() and action_client.simple_state != SimpleGoalState.DONE:
+            print self.is_halted()
+            if self.is_halted():
+                action_client.cancel_goal()
+                print "returning"
+                return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_ROBOT_HALTED, None
+            r.sleep()
+        return None, None, None
 
     def drill_point(self, arm_id, pose, obj, obj_frame_id, drill_duration):
 
