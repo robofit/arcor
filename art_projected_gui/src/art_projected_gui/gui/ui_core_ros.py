@@ -1417,6 +1417,10 @@ class UICoreRos(UICore):
 
         if msg.type == ProgIt.PICK_FROM_FEEDER:
 
+            if obj.object_type.name != self.ph.get_object(self.program_vis.block_id, msg.id)[0][0]:
+
+                self.program_vis.clear_poses()
+
             self.program_vis.set_object(obj.object_type.name)
             self.select_object_type(obj.object_type.name)
             self.create_grasp_dialog()
@@ -1430,34 +1434,38 @@ class UICoreRos(UICore):
 
             # polygon is not from some other instruction (through ref_id)
             # and new object type was selected
-            if msg.polygon and obj.object_type.name != self.ph.get_object(self.program_vis.block_id, msg.id)[0][0]:
+            if obj.object_type.name != self.ph.get_object(self.program_vis.block_id, msg.id)[0][0]:
 
-                self.remove_scene_items_by_type(PolygonItem)
+                if msg.polygon:
 
-                poly_points = []
+                    self.remove_scene_items_by_type(PolygonItem)
 
-                self.program_vis.set_object(obj.object_type.name)
-                self.select_object_type(obj.object_type.name)
+                    poly_points = []
 
-                # TODO avoid code duplication with PICK_FROM_POLYGON
-                for ob in self.get_scene_items_by_type(ObjectItem):
-                    if ob.object_type.name != obj.object_type.name:
-                        continue
+                    self.program_vis.set_object(obj.object_type.name)
+                    self.select_object_type(obj.object_type.name)
 
-                    sbr = ob.sceneBoundingRect()
+                    # TODO avoid code duplication with PICK_FROM_POLYGON
+                    for ob in self.get_scene_items_by_type(ObjectItem):
+                        if ob.object_type.name != obj.object_type.name:
+                            continue
 
-                    w = ob.pix2m(sbr.width())
-                    h = ob.pix2m(sbr.height())
+                        sbr = ob.sceneBoundingRect()
 
-                    poly_points.append((ob.position[0] + w / 2.0, ob.position[1] + h / 2.0))
-                    poly_points.append((ob.position[0] - w / 2.0, ob.position[1] - h / 2.0))
-                    poly_points.append((ob.position[0] + w / 2.0, ob.position[1] - h / 2.0))
-                    poly_points.append((ob.position[0] - w / 2.0, ob.position[1] + h / 2.0))
+                        w = ob.pix2m(sbr.width())
+                        h = ob.pix2m(sbr.height())
 
-                self.add_polygon(translate("UICoreRos", "OBJECTS TO BE DRILLED"),
-                                 poly_points, polygon_changed=self.polygon_changed)
-                self.notif(
-                    translate("UICoreRos", "Check and adjust area with objects to be drilled"), temp=True)
+                        poly_points.append((ob.position[0] + w / 2.0, ob.position[1] + h / 2.0))
+                        poly_points.append((ob.position[0] - w / 2.0, ob.position[1] - h / 2.0))
+                        poly_points.append((ob.position[0] + w / 2.0, ob.position[1] - h / 2.0))
+                        poly_points.append((ob.position[0] - w / 2.0, ob.position[1] + h / 2.0))
+
+                    self.add_polygon(translate("UICoreRos", "OBJECTS TO BE DRILLED"),
+                                     poly_points, polygon_changed=self.polygon_changed)
+                    self.notif(
+                        translate("UICoreRos", "Check and adjust area with objects to be drilled"), temp=True)
+
+                self.program_vis.clear_poses()
 
                 self.create_drill_dialog()
 
