@@ -5,6 +5,7 @@ from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, ProgramIte
 import rospy
 from art_projected_gui.helpers import conversions
 from art_msgs.srv import NotifyUserRequest
+from std_srvs.srv import Empty, EmptyRequest
 # import time
 
 
@@ -95,6 +96,13 @@ class UICore(QtCore.QObject):
             self.send_to_clients_evt)
         self.scene_timer.start(1.0 / 15 * 1000)
 
+        self.sound_info_srv = rospy.ServiceProxy("/art/interface/sound/info", Empty)
+        self.sound_warning_srv = rospy.ServiceProxy("/art/interface/sound/warning", Empty)
+
+        rospy.loginfo("Waiting for sound services...")
+        self.sound_info_srv.wait_for_service()
+        self.sound_warning_srv.wait_for_service()
+
     def new_connection(self):
 
         rospy.loginfo('Some projector node just connected.')
@@ -145,7 +153,23 @@ class UICore(QtCore.QObject):
         # end = time.time()
         # rospy.logdebug("Image sent in: " + str(end-start))
 
-    def notif(self, msg, min_duration=3.0, temp=False,
+    def snd_info(self):
+
+        try:
+            self.sound_info_srv.call()
+        except rospy.ServiceException:
+            rospy.logerr("Sound service call failed!")
+            pass
+
+    def snd_warn(self):
+
+        try:
+            self.sound_warning_srv.call()
+        except rospy.ServiceException:
+            rospy.logerr("Sound service call failed!")
+            pass
+
+    def notif(self, msg, min_duration=10.0, temp=False,
               message_type=NotifyUserRequest.INFO):
         """Display message (notification) to the user.
 
@@ -160,6 +184,8 @@ class UICore(QtCore.QObject):
             log_func = rospy.logwarn
         elif message_type == NotifyUserRequest.ERROR:
             log_func = rospy.logerr
+        elif message_type == NotifyUserRequest.INFO:
+            log_func = rospy.loginfo
 
         if temp:
             log_func("Notification (temp): " + msg)

@@ -618,6 +618,14 @@ class ProgramItem(Item):
         msg.pose[idx] = ps
         self._update_item()
 
+    def clear_poses(self):
+
+        for ps in self.get_current_item().pose:
+
+            ps.pose = Pose()
+
+        self._update_item()
+
     def get_poses_count(self):
         msg = self.get_current_item()
         return len(msg.pose)

@@ -7,14 +7,14 @@
         <corner x="-1.9" y="1.9" z="14.9" />
     </marker>
 	
-    <marker index="150" status="1">
+    <marker index="104" status="1">
         <corner x="-2.3" y="1.9" z="-0.5" />
         <corner x="-2.3" y="-1.9" z="-0.5" />
         <corner x="-2.3" y="-1.9" z="3.3" />
         <corner x="-2.3" y="1.9" z="3.3" />
     </marker>
 
-    <marker index="171" status="1">
+    <marker index="107" status="1">
         <corner x="-1.9" y="-2.3" z="-0.5" />
         <corner x="1.9" y="-2.3" z="-0.5" />
         <corner x="1.9" y="-2.3" z="3.3" />
