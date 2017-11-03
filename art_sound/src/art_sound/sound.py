@@ -14,16 +14,17 @@ class ArtSound(object):
 
         pkg = rospkg.RosPack().get_path('art_sound')
 
-        # TODO info/error
         self.sounds = {
             InterfaceState.INFO: os.path.join(pkg, 'sounds', 'info.mp3'),
-            InterfaceState.WARNING: os.path.join(pkg, 'sounds', 'warning.mp3')
+            InterfaceState.WARNING: os.path.join(pkg, 'sounds', 'warning.mp3'),
+            InterfaceState.ERROR: os.path.join(pkg, 'sounds', 'error.mp3')
         }
 
         self.manager = InterfaceStateManager("art_sound", cb=self.state_cb)
 
         self.srv_info = rospy.Service("info", Empty, self.srv_info_cb)
         self.srv_warning = rospy.Service("warning", Empty, self.srv_warning_cb)
+        self.srv_error = rospy.Service("error", Empty, self.srv_error_cb)
 
         self.q = Queue()
 
@@ -48,6 +49,11 @@ class ArtSound(object):
         self.q.put(InterfaceState.WARNING)
         return EmptyResponse()
 
+    def srv_error_cb(self, req):
+
+        self.q.put(InterfaceState.ERROR)
+        return EmptyResponse()
+
     def state_cb(self, old, new, flags):
 
         if new.error_severity != old.error_severity:
@@ -55,3 +61,7 @@ class ArtSound(object):
             if new.error_severity in self.sounds:
 
                 self.q.put(new.error_severity)
+
+        elif new.system_state != old.system_state:
+
+            self.q.put(InterfaceState.INFO)
