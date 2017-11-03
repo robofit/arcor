@@ -1450,11 +1450,16 @@ class UICoreRos(UICore):
                         if ob.object_type.name != obj.object_type.name:
                             continue
 
+                        # TODO refactor somehow (into ObjectItem?)
+                        if not ob.on_table or ob.position[0] < 0 or ob.position[0] > self.width or ob.position[1] < 0 or ob.position[1] > self.height:
+                            continue
+
                         sbr = ob.sceneBoundingRect()
 
                         w = ob.pix2m(sbr.width())
                         h = ob.pix2m(sbr.height())
 
+                        # TODO limit to scene size?
                         poly_points.append((ob.position[0] + w / 2.0, ob.position[1] + h / 2.0))
                         poly_points.append((ob.position[0] - w / 2.0, ob.position[1] - h / 2.0))
                         poly_points.append((ob.position[0] + w / 2.0, ob.position[1] - h / 2.0))
@@ -1484,11 +1489,16 @@ class UICoreRos(UICore):
                     if ob.object_type.name != obj.object_type.name:
                         continue
 
+                    # TODO refactor somehow (into ObjectItem?)
+                    if not ob.on_table or ob.position[0] < 0 or ob.position[0] > self.width or ob.position[1] < 0 or ob.position[1] > self.height:
+                        continue
+
                     sbr = ob.sceneBoundingRect()
 
                     w = ob.pix2m(sbr.width())
                     h = ob.pix2m(sbr.height())
 
+                    # TODO limit to scene size?
                     poly_points.append((ob.position[0] + w / 2.0, ob.position[1] + h / 2.0))
                     poly_points.append((ob.position[0] - w / 2.0, ob.position[1] - h / 2.0))
                     poly_points.append((ob.position[0] + w / 2.0, ob.position[1] - h / 2.0))
