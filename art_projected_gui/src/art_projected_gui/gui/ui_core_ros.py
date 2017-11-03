@@ -225,7 +225,7 @@ class UICoreRos(UICore):
             it.setVisible(False)  # TODO remember settings (how?)
 
         self.notif(translate(
-            "UICoreRos", "Touch table calibration started. Please press the white point."), temp=False)
+            "UICoreRos", "Touch table calibration started. Please press the white point."))
         self.touch_points = TouchPointsItem(self.scene, pts)
 
     def save_gripper_pose_cb(self, idx):
@@ -326,6 +326,7 @@ class UICoreRos(UICore):
                 return
 
             self.notif(translate("UICoreRos", "Gripper pose relative to object {0} stored".format(c_obj.object_id)), temp=True)
+            self.snd_info()
             self.program_vis.update_pose(ps, self.drill_pose_idx)
 
             self.drill_pose_idx += 1
@@ -338,6 +339,7 @@ class UICoreRos(UICore):
 
             self.notif(
                 translate("UICoreRos", "Failed to find object near gripper."), temp=True, message_type=NotifyUserRequest.WARN)
+            self.snd_warn()
 
     def touch_calibration_points_cb(self, req):
 
@@ -506,28 +508,39 @@ class UICoreRos(UICore):
 
             elif state.error_severity == InterfaceState.WARNING:
 
-                if self.program_vis:
-                    self.program_vis.set_program_btns_enabled(False)
+                if state.system_state == InterfaceState.STATE_LEARNING:
 
-                # TODO translate error number to error message
-                self.program_error_dialog = DialogItem(self.scene,
-                                                       self.width / 2,
-                                                       0.1,
-                                                       translate(
-                                                           "UICoreRos",
-                                                           "Handle error: ") + error_strings.get_error_string(
-                                                           state.error_code),
-                                                       [
+                    self.notif(translate("UICoreRos", "Error occurred: ") +
+                               error_strings.get_error_string(state.error_code), temp=True,
+                               message_type=NotifyUserRequest.ERROR)
+
+                else:
+
+                    if self.program_vis:
+                        self.program_vis.set_program_btns_enabled(False)
+
+                    # TODO translate error number to error message
+                    self.program_error_dialog = DialogItem(self.scene,
+                                                           self.width / 2,
+                                                           0.1,
                                                            translate(
-                                                               "UICoreRos", "Try again"),
-                                                           translate(
-                                                               "UICoreRos", "Skip instruction"),
-                                                           translate(
-                                                               "UICoreRos", "Fail instruction"),
-                                                           translate(
-                                                               "UICoreRos", "End program")
-                                                       ],
-                                                       self.program_error_dialog_cb)
+                                                               "UICoreRos",
+                                                               "Handle error: ") + error_strings.get_error_string(
+                                                               state.error_code),
+                                                           [
+                                                               translate(
+                                                                   "UICoreRos", "Try again"),
+                                                               translate(
+                                                                   "UICoreRos", "Skip instruction"),
+                                                               translate(
+                                                                   "UICoreRos", "Fail instruction"),
+                                                               translate(
+                                                                   "UICoreRos", "End program")
+                                                           ],
+                                                           self.program_error_dialog_cb)
+
+                    self.notif(translate("UICoreRos", "Please resolve error using dialog."),
+                               message_type=NotifyUserRequest.ERROR)
 
             # TODO what to do with SEVERE?
 
@@ -730,7 +743,7 @@ class UICoreRos(UICore):
 
             if resp is not None and resp.success:
                 self.notif(
-                    translate("UICoreRos", "Program paused."), temp=True)
+                    translate("UICoreRos", "Program paused."))
                 return True
 
             else:
@@ -755,7 +768,7 @@ class UICoreRos(UICore):
 
             if resp is not None and resp.success:
                 self.notif(
-                    translate("UICoreRos", "Program stopped."), temp=True)
+                    translate("UICoreRos", "Program stopped."))
                 return True
 
             else:
@@ -850,17 +863,12 @@ class UICoreRos(UICore):
 
         msg = self.ph.get_item_msg(block_id, item_id)
 
-        if self.ph.item_learned(block_id, item_id):
-
-            self.notif(
-                translate("UICoreRos", "This program item seems to be done"))
-
         if msg.type == ProgIt.PICK_FROM_POLYGON:
 
             if not self.ph.is_object_set(block_id, item_id):
 
                 self.notif(
-                    translate("UICoreRos", "Select object type to be picked up"), temp=True)
+                    translate("UICoreRos", "Select object type to be picked up"))
 
             else:
 
@@ -886,7 +894,7 @@ class UICoreRos(UICore):
 
             else:
                 self.notif(
-                    translate("UICoreRos", "Select object type to be picked up"), temp=True)
+                    translate("UICoreRos", "Select object type to be picked up"))
 
                 # TODO show pick pose somehow (arrow??)
 
@@ -913,14 +921,14 @@ class UICoreRos(UICore):
                 # TODO pokud nema byt nastaveny v teto instrukci - rict kde je potreba ho nastavit
                 # TODO pokud tam neni vybrany, ani nedovolit editaci - neni co editovat
                 self.notif(
-                    translate("UICoreRos", "Select object type to be drilled"), temp=True)
+                    translate("UICoreRos", "Select object type to be drilled"))
 
         elif msg.type == ProgIt.PICK_OBJECT_ID:
             if self.ph.is_object_set(block_id, item_id):
                 self.select_object(self.ph.get_object(block_id, item_id)[0][0])
             else:
                 self.notif(
-                    translate("UICoreRos", "Select object to be picked up"), temp=True)
+                    translate("UICoreRos", "Select object to be picked up"))
 
         elif msg.type == ProgIt.PLACE_TO_POSE:
 
@@ -929,7 +937,7 @@ class UICoreRos(UICore):
                 (obj_arr, ref_id) = self.ph.get_object(block_id, item_id)
 
                 self.notif(translate(
-                    "UICoreRos", "Select object to be picked up in ID=") + str(ref_id))
+                    "UICoreRos", "Select object to be picked up in ID{0}".format(str(ref_id))))
 
             else:
 
@@ -1141,7 +1149,7 @@ class UICoreRos(UICore):
                 return
 
             self.notif(
-                translate("UICoreRos", "Starting program ID=" + str(prog_id)), temp=True)
+                translate("UICoreRos", "Starting program ID=" + str(prog_id)))
             self.program_list.set_enabled(False)
 
         else:
@@ -1468,7 +1476,7 @@ class UICoreRos(UICore):
                     self.add_polygon(translate("UICoreRos", "OBJECTS TO BE DRILLED"),
                                      poly_points, polygon_changed=self.polygon_changed)
                     self.notif(
-                        translate("UICoreRos", "Check and adjust area with objects to be drilled"), temp=True)
+                        translate("UICoreRos", "Check and adjust area with objects to be drilled. Then use robot arm to set drill poses."))
 
                 self.program_vis.clear_poses()
 
@@ -1507,7 +1515,7 @@ class UICoreRos(UICore):
                 self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
                                  poly_points, polygon_changed=self.polygon_changed)
                 self.notif(
-                    translate("UICoreRos", "Check and adjust pick polygon"), temp=True)
+                    translate("UICoreRos", "Check and adjust pick polygon. You may also change object type."))
 
         self.state_manager.update_program_item(self.ph.get_program_id(
         ), self.program_vis.block_id, self.program_vis.get_current_item())
