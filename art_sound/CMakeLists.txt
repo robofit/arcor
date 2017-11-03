@@ -4,6 +4,7 @@ project(art_sound)
 find_package(catkin REQUIRED COMPONENTS
   art_msgs
   rospy
+  std_srvs
 )
 
 catkin_python_setup()
