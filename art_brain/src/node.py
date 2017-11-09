@@ -942,13 +942,16 @@ class ArtBrain(object):
             return
 
         arm_id = self.robot.select_arm_for_drill(obj_to_drill, self.objects.header.frame_id, self.tf_listener)
-
+        arm_id_old = copy.deepcopy(arm_id)
         rospy.loginfo("Drilling object: " + obj_to_drill.object_id)
 
         poses = self.ph.get_pose(self.block_id, instruction.id)[0]
 
         for hole_number, pose in enumerate(poses):
-
+            arm_id = self.robot.select_arm_for_drill(obj_to_drill, self.objects.header.frame_id, self.tf_listener)
+            if arm_id != arm_id_old:
+                self.robot.arms_get_ready([arm_id_old])
+                arm_id_old = copy.deepcopy(arm_id)
             rospy.loginfo("Hole number: " + str(hole_number + 1) + " (out of: " + str(len(poses)) + ")")
 
             if self.program_pause_request or self.program_paused:
