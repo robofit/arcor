@@ -705,6 +705,7 @@ class ArtBrain(object):
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
 
         self.drill_points(instruction, set_drilled_flag=False)
+        self.try_robot_arms_get_ready()
 
     def state_learning_wait(self, event):
         rospy.logdebug('Current state: state_learning_wait')
@@ -1093,7 +1094,7 @@ class ArtBrain(object):
             if attempt >= max_attempts:
                 rospy.logerr("Failed to get ready")
                 return False
-            severity, error, arm_id = self.robot.arms_get_ready()
+            severity, error, arm_id = self.robot.arms_get_ready([arm_ids])
             if error is not None:
                 attempt += 1
                 rospy.logwarn("Error while getting ready: " + str(arm_id) + " , attempt: " + str(attempt))
