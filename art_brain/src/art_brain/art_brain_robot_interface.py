@@ -198,13 +198,16 @@ class ArtBrainRobotInterface:
         else:
             return None, None, arm_id
 
-    def move_arm_to_pose(self, pose, arm_id=None):
+    def move_arm_to_pose(self, pose, arm_id=None, picking=False):
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)
 
         if not arm.move_to_pose(pose):
-            return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED, arm_id
+            if picking:
+                return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_PICK_FAILED, arm_id
+            else:
+                return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED, arm_id
         else:
             return None, None, arm_id
 
