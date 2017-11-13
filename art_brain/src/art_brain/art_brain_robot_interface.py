@@ -220,6 +220,8 @@ class ArtBrainRobotInterface:
         else:
             for arm_id in arm_ids:
                 arm = self.get_arm_by_id(arm_id)
+                if arm is None:
+                    continue
                 return arm.get_ready()
         return None, None, None
 
