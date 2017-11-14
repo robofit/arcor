@@ -223,7 +223,7 @@ class ArtBrainRobotInterface:
                 arm = self.get_arm_by_id(arm_id)
                 if arm is None:
                     continue
-                return arm.get_ready()
+                arm.get_ready()
         return None, None, None
 
     def arm_prepare_for_interaction(self, arm_id=None):
