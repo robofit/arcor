@@ -18,8 +18,8 @@ class ProgramStore(object):
     def store_programs(self):
         program_headers = self.art.get_program_headers()
         programs = []
-        file = open("test", "w")
-        bag = rosbag.Bag('test.bag', 'w')
+        file = open("JSONprograms_" + str(rospy.Time.now().to_nsec()), "w")
+        bag = rosbag.Bag('BAGprograms_' + str(rospy.Time.now().to_nsec()) + '.bag', 'w')
         for header in program_headers:
             program = self.art.load_program(header.id)
             programs.append(program)
@@ -34,6 +34,7 @@ class ProgramStore(object):
 
 if __name__ == '__main__':
     try:
+        rospy.init_node('store_programs', log_level=rospy.INFO)
         ps = ProgramStore()
         ps.store_programs()
     except KeyboardInterrupt:
