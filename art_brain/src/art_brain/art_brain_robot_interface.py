@@ -211,8 +211,9 @@ class ArtBrainRobotInterface:
         else:
             return None, None, arm_id
 
-    def arms_get_ready(self, arm_ids=None):
-        if arm_ids is None:
+    def arms_get_ready(self, arm_ids=[]):
+        assert isinstance(arm_ids, list)
+        if not arm_ids:
             for arm in self._arms:
                 severity, error = arm.get_ready()
                 if error is not None:

@@ -282,7 +282,7 @@ class ArtBrain(object):
         if self.robot.halted:
             rospy.logwarn("Robot halted!")
         else:
-            self.robot.arms_get_ready()
+            self.try_robot_arms_get_ready()
         rospy.loginfo("Brain init done")
         self.initialized = True
         self.fsm.init()
@@ -706,7 +706,6 @@ class ArtBrain(object):
     def state_learning_drill_points_run(self, event):
         rospy.logdebug('Current state: state_learning_drill_points_run')
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
-
         self.drill_points(instruction, set_drilled_flag=False)
         self.try_robot_arms_get_ready()
 
@@ -1105,21 +1104,27 @@ class ArtBrain(object):
         else:
             return False
 
-    def try_robot_arms_get_ready(self, arm_ids=None, max_attempts=3):
+    def try_robot_arms_get_ready(self, arm_ids=[], max_attempts=3):
+        assert isinstance(arm_ids, list)
+        rospy.logwarn("try_robot_arms_get_ready")
         if self.robot.halted:
             return False
+        rospy.logwarn("after halted")
         attempt = 0
         while True:
+            rospy.logwarn("inside cycle")
             if attempt >= max_attempts:
                 rospy.logerr("Failed to get ready")
                 return False
-            severity, error, arm_id = self.robot.arms_get_ready([arm_ids])
+            severity, error, arm_id = self.robot.arms_get_ready(arm_ids)
             if error is not None:
                 attempt += 1
                 rospy.logwarn("Error while getting ready: " + str(arm_id) + " , attempt: " + str(attempt))
                 continue
             else:
+                rospy.logdebug("Robot ready")
                 return True
+
 
     # ***************************************************************************************
     #                                        OTHERS
