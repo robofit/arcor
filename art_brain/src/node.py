@@ -279,7 +279,10 @@ class ArtBrain(object):
                 attempt += 1
                 while not self.table_calibrated and self.table_calibrating:
                     rospy.sleep(1)
-        self.robot.arms_get_ready()
+        if self.robot.halted:
+            rospy.logwarn("Robot halted!")
+        else:
+            self.robot.arms_get_ready()
         rospy.loginfo("Brain init done")
         self.initialized = True
         self.fsm.init()
@@ -468,7 +471,7 @@ class ArtBrain(object):
 
         rate = rospy.Rate(10)
 
-        while self.user_activity != UserActivity.READY:
+        while self.user_activity != UserActivity.READY and self.executing_program and not rospy.is_shutdown():
             rate.sleep()
 
         self.fsm.done(success=True)
@@ -481,7 +484,7 @@ class ArtBrain(object):
 
         rate = rospy.Rate(10)
 
-        while self.user_activity != UserActivity.WORKING:
+        while self.user_activity != UserActivity.WORKING and self.executing_program and not rospy.is_shutdown():
             rate.sleep()
 
         self.fsm.done(success=True)
@@ -705,6 +708,7 @@ class ArtBrain(object):
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
 
         self.drill_points(instruction, set_drilled_flag=False)
+        self.try_robot_arms_get_ready()
 
     def state_learning_wait(self, event):
         rospy.logdebug('Current state: state_learning_wait')
@@ -716,7 +720,7 @@ class ArtBrain(object):
         error = event.kwargs.get('error', ArtBrainErrors.ERROR_UNKNOWN)
         rospy.logdebug("Severity of error: " + str(severity))
         rospy.logdebug("Severity of error: " + str(error))
-        self.state_manager.set_error(ArtBrainErrorSeverities.INFO, error)
+        self.state_manager.set_error(severity, error)
         self.state_manager.set_error(0, 0)
 
         if error is None:
@@ -778,6 +782,9 @@ class ArtBrain(object):
         if error is not None:
             if error is not ArtBrainErrors.ERROR_ROBOT_HALTED:
                 self.try_robot_arms_get_ready([arm_id])
+            else:
+                self.fsm.error(severity=severity, error=error, halted=True)
+                return
             self.fsm.error(severity=severity, error=error)
 
         else:
@@ -810,6 +817,9 @@ class ArtBrain(object):
         if error is not None:
             if error is not ArtBrainErrors.ERROR_ROBOT_HALTED:
                 self.try_robot_arms_get_ready([arm_id])
+            else:
+                self.fsm.error(severity=severity, error=error, halted=True)
+                return
             self.fsm.error(severity=severity, error=error)
             return
 
@@ -840,7 +850,11 @@ class ArtBrain(object):
 
         severity, error, arm_id = self.robot.pick_object(pick_object, instruction.id, arm_id, from_feeder=True)
         if error is not None:
-            self.try_robot_arms_get_ready([arm_id])
+            if error is not ArtBrainErrors.ERROR_ROBOT_HALTED:
+                self.try_robot_arms_get_ready([arm_id])
+            else:
+                self.fsm.error(severity=severity, error=error, halted=True)
+                return
             self.fsm.error(severity=severity, error=error)
         else:
             self.fsm.done(success=True)
@@ -883,7 +897,11 @@ class ArtBrain(object):
 
             severity, error, _ = self.robot.place_object_to_pose(place_pose, arm_id)
             if error is not None:
-                self.try_robot_arms_get_ready([arm_id])
+                if error is not ArtBrainErrors.ERROR_ROBOT_HALTED:
+                    self.try_robot_arms_get_ready([arm_id])
+                else:
+                    self.fsm.error(severity=severity, error=error, halted=True)
+                    return
                 self.fsm.error(severity=severity, error=error)
                 return
             else:
@@ -942,13 +960,16 @@ class ArtBrain(object):
             return
 
         arm_id = self.robot.select_arm_for_drill(obj_to_drill, self.objects.header.frame_id, self.tf_listener)
-
+        arm_id_old = copy.deepcopy(arm_id)
         rospy.loginfo("Drilling object: " + obj_to_drill.object_id)
 
         poses = self.ph.get_pose(self.block_id, instruction.id)[0]
 
         for hole_number, pose in enumerate(poses):
-
+            arm_id = self.robot.select_arm_for_drill(obj_to_drill, self.objects.header.frame_id, self.tf_listener)
+            if arm_id != arm_id_old:
+                self.robot.arms_get_ready([arm_id_old])
+                arm_id_old = copy.deepcopy(arm_id)
             rospy.loginfo("Hole number: " + str(hole_number + 1) + " (out of: " + str(len(poses)) + ")")
 
             if self.program_pause_request or self.program_paused:
@@ -1085,12 +1106,14 @@ class ArtBrain(object):
             return False
 
     def try_robot_arms_get_ready(self, arm_ids=None, max_attempts=3):
+        if self.robot.halted:
+            return False
         attempt = 0
         while True:
             if attempt >= max_attempts:
                 rospy.logerr("Failed to get ready")
                 return False
-            severity, error, arm_id = self.robot.arms_get_ready()
+            severity, error, arm_id = self.robot.arms_get_ready([arm_ids])
             if error is not None:
                 attempt += 1
                 rospy.logwarn("Error while getting ready: " + str(arm_id) + " , attempt: " + str(attempt))
@@ -1106,6 +1129,10 @@ class ArtBrain(object):
         self.check_robot()
 
     def check_robot_out(self, event):
+        halted = event.kwargs.get('halted', False)
+        print halted
+        if halted:
+            return
         self.check_robot()
 
     def program_start_timer_cb(self, event):
