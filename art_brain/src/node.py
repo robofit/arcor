@@ -123,6 +123,7 @@ class ArtBrain(object):
         self.system_calibrated = False
         self.initialized = False
         self.projectors_calibrated = False
+        self.last_drill_arm_id = None
 
         self.learning_block_id = None
         self.learning_item_id = None
@@ -279,10 +280,12 @@ class ArtBrain(object):
                 attempt += 1
                 while not self.table_calibrated and self.table_calibrating:
                     rospy.sleep(1)
-        if self.robot.halted:
-            rospy.logwarn("Robot halted!")
-        else:
-            self.try_robot_arms_get_ready()
+        r = rospy.Rate(1)
+        while self.robot.halted:
+            rospy.logwarn("Robot halted! Please unhalt!")
+            r.sleep()
+
+        self.try_robot_arms_get_ready()
         rospy.loginfo("Brain init done")
         self.initialized = True
         self.fsm.init()
@@ -706,6 +709,7 @@ class ArtBrain(object):
     def state_learning_drill_points_run(self, event):
         rospy.logdebug('Current state: state_learning_drill_points_run')
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
+
         self.drill_points(instruction, set_drilled_flag=False)
         self.try_robot_arms_get_ready()
 
@@ -822,26 +826,47 @@ class ArtBrain(object):
             self.fsm.error(severity=severity, error=error)
             return
 
-        rospy.sleep(2)
+        start_time = rospy.Time.now()
+        object_found_time = None
 
         pick_object = None
         pick_object_dist = None
         rospy.loginfo("Looking for: " + str(obj.object_type))
-        for inst in self.objects.instances:  # type: ObjInstance
-            if inst.object_type == obj.object_type:
-                ps = PoseStamped()
-                ps.header.frame_id = self.objects.header.frame_id
-                ps.header.stamp = rospy.Time(0)
-                ps.pose = inst.pose
-                # TODO compute transform once and then only apply it
-                ps = self.tf_listener.transformPose(self.robot.get_arm_by_id(arm_id).gripper_link, ps)
-                # distance in x does not matter - we want the object closest to the x-axis of gripper
-                dist = math.sqrt(ps.pose.position.y ** 2 + ps.pose.position.z ** 2)
-                rospy.logdebug("Distance to object ID=" + inst.object_id + "is: " + str(dist))
-                if pick_object is None or (dist < pick_object_dist):
-                    pick_object = inst
-                    pick_object_dist = dist
-        if pick_object is None or pick_object_dist > 0.2:
+
+        while True:
+
+            now = rospy.Time.now()
+
+            if start_time + rospy.Duration(5.0) < now:
+                rospy.logwarn("Can't find object in feeder in given time.")
+                break
+
+            if object_found_time and object_found_time + rospy.Duration(1.0) < now:
+                break
+
+            for inst in self.objects.instances:  # type: ObjInstance
+
+                # TODO read table size from some param
+                # TODO on_table -> use method from some helper class (shared with gui...), add it to message?
+                on_table = inst.pose.position.z < 0.1 and 0 < inst.pose.position.x < 1.5
+                if inst.object_type == obj.object_type and not on_table:
+
+                    ps = PoseStamped()
+                    ps.header.frame_id = self.objects.header.frame_id
+                    ps.header.stamp = now
+                    ps.pose = inst.pose
+                    # TODO compute transform once and then only apply it
+                    ps = self.tf_listener.transformPose(self.robot.get_arm_by_id(arm_id).gripper_link, ps)
+                    # distance in x does not matter - we want the object closest to the x-axis of gripper
+                    dist = math.sqrt(ps.pose.position.y ** 2 + ps.pose.position.z ** 2)
+                    rospy.logdebug("Distance to object ID " + inst.object_id + " is: " + str(dist) + ", dist to gripper: " + str(ps.pose.position.x))
+                    # dist in x has to be bigger than length of the gripper
+                    if ps.pose.position.x > 0.2 and (dist is None or dist < pick_object_dist):
+                        object_found_time = now
+                        pick_object = inst
+                        pick_object_dist = dist
+
+        if pick_object is None or pick_object_dist > 0.1:
             self.try_robot_arms_get_ready([arm_id])
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING)
@@ -959,16 +984,17 @@ class ArtBrain(object):
             return
 
         arm_id = self.robot.select_arm_for_drill(obj_to_drill, self.objects.header.frame_id, self.tf_listener)
-        arm_id_old = copy.deepcopy(arm_id)
+        if arm_id != self.last_drill_arm_id:
+            if self.last_drill_arm_id is not None:
+
+                self.robot.arms_get_ready([self.last_drill_arm_id])
+            self.last_drill_arm_id = copy.deepcopy(arm_id)
+
         rospy.loginfo("Drilling object: " + obj_to_drill.object_id)
 
         poses = self.ph.get_pose(self.block_id, instruction.id)[0]
 
         for hole_number, pose in enumerate(poses):
-            arm_id = self.robot.select_arm_for_drill(obj_to_drill, self.objects.header.frame_id, self.tf_listener)
-            if arm_id != arm_id_old:
-                self.robot.arms_get_ready([arm_id_old])
-                arm_id_old = copy.deepcopy(arm_id)
             rospy.loginfo("Hole number: " + str(hole_number + 1) + " (out of: " + str(len(poses)) + ")")
 
             if self.program_pause_request or self.program_paused:
@@ -1106,13 +1132,11 @@ class ArtBrain(object):
 
     def try_robot_arms_get_ready(self, arm_ids=[], max_attempts=3):
         assert isinstance(arm_ids, list)
-        rospy.logwarn("try_robot_arms_get_ready")
         if self.robot.halted:
             return False
-        rospy.logwarn("after halted")
+
         attempt = 0
         while True:
-            rospy.logwarn("inside cycle")
             if attempt >= max_attempts:
                 rospy.logerr("Failed to get ready")
                 return False
@@ -1122,9 +1146,8 @@ class ArtBrain(object):
                 rospy.logwarn("Error while getting ready: " + str(arm_id) + " , attempt: " + str(attempt))
                 continue
             else:
-                rospy.logdebug("Robot ready")
+                rospy.loginfo("Robot ready")
                 return True
-
 
     # ***************************************************************************************
     #                                        OTHERS
