@@ -37,7 +37,9 @@ class ArCodeDetector:
 
             # list of allowed object ids
             # TODO load from param
-            if aid not in [4, 5, 3, 21, 26, 31, 6, 7, 8, 50, 51, 52, 53, 54, 55, 56, 57, 60, 61, 62, 63]:
+            if aid not in [50, 51, 52, 53, 54, 55, 56, 57, 60, 61, 62, 63, 1001, 1002, 1003, 1004, 1005, 1006, 1007,
+                           1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 2001, 2002, 2003, 2004, 3001,
+                           3002, 3003, 3004]:
                 continue
 
             if aid not in self.objects_cache:
@@ -45,16 +47,15 @@ class ArCodeDetector:
                 # TODO AR code ID / object type assignment should be done somewhere...
                 # type "profile_20_60" is just for example (used in art_db/test_db.py)
 
-                if aid == 21:
-                    object_type = self.art.get_object_type("profile_20_60_longer")
-                elif aid in [6, 7, 8]:
-                    object_type = self.art.get_object_type("placka")
-                elif aid in [50, 51, 52, 53, 54, 55, 56, 57]:
+                object_type = None
+
+                if aid in [50, 51, 52, 53, 54, 55, 56, 57, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010,
+                           1011, 1012, 1013, 1014, 1015, 1016, 1017]:
                     object_type = self.art.get_object_type("wood_46_150")
-                elif aid in [60, 61, 62, 63]:
+                elif aid in [60, 61, 62, 63, 2001, 2002, 2003, 2004]:
                     object_type = self.art.get_object_type("wood_46_300")
-                else:
-                    object_type = self.art.get_object_type("profile_20_60")
+                elif aid in [60, 61, 62, 63, 3001, 3002, 3003, 3004]:
+                    object_type = self.art.get_object_type("wood_46_400")
 
                 if object_type is None:
 

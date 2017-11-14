@@ -18,6 +18,17 @@ float artPr2Grasping::getGripperValue()
     return 1000;  // TODO(ZdenekM): NaN / exception?
 }
 
+bool artPr2Grasping::isRobotHalted()
+{
+  std_msgs::BoolConstPtr msg =
+      ros::topic::waitForMessage<std_msgs::Bool>("/pr2_ethercat/motors_halted", ros::Duration(1));
+
+  if (msg)
+    return msg->data;
+  else
+    return false;  // TODO(ZdenekM): exception?
+}
+
 artPr2Grasping::artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl, boost::shared_ptr<Objects> objects,
                                std::string group_name, std::string default_target, std::string gripper_state_topic)
   : group_name_(group_name), default_target_(default_target), gripper_state_topic_(gripper_state_topic), nh_("~")
@@ -132,9 +143,13 @@ void artPr2Grasping::look_at(const geometry_msgs::PoseStamped& ps)
 
 bool artPr2Grasping::place(const geometry_msgs::Pose& ps, double z_axis_angle_increment, bool keep_orientation)
 {
+
+  dont_try_again_ = false;
+
   if (!hasGraspedObject())
   {
     ROS_ERROR_NAMED(group_name_, "No object to place.");
+    dont_try_again_ = true;
     return false;
   }
 
@@ -292,6 +307,8 @@ bool artPr2Grasping::place(const geometry_msgs::Pose& ps, double z_axis_angle_in
     return true;
   }
 
+  if (isRobotHalted()) dont_try_again_ = true;
+
   ROS_WARN_NAMED(group_name_, "Failed to place");
   return false;
 }
@@ -308,9 +325,13 @@ bool artPr2Grasping::hasGraspedObject()
 
 bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
 {
+
+  dont_try_again_ = false;
+
   if (hasGraspedObject())
   {
     ROS_ERROR_NAMED(group_name_, "Can't grasp another object.");
+    dont_try_again_ = true;
     return false;
   }
 
@@ -323,6 +344,7 @@ bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
   catch (const std::invalid_argument& e)
   {
     ROS_ERROR_NAMED(group_name_, "Unknown object_id: %s", object_id.c_str());
+    dont_try_again_ = true;
     return false;
   }
 
@@ -385,7 +407,7 @@ bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
     }
 
     ROS_INFO_NAMED(group_name_, "%d grasps out of %d pruned out as not feasible for pick from feeder.",
-                   grasps.size() - tmp.size(), grasps.size());
+                   (int)(grasps.size() - tmp.size()), (int)grasps.size());
 
     grasps = tmp;
   }
@@ -425,19 +447,74 @@ bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
 
   if (!move_group_->pick(object_id, grasps))
   {
-    ROS_WARN_NAMED(group_name_, "Failed to pick");
+    ROS_WARN_NAMED(group_name_, "Failed to pick - as reported by moveit.");
     grasped_object_.reset();
     return false;
   }
 
+  if (isRobotHalted()) {
+
+      visual_tools_->cleanupACO(object_id);
+      ROS_WARN_NAMED(group_name_, "Failed to pick - robot halted.");
+      grasped_object_.reset();
+      publishObject();
+      dont_try_again_ = true;
+      return false;
+  }
+
   float gripper = getGripperValue();
 
-  if (gripper < 0.005)
+  float req_gripper_val = 0.0487; // TODO make this configurable
+  // 0.005 - closed
+  // 0.0873 - open
+
+  if (gripper < req_gripper_val*0.8 || gripper > req_gripper_val*1.2)
   {
     visual_tools_->cleanupACO(object_id);
     grasped_object_.reset();
-    ROS_ERROR_NAMED(group_name_, "Gripper is closed - object missed or dropped :-(");
+    ROS_ERROR_NAMED(group_name_, "Gripper check failed, gripper state: %f%%.", gripper/req_gripper_val*100);
     return false;
+  }
+
+  if (feeder) {
+
+    geometry_msgs::PoseStamped ps;
+    ps.header.frame_id = move_group_->getEndEffectorLink(); // this seems to be ignored...
+    ps.pose.position.x = -0.2; // TODO try 0.3, 0.2, 0.1 ?
+    ps.pose.orientation.w = 1.0;
+
+    if (transformPose(ps)) {
+
+        move_group_->clearPoseTargets();
+        move_group_->clearPathConstraints();
+        move_group_->setStartStateToCurrentState();
+
+        moveit_msgs::OrientationConstraint ocm;
+        ocm.link_name = move_group_->getEndEffectorLink();
+        ocm.header.frame_id = getPlanningFrame();
+        ocm.orientation = move_group_->getCurrentPose().pose.orientation;
+        ocm.absolute_x_axis_tolerance = 0.2;
+        ocm.absolute_y_axis_tolerance = 0.2;
+        ocm.absolute_z_axis_tolerance = 0.2;
+        ocm.weight = 1.0;
+
+        moveit_msgs::Constraints c;
+        c.orientation_constraints.push_back(ocm);
+
+        move_group_->setPathConstraints(c);
+
+        if (move_group_->setPoseTarget(ps)) {
+
+            if (!move_group_->move()) {
+
+                ROS_WARN_NAMED(group_name_, "Retreat failed...");
+            }
+        }
+
+        }
+
+    move_group_->clearPathConstraints();
+
   }
 
   ROS_INFO_NAMED(group_name_, "Picked the object.");
@@ -448,7 +525,7 @@ bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
 // TODO(ZdenekM): move to Objects? Or somewhere else?
 bool artPr2Grasping::addTable(std::string frame_id)
 {
-  visual_tools_->cleanupCO("table");
+  // visual_tools_->cleanupCO("table");
 
   geometry_msgs::PoseStamped ps;
   ps.header.frame_id = frame_id;

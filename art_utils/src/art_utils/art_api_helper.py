@@ -13,6 +13,9 @@ class ArtApiHelper(object):
         # DB API
         self.get_prog_srv = rospy.ServiceProxy('/art/db/program/get', getProgram)
         self.store_prog_srv = rospy.ServiceProxy('/art/db/program/store', storeProgram)
+        self.delete_prog_srv = rospy.ServiceProxy('/art/db/program/delete', ProgramIdTrigger)
+        self.prog_ro_set_srv = rospy.ServiceProxy('/art/db/program/readonly/set', ProgramIdTrigger)
+        self.prog_ro_clear_srv = rospy.ServiceProxy('/art/db/program/readonly/clear', ProgramIdTrigger)
         self.get_program_headers_srv = rospy.ServiceProxy('/art/db/program_headers/get', getProgramHeaders)
         self.get_obj_type_srv = rospy.ServiceProxy('/art/db/object_type/get', getObjectType)
         self.store_obj_type_srv = rospy.ServiceProxy('/art/db/object_type/store', storeObjectType)
@@ -21,6 +24,8 @@ class ArtApiHelper(object):
         self.brain = brain
         if not self.brain:
             self.start_program_srv = rospy.ServiceProxy('/art/brain/program/start', ProgramIdTrigger)
+
+        self._object_type_cache = {}
 
     def wait_for_api(self):
 
@@ -68,6 +73,36 @@ class ArtApiHelper(object):
 
         return resp.success
 
+    def delete_program(self, prog_id):
+
+        try:
+            resp = self.delete_prog_srv(prog_id)
+        except rospy.ServiceException as e:
+            print "Service call failed: %s" % e
+            return False, ""
+
+        return resp.success, resp.error
+
+    def program_set_ro(self, prog_id):
+
+        try:
+            resp = self.prog_ro_set_srv(prog_id)
+        except rospy.ServiceException as e:
+            print "Service call failed: %s" % e
+            return False, ""
+
+        return resp.success, resp.error
+
+    def program_clear_ro(self, prog_id):
+
+        try:
+            resp = self.prog_ro_clear_srv(prog_id)
+        except rospy.ServiceException as e:
+            print "Service call failed: %s" % e
+            return False, ""
+
+        return resp.success, resp.error
+
     def start_program(self, prog_id):
 
         try:
@@ -76,20 +111,24 @@ class ArtApiHelper(object):
             print "Service call failed: %s" % e
             return (False, "")
 
-        return (resp.success, resp.error)
+        return resp.success, resp.error
 
     def get_object_type(self, name):
 
-        try:
-            resp = self.get_obj_type_srv(name)
-        except rospy.ServiceException as e:
-            print "Service call failed: %s" % e
-            return None
+        if name not in self._object_type_cache:
 
-        if not resp.success:
-            return None
-        else:
-            return resp.object_type
+            try:
+                resp = self.get_obj_type_srv(name)
+            except rospy.ServiceException as e:
+                print "Service call failed: %s" % e
+                return None
+
+            if not resp.success:
+                return None
+            else:
+                self._object_type_cache[name] = resp.object_type
+
+        return self._object_type_cache[name]
 
     def store_object_type(self, ot):
 

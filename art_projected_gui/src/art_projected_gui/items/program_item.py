@@ -3,7 +3,7 @@
 from PyQt4 import QtGui, QtCore
 from item import Item
 from art_msgs.msg import ProgramItem as ProgIt, LearningRequestGoal
-from geometry_msgs.msg import Point32
+from geometry_msgs.msg import Point32, Pose
 from button_item import ButtonItem
 from art_projected_gui.helpers import conversions
 from list_item import ListItem
@@ -178,6 +178,10 @@ class ProgramItem(Item):
 
         self.update()
 
+    def set_program_btns_enabled(self, state):
+
+        group_enable((self.pr_pause_btn, self.pr_cancel_btn), state)
+
     def set_active(self, block_id, item_id):
 
         old_block_id = self.block_id
@@ -273,7 +277,7 @@ class ProgramItem(Item):
 
             (obj, ref_id) = self.ph.get_object(block_id, item_id)
 
-            text += "\nobject="
+            text += "\nobject: "
 
             if self.ph.is_object_set(block_id, item_id):
 
@@ -286,6 +290,19 @@ class ProgramItem(Item):
             if ref_id != item_id:
 
                 text += " (" + str(ref_id) + ")"
+
+        if item.type == ProgIt.DRILL_POINTS:
+
+            ps, ref_id = self.ph.get_pose(block_id, item_id)
+            ps_learned = 0.0
+
+            for i in range(len(ps)):
+
+                if self.ph.is_pose_set(block_id, item_id, i):
+                    ps_learned += 1
+
+            text += QtCore.QCoreApplication.translate(
+                "ProgramItem", " learned poses: {0}%".format(ps_learned / len(ps) * 100.0))
 
         return text
 
@@ -302,9 +319,8 @@ class ProgramItem(Item):
             item_id = bmsg.items[i].id
 
             idata.append(self.get_text_for_item(self.block_id, item_id))
-            idx = len(idata) - 1
-            self.items_map[idx] = item_id
-            self.items_map_rev[item_id] = idx
+            self.items_map[i] = item_id
+            self.items_map_rev[item_id] = i
 
         self.items_list = ListItem(self.scene(
         ), 0, 0, 0.2 - 2 * 0.005, idata, self.item_selected_cb, parent=self)
@@ -596,27 +612,17 @@ class ProgramItem(Item):
 
         self._update_item()
 
-    def append_pose(self, ps):
+    def update_pose(self, ps, idx):
 
         msg = self.get_current_item()
-
-        msg.pose.append(ps)
-
+        msg.pose[idx] = ps
         self._update_item()
 
-    def remove_last_pose(self):
+    def clear_poses(self):
 
-        msg = self.get_current_item()
+        for ps in self.get_current_item().pose:
 
-        msg.pose.pop()
-
-        self._update_item()
-
-    def remove_all_poses(self):
-
-        msg = self.get_current_item()
-
-        msg.pose = []  # TODO empty array -> invalid program
+            ps.pose = Pose()
 
         self._update_item()
 
@@ -676,25 +682,25 @@ class ProgramItem(Item):
 
     def _update_item(self, block_id=None, item_id=None):
 
-        if block_id is None and item_id is None:
+        if block_id is None:
             block_id = self.block_id
-            item_id = self.item_id
 
-        idx = self.items_map_rev[item_id]
+        # need to update all items in block as there might be various dependencies (ref_id)
+        for idx, item_id in self.items_map.iteritems():
 
-        if self.ph.item_learned(block_id, item_id):
-            self.items_list.items[idx].set_background_color()
-        else:
-            self.items_list.items[idx].set_background_color(QtCore.Qt.red)
+            if self.ph.item_learned(block_id, item_id):
+                self.items_list.items[idx].set_background_color()
+            else:
+                self.items_list.items[idx].set_background_color(QtCore.Qt.red)
 
-        self.items_list.items[idx].set_caption(
-            self.get_text_for_item(block_id, item_id))
+            self.items_list.items[idx].set_caption(
+                self.get_text_for_item(block_id, item_id))
 
         self._update_block(block_id)
 
     def get_current_item(self):
 
-        if (self.block_id is not None and self.item_id is not None):
+        if self.block_id is not None and self.item_id is not None:
 
             return self.ph.get_item_msg(self.block_id, self.item_id)
 

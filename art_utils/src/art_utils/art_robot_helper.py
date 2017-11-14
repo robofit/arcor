@@ -46,6 +46,9 @@ class ArtRobotHelper(object):
     def get_robot_restore_service_name(self):
         return self.robot_ns + "/restore"
 
+    def get_prepare_for_calibration_service_name(self):
+        return self.robot_ns + "/prepare_for_calibration"
+
 
 class ArtRobotArmHelper(object):
 
@@ -105,5 +108,11 @@ class ArtRobotArmHelper(object):
     def get_arm_prepare_for_calibration_service_name(self):
         return self.robot_ns + "/" + self.arm_id + "/prepare_for_calibration"
 
+    def get_interaction_state_topic_name(self):
+        return self.robot_ns + "/" + self.arm_id + "/interaction/state" if self.interactive_mode_enabled() else None
+
     def get_gripper_link(self):
         return self.gripper_link
+
+    def get_reinit_service_name(self):
+        return self.robot_ns + "/" + self.arm_id + "/reinit"

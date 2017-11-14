@@ -28,6 +28,7 @@ typedef struct
 TObjectInfo;
 
 typedef std::map<std::string, TObjectInfo> TObjectMap;
+typedef std::map<std::string, art_msgs::ObjectType> TObjCache;
 
 class Objects
 {
@@ -74,6 +75,9 @@ private:
   std::set<std::string> grasped_objects_;
 
   bool paused_;
+
+  TObjCache obj_cache_;
+
 };
 
 }  // namespace art_pr2_grasping

@@ -13,6 +13,7 @@ from dialog_item import DialogItem
 import tf
 from art_projected_gui.helpers import conversions
 import math
+import rospy
 
 translate = QtCore.QCoreApplication.translate
 
@@ -25,7 +26,7 @@ class PlaceItem(ObjectItem):
 
     """
 
-    def __init__(self, scene, caption, x, y, z, quaternion, object_type, object_id=None, place_pose_changed=None, selected=False, fixed=False, txt=True, rot=True, rot_point=None, rotation_changed=None, parent=None, horizontal=False):
+    def __init__(self, scene, caption, x, y, z, quaternion, object_type, object_id=None, place_pose_changed=None, selected=False, fixed=False, txt=True, rot=True, rot_point=None, rotation_changed=None, parent=None, dashed=False):
 
         self.in_collision = False
         self.caption = caption
@@ -35,8 +36,13 @@ class PlaceItem(ObjectItem):
         self.rot = rot
         self.rot_point = rot_point
         self.other_items = []
+        self.point = None
 
-        super(PlaceItem, self).__init__(scene, object_id, object_type, x, y, z, quaternion, parent=parent, horizontal=horizontal)
+        # TODO temp "fix"
+        if quaternion == (0, 0, 0, 1):
+            quaternion = (0.707, 0, 0, 0.707)
+
+        super(PlaceItem, self).__init__(scene, object_id, object_type, x, y, z, quaternion, parent=parent, dashed=dashed)
 
         self.update_text()
         self.fixed = fixed
@@ -55,6 +61,7 @@ class PlaceItem(ObjectItem):
                     self.point = PointItem(scene, 0, 0, self, self.point_changed)  # TODO option to pass pixels?
                     self.point.setPos(self.boundingRect().topLeft())
 
+                    '''
                     self.dialog = DialogItem(self.scene(),
                                              self.pix2m(self.scene().width() / 2),
                                              0.1,
@@ -68,6 +75,7 @@ class PlaceItem(ObjectItem):
                             "Place item", "Rotate --")
                     ],
                         self.dialog_cb)
+                    '''
 
                 else:
                     self.point = PointItem(scene, self.rot_point[0], self.rot_point[1], self, self.point_changed)
@@ -75,7 +83,7 @@ class PlaceItem(ObjectItem):
         if z == 0:
 
             self.position[2] = self.object_type.bbox.dimensions[self.get_yaw_axis()] / 2
-            self.set_orientation(self.quaternion)
+            rospy.logdebug("PlaceItem - applying z value: " + str(self.position[2]))
 
     def dialog_cb(self, idx):
 
@@ -130,7 +138,8 @@ class PlaceItem(ObjectItem):
 
         self.set_orientation(fin_q)
 
-        self.point.setPos(self.boundingRect().topLeft())
+        if self.point:
+            self.point.setPos(self.boundingRect().topLeft())
         self._update_desc_pos()
 
     def itemChange(self, change, value):
@@ -164,14 +173,13 @@ class PlaceItem(ObjectItem):
 
         desc = self.caption
 
-        if self.object_id is not None:
-            desc += "\n" + translate("ObjectItem", "ID: ") + str(self.object_id)
-        else:
-            desc += "\n" + translate("ObjectItem", "TYPE: ") + self.object_type.name
-
         if self.hover:
 
-            desc += "\n" + self.get_pos_str()
+            # desc += "\n" + self.get_pos_str()
+            if self.object_id is not None:
+                desc += "\n" + translate("ObjectItem", "ID: ") + str(self.object_id)
+            else:
+                desc += "\n" + self.object_type.name
 
         self.desc.set_content(desc)
 
@@ -201,6 +209,8 @@ class PlaceItem(ObjectItem):
         pass
 
     def point_changed(self, pt, finished=False):
+
+        print "point_changed"
 
         # follow angle between "free" point and object center, after release put object back on topLeft corner
         angle = math.atan2(self.point.scenePos().y() - self.scenePos().y(), self.point.scenePos().x() - self.scenePos().x()) + 2.355
