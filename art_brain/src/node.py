@@ -816,7 +816,7 @@ class ArtBrain(object):
         else:
             pick_pose = pick_pose[0]
         arm_id = self.robot.select_arm_for_pick_from_feeder(pick_pose, self.tf_listener)
-        severity, error, arm_id = self.robot.move_arm_to_pose(pick_pose, arm_id)
+        severity, error, arm_id = self.robot.move_arm_to_pose(pick_pose, arm_id, picking=True)
         if error is not None:
             if error is not ArtBrainErrors.ERROR_ROBOT_HALTED:
                 self.try_robot_arms_get_ready([arm_id])

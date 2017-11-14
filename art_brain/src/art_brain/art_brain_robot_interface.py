@@ -194,11 +194,11 @@ class ArtBrainRobotInterface:
         arm = self.get_arm_by_id(arm_id)
 
         if not arm.touch_poses(obj.object_id, pose, drill_duration):
-            return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED, arm_id
+            return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_DRILL_FAILED, arm_id
         else:
             return None, None, arm_id
 
-    def move_arm_to_pose(self, pose, arm_id=None, picking=False):
+    def move_arm_to_pose(self, pose, arm_id=None, picking=False, drilling=False):
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)
@@ -206,6 +206,8 @@ class ArtBrainRobotInterface:
         if not arm.move_to_pose(pose):
             if picking:
                 return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_PICK_FAILED, arm_id
+            elif drilling:
+                return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_DRILL_FAILED, arm_id
             else:
                 return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED, arm_id
         else:
