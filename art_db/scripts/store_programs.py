@@ -32,6 +32,7 @@ class ProgramStore(object):
         file.close()
         bag.close()
 
+
 if __name__ == '__main__':
     try:
         rospy.init_node('store_programs', log_level=rospy.INFO)
