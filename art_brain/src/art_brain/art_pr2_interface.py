@@ -182,7 +182,7 @@ class ArtPr2Interface(ArtBrainRobotInterface):
 
         return super(ArtPr2Interface, self).place_object_to_pose(place_pose, arm_id, objects_frame_id, pick_only_y_axis)
 
-    def move_arm_to_pose(self, pose, arm_id=None):
+    def move_arm_to_pose(self, pose, arm_id=None, picking=False, drilling=False):
         assert isinstance(pose, PoseStamped)
         self.look_at_point(pose.pose.position)
         return super(ArtPr2Interface, self).move_arm_to_pose(pose, arm_id)
