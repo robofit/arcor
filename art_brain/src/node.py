@@ -95,6 +95,7 @@ class ArtBrain(object):
         self.fsm.state_learning_step_error = self.state_learning_step_error
         self.fsm.state_learning_done = self.state_learning_done
         self.fsm.state_learning_pick_from_feeder_exit = self.state_learning_pick_from_feeder_exit
+        self.fsm.state_update_program_item = self.state_update_program_item
         self.fsm.state_shutdown = self.state_shutdown
         self.fsm.learning_load_block_id = self.learning_load_block_id
         self.fsm.state_learning_welding_point = self.state_learning_welding_point
@@ -281,7 +282,7 @@ class ArtBrain(object):
                 while not self.table_calibrated and self.table_calibrating:
                     rospy.sleep(1)
         r = rospy.Rate(1)
-        while self.robot.halted:
+        while self.robot.halted and not rospy.is_shutdown():
             rospy.logwarn("Robot halted! Please unhalt!")
             r.sleep()
 
@@ -305,6 +306,10 @@ class ArtBrain(object):
     def state_shutdown(self, event):
         rospy.logdebug('Current state: state_shutdown')
         sys.exit()
+
+    def state_update_program_item(self, event):
+        self.state_manager.update_program_item(
+            self.ph.get_program_id(), self.block_id, self.instruction, auto_send=False)
 
     # ***************************************************************************************
     #                                  STATES PROGRAM
@@ -385,6 +390,7 @@ class ArtBrain(object):
 
     def state_pick_from_polygon(self, event):
         rospy.logdebug('Current state: state_pick_from_polygon')
+
         if not self.check_robot():
             return
         self.pick_object_from_polygon(self.instruction)
