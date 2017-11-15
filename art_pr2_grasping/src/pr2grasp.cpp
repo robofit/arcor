@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <tf/transform_datatypes.h>
 
 namespace art_pr2_grasping
 {
@@ -399,9 +400,12 @@ bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
         continue;
       }
 
-      if (abs(pp.pose.position.z) < obj.type.bbox.dimensions[2] / 2.0 &&
-          abs(grasps[i].grasp_pose.pose.position.z - obj.pose.pose.position.z) < obj.type.bbox.dimensions[0] / 2)
+      std::cout << "x: " <<  pp.pose.position.x << " y: " << pp.pose.position.y << " z: " << pp.pose.position.z << std::endl;
+      //if (fabs(pp.pose.position.z) < obj.type.bbox.dimensions[2] / 2.0 &&
+      //    fabs(grasps[i].grasp_pose.pose.position.z - obj.pose.pose.position.z) < obj.type.bbox.dimensions[0] / 2)
+      if (pp.pose.position.y < 0 && fabs(pp.pose.position.x) < 0.05 && fabs(pp.pose.position.z) < 0.05)
       {
+        std::cout << "ok" << std::endl;
         tmp.push_back(grasps[i]);
       }
     }
@@ -529,6 +533,8 @@ bool artPr2Grasping::addTable(std::string frame_id)
 
   geometry_msgs::PoseStamped ps;
   ps.header.frame_id = frame_id;
+  ps.pose.position.x = 1.5/2;
+  ps.pose.position.y = 0.7/2;
   ps.pose.orientation.w = 1.0;
 
   if (!transformPose(ps))
@@ -548,11 +554,50 @@ bool artPr2Grasping::addTable(std::string frame_id)
   if (!transformPose(k2))
     return false;
 
+  tf::Quaternion q(ps.pose.orientation.x, ps.pose.orientation.y, ps.pose.orientation.z, ps.pose.orientation.w);
+  tf::Matrix3x3 m(q);
+  double roll, pitch, yaw;
+  m.getRPY(roll, pitch, yaw);
+
+  geometry_msgs::PoseStamped g1ps;
+  g1ps.header.frame_id = frame_id;
+  g1ps.pose.position.x = 1.5;
+  g1ps.pose.orientation.w = 1.0;
+
+  if (!transformPose(g1ps))
+    return false;
+
+  geometry_msgs::PoseStamped g2ps;
+  g2ps.header.frame_id = frame_id;
+  g2ps.pose.position.x = 0;
+  g2ps.pose.orientation.w = 1.0;
+
+  if (!transformPose(g2ps))
+    return false;
+
   for (int j = 0; j < 3; j++)  // hmm, sometimes the table is not added
   {
-    visual_tools_->publishCollisionTable(ps.pose.position.x - 0.75 / 2, 0, 0, 1.5, ps.pose.position.z, 0.75, "table");
-    // visual_tools_->publishCollisionTable(0.5, 1.1, 0, 0.1, 2.0, 1.0, "left-guard");
-    // visual_tools_->publishCollisionTable(0.5, -1.1, 0, 0.1, 2.0, 1.0, "right-guard");
+    //  x, y, angle, width, height, depth
+    visual_tools_->publishCollisionTable(ps.pose.position.x, ps.pose.position.y, yaw-3.14/2, 1.5, ps.pose.position.z, 0.7, "table");
+
+    visual_tools_->publishCollisionTable(g1ps.pose.position.x - 0.71, g1ps.pose.position.y + 0.15, 0, 0.3, g1ps.pose.position.z + 0.2, 0.001, "left-guard-1");
+    visual_tools_->publishCollisionTable(g1ps.pose.position.x - 0.365, g1ps.pose.position.y + 0.15, 0, 0.3, g1ps.pose.position.z + 0.36, 0.001, "left-guard-2");
+    visual_tools_->publishCollisionTable(g1ps.pose.position.x - 0.15, g1ps.pose.position.y + 0.15, 0, 0.3, g1ps.pose.position.z + 0.36, 0.001, "left-guard-3");
+    geometry_msgs::PoseStamped b1 = g1ps;
+    b1.pose.position.x -=  0.15 + (0.365 - 0.15)/2;
+    b1.pose.position.z += 0.3;
+    b1.pose.position.y += 0.05/2;
+    visual_tools_->publishCollisionBlock(b1.pose, "left-guard-block", 0.05);
+
+    visual_tools_->publishCollisionTable(g2ps.pose.position.x - 0.71, g2ps.pose.position.y - 0.15, 0, 0.3, g2ps.pose.position.z + 0.2, 0.001, "right-guard-1");
+    visual_tools_->publishCollisionTable(g2ps.pose.position.x - 0.365, g2ps.pose.position.y - 0.15, 0, 0.3, g2ps.pose.position.z + 0.36, 0.001, "right-guard-2");
+    visual_tools_->publishCollisionTable(g2ps.pose.position.x - 0.15, g2ps.pose.position.y - 0.15, 0, 0.3, g2ps.pose.position.z + 0.36, 0.001, "right-guard-3");
+    geometry_msgs::PoseStamped b2 = g2ps;
+    b2.pose.position.x -=  0.15 + (0.365 - 0.15)/2;
+    b2.pose.position.z += 0.3;
+    b2.pose.position.y -= 0.05/2;
+    visual_tools_->publishCollisionBlock(b2.pose, "right-guard-block", 0.05);
+
     visual_tools_->publishCollisionBlock(k1.pose, "kinect-n1", 0.3);
     visual_tools_->publishCollisionBlock(k2.pose, "kinect-n2", 0.3);
 
