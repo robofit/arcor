@@ -194,11 +194,11 @@ class ArtBrainRobotInterface:
         arm = self.get_arm_by_id(arm_id)
 
         if not arm.touch_poses(obj.object_id, pose, drill_duration):
-            return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED, arm_id
+            return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_DRILL_FAILED, arm_id
         else:
             return None, None, arm_id
 
-    def move_arm_to_pose(self, pose, arm_id=None, picking=False):
+    def move_arm_to_pose(self, pose, arm_id=None, picking=False, drilling=False):
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         arm = self.get_arm_by_id(arm_id)
@@ -206,13 +206,16 @@ class ArtBrainRobotInterface:
         if not arm.move_to_pose(pose):
             if picking:
                 return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_PICK_FAILED, arm_id
+            elif drilling:
+                return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_DRILL_FAILED, arm_id
             else:
                 return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_GRIPPER_MOVE_FAILED, arm_id
         else:
             return None, None, arm_id
 
-    def arms_get_ready(self, arm_ids=None):
-        if arm_ids is None:
+    def arms_get_ready(self, arm_ids=[]):
+        assert isinstance(arm_ids, list)
+        if not arm_ids:
             for arm in self._arms:
                 severity, error = arm.get_ready()
                 if error is not None:
@@ -222,7 +225,7 @@ class ArtBrainRobotInterface:
                 arm = self.get_arm_by_id(arm_id)
                 if arm is None:
                     continue
-                return arm.get_ready()
+                arm.get_ready()
         return None, None, None
 
     def arm_prepare_for_interaction(self, arm_id=None):
