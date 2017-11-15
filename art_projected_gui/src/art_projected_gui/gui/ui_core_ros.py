@@ -245,6 +245,9 @@ class UICoreRos(UICore):
         self.notif(translate("UICoreRos", "Gripper pose stored."), temp=True)
         self.program_vis.set_pose(ps)
 
+        self.grasp_dialog.items[idx].set_enabled(False)
+        self.grasp_dialog.items[idx].set_caption(translate("UICoreRos", "Stored"))
+
     def save_gripper_pose_drill_cb(self, idx):
 
         # "Right arm", "Left arm", "Prev pose", "Next pose"
@@ -1209,10 +1212,10 @@ class UICoreRos(UICore):
         if req == LearningRequestGoal.GET_READY:
             self.notif(
                 translate("UICoreRos", "Robot is getting ready for learning"))
+            pass
         elif req == LearningRequestGoal.DONE:
 
-            self.notif(
-                translate("UICoreRos", "Robot is getting into default state"))
+            self.notif(translate("UICoreRos", "Robot is getting into default state"))
 
             if self.grasp_dialog:
 
@@ -1290,6 +1293,9 @@ class UICoreRos(UICore):
                 v[0] = 0
 
         if self.grasp_dialog:
+
+            if now - self.program_vis.get_current_item().pose[0].header.stamp < rospy.Duration(3.0):
+                return
 
             frames = ["/r_forearm_cam_optical_frame", "/l_forearm_cam_optical_frame"]
             names = [translate("UICoreRos", "Right arm"), translate("UICoreRos", "Left arm")]
