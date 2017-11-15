@@ -26,7 +26,8 @@ def main(args):
     rospack = rospkg.RosPack()
 
     translator = QtCore.QTranslator()
-    translator.load(QtCore.QLocale.system().name() + '.qm', rospack.get_path('art_projected_gui') + '/lang')
+    translator.load('cs_CZ.qm', rospack.get_path('art_projected_gui') + '/lang')
+    # translator.load(QtCore.QLocale.system().name() + '.qm', rospack.get_path('art_projected_gui') + '/lang')
     app.installTranslator(translator)
 
     ui = UICoreRos()

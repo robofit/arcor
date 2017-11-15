@@ -7,6 +7,7 @@ from art_projected_gui.helpers import conversions
 from art_msgs.srv import NotifyUserRequest
 from std_srvs.srv import Empty, EmptyRequest
 # import time
+import unicodedata
 
 
 class customGraphicsView(QtGui.QGraphicsView):
@@ -187,10 +188,12 @@ class UICore(QtCore.QObject):
         elif message_type == NotifyUserRequest.INFO:
             log_func = rospy.loginfo
 
+        msg_ascii = unicodedata.normalize('NFKD', unicode(msg)).encode('ascii', 'ignore')
+
         if temp:
-            log_func("Notification (temp): " + msg)
+            log_func("Notification (temp): " + msg_ascii)
         else:
-            log_func("Notification: " + msg)
+            log_func("Notification: " + msg_ascii)
 
         self.bottom_label.add_msg(
             msg, message_type, rospy.Duration(min_duration), temp)
