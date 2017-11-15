@@ -846,27 +846,46 @@ class ArtBrain(object):
 
             for inst in self.objects.instances:  # type: ObjInstance
 
+                if inst.object_type != obj.object_type:
+                    continue
+
                 # TODO read table size from some param
                 # TODO on_table -> use method from some helper class (shared with gui...), add it to message?
                 on_table = inst.pose.position.z < 0.1 and 0 < inst.pose.position.x < 1.5
-                if inst.object_type == obj.object_type and not on_table:
 
-                    ps = PoseStamped()
-                    ps.header.frame_id = self.objects.header.frame_id
-                    ps.header.stamp = now
-                    ps.pose = inst.pose
-                    # TODO compute transform once and then only apply it
-                    ps = self.tf_listener.transformPose(self.robot.get_arm_by_id(arm_id).gripper_link, ps)
-                    # distance in x does not matter - we want the object closest to the x-axis of gripper
-                    dist = math.sqrt(ps.pose.position.y ** 2 + ps.pose.position.z ** 2)
-                    rospy.logdebug("Distance to object ID " + inst.object_id + " is: " + str(dist) + ", dist to gripper: " + str(ps.pose.position.x))
-                    # dist in x has to be bigger than length of the gripper
-                    if ps.pose.position.x > 0.2 and (dist is None or dist < pick_object_dist):
+                if on_table:
+
+                    rospy.logdebug("Ignoring 'on_table' object: " + inst.object_id)
+                    continue
+
+                ps = PoseStamped()
+                ps.header.frame_id = self.objects.header.frame_id
+                ps.header.stamp = rospy.Time(0)
+                ps.pose = inst.pose
+                # TODO compute transform once and then only apply it
+                ps = self.tf_listener.transformPose(self.robot.get_arm_by_id(arm_id).gripper_link, ps)
+                # distance in x does not matter - we want the object closest to the x-axis of gripper
+                dist = math.sqrt(ps.pose.position.y ** 2 + ps.pose.position.z ** 2)
+                rospy.logdebug("Distance to object ID " + inst.object_id + " is: " + str(dist) + ", dist to gripper: " + str(ps.pose.position.x))
+
+                if dist > 0.1:
+
+                    rospy.logdebug("Object is too far in y/z.")
+                    continue
+
+                # dist in x has to be bigger than length of the gripper
+                if 0.05 < ps.pose.position.x < 0.2:
+
+                    if pick_object_dist is None or dist < pick_object_dist:
                         object_found_time = now
                         pick_object = inst
                         pick_object_dist = dist
+                        rospy.logdebug("Storing object: " + inst.object_id)
 
-        if pick_object is None or pick_object_dist > 0.1:
+                else:
+                    rospy.logdebug("Object to far in x.")
+
+        if not pick_object:
             self.try_robot_arms_get_ready([arm_id])
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING)
