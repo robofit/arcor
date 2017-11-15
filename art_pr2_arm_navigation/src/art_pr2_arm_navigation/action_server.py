@@ -69,10 +69,10 @@ class ArtArmNavigationActionServer(object):
                 self._as.publish_feedback(self.feedback)
 
                 # TODO it would be better to only repeat failed step (e.g. go3)
-                world_frame = rospy.get_param("/art/conf/world_frame", "marker")
-                p.header.stamp = rospy.Time(0)
-                p_marker = self.tf_listener.transformPose(world_frame, p)
-                while not self.touch_point(p_marker, goal.drill_duration):
+                #world_frame = rospy.get_param("/art/conf/world_frame", "marker")
+                #p.header.stamp = rospy.Time(0)
+                #p_marker = self.tf_listener.transformPose(world_frame, p)
+                while not self.touch_point(p, goal.drill_duration):
 
                     rospy.loginfo("Attempt " + str(attempt) + " out of " + str(max_attempt) + ".")
                     attempt += 1
@@ -108,7 +108,7 @@ class ArtArmNavigationActionServer(object):
         pre_touch_pose = copy.deepcopy(pose)
 
         # TODO this works only for world frame_id (marker) -> in general, this pre_touch translation should be done with respect to x-axis of the gripper!
-        pre_touch_pose.pose.position.z += 0.02  # 2cm above desired pose
+        pre_touch_pose.pose.position.z += 0.03  # 3cm above desired pose
         self.group.set_pose_target(pre_touch_pose)
         rospy.loginfo("Touch point go1")
         self.move_to_pose_pub.publish(pre_touch_pose)
