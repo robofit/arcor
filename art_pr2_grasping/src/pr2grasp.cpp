@@ -559,9 +559,15 @@ bool artPr2Grasping::addTable(std::string frame_id)
   double roll, pitch, yaw;
   m.getRPY(roll, pitch, yaw);
 
+  float table_x = 1.5;
+  float table_y = 0.7;
+  float feeder_depth = 0.35;
+  float feeder_front_to_table = 0.15;
+
   geometry_msgs::PoseStamped g1ps;
   g1ps.header.frame_id = frame_id;
-  g1ps.pose.position.x = 1.5;
+  g1ps.pose.position.x = table_x + feeder_depth + feeder_front_to_table;
+  g1ps.pose.position.y = 0.515;
   g1ps.pose.orientation.w = 1.0;
 
   if (!transformPose(g1ps))
@@ -569,40 +575,43 @@ bool artPr2Grasping::addTable(std::string frame_id)
 
   geometry_msgs::PoseStamped g2ps;
   g2ps.header.frame_id = frame_id;
-  g2ps.pose.position.x = 0;
+  g2ps.pose.position.x = -(feeder_depth + feeder_front_to_table);
+  g2ps.pose.position.y = 0.515;
   g2ps.pose.orientation.w = 1.0;
 
   if (!transformPose(g2ps))
     return false;
 
-  for (int j = 0; j < 3; j++)  // hmm, sometimes the table is not added
+  for (int j = 0; j < 1; j++)  // hmm, sometimes the table is not added
   {
     //  x, y, angle, width, height, depth
-    visual_tools_->publishCollisionTable(ps.pose.position.x, ps.pose.position.y, yaw-3.14/2, 1.5, ps.pose.position.z, 0.7, "table");
+    visual_tools_->publishCollisionTable(ps.pose.position.x, ps.pose.position.y, yaw-3.14/2, table_x, ps.pose.position.z, table_y, "table");
 
-    visual_tools_->publishCollisionTable(g1ps.pose.position.x - 0.71, g1ps.pose.position.y + 0.15, 0, 0.3, g1ps.pose.position.z + 0.2, 0.001, "left-guard-1");
-    visual_tools_->publishCollisionTable(g1ps.pose.position.x - 0.365, g1ps.pose.position.y + 0.15, 0, 0.3, g1ps.pose.position.z + 0.36, 0.001, "left-guard-2");
-    visual_tools_->publishCollisionTable(g1ps.pose.position.x - 0.15, g1ps.pose.position.y + 0.15, 0, 0.3, g1ps.pose.position.z + 0.36, 0.001, "left-guard-3");
+    // TODO transform each part of each feeder separately
+
+    visual_tools_->publishCollisionTable(g1ps.pose.position.x +0.32, g1ps.pose.position.y, 0, feeder_depth, g1ps.pose.position.z + 0.18, 0.001, "feeder-1-front");
+    visual_tools_->publishCollisionTable(g1ps.pose.position.x, g1ps.pose.position.y, 0, feeder_depth, g1ps.pose.position.z + 0.34, 0.001, "feeder-1-middle");
+    visual_tools_->publishCollisionTable(g1ps.pose.position.x - 0.18, g1ps.pose.position.y, 0, feeder_depth, g1ps.pose.position.z + 0.34, 0.001, "feeder-1-rear");
     geometry_msgs::PoseStamped b1 = g1ps;
-    b1.pose.position.x -=  0.15 + (0.365 - 0.15)/2;
+    b1.pose.position.x -=  0.09;
     b1.pose.position.z += 0.3;
-    b1.pose.position.y += 0.05/2;
-    visual_tools_->publishCollisionBlock(b1.pose, "left-guard-block", 0.05);
+    b1.pose.position.y -= feeder_depth/2 - 0.05;
+    visual_tools_->publishCollisionBlock(b1.pose, "feeder-1-block", 0.05);
 
-    visual_tools_->publishCollisionTable(g2ps.pose.position.x - 0.71, g2ps.pose.position.y - 0.15, 0, 0.3, g2ps.pose.position.z + 0.2, 0.001, "right-guard-1");
-    visual_tools_->publishCollisionTable(g2ps.pose.position.x - 0.365, g2ps.pose.position.y - 0.15, 0, 0.3, g2ps.pose.position.z + 0.36, 0.001, "right-guard-2");
-    visual_tools_->publishCollisionTable(g2ps.pose.position.x - 0.15, g2ps.pose.position.y - 0.15, 0, 0.3, g2ps.pose.position.z + 0.36, 0.001, "right-guard-3");
+    visual_tools_->publishCollisionTable(g2ps.pose.position.x +0.32, g2ps.pose.position.y, 0, feeder_depth, g2ps.pose.position.z + 0.18, 0.001, "feeder-2-front");
+    visual_tools_->publishCollisionTable(g2ps.pose.position.x, g2ps.pose.position.y, 0, feeder_depth, g2ps.pose.position.z + 0.34, 0.001, "feeder-2-middle");
+    visual_tools_->publishCollisionTable(g2ps.pose.position.x - 0.18, g2ps.pose.position.y, 0, feeder_depth, g2ps.pose.position.z + 0.34, 0.001, "feeder-2-rear");
     geometry_msgs::PoseStamped b2 = g2ps;
-    b2.pose.position.x -=  0.15 + (0.365 - 0.15)/2;
+    b2.pose.position.x -=  0.09;
     b2.pose.position.z += 0.3;
-    b2.pose.position.y -= 0.05/2;
-    visual_tools_->publishCollisionBlock(b2.pose, "right-guard-block", 0.05);
+    b2.pose.position.y += feeder_depth/2 - 0.05;
+    visual_tools_->publishCollisionBlock(b2.pose, "feeder-2-block", 0.05);
 
     visual_tools_->publishCollisionBlock(k1.pose, "kinect-n1", 0.3);
     visual_tools_->publishCollisionBlock(k2.pose, "kinect-n2", 0.3);
 
     move_group_->setSupportSurfaceName("table");
-    ros::Duration(0.1).sleep();
+    // ros::Duration(0.1).sleep();
   }
 
   return true;
