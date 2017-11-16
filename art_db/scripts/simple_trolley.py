@@ -63,7 +63,7 @@ def main(args):
 
     pb.items.append(feeder_item(1))
     pb.items.append(place_item(2, ref_id=[1], on_success=3, on_failure=0))
-    pb.items.append(feeder_item(3), ref_id=[1])
+    pb.items.append(feeder_item(3, ref_id=[1]))
     pb.items.append(place_item(4, ref_id=[3], on_success=5, on_failure=0))
     pb.items.append(item(5, ProgramItem.GET_READY, on_success=6, on_failure=0))
     pb.items.append(wait_item(6, ref_id=[4], on_success=1, on_failure=0))
