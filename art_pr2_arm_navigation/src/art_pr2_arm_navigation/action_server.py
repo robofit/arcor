@@ -110,12 +110,12 @@ class ArtArmNavigationActionServer(object):
             return False
         return True
 
-    def touch_point(self, pose, drill_duration, max_attempts):
+    def touch_point(self, pose, drill_duration, max_attempts=3):
         rospy.loginfo("Touch point in")
         pre_touch_pose = copy.deepcopy(pose)
 
         # TODO this works only for world frame_id (marker) -> in general, this pre_touch translation should be done with respect to x-axis of the gripper!
-        pre_touch_pose.pose.position.z += 0.03  # 3cm above desired pose
+        pre_touch_pose.pose.position.z += 0.05  # 5cm above desired pose
         self.group.set_pose_target(pre_touch_pose)
         rospy.logdebug("Pre touch pose")
         self.move_to_pose_pub.publish(pre_touch_pose)
