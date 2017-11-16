@@ -110,7 +110,7 @@ class ArtArmNavigationActionServer(object):
             return False
         return True
 
-    def touch_point(self, pose, drill_duration, max_attempts):
+    def touch_point(self, pose, drill_duration, max_attempts=3):
         rospy.loginfo("Touch point in")
         pre_touch_pose = copy.deepcopy(pose)
 
