@@ -71,7 +71,7 @@ class UICore(QtCore.QObject):
         # be good for dynamic scenes
 
         self.bottom_label = LabelItem(
-            self.scene, 0.1, 0.15, self.width - 0.2, 0.05)
+            self.scene, 0.35, 0.15, self.width - 0.2, 0.03)
 
         self.selected_object_ids = []
         self.selected_object_types = []

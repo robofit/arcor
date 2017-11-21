@@ -51,7 +51,7 @@ class TouchPointItem(Item):
                     continue
 
                 # TODO what types to skip?
-                if isinstance(it, TouchTableItem) or isinstance(it, TouchPointItem) or isinstance(it, DescItem) or isinstance(it, LabelItem):
+                if isinstance(it, TouchTableItem) or isinstance(it, TouchPointItem) or isinstance(it, DescItem):
                     continue
 
                 if self.collidesWithItem(it):

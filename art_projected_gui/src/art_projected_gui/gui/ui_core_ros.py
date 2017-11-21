@@ -163,8 +163,6 @@ class UICoreRos(UICore):
         rospy.loginfo("Waiting for ART services...")
         self.art.wait_for_api()
 
-        rospy.loginfo("Ready! Starting state machine.")
-
         # TODO move this to ArtApiHelper ??
         self.obj_sub = rospy.Subscriber(
             '/art/object_detector/object_filtered', InstancesArray, self.object_cb, queue_size=1)
@@ -215,6 +213,8 @@ class UICoreRos(UICore):
         self.state_manager = InterfaceStateManager(
             "PROJECTED UI", cb=self.interface_state_cb)
 
+        rospy.loginfo("Projected GUI ready!")
+
     def touch_calibration_points_evt(self, pts):
 
         for it in self.scene.items():
@@ -243,6 +243,7 @@ class UICoreRos(UICore):
             return
 
         self.notif(translate("UICoreRos", "Gripper pose stored."), temp=True)
+        self.snd_info()
         self.program_vis.set_pose(ps)
 
         self.grasp_dialog.items[idx].set_enabled(False)
@@ -367,8 +368,6 @@ class UICoreRos(UICore):
 
         if not self.touch_points.next():
 
-            self.notif(translate("UICoreRos", "Touch saved."), temp=True)
-
             for it in self.scene.items():
 
                 if isinstance(it, LabelItem):
@@ -382,12 +381,6 @@ class UICoreRos(UICore):
             self.scene.removeItem(self.touch_points)
             self.touch_points = None
             self.touched_sub.unregister()
-
-        else:
-
-            self.notif(translate("UICoreRos", "Touch saved."), temp=True)
-            self.notif(
-                translate("UICoreRos", "Please press the next point."), temp=False)
 
     def touch_detected_cb(self, msg):
 
@@ -437,7 +430,7 @@ class UICoreRos(UICore):
 
             else:
 
-                self.notif(translate("UICoreRos", "Robot is up again."))
+                self.notif(translate("UICoreRos", "Robot is up again."), temp=True)
                 if self.stop_btn:
                     self.stop_btn.set_enabled(True)
 
@@ -506,15 +499,13 @@ class UICoreRos(UICore):
 
             if state.error_severity == InterfaceState.INFO:
 
-                self.notif(translate("UICoreRos", "Error occurred: ") +
-                           error_strings.get_error_string(state.error_code), temp=True, message_type=NotifyUserRequest.ERROR)
+                self.notif(error_strings.get_error_string(state.error_code), message_type=NotifyUserRequest.ERROR, temp=True)
 
             elif state.error_severity == InterfaceState.WARNING:
 
                 if state.system_state == InterfaceState.STATE_LEARNING:
 
-                    self.notif(translate("UICoreRos", "Error occurred: ") +
-                               error_strings.get_error_string(state.error_code), temp=True,
+                    self.notif(error_strings.get_error_string(state.error_code), temp=True,
                                message_type=NotifyUserRequest.ERROR)
 
                 else:
@@ -587,7 +578,7 @@ class UICoreRos(UICore):
 
             stopped = state.system_state == InterfaceState.STATE_PROGRAM_STOPPED
 
-            self.show_program_vis(readonly=True, stopped=stopped)
+            self.show_program_vis(readonly=True, stopped=stopped, running=True)
 
             if stopped:
                 self.notif(
@@ -646,8 +637,14 @@ class UICoreRos(UICore):
 
         elif it.type == ProgIt.PICK_FROM_FEEDER:
 
-            self.notif(
-                translate("UICoreRos", "Picking object from feeder."))
+            ps = self.ph.get_pose(state.block_id, state.program_current_item.id)[0][0]
+
+            if ps.pose.position.x < 1.5 / 2.0:
+                self.notif(
+                    translate("UICoreRos", "Picking object from feeder on my right."))
+            else:
+                self.notif(
+                    translate("UICoreRos", "Picking object from feeder on my left."))
 
         elif it.type == ProgIt.PICK_OBJECT_ID:
 
@@ -674,6 +671,8 @@ class UICoreRos(UICore):
 
                 self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),
                                place_pose, obj.object_type, obj_id, fixed=True)
+
+                self.notif(translate("UICoreRos", "Placing object to pose."))
 
             else:
 
@@ -711,11 +710,16 @@ class UICoreRos(UICore):
             self.add_polygon(translate("UICoreRos", "Objects to be drilled"),
                              poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)
 
-    def show_program_vis(self, readonly=False, stopped=False):
+    def show_program_vis(self, readonly=False, stopped=False, running=False):
+
+        if not running:
+            item_switched_cb = self.active_item_switched
+        else:
+            item_switched_cb = None
 
         rospy.logdebug("Showing ProgramItem with readonly=" + str(readonly) + ", stopped=" + str(stopped))
         self.program_vis = ProgramItem(self.scene, self.last_prog_pos[0], self.last_prog_pos[1], self.ph, done_cb=self.learning_done_cb,
-                                       item_switched_cb=self.active_item_switched,
+                                       item_switched_cb=item_switched_cb,
                                        learning_request_cb=self.learning_request_cb, stopped=stopped, pause_cb=self.pause_cb, cancel_cb=self.cancel_cb)
 
         self.program_vis.set_readonly(readonly)
@@ -866,12 +870,15 @@ class UICoreRos(UICore):
 
         msg = self.ph.get_item_msg(block_id, item_id)
 
+        notified = False
+
         if msg.type == ProgIt.PICK_FROM_POLYGON:
 
             if not self.ph.is_object_set(block_id, item_id):
 
-                self.notif(
-                    translate("UICoreRos", "Select object type to be picked up"))
+                if not read_only:
+                    self.notif(
+                        translate("UICoreRos", "Select object type to be picked up by tapping on its outline."))
 
             else:
 
@@ -882,8 +889,12 @@ class UICoreRos(UICore):
 
                 polygons = self.ph.get_polygon(block_id, item_id)[0]
 
-                self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
+                self.add_polygon(translate("UICoreRos", "PICK AREA"),
                                  poly_points=conversions.get_pick_polygon_points(polygons), polygon_changed=self.polygon_changed, fixed=read_only)
+
+                if not read_only:
+                    self.notif(
+                        translate("UICoreRos", "Adjust pick area or select another object type."))
 
         elif msg.type == ProgIt.PICK_FROM_FEEDER:
 
@@ -896,8 +907,10 @@ class UICoreRos(UICore):
                     self.create_grasp_dialog()
 
             else:
-                self.notif(
-                    translate("UICoreRos", "Select object type to be picked up"))
+
+                if not read_only:
+                    self.notif(
+                        translate("UICoreRos", "Select object type to be picked up by tapping on its outline."))
 
                 # TODO show pick pose somehow (arrow??)
 
@@ -923,8 +936,9 @@ class UICoreRos(UICore):
 
                 # TODO pokud nema byt nastaveny v teto instrukci - rict kde je potreba ho nastavit
                 # TODO pokud tam neni vybrany, ani nedovolit editaci - neni co editovat
-                self.notif(
-                    translate("UICoreRos", "Select object type to be drilled"))
+                if not read_only:
+                    self.notif(
+                        translate("UICoreRos", "Select object type to be drilled"))
 
         elif msg.type == ProgIt.PICK_OBJECT_ID:
             if self.ph.is_object_set(block_id, item_id):
@@ -941,6 +955,7 @@ class UICoreRos(UICore):
 
                 self.notif(translate(
                     "UICoreRos", "Select object to be picked up in ID{0}".format(str(ref_id))))
+                notified = True
 
             else:
 
@@ -959,6 +974,10 @@ class UICoreRos(UICore):
 
                     if it_id == item_id:
 
+                        if not read_only:
+                            self.notif(
+                                translate("UICoreRos", "Drag object outline to set place pose. Use blue point to set orientation."))
+
                         if self.ph.is_pose_set(block_id, item_id):
 
                             if object_type is not None:
@@ -968,8 +987,7 @@ class UICoreRos(UICore):
                                                self.ph.get_pose(block_id, it_id)[0][0], object_type, object_id, place_cb=self.place_pose_changed,
                                                fixed=read_only)
                         else:
-                            self.notif(
-                                translate("UICoreRos", "Set where to place picked object"))
+
                             self.add_place(translate("UICoreRos", "PLACE POSE"), self.get_def_pose(
                             ), object_type, object_id, place_cb=self.place_pose_changed, fixed=read_only)
 
@@ -992,6 +1010,20 @@ class UICoreRos(UICore):
             self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
                             0.075, object_type, poses, grid_points=conversions.get_pick_polygon_points(polygons), square_changed=self.square_changed, fixed=read_only)
 
+        if read_only and not notified:
+
+            if self.ph.item_has_nothing_to_set(block_id, item_id):
+                # TODO check if it really uses reference
+                self.notif(
+                    translate("UICoreRos", "Instruction has nothing to set (uses reference)."))
+
+            elif self.ph.item_learned(block_id, item_id):
+                self.notif(
+                    translate("UICoreRos", "Press 'Edit' to adjust selected instruction or 'Run' to test it out."))
+            else:
+                self.notif(
+                    translate("UICoreRos", "Press 'Edit' to adjust selected instruction."))
+
     def get_drill_caption(self):
 
         return translate("UICoreRos", "Save gripper pose ({0}/{1})".format(self.drill_pose_idx + 1, self.program_vis.get_poses_count()))
@@ -1009,30 +1041,66 @@ class UICoreRos(UICore):
 
         if not self.grasp_dialog:
 
-            self.notif(
-                translate("UICoreRos", "Use robot's arm to teach pose enabling part detection."))
+            if not self.ph.is_pose_set(self.program_vis.block_id, self.program_vis.get_current_item().id):
 
-            self.grasp_dialog = DialogItem(self.scene, self.width / 2, 0.1, "Save gripper pose", [
+                self.notif(
+                    translate("UICoreRos", "Use robot's arm and dialog to teach pose enabling part detection."))
+
+            else:
+
+                self.notif(
+                    translate("UICoreRos", "Learned pose for part detection may be updated or different object type could be chosen."))
+
+            self.grasp_dialog = DialogItem(self.scene, self.width / 2, 0.1, translate("UICoreRos", "Save gripper pose"), [
                 "Right arm (0)", "Left arm (0)"], self.save_gripper_pose_cb)
 
             for it in self.grasp_dialog.items:
                 it.set_enabled(False)
 
-    def active_item_switched(self, block_id, item_id, read_only=True):
+    def active_item_switched(self, block_id, item_id, read_only=True, blocks=False):
 
         rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) +
-                       ", active item ID: " + str((block_id, item_id)))
+                       ", active item ID: " + str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
 
         self.clear_all()
 
-        if item_id is None:
-            # TODO hlaska
-            return
+        if blocks:
 
-        self.state_manager.update_program_item(
-            self.ph.get_program_id(), block_id, self.ph.get_item_msg(block_id, item_id))
+            if self.ph.program_learned():
+                self.notif(
+                    translate("UICoreRos",
+                              "All blocks are learned. Program may be saved using 'Done'"), temp=True)
 
-        self.learning_vis(self.state_manager.state)
+            if block_id is None:
+                self.notif(
+                    translate("UICoreRos",
+                              "Select program block and edit it. Press 'Done' to save changes and return to program list."))
+            else:
+
+                if self.ph.block_learned(block_id):
+                    self.notif(
+                        translate("UICoreRos",
+                                  "Block {0} is done. It can still be edited.".format(block_id)))
+
+                else:
+
+                    self.notif(
+                        translate("UICoreRos",
+                                  "Block {0} needs to be edited.".format(block_id)))
+
+        else:
+
+            if item_id is None:
+                self.notif(
+                    translate("UICoreRos",
+                              "Select instruction or return to blocks."))
+
+        if None not in (block_id, item_id):
+
+            self.state_manager.update_program_item(
+                self.ph.get_program_id(), block_id, self.ph.get_item_msg(block_id, item_id))
+
+            self.learning_vis(self.state_manager.state)
 
     def get_def_pose(self):
 
@@ -1269,7 +1337,29 @@ class UICoreRos(UICore):
                 d[header.id] = ph.program_learned()
 
         self.program_list = ProgramListItem(
-            self.scene, self.last_prog_pos[0], self.last_prog_pos[1], headers_to_show, d, self.last_edited_prog_id, self.program_selected_cb)
+            self.scene, self.last_prog_pos[0], self.last_prog_pos[1], headers_to_show, d, self.last_edited_prog_id, self.program_selected_cb, self.program_selection_changed_cb)
+
+    def program_selection_changed_cb(self, program_id, ro=False, learned=False):
+
+        if program_id is not None:
+
+            if ro:
+
+                if not learned:
+                    self.notif(translate("UICoreRos", "Program is read-only and not leaned - it can be templated."))
+                else:
+                    self.notif(translate("UICoreRos", "Program is read-only and leaned - it can be templated or started."))
+
+            else:
+
+                if not learned:
+                    self.notif(translate("UICoreRos", "Program needs to be learned. Use 'Edit' or 'Template'."))
+                else:
+                    self.notif(translate("UICoreRos", "Program learned - it is ready to be started."))
+
+        else:
+
+            self.notif(translate("UICoreRos", "Please select a program. Use arrows to scroll the list. Tap program to select it."))
 
     def object_raw_cb_evt(self, msg):
 
