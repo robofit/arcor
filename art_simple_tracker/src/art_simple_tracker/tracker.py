@@ -63,10 +63,10 @@ class TrackedObject:
 
             self.meas[ps.header.frame_id].append([dist, self.transform(ps)])
 
-        except tf.Exception:
+        except tf.Exception as e:
 
-            rospy.logwarn("Transform between " + self.target_frame +
-                          " and " + ps.header.frame_id + " not available!")
+            rospy.logwarn("Transform at " + str(ps.header.stamp.to_sec()) + " between " + self.target_frame +
+                          " and " + ps.header.frame_id + " not available: " + str(e))
 
     def prune_meas(self, now, max_age):
 
@@ -179,7 +179,7 @@ class TrackedObject:
 
 # "tracking" of static objects
 class ArtSimpleTracker:
-    def __init__(self, target_frame="/marker"):
+    def __init__(self, target_frame="marker"):
 
         self.target_frame = target_frame
         self.tfl = tf.TransformListener()
