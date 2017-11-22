@@ -175,7 +175,7 @@ class ArtPr2Interface(ArtBrainRobotInterface):
         self.look_at_point(obj.pose.position)
         return super(ArtPr2Interface, self).pick_object(obj, pick_instruction_id, arm_id, pick_only_y_axis, from_feeder)
 
-    def place_object_to_pose(self, place_pose, arm_id, objects_frame_id="/marker", pick_only_y_axis=False):
+    def place_object_to_pose(self, place_pose, arm_id, objects_frame_id="marker", pick_only_y_axis=False):
 
         assert isinstance(place_pose, PoseStamped)
         self.look_at_point(place_pose.pose.position)

@@ -56,17 +56,20 @@ class TrackedObject:
             rospy.logdebug("Object " + self.object_id + " seen by " + ps.header.frame_id + " is too far (or too close): " + str(dist))
             return
 
-        if ps.header.frame_id not in self.meas:
-            self.meas[ps.header.frame_id] = []
-
         try:
 
-            self.meas[ps.header.frame_id].append([dist, self.transform(ps)])
+            pps = self.transform(ps)
 
         except tf.Exception as e:
 
             rospy.logwarn("Transform at " + str(ps.header.stamp.to_sec()) + " between " + self.target_frame +
                           " and " + ps.header.frame_id + " not available: " + str(e))
+            return
+
+        if ps.header.frame_id not in self.meas:
+            self.meas[ps.header.frame_id] = []
+
+        self.meas[ps.header.frame_id].append([dist, self.transform(pps)])
 
     def prune_meas(self, now, max_age):
 
@@ -185,9 +188,9 @@ class ArtSimpleTracker:
         self.tfl = tf.TransformListener()
         self.lock = threading.Lock()
         self.sub = rospy.Subscriber(
-            "/art/object_detector/object", InstancesArray, self.cb, queue_size=10)
+            "/art/object_detector/object", InstancesArray, self.cb, queue_size=1)
         self.pub = rospy.Publisher(
-            "/art/object_detector/object_filtered", InstancesArray, queue_size=10, latch=True)
+            "/art/object_detector/object_filtered", InstancesArray, queue_size=1, latch=True)
         self.timer = rospy.Timer(rospy.Duration(0.1), self.timer_cb)
         self.meas_max_age = rospy.Duration(5.0)
         self.prune_timer = rospy.Timer(rospy.Duration(1.0), self.prune_timer_cb)

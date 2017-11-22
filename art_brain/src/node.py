@@ -839,6 +839,8 @@ class ArtBrain(object):
         pick_object_dist = None
         rospy.loginfo("Looking for: " + str(obj.object_type))
 
+        ignored_objects = []
+
         while True:
 
             now = rospy.Time.now()
@@ -852,6 +854,9 @@ class ArtBrain(object):
 
             for inst in self.objects.instances:  # type: ObjInstance
 
+                if inst.object_id in ignored_objects:
+                    continue
+
                 if inst.object_type != obj.object_type:
                     continue
 
@@ -862,6 +867,7 @@ class ArtBrain(object):
                 if on_table:
 
                     rospy.logdebug("Ignoring 'on_table' object: " + inst.object_id)
+                    ignored_objects.append(inst.object_id)
                     continue
 
                 ps = PoseStamped()
@@ -1233,10 +1239,10 @@ class ArtBrain(object):
                 return self.right_gripper
 
         if self.tf_listener.frameExists(
-                "/base_link") and self.tf_listener.frameExists(self.objects.header.frame_id):
+                "base_link") and self.tf_listener.frameExists(self.objects.header.frame_id):
             if pick_pose is not None:
                 transformed_pose = self.tf_listener.transformPose(
-                    '/base_link', pick_pose)
+                    'base_link', pick_pose)
                 if transformed_pose.pose.position.y < 0:
                     return self.right_gripper
                 else:
@@ -1250,12 +1256,12 @@ class ArtBrain(object):
                         # exact time does not matter in this case
                         obj_pose.header.stamp = rospy.Time(0)
                         self.tf_listener.waitForTransform(
-                            '/base_link',
+                            'base_link',
                             obj_pose.header.frame_id,
                             obj_pose.header.stamp,
                             rospy.Duration(1))
                         obj_pose = self.tf_listener.transformPose(
-                            '/base_link', obj_pose)
+                            'base_link', obj_pose)
                         if obj_pose.pose.position.y < 0:
                             return self.right_gripper
                         else:

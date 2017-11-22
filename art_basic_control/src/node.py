@@ -83,8 +83,8 @@ class ArtBasicControl:
         ps.pose.orientation.w = 1
 
         try:
-            self.tfl.waitForTransform("/marker", ps.header.frame_id, ps.header.stamp, rospy.Duration(0.1))
-            ps = self.tfl.transformPose("/marker", ps)
+            self.tfl.waitForTransform("marker", ps.header.frame_id, ps.header.stamp, rospy.Duration(0.1))
+            ps = self.tfl.transformPose("marker", ps)
         except (tf.Exception, tf.ConnectivityException, tf.LookupException):
             rospy.logdebug("Failed to transform gripper pose")
             return

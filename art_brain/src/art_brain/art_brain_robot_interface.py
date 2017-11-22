@@ -140,7 +140,7 @@ class ArtBrainRobotInterface:
         else:
             return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_PICK_FAILED, arm_id
 
-    def place_object_to_pose(self, place_pose, arm_id, objects_frame_id="/marker", pick_only_y_axis=False):
+    def place_object_to_pose(self, place_pose, arm_id, objects_frame_id="marker", pick_only_y_axis=False):
         if arm_id is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_GRIPPER_NOT_DEFINED, None
         if place_pose is None:
