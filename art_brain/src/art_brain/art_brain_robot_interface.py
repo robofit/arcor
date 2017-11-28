@@ -341,13 +341,13 @@ class ArtBrainRobotInterface:
         else:
             return None
 
-    def init_arms(self, arms=None):
+    def init_arms(self, arms=None, reset_holding_object=True):
         if arms is None:
             for arm in self._arms:
-                arm.re_init()
+                arm.re_init(reset_holding_object=reset_holding_object)
         else:
             for arm in arms:
-                arm.re_init()
+                arm.re_init(reset_holding_object=reset_holding_object)
 
     def set_halted(self, halted):
         self.halted = halted

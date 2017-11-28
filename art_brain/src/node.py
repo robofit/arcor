@@ -139,6 +139,8 @@ class ArtBrain(object):
 
         self.robot_parameters = rospy.get_param(self.robot_ns)
         self.robot_type = rospy.get_param(self.robot_ns + "/robot_id", "")
+
+        self.program_resume_after_restart = rospy.get_param("/art/brain/executing_program", False)
         self.rh = None
 
         while self.rh is None:
@@ -301,7 +303,27 @@ class ArtBrain(object):
 
     def state_waiting_for_action(self, event):
         rospy.logdebug('Current state: state_waiting_for_action')
-        self.state_manager.set_system_state(InterfaceState.STATE_IDLE)
+
+        if self.program_resume_after_restart:
+            program_id = rospy.get_param("/art/brain/program_id", None)
+            self.block_id = rospy.get_param("/art/brain/block_id", None)
+            item_id = rospy.get_param("/art/brain/item_id", None)
+            if self.block_id is None or item_id is None or program_id is None:
+                rospy.logwarn("Could not resume program!")
+                return
+            program = self.art.load_program(program_id)
+
+            if not self.ph.load(program):
+                rospy.logwarn("Could not resume program!")
+                return
+
+            rospy.logdebug('Starting program')
+
+            rospy.Timer(rospy.Duration(
+                1), self.program_start_timer_cb, oneshot=True)
+            rospy.logdebug("program started")
+        else:
+            self.state_manager.set_system_state(InterfaceState.STATE_IDLE)
 
     def state_shutdown(self, event):
         rospy.logdebug('Current state: state_shutdown')
@@ -318,21 +340,31 @@ class ArtBrain(object):
     def state_program_init(self, event):
         rospy.logdebug('Current state: state_program_init')
         rospy.logdebug('New program ready!')
+        rospy.set_param("/art/brain/executing_program", True)
 
         if self.ph is None:
             self.fsm.error(severity=ArtBrainErrorSeverities.SEVERE,
                            error=ArtBrainErrors.ERROR_NO_PROGRAM_HELPER)
             return
+        item_id = None
+        if self.program_resume_after_restart:
+            item_id = rospy.get_param("/art/brain/item_id", None)
+        else:
+            self.clear_all_object_flags_srv_client.call(EmptyRequest())
 
-        self.clear_all_object_flags_srv_client.call(EmptyRequest())
-
-        (self.block_id, item_id) = self.ph.get_first_item_id()
+            (self.block_id, item_id) = self.ph.get_first_item_id()
         self.instruction = self.ph.get_item_msg(self.block_id, item_id)
 
+        rospy.set_param("/art/brain/program_id", self.ph.get_program_id())
+        rospy.set_param("/art/brain/block_id", self.block_id)
+        rospy.set_param("/art/brain/item_id", item_id)
         self.executing_program = True
         self.program_paused = False
         self.program_pause_request = False
-        self.robot.init_arms()
+        if self.program_resume_after_restart:
+            self.robot.init_arms(reset_holding_object=False)
+        else:
+            self.robot.init_arms(reset_holding_object=True)
         self.state_manager.set_system_state(
             InterfaceState.STATE_PROGRAM_RUNNING, auto_send=False)
         self.fsm.program_init_done()
@@ -360,6 +392,20 @@ class ArtBrain(object):
             if flag.key == "CLEAR_OBJECT_FLAGS" and flag.value == "true":
                 self.clear_all_object_flags_srv_client.call(EmptyRequest())
 
+        '''while self.program_resume_after_restart and self.instruction.type in [ProgramItem.PLACE_TO_POSE,
+                                                                           ProgramItem.PLACE_TO_GRID]:
+
+            (self.block_id, item_id) = self.ph.get_id_on_success(
+                self.block_id, self.instruction.id)
+
+            if self.block_id == 0:
+                self.fsm.finished()
+                return
+
+            self.instruction = self.ph.get_item_msg(self.block_id, item_id)
+        '''
+        self.program_resume_after_restart = False
+
         instructions = {
             ProgramItem.GET_READY: self.fsm.get_ready,
             ProgramItem.PICK_FROM_POLYGON: self.fsm.pick_from_polygon,
@@ -374,7 +420,9 @@ class ArtBrain(object):
             ProgramItem.WAIT_FOR_USER: self.fsm.wait_for_user,
             ProgramItem.WAIT_UNTIL_USER_FINISHES: self.fsm.wait_until_user_finishes,
         }
-
+        rospy.set_param("/art/brain/program_id", self.ph.get_program_id())
+        rospy.set_param("/art/brain/block_id", self.block_id)
+        rospy.set_param("/art/brain/item_id", self.instruction.id)
         instruction_transition = instructions.get(self.instruction.type, None)
         rospy.logdebug(instruction_transition)
         rospy.logdebug(self.instruction.type)
@@ -558,6 +606,11 @@ class ArtBrain(object):
         self.state_manager.send()
         self.executing_program = False
         self.robot.arms_reinit()
+        rospy.set_param("/art/brain/executing_program", False)
+        rospy.delete_param("/art/brain/program_id")
+        rospy.delete_param("/art/brain/block_id")
+        rospy.delete_param("/art/brain/item_id")
+        self.program_resume_after_restart = False
         self.fsm.done()
 
     def state_program_error(self, event):
