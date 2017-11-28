@@ -1612,6 +1612,9 @@ class ArtBrain(object):
 
             # if self.is_learning_pick_from_feeder():
         '''
+        if msg.interface_id != InterfaceState.BRAIN_ID:
+            if msg.system_state == InterfaceState.STATE_LEARNING:
+                self.ph.set_item_msg(msg.block_id, msg.program_current_item)
         pass
 
     def projectors_calibrated_cb(self, msg):
