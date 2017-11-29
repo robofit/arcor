@@ -566,7 +566,7 @@ bool artPr2Grasping::addTable(std::string frame_id)
 
   geometry_msgs::PoseStamped g1ps;
   g1ps.header.frame_id = frame_id;
-  g1ps.pose.position.x = table_x + feeder_depth + feeder_front_to_table;
+  g1ps.pose.position.x = table_x + feeder_depth/2 + feeder_front_to_table;
   g1ps.pose.position.y = 0.515;
   g1ps.pose.orientation.w = 1.0;
 
@@ -575,7 +575,7 @@ bool artPr2Grasping::addTable(std::string frame_id)
 
   geometry_msgs::PoseStamped g2ps;
   g2ps.header.frame_id = frame_id;
-  g2ps.pose.position.x = -(feeder_depth + feeder_front_to_table);
+  g2ps.pose.position.x = -(feeder_depth/2 + feeder_front_to_table);
   g2ps.pose.position.y = 0.515;
   g2ps.pose.orientation.w = 1.0;
 
