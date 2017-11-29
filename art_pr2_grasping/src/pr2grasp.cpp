@@ -352,6 +352,75 @@ bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
   std::vector<moveit_msgs::Grasp> grasps;
 
   geometry_msgs::PoseStamped p = obj.pose;
+  if (feeder) {
+  ROS_WARN_STREAM(p);
+    if (group_name_ == "left_arm") {
+        ROS_WARN("left_arm");
+        if (obj.type.name == "wood_46_150") {
+
+            /*p.pose.position.x = 0.325;
+            p.pose.position.y = 0.881;
+            p.pose.position.z = 0.964;
+            p.pose.orientation.x = 0.14;
+            p.pose.orientation.y = 0.693;
+            p.pose.orientation.z = 0.143;
+            p.pose.orientation.w = 0.692;*/
+            p.header.frame_id = "marker";
+            p.pose.position.x = 1.682;
+            p.pose.position.y = 0.600;
+            p.pose.position.z = 0.155;
+            p.pose.orientation.x = 0.6;
+            p.pose.orientation.y = 0.395;
+            p.pose.orientation.z = -0.373;
+            p.pose.orientation.w = 0.586;
+        }
+        else if (obj.type.name == "wood_46_300") {
+        /*p.pose.position.x = 0.565;
+            p.pose.position.y = 0.875;
+            p.pose.position.z = 0.944;
+            p.pose.orientation.x = 0.102;
+            p.pose.orientation.y = 0.6913;
+            p.pose.orientation.z = 0.110;
+            p.pose.orientation.w = 0.706;*/
+
+            p.header.frame_id = "marker";
+            p.pose.position.x = 1.677;
+            p.pose.position.y = 0.371;
+            p.pose.position.z = 0.158;
+            p.pose.orientation.x = 0.5705;
+            p.pose.orientation.y = 0.4311;
+            p.pose.orientation.z = -0.4121;
+            p.pose.orientation.w = 0.5645;
+        }
+        else if (obj.type.name == "wood_46_400") {
+        p.header.frame_id = "marker";
+            p.pose.position.x = 1.675;
+            p.pose.position.y = 0.5856;
+            p.pose.position.z = 0.3537;
+            p.pose.orientation.x = -0.6676;
+            p.pose.orientation.y = -0.1952;
+            p.pose.orientation.z = -0.20275;
+            p.pose.orientation.w = 0.6892;
+        }
+
+    }
+    else if (group_name_ == "right_arm") {
+        ROS_WARN("right_arm");
+        if (obj.type.name == "wood_46_150") {
+            ROS_WARN("wood_46_150");
+        }
+        else if (obj.type.name == "wood_46_300") {
+        ROS_WARN("wood_46_300");
+        }
+        else if (obj.type.name == "wood_46_400") {
+        ROS_WARN("wood_46_400");
+        }
+    }
+    else {
+    std::cout << group_name_ << std::endl;
+
+    }
+  }
   p.header.stamp = ros::Time::now();
 
   if (!transformPose(p))
