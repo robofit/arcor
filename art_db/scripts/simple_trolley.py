@@ -28,13 +28,13 @@ def main(args):
     # -------------------------------------------------------------------------------------------
 
     prog = Program()
-    prog.header.id = 0
-    prog.header.name = "Trenink 1"
+    prog.header.id = 1
+    prog.header.name = "Trenink - oblast"
 
     pb = ProgramBlock()
-    pb.id = 2
+    pb.id = 1
     pb.name = "Zvedni ze stolu a poloz"
-    pb.on_success = 2
+    pb.on_success = 1
     pb.on_failure = 0
     prog.blocks.append(pb)
 
@@ -51,13 +51,13 @@ def main(args):
     # -------------------------------------------------------------------------------------------
 
     prog = Program()
-    prog.header.id = 1
-    prog.header.name = "Trenink 2"
+    prog.header.id = 2
+    prog.header.name = "Trenink - podavac"
 
     pb = ProgramBlock()
-    pb.id = 2
+    pb.id = 1
     pb.name = "Zvedni z podavace a poloz"
-    pb.on_success = 2
+    pb.on_success = 1
     pb.on_failure = 0
     prog.blocks.append(pb)
 
@@ -76,13 +76,13 @@ def main(args):
     # -------------------------------------------------------------------------------------------
 
     prog = Program()
-    prog.header.id = 2
-    prog.header.name = "Trenink 3"
+    prog.header.id = 3
+    prog.header.name = "Trenink - lepidlo"
 
     pb = ProgramBlock()
-    pb.id = 2
+    pb.id = 1
     pb.name = "Aplikace lepidla"
-    pb.on_success = 2
+    pb.on_success = 0
     pb.on_failure = 0
     prog.blocks.append(pb)
 
@@ -107,14 +107,14 @@ def main(args):
     # -------------------------------------------------------------------------------------------
 
     prog = Program()
-    prog.header.id = 3
+    prog.header.id = 4
     prog.header.name = "Montaz stolicky"
 
     # --- left side of the trolley ------------------------------------------------------
     pb = ProgramBlock()
-    pb.id = 2
+    pb.id = 1
     pb.name = "Bocnice 1"
-    pb.on_success = 3
+    pb.on_success = 2
     pb.on_failure = 0
     prog.blocks.append(pb)
 
@@ -140,17 +140,17 @@ def main(args):
 
     # --- right side of the trolley ------------------------------------------------------
     pb = deepcopy(pb)
-    pb.id = 3
+    pb.id = 2
     pb.name = "Bocnice 2"
-    pb.on_success = 4
+    pb.on_success = 3
     pb.on_failure = 0
     prog.blocks.append(pb)
 
     # --- connecting profiles ------------------------------------------------------------
     pb = ProgramBlock()
-    pb.id = 4
+    pb.id = 3
     pb.name = "Spojovaci dily"
-    pb.on_success = 2
+    pb.on_success = 1
     pb.on_failure = 0
     prog.blocks.append(pb)
 
