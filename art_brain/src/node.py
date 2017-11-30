@@ -1615,6 +1615,8 @@ class ArtBrain(object):
         if msg.interface_id != InterfaceState.BRAIN_ID:
             if msg.system_state == InterfaceState.STATE_LEARNING:
                 self.ph.set_item_msg(msg.block_id, msg.program_current_item)
+                self.art.store_program(self.ph.get_program())
+
         pass
 
     def projectors_calibrated_cb(self, msg):
