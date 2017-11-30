@@ -1641,6 +1641,7 @@ class ArtBrain(object):
                 rospy.set_param("/art/brain/program_id", self.ph.get_program_id())
                 rospy.set_param("/art/brain/block_id", self.block_id)
                 rospy.set_param("/art/brain/item_id", msg.program_current_item.id)
+                    self.art.store_program(self.ph.get_program())
         pass
 
     def projectors_calibrated_cb(self, msg):
