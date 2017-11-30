@@ -141,6 +141,7 @@ class ArtBrain(object):
         self.robot_type = rospy.get_param(self.robot_ns + "/robot_id", "")
 
         self.program_resume_after_restart = rospy.get_param("/art/brain/executing_program", False)
+        self.learning_resume_after_restart = rospy.get_param("/art/brain/learning_program", False)
         self.rh = None
 
         while self.rh is None:
@@ -237,6 +238,14 @@ class ArtBrain(object):
         self.set_object_flag_srv_client = ArtBrainUtils.create_service_client(
             '/art/object_detector/flag/set', ObjectFlagSet)
 
+        # TODO 'hack' for experiment
+        self.forearm_enable_srv_client = ArtBrainUtils.create_service_client(
+            '/art/object_detector/forearm/enable', Empty)
+        self.forearm_disable_srv_client = ArtBrainUtils.create_service_client(
+            '/art/object_detector/forearm/disable', Empty)
+
+        self.forearm_disable_srv_client.call()
+
         r = rospy.Rate(1)
         if not self.system_calibrated or not self.projectors_calibrated:
             self.robot.prepare_for_calibration()
@@ -304,24 +313,33 @@ class ArtBrain(object):
     def state_waiting_for_action(self, event):
         rospy.logdebug('Current state: state_waiting_for_action')
 
-        if self.program_resume_after_restart:
+        if self.program_resume_after_restart or self.learning_resume_after_restart:
             program_id = rospy.get_param("/art/brain/program_id", None)
             self.block_id = rospy.get_param("/art/brain/block_id", None)
             item_id = rospy.get_param("/art/brain/item_id", None)
             if self.block_id is None or item_id is None or program_id is None:
                 rospy.logwarn("Could not resume program!")
+                self.learning_resume_after_restart = False
+                self.program_resume_after_restart = False
                 return
             program = self.art.load_program(program_id)
 
             if not self.ph.load(program):
                 rospy.logwarn("Could not resume program!")
                 return
+            if self.program_resume_after_restart:
+                rospy.logdebug('Starting program')
 
-            rospy.logdebug('Starting program')
-
-            rospy.Timer(rospy.Duration(
-                1), self.program_start_timer_cb, oneshot=True)
-            rospy.logdebug("program started")
+                rospy.Timer(rospy.Duration(
+                    1), self.program_start_timer_cb, oneshot=True)
+                rospy.logdebug("program started")
+            elif self.learning_resume_after_restart:
+                self.learning_resume_after_restart = False
+                rospy.logdebug('Starting learning')
+                self.state_manager.update_program_item(program_id, self.block_id,
+                                                       self.ph.get_item_msg(self.block_id, item_id), auto_send=True)
+                self.state_manager.set_system_state(InterfaceState.STATE_LEARNING)
+                self.fsm.learning_start()
         else:
             self.state_manager.set_system_state(InterfaceState.STATE_IDLE)
 
@@ -447,7 +465,9 @@ class ArtBrain(object):
         rospy.logdebug('Current state: state_pick_from_feeder')
         if not self.check_robot():
             return
+        self.forearm_enable_srv_client.call()
         self.pick_object_from_feeder(self.instruction)
+        self.forearm_disable_srv_client.call()
 
     def state_pick_object_id(self, event):
         if not self.check_robot():
@@ -664,6 +684,7 @@ class ArtBrain(object):
     def state_learning_init(self, event):
         rospy.logdebug('Current state: Teaching init')
         self.learning = True
+        rospy.set_param("/art/brain/learning_program", True)
         self.fsm.init_done()
 
     def learning_load_block_id(self, event):
@@ -697,7 +718,9 @@ class ArtBrain(object):
     def state_learning_pick_from_feeder_run(self, event):
         rospy.logdebug('Current state: state_learning_pick_from_feeder_run')
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
+        self.forearm_enable_srv_client.call()
         self.pick_object_from_feeder(instruction)
+        self.forearm_disable_srv_client.call()
 
     def state_learning_pick_from_feeder_exit(self, event):
         rospy.logdebug('Current state: state_learning_pick_from_feeder_exit')
@@ -1579,7 +1602,7 @@ class ArtBrain(object):
             resp.success = False
         rospy.logdebug('Stopping learning')
         self.learning = False
-
+        rospy.set_param("/art/brain/learning_program", False)
         resp.success = True
         self.fsm.learning_done()
         return resp
@@ -1615,6 +1638,9 @@ class ArtBrain(object):
         if msg.interface_id != InterfaceState.BRAIN_ID:
             if msg.system_state == InterfaceState.STATE_LEARNING:
                 self.ph.set_item_msg(msg.block_id, msg.program_current_item)
+                rospy.set_param("/art/brain/program_id", self.ph.get_program_id())
+                rospy.set_param("/art/brain/block_id", self.block_id)
+                rospy.set_param("/art/brain/item_id", msg.program_current_item.id)
         pass
 
     def projectors_calibrated_cb(self, msg):
