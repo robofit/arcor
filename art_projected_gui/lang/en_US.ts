@@ -48,8 +48,13 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="67"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="68"/>
         <source>Robot is not holding object.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="67"/>
+        <source>Robot failed to apply a glue to the object.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -231,453 +236,458 @@
 <context>
     <name>UICoreRos</name>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="252"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="253"/>
         <source>Touch table calibration started. Please press the white point.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="266"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="267"/>
         <source>Failed to store gripper pose.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="270"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="271"/>
         <source>Gripper pose stored.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="275"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="276"/>
         <source>Stored</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="307"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="308"/>
         <source>Failed to get gripper pose.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="369"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="370"/>
         <source>Failed to find object near gripper.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="404"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="405"/>
         <source>Touch table calibration finished.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="452"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="453"/>
         <source>Robot is halted.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="458"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="459"/>
         <source>Robot is up again.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="471"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="472"/>
         <source>Resetting motors</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="477"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="478"/>
         <source>Emergency stop pressed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="482"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="483"/>
         <source>Failed to stop/run robot.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="497"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="498"/>
         <source>System failure: failed to resolve error.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="542"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="543"/>
         <source>Try again</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="542"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="543"/>
         <source>Skip instruction</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="542"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="543"/>
         <source>Fail instruction</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="542"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="543"/>
         <source>End program</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="559"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="560"/>
         <source>Please resolve error using dialog.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="568"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="569"/>
         <source>The program is done.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1250"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1251"/>
         <source>Failed to load program from database.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="772"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="773"/>
         <source>Program paused.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="611"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="612"/>
         <source>Program resumed.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="628"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="629"/>
         <source>Robot is getting ready</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="632"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="633"/>
         <source>Waiting for user</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="636"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="637"/>
         <source>Waiting for user to finish</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="653"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="654"/>
         <source>Going to pick object ID </source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="653"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="654"/>
         <source> of type </source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="653"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="654"/>
         <source> from polygon.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1631"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1638"/>
         <source>PICK POLYGON</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="676"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="677"/>
         <source>Picking object with ID=</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="695"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="696"/>
         <source>OBJECT PLACE POSE</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="712"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="713"/>
         <source>Going to place objects into grid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1030"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1031"/>
         <source>PLACE SQUARE GRID</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="730"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="731"/>
         <source>Objects to be drilled</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="760"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="761"/>
         <source>Failed to resume program.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="778"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="779"/>
         <source>Failed to pause program.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="797"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="798"/>
         <source>Program stopped.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="803"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="804"/>
         <source>Failed to stop program.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="882"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="883"/>
         <source>Item has no parameters.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="932"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="933"/>
         <source>Select object type to be picked up by tapping on its outline.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="912"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="913"/>
         <source>PICK AREA</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="916"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="917"/>
         <source>Adjust pick area or select another object type.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1592"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1599"/>
         <source>OBJECTS TO BE DRILLED</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="960"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="961"/>
         <source>Select object type to be drilled</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="967"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="968"/>
         <source>Select object to be picked up</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="998"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="999"/>
         <source>Drag object outline to set place pose. Use blue point to set orientation.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1018"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1019"/>
         <source>PLACE POSE</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1029"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1030"/>
         <source>Place grid</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1037"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1038"/>
         <source>Instruction has nothing to set (uses reference).</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1041"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1042"/>
         <source>Press &apos;Edit&apos; to adjust selected instruction or &apos;Run&apos; to test it out.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1044"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1045"/>
         <source>Press &apos;Edit&apos; to adjust selected instruction.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1066"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1067"/>
         <source>Use robot&apos;s arm and dialog to teach pose enabling part detection.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1071"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1072"/>
         <source>Learned pose for part detection may be updated or different object type could be chosen.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1090"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1091"/>
         <source>All blocks are learned. Program may be saved using &apos;Done&apos;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1095"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1096"/>
         <source>Select program block and edit it. Press &apos;Done&apos; to save changes and return to program list.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1114"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1115"/>
         <source>Select instruction or return to blocks.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1209"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1210"/>
         <source>Failed to store program</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1213"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1214"/>
         <source>Program stored with ID=</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1238"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1239"/>
         <source>Failed to start program.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1291"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1292"/>
         <source>Failed to start edit mode.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1301"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1302"/>
         <source>Robot is getting ready for learning</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1306"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1307"/>
         <source>Robot is getting into default state</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1318"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1319"/>
         <source>Robot is executing current program instruction</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1341"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1342"/>
         <source>Please select a program</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1369"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1370"/>
         <source>Program is read-only and not leaned - it can be templated.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1371"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1372"/>
         <source>Program is read-only and leaned - it can be templated or started.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1376"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1377"/>
         <source>Program needs to be learned. Use &apos;Edit&apos; or &apos;Template&apos;.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1378"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1379"/>
         <source>Program learned - it is ready to be started.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1382"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1383"/>
         <source>Please select a program. Use arrows to scroll the list. Tap program to select it.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1056"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1057"/>
         <source>Right arm</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1056"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1057"/>
         <source>Left arm</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1594"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1601"/>
         <source>Check and adjust area with objects to be drilled. Then use robot arm to set drill poses.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1633"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1640"/>
         <source>Check and adjust pick polygon. You may also change object type.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1650"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1657"/>
         <source>Please do a calibration pose</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1654"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1661"/>
         <source>Successfully calibrated</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1658"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1665"/>
         <source>Waiting for user...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="357"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="358"/>
         <source>Gripper pose relative to object %1 stored</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="666"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="667"/>
         <source>Picking object from feeder on my right.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="669"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="670"/>
         <source>Picking object from feeder on my left.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="698"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="699"/>
         <source>Placing object to pose.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="724"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="725"/>
         <source>Going to drill hole %1 out of %2 into object %3.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="976"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="977"/>
         <source>Select object to be picked up in instruction %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1049"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1050"/>
         <source>Save gripper pose (%1/%2)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1074"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1075"/>
         <source>Save gripper pose</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1101"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1102"/>
         <source>Block %1 is done. It can still be edited.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1107"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1108"/>
         <source>Block %1 needs to be edited.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1056"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1057"/>
         <source>Prev pose</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1056"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1057"/>
         <source>Next pose</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1411"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1418"/>
         <source>Right arm (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1411"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1418"/>
         <source>Left arm (%1)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1243"/>
+        <source>Starting program %1...</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

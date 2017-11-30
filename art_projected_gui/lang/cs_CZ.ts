@@ -49,9 +49,14 @@
         <translation>Položení objektu se nepodařilo.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="67"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="68"/>
         <source>Robot is not holding object.</source>
         <translation>Robot nedrží objekt.</translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="67"/>
+        <source>Robot failed to apply a glue to the object.</source>
+        <translation>Aplikace lepidla se nezdařila.</translation>
     </message>
 </context>
 <context>
@@ -269,7 +274,7 @@
     <message>
         <location filename="src/art_projected_gui/items/program_item.py" line="272"/>
         <source>     Object type: %1</source>
-        <translation type="unfinished">     Objekt: %1</translation>
+        <translation>     Objekt: %1</translation>
     </message>
     <message>
         <location filename="src/art_projected_gui/items/program_item.py" line="276"/>
@@ -279,7 +284,7 @@
     <message>
         <location filename="src/art_projected_gui/items/program_item.py" line="288"/>
         <source> learned poses: %1/%2</source>
-        <translation type="unfinished">, pozice: %1/%2</translation>
+        <translation>, pozice: %1/%2</translation>
     </message>
     <message>
         <location filename="src/art_projected_gui/items/program_item.py" line="291"/>
@@ -308,27 +313,27 @@
 <context>
     <name>UICoreRos</name>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1631"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1638"/>
         <source>PICK POLYGON</source>
         <translation>ODTUD BRÁT</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1018"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1019"/>
         <source>PLACE POSE</source>
         <translation>POLOŽIT SEM</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1658"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1665"/>
         <source>Waiting for user...</source>
         <translation>Čekám na uživatele...</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1650"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1657"/>
         <source>Please do a calibration pose</source>
         <translation>Prosím zaujměte kalibrační pózu</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1341"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1342"/>
         <source>Please select a program</source>
         <translation>Prosím vyberte program</translation>
     </message>
@@ -383,7 +388,7 @@
         <translation type="obsolete">Vyberte typ objektu k zdvihnutí</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="967"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="968"/>
         <source>Select object to be picked up</source>
         <translation>Vyberte objekt k zdvihnutí</translation>
     </message>
@@ -393,12 +398,12 @@
         <translation type="obsolete">Zkontrolujte a upravte oblast</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="477"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="478"/>
         <source>Emergency stop pressed</source>
         <translation>Nouzové zastavení</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1209"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1210"/>
         <source>Failed to store program</source>
         <translation>Uložení programu selhalo</translation>
     </message>
@@ -413,62 +418,62 @@
         <translation type="obsolete">OBJEKT Z KROKU</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="252"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="253"/>
         <source>Touch table calibration started. Please press the white point.</source>
         <translation>Kalibrace dotykového stolu. Prosím, stiskněte bílý bod.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="266"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="267"/>
         <source>Failed to store gripper pose.</source>
         <translation>Uložení pozice ramene selhalo.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="270"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="271"/>
         <source>Gripper pose stored.</source>
         <translation>Pozice ramene uložena.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="275"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="276"/>
         <source>Stored</source>
         <translation>Uloženo</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="307"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="308"/>
         <source>Failed to get gripper pose.</source>
         <translation>Získání pozice ramene selhalo.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="369"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="370"/>
         <source>Failed to find object near gripper.</source>
         <translation>Nepodařilo se najít objekt poblíž ramene.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="404"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="405"/>
         <source>Touch table calibration finished.</source>
         <translation>Kalibrace dotykového stolu dokončena.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="452"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="453"/>
         <source>Robot is halted.</source>
         <translation>Robot je zastavený.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="458"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="459"/>
         <source>Robot is up again.</source>
         <translation>Robot je opět spuštěný.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="471"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="472"/>
         <source>Resetting motors</source>
         <translation>Resetuji motory.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="482"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="483"/>
         <source>Failed to stop/run robot.</source>
         <translation>Nepodařilo se vypnout/spustit robota.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="497"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="498"/>
         <source>System failure: failed to resolve error.</source>
         <translation>Systémová chyba: nepodařilo se vyřešit chybu.</translation>
     </message>
@@ -478,77 +483,77 @@
         <translation type="obsolete">Vyřešte chybu: </translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="542"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="543"/>
         <source>Try again</source>
         <translation>Zkusit znovu</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="542"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="543"/>
         <source>Skip instruction</source>
         <translation>Přeskočit</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="542"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="543"/>
         <source>Fail instruction</source>
-        <translation type="unfinished">Chyba</translation>
+        <translation>Chyba</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="542"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="543"/>
         <source>End program</source>
         <translation>Ukončit program</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="559"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="560"/>
         <source>Please resolve error using dialog.</source>
         <translation>Prosím vyřešte chybu pomocí dialogu.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="568"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="569"/>
         <source>The program is done.</source>
         <translation>Program je hotový.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1250"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1251"/>
         <source>Failed to load program from database.</source>
         <translation>Nepodařilo se načíst program z databáze.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="772"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="773"/>
         <source>Program paused.</source>
         <translation>Program pozastaven.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="611"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="612"/>
         <source>Program resumed.</source>
         <translation>Program obnoven.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="628"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="629"/>
         <source>Robot is getting ready</source>
         <translation>Robot se připravuje do výchozí pozice.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="632"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="633"/>
         <source>Waiting for user</source>
         <translation>Čekám na uživatele.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="636"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="637"/>
         <source>Waiting for user to finish</source>
         <translation>Čekám, až uživatel dokončí operaci</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="653"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="654"/>
         <source>Going to pick object ID </source>
         <translation>Chystám se zvednout objekt </translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="653"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="654"/>
         <source> of type </source>
         <translation> typu </translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="653"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="654"/>
         <source> from polygon.</source>
         <translation> z oblasti.</translation>
     </message>
@@ -558,279 +563,284 @@
         <translation type="obsolete">Zvedám objekt z podavače.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="676"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="677"/>
         <source>Picking object with ID=</source>
         <translation>Zvedám objekt </translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="695"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="696"/>
         <source>OBJECT PLACE POSE</source>
         <translation>POLOŽ SEM</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="712"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="713"/>
         <source>Going to place objects into grid</source>
         <translation>Pokládám objekty do oblasti.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1030"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1031"/>
         <source>PLACE SQUARE GRID</source>
         <translation>OBLAST PRO POLOŽENÍ</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="730"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="731"/>
         <source>Objects to be drilled</source>
         <translation>Objekty k aplikaci lepidla</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="760"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="761"/>
         <source>Failed to resume program.</source>
         <translation>Obnovení programu selhalo.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="778"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="779"/>
         <source>Failed to pause program.</source>
         <translation>Pozastavení programu selhalo.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="797"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="798"/>
         <source>Program stopped.</source>
         <translation>Program zastaven.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="803"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="804"/>
         <source>Failed to stop program.</source>
         <translation>Zastavení programu selhalo.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="882"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="883"/>
         <source>Item has no parameters.</source>
         <translation>Instrukce nevyžaduje žádné nastavení.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="932"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="933"/>
         <source>Select object type to be picked up by tapping on its outline.</source>
         <translation>Vyberte typ objektu ke zdvihnutí dotekem na jeho obrys.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="912"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="913"/>
         <source>PICK AREA</source>
         <translation>OBLAST PRO ZVEDNUTÍ</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="916"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="917"/>
         <source>Adjust pick area or select another object type.</source>
         <translation>Upravte oblast pro zvednutí nebo vyberte jiný typ objektu.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1592"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1599"/>
         <source>OBJECTS TO BE DRILLED</source>
         <translation>OBJEKTY K APLIKACI LEPIDLA</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="960"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="961"/>
         <source>Select object type to be drilled</source>
         <translation>Vyberte typ objektu pro aplikaci lepidla</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="998"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="999"/>
         <source>Drag object outline to set place pose. Use blue point to set orientation.</source>
         <translation>Místo pro položení objektu nastavte přetažením jeho obrysu. Tažení modrým bodem nastavuje natočení.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1029"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1030"/>
         <source>Place grid</source>
         <translation>Oblast pro pokládání</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1037"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1038"/>
         <source>Instruction has nothing to set (uses reference).</source>
         <translation>Instrukce nemá žádné parametry (používá referenci).</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1041"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1042"/>
         <source>Press &apos;Edit&apos; to adjust selected instruction or &apos;Run&apos; to test it out.</source>
         <translation>Stiskněte &apos;Upravit&apos; pro úpravu vybrané instrukce, nebo &apos;Spustit&apos; pro její vykonání.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1044"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1045"/>
         <source>Press &apos;Edit&apos; to adjust selected instruction.</source>
         <translation>Stiskněte &apos;Upravit&apos; pro úpravu zvolené instrukce.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1066"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1067"/>
         <source>Use robot&apos;s arm and dialog to teach pose enabling part detection.</source>
         <translation>Použijte rameno robota a dialog pro naučení pozice umožňující detekci objektu.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1071"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1072"/>
         <source>Learned pose for part detection may be updated or different object type could be chosen.</source>
         <translation>Nyní můžete upravit pozici pro detekci objektu nebo vybrat jiný typ objektu.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1090"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1091"/>
         <source>All blocks are learned. Program may be saved using &apos;Done&apos;</source>
         <translation>Všechny bloky jsou nastavené. Program uložíte stiskem &apos;Hotovo&apos;.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1095"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1096"/>
         <source>Select program block and edit it. Press &apos;Done&apos; to save changes and return to program list.</source>
         <translation>Vyberte blok a nastavte jeho instrukce. Stisk &apos;Hotovo&apos; změny uloží a zobrazí seznam programů.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1114"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1115"/>
         <source>Select instruction or return to blocks.</source>
         <translation>Vyberte instrukci nebo se vraťte do seznamu bloků.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1213"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1214"/>
         <source>Program stored with ID=</source>
         <translation>Program uložen s ID </translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1238"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1239"/>
         <source>Failed to start program.</source>
         <translation>Nepodařilo se spustit program.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1291"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1292"/>
         <source>Failed to start edit mode.</source>
         <translation>Nepodařilo se upravit instrukci.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1301"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1302"/>
         <source>Robot is getting ready for learning</source>
         <translation>Robot se připravuje k nastavování instrukce.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1306"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1307"/>
         <source>Robot is getting into default state</source>
         <translation>Robot se vrací do výchozího stavu.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1318"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1319"/>
         <source>Robot is executing current program instruction</source>
         <translation>Robot vykonává aktuální instrukci.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1369"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1370"/>
         <source>Program is read-only and not leaned - it can be templated.</source>
         <translation>Program je pouze ke čtení - lze jej použít jako šablonu.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1371"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1372"/>
         <source>Program is read-only and leaned - it can be templated or started.</source>
         <translation>Program je pouze ke čtení a nastavený - může být použit jako šablona, nebo spuštěn.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1376"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1377"/>
         <source>Program needs to be learned. Use &apos;Edit&apos; or &apos;Template&apos;.</source>
         <translation>Program musí být nastaven. Použijte &apos;Upravit&apos; nebo &apos;Šablona&apos;.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1378"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1379"/>
         <source>Program learned - it is ready to be started.</source>
         <translation>Program nastaven - připraven ke spuštění.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1382"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1383"/>
         <source>Please select a program. Use arrows to scroll the list. Tap program to select it.</source>
         <translation>Prosím vyberte program. Použijte šipky pro procházení seznamu. Program vyberte dotykem.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1056"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1057"/>
         <source>Right arm</source>
         <translation>Pravé rameno</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1056"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1057"/>
         <source>Left arm</source>
         <translation>Levé rameno</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1594"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1601"/>
         <source>Check and adjust area with objects to be drilled. Then use robot arm to set drill poses.</source>
         <translation>Zkontrolujte a upravte oblast s objekty pro aplikaci lepidla. Potom použijte ramena robota pro nastavení pozic.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1633"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1640"/>
         <source>Check and adjust pick polygon. You may also change object type.</source>
         <translation>Zkontrolujte a nastavte oblast pro zvednutí. Můžete také změnit typ objektu.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1654"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1661"/>
         <source>Successfully calibrated</source>
         <translation>Zkalibrováno</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="357"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="358"/>
         <source>Gripper pose relative to object %1 stored</source>
         <translation>Relativní pozice ramene k objektu %1 uložena.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="666"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="667"/>
         <source>Picking object from feeder on my right.</source>
         <translation>Zvedám objekt z podavače po mé pravé straně.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="669"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="670"/>
         <source>Picking object from feeder on my left.</source>
         <translation>Zvedám objekt z podavače po mé levé straně.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="698"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="699"/>
         <source>Placing object to pose.</source>
         <translation>Pokládám objekt na pozici.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="724"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="725"/>
         <source>Going to drill hole %1 out of %2 into object %3.</source>
         <translation>Aplikuji lepidlo na %1. z celkem %2 pozic u objektu %3.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="976"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="977"/>
         <source>Select object to be picked up in instruction %1</source>
         <translation>Vyberte objekt k zvednutí v instrukci %1.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1049"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1050"/>
         <source>Save gripper pose (%1/%2)</source>
         <translation>Uložit pozici ramene (%1/%2)</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1074"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1075"/>
         <source>Save gripper pose</source>
         <translation>Uložit pozici ramene</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1101"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1102"/>
         <source>Block %1 is done. It can still be edited.</source>
         <translation>Blok %1 je hotový. Stále může být upraven.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1107"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1108"/>
         <source>Block %1 needs to be edited.</source>
         <translation>Blok %1 potřebuje nastavit.</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1056"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1057"/>
         <source>Prev pose</source>
         <translation>Předchozí pozice</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1056"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1057"/>
         <source>Next pose</source>
         <translation>Následující pozice</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1411"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1418"/>
         <source>Right arm (%1)</source>
         <translation>Pravé rameno (%1)</translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1411"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1418"/>
         <source>Left arm (%1)</source>
         <translation>Levé rameno (%1)</translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1243"/>
+        <source>Starting program %1...</source>
+        <translation>Spouštím program %1...</translation>
     </message>
 </context>
 </TS>

@@ -1241,7 +1241,7 @@ class UICoreRos(UICore):
                 return
 
             self.notif(
-                translate("UICoreRos", "Starting program ID=" + str(prog_id)))
+                translate("UICoreRos", "Starting program %1...").arg(prog_id))
             self.program_list.set_enabled(False)
 
         else:
