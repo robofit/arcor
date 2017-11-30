@@ -41,7 +41,7 @@ artPr2Grasping::artPr2Grasping(boost::shared_ptr<tf::TransformListener> tfl, boo
   move_group_->setPlanningTime(30.0);
   move_group_->allowLooking(false);
   move_group_->allowReplanning(false);
-  move_group_->setGoalTolerance(0.005);
+  move_group_->setGoalTolerance(0.05);
   move_group_->setPlannerId("RRTConnectkConfigDefault");
 
   ROS_INFO_NAMED(group_name_, "Planning frame: %s", getPlanningFrame().c_str());
@@ -366,9 +366,9 @@ bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
             p.pose.orientation.z = 0.143;
             p.pose.orientation.w = 0.692;*/
             p.header.frame_id = "marker";
-            p.pose.position.x = 1.682;
+            p.pose.position.x = 1.678;
             p.pose.position.y = 0.600;
-            p.pose.position.z = 0.155;
+            p.pose.position.z = 0.185;
             p.pose.orientation.x = 0.6;
             p.pose.orientation.y = 0.395;
             p.pose.orientation.z = -0.373;
@@ -386,7 +386,7 @@ bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
             p.header.frame_id = "marker";
             p.pose.position.x = 1.677;
             p.pose.position.y = 0.371;
-            p.pose.position.z = 0.158;
+            p.pose.position.z = 0.168;
             p.pose.orientation.x = 0.5705;
             p.pose.orientation.y = 0.4311;
             p.pose.orientation.z = -0.4121;
@@ -394,38 +394,83 @@ bool artPr2Grasping::pick(const std::string& object_id, bool feeder)
         }
         else if (obj.type.name == "wood_46_400") {
         p.header.frame_id = "marker";
-            p.pose.position.x = 1.675;
-            p.pose.position.y = 0.5856;
-            p.pose.position.z = 0.3537;
-            p.pose.orientation.x = -0.6676;
-            p.pose.orientation.y = -0.1952;
-            p.pose.orientation.z = -0.20275;
-            p.pose.orientation.w = 0.6892;
+            p.pose.position.x = 1.667;
+            p.pose.position.y = 0.619;
+            p.pose.position.z = 0.39;
+            p.pose.orientation.x = 0.5831;
+            p.pose.orientation.y = 0.4178;
+            p.pose.orientation.z = -0.3825;
+            p.pose.orientation.w = 0.5822;
         }
 
     }
     else if (group_name_ == "right_arm") {
         ROS_WARN("right_arm");
         if (obj.type.name == "wood_46_150") {
-            ROS_WARN("wood_46_150");
+
+            /*p.pose.position.x = 0.325;
+            p.pose.position.y = 0.881;
+            p.pose.position.z = 0.964;
+            p.pose.orientation.x = 0.14;
+            p.pose.orientation.y = 0.693;
+            p.pose.orientation.z = 0.143;
+            p.pose.orientation.w = 0.692;*/
+            p.header.frame_id = "marker";
+            p.pose.position.x = -0.0907;
+            p.pose.position.y = 0.5989;
+            p.pose.position.z = 0.1379;
+            p.pose.orientation.x = -0.4094;
+            p.pose.orientation.y = 0.5576;
+            p.pose.orientation.z = 0.5858;
+            p.pose.orientation.w = 0.4222;
         }
         else if (obj.type.name == "wood_46_300") {
-        ROS_WARN("wood_46_300");
+        /*p.pose.position.x = 0.565;
+            p.pose.position.y = 0.875;
+            p.pose.position.z = 0.944;
+            p.pose.orientation.x = 0.102;
+            p.pose.orientation.y = 0.6913;
+            p.pose.orientation.z = 0.110;
+            p.pose.orientation.w = 0.706;*/
+
+            p.header.frame_id = "marker";
+            p.pose.position.x = -0.095;
+            p.pose.position.y = 0.357;
+            p.pose.position.z = 0.1758;
+            p.pose.orientation.x = -0.408;
+            p.pose.orientation.y = 0.5753;
+            p.pose.orientation.z = 0.5737;
+            p.pose.orientation.w = 0.4161;
         }
         else if (obj.type.name == "wood_46_400") {
-        ROS_WARN("wood_46_400");
+        p.header.frame_id = "marker";
+            p.pose.position.x = -0.091;
+            p.pose.position.y = 0.5867;
+            p.pose.position.z = 0.397;
+            p.pose.orientation.x = -0.387;
+            p.pose.orientation.y = 0.5832;
+            p.pose.orientation.z = 0.6023;
+            p.pose.orientation.w = 0.3834;
         }
     }
     else {
     std::cout << group_name_ << std::endl;
 
     }
+
   }
   p.header.stamp = ros::Time::now();
 
   if (!transformPose(p))
   {
     return false;
+  }
+
+  if (feeder) {
+
+    objects_->setPose(object_id, p);
+    objects_->publishObject(object_id);
+
   }
 
   // visualization only -> published by publishCollisionBB
@@ -644,7 +689,7 @@ bool artPr2Grasping::addTable(std::string frame_id)
 
   geometry_msgs::PoseStamped g2ps;
   g2ps.header.frame_id = frame_id;
-  g2ps.pose.position.x = -(feeder_depth/2 + feeder_front_to_table);
+  g2ps.pose.position.x = -(feeder_depth/2 + 0.08);
   g2ps.pose.position.y = 0.515;
   g2ps.pose.orientation.w = 1.0;
 
@@ -665,7 +710,7 @@ bool artPr2Grasping::addTable(std::string frame_id)
     b1.pose.position.x -=  0.09;
     b1.pose.position.z += 0.3;
     b1.pose.position.y -= feeder_depth/2 - 0.05;
-    visual_tools_->publishCollisionBlock(b1.pose, "feeder-1-block", 0.05);
+    //visual_tools_->publishCollisionBlock(b1.pose, "feeder-1-block", 0.05);
 
     visual_tools_->publishCollisionTable(g2ps.pose.position.x +0.32, g2ps.pose.position.y, 0, feeder_depth, g2ps.pose.position.z + 0.18, 0.001, "feeder-2-front");
     visual_tools_->publishCollisionTable(g2ps.pose.position.x, g2ps.pose.position.y, 0, feeder_depth, g2ps.pose.position.z + 0.34, 0.001, "feeder-2-middle");
@@ -674,7 +719,7 @@ bool artPr2Grasping::addTable(std::string frame_id)
     b2.pose.position.x -=  0.09;
     b2.pose.position.z += 0.3;
     b2.pose.position.y += feeder_depth/2 - 0.05;
-    visual_tools_->publishCollisionBlock(b2.pose, "feeder-2-block", 0.05);
+    //visual_tools_->publishCollisionBlock(b2.pose, "feeder-2-block", 0.05);
 
     visual_tools_->publishCollisionBlock(k1.pose, "kinect-n1", 0.3);
     visual_tools_->publishCollisionBlock(k2.pose, "kinect-n2", 0.3);

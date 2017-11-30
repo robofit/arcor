@@ -24,6 +24,7 @@ typedef struct
   std::string object_id;
   geometry_msgs::PoseStamped pose;
   art_msgs::ObjectType type;
+  bool on_table;
 }
 TObjectInfo;
 
@@ -54,6 +55,8 @@ public:
   void setPaused(bool paused);
 
   void publishObject(std::string object_id);
+
+  void setPose(std::string object_id, geometry_msgs::PoseStamped ps);
 
 private:
   std::string objects_frame_id_;

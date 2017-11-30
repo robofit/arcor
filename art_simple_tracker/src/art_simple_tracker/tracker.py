@@ -149,6 +149,9 @@ class TrackedObject:
         inst.pose.position.y = np.average(py, weights=w)
         inst.pose.position.z = np.average(pz, weights=w)
 
+        # TODO read table size from param
+        inst.on_table = 0 < inst.pose.position.x < 1.5 and 0 < inst.pose.position.x < 0.7
+
         ar = np.average(r, axis=0, weights=w)
         ap = np.average(p, axis=0, weights=w)
         ay = np.average(y, axis=0, weights=w)
@@ -200,6 +203,35 @@ class ArtSimpleTracker:
         self.srv_set_flag = rospy.Service('/art/object_detector/flag/set', ObjectFlagSet, self.srv_set_flag_cb)
         self.srv_clear_flag = rospy.Service('/art/object_detector/flag/clear', ObjectFlagClear, self.srv_clear_flag_cb)
         self.srv_clear_all_flags = rospy.Service('/art/object_detector/flag/clear_all', Empty, self.srv_clear_all_flags_cb)
+
+        self.use_forearm_cams = False
+        self.forearm_cams = ("/l_forearm_cam_optical_frame", "/r_forearm_cam_optical_frame")
+        self.srv_enable_forearm = rospy.Service('/art/object_detector/forearm/enable', Empty, self.srv_enable_forearm_cb)
+        self.srv_disable_forearm = rospy.Service('/art/object_detector/forearm/disable', Empty, self.srv_disable_forearm_cb)
+
+    def srv_enable_forearm_cb(self, req):
+
+        rospy.loginfo("Enabling forearm cameras.")
+        self.use_forearm_cams = True
+
+        return EmptyResponse()
+
+    def srv_disable_forearm_cb(self, req):
+
+        rospy.loginfo("Disabling forearm cameras.")
+        self.use_forearm_cams = False
+
+        with self.lock:
+            for object_id, obj in self.objects.iteritems():
+
+                for cf in self.forearm_cams:
+
+                    try:
+                        del obj.meas[cf]
+                    except KeyError:
+                        pass
+
+        return EmptyResponse()
 
     def srv_clear_all_flags_cb(self, req):
 
@@ -303,11 +335,14 @@ class ArtSimpleTracker:
 
     def cb(self, msg):
 
-        with self.lock:
+        if not self.use_forearm_cams and msg.header.frame_id in self.forearm_cams:
+            return
 
-            if msg.header.frame_id == self.target_frame:
-                rospy.logwarn_throttle(1.0, "Some detections are already in target frame!")
-                return
+        if msg.header.frame_id == self.target_frame:
+            rospy.logwarn_throttle(1.0, "Some detections are already in target frame!")
+            return
+
+        with self.lock:
 
             for inst in msg.instances:
 
