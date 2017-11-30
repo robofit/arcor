@@ -23,13 +23,13 @@ Objects::Objects(boost::shared_ptr<tf::TransformListener> tfl, std::string targe
   paused_ = false;
 }
 
-void Objects::setPaused(bool paused)
+void Objects::setPaused(bool paused, bool clear)
 {
   boost::recursive_mutex::scoped_lock lock(mutex_);
 
   paused_ = paused;
 
-  if (paused)
+  if (paused && clear)
   {
     TObjectMap::iterator it;
     for (it = objects_.begin(); it != objects_.end(); ++it)

@@ -52,7 +52,7 @@ public:
 
   void clear();
 
-  void setPaused(bool paused);
+  void setPaused(bool paused, bool clear=false);
 
   void publishObject(std::string object_id);
 
