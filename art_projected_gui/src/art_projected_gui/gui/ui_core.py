@@ -71,7 +71,7 @@ class UICore(QtCore.QObject):
         # be good for dynamic scenes
 
         self.bottom_label = LabelItem(
-            self.scene, 0.35, 0.15, self.width - 0.2, 0.03)
+            self.scene, 0.30, 0.07, self.width - 0.2, 0.03)
 
         self.selected_object_ids = []
         self.selected_object_types = []
@@ -301,7 +301,6 @@ class UICore(QtCore.QObject):
         """Returns ObjectItem with given object_id or None if the ID is not found."""
 
         for it in self.get_scene_items_by_type(ObjectItem):
-
             if it.object_id == obj_id:
                 return it
 

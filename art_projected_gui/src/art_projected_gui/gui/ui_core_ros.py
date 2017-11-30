@@ -5,7 +5,7 @@ from PyQt4 import QtCore, QtGui
 import rospy
 from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt, LearningRequestAction, LearningRequestGoal
 from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, TouchPointsItem, LabelItem, TouchTableItem, ProgramListItem, ProgramItem, DialogItem, PolygonItem
-from art_projected_gui.helpers import ProjectorHelper, conversions, error_strings
+from art_projected_gui.helpers import ProjectorHelper, conversions
 from art_utils import InterfaceStateManager, ArtApiHelper, ProgramHelper
 from art_msgs.srv import TouchCalibrationPoints, TouchCalibrationPointsResponse, NotifyUser, NotifyUserResponse, ProgramErrorResolve, ProgramErrorResolveRequest, ProgramIdTrigger, ProgramIdTriggerRequest, NotifyUserRequest
 from std_msgs.msg import Empty, Bool
@@ -50,6 +50,24 @@ class UICoreRos(UICore):
             origin[0], origin[1], size[0], size[1], rpm, port)
 
         self.tfl = tf.TransformListener()
+
+        self.error_dict = {
+            InterfaceState.ERROR_ROBOT_HALTED: translate("ErrorStrings", "Robot's motors halted."),
+            InterfaceState.ERROR_UNKNOWN: translate("ErrorStrings", "Unknown error."),
+            InterfaceState.ERROR_OBJECT_MISSING: translate("ErrorStrings", "Cannot find object."),
+            InterfaceState.ERROR_OBJECT_MISSING_IN_POLYGON: translate("ErrorStrings",
+                                                                      "There is no object left in the polygon."),
+            InterfaceState.ERROR_NO_GRIPPER_AVAILABLE: translate("ErrorStrings", "No gripper available."),
+            InterfaceState.ERROR_OBJECT_IN_GRIPPER: translate("ErrorStrings",
+                                                              "Robot already holds object and cannot grasp another."),
+            InterfaceState.ERROR_NO_OBJECT_IN_GRIPPER: translate("ErrorStrings",
+                                                                 "Robot should hold object but it doesn't."),
+            InterfaceState.ERROR_PICK_FAILED: translate("ErrorStrings", "Robot failed to pick the object."),
+            InterfaceState.ERROR_PLACE_FAILED: translate("ErrorStrings", "Robot failed to place the object."),
+            InterfaceState.ERROR_DRILL_FAILED: translate("ErrorStrings", "Robot failed to apply a glue to the object."),
+            InterfaceState.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT: translate("ErrorStrings",
+                                                                                "Robot is not holding object."),
+        }
 
         QtCore.QObject.connect(self, QtCore.SIGNAL(
             'objects'), self.object_cb_evt)
@@ -215,6 +233,14 @@ class UICoreRos(UICore):
 
         rospy.loginfo("Projected GUI ready!")
 
+    def get_error_string(self, error):
+
+        if error not in self.error_dict:
+            rospy.logdebug("Undefined error: " + str(error))
+            return "Undefined error"
+
+        return self.error_dict[error]
+
     def touch_calibration_points_evt(self, pts):
 
         for it in self.scene.items():
@@ -283,7 +309,7 @@ class UICoreRos(UICore):
                 translate("UICoreRos", "Failed to get gripper pose."), temp=True, message_type=NotifyUserRequest.WARN)
             return
 
-        assert ps.header.frame_id == "/marker"
+        assert ps.header.frame_id == "marker"
 
         obj_type = self.ph.get_object(self.program_vis.block_id, self.program_vis.get_current_item().id)[0][0]
         polygon = self.ph.get_polygon(self.program_vis.block_id, self.program_vis.get_current_item().id)[0][0]
@@ -329,7 +355,7 @@ class UICoreRos(UICore):
                 rospy.logerr("Failed to transform gripper pose (" + ps.header.frame_id + ") to object frame_id: " + frame_id)
                 return
 
-            self.notif(translate("UICoreRos", "Gripper pose relative to object {0} stored".format(c_obj.object_id)), temp=True)
+            self.notif(translate("UICoreRos", "Gripper pose relative to object %1 stored").arg(c_obj.object_id), temp=True)
             self.snd_info()
             self.program_vis.update_pose(ps, self.drill_pose_idx)
 
@@ -499,13 +525,13 @@ class UICoreRos(UICore):
 
             if state.error_severity == InterfaceState.INFO:
 
-                self.notif(error_strings.get_error_string(state.error_code), message_type=NotifyUserRequest.ERROR, temp=True)
+                self.notif(self.get_error_string(state.error_code), message_type=NotifyUserRequest.ERROR, temp=True)
 
             elif state.error_severity == InterfaceState.WARNING:
 
                 if state.system_state == InterfaceState.STATE_LEARNING:
 
-                    self.notif(error_strings.get_error_string(state.error_code), temp=True,
+                    self.notif(self.get_error_string(state.error_code), temp=True,
                                message_type=NotifyUserRequest.ERROR)
 
                 else:
@@ -517,9 +543,7 @@ class UICoreRos(UICore):
                     self.program_error_dialog = DialogItem(self.scene,
                                                            self.width / 2,
                                                            0.1,
-                                                           translate(
-                                                               "UICoreRos",
-                                                               "Handle error: ") + error_strings.get_error_string(
+                                                           self.get_error_string(
                                                                state.error_code),
                                                            [
                                                                translate(
@@ -699,10 +723,7 @@ class UICoreRos(UICore):
             try:
                 self.select_object(flags["SELECTED_OBJECT_ID"])
                 self.notif(
-                    translate("UICoreRos", "Going to drill {0}. hole out of {1} into object ID={2}.".format(flags[
-                        "DRILLED_HOLE_NUMBER"], str(len(poses)),
-                        flags[
-                        "SELECTED_OBJECT_ID"])))
+                    translate("UICoreRos", "Going to drill hole %1 out of %2 into object %3.").arg(flags["DRILLED_HOLE_NUMBER"]).arg(len(poses)).arg(flags["SELECTED_OBJECT_ID"]))
             except KeyError as e:
                 rospy.logerr(
                     "DRILL_POINTS - flag not set: " + str(e))
@@ -954,7 +975,7 @@ class UICoreRos(UICore):
                 (obj_arr, ref_id) = self.ph.get_object(block_id, item_id)
 
                 self.notif(translate(
-                    "UICoreRos", "Select object to be picked up in ID{0}".format(str(ref_id))))
+                    "UICoreRos", "Select object to be picked up in instruction %1").arg(ref_id))
                 notified = True
 
             else:
@@ -1026,7 +1047,7 @@ class UICoreRos(UICore):
 
     def get_drill_caption(self):
 
-        return translate("UICoreRos", "Save gripper pose ({0}/{1})".format(self.drill_pose_idx + 1, self.program_vis.get_poses_count()))
+        return translate("UICoreRos", "Save gripper pose (%1/%2)").arg(self.drill_pose_idx + 1).arg(self.program_vis.get_poses_count())
 
     def create_drill_dialog(self):
 
@@ -1034,7 +1055,7 @@ class UICoreRos(UICore):
 
             self.drill_pose_idx = 0
             self.drill_dialog = DialogItem(self.scene, self.width / 2, 0.1, self.get_drill_caption(), [
-                "Right arm", "Left arm", "Prev pose", "Next pose"],
+                translate("UICoreRos", "Right arm"), translate("UICoreRos", "Left arm"), translate("UICoreRos", "Prev pose"), translate("UICoreRos", "Next pose")],
                 self.save_gripper_pose_drill_cb)
 
     def create_grasp_dialog(self):
@@ -1052,7 +1073,7 @@ class UICoreRos(UICore):
                     translate("UICoreRos", "Learned pose for part detection may be updated or different object type could be chosen."))
 
             self.grasp_dialog = DialogItem(self.scene, self.width / 2, 0.1, translate("UICoreRos", "Save gripper pose"), [
-                "Right arm (0)", "Left arm (0)"], self.save_gripper_pose_cb)
+                translate("UICoreRos", "Right arm (%1)").arg(0), translate("UICoreRos", "Left arm (%1)").arg(0)], self.save_gripper_pose_cb)
 
             for it in self.grasp_dialog.items:
                 it.set_enabled(False)
@@ -1080,13 +1101,13 @@ class UICoreRos(UICore):
                 if self.ph.block_learned(block_id):
                     self.notif(
                         translate("UICoreRos",
-                                  "Block {0} is done. It can still be edited.".format(block_id)))
+                                  "Block %1 is done. It can still be edited.").arg(block_id))
 
                 else:
 
                     self.notif(
                         translate("UICoreRos",
-                                  "Block {0} needs to be edited.".format(block_id)))
+                                  "Block %1 needs to be edited.").arg(block_id))
 
         else:
 
@@ -1246,7 +1267,7 @@ class UICoreRos(UICore):
                     ids.append(h.id)
 
                 # is there a better way how to find not used ID for program?
-                for i in range(0, 2 ** 16 - 1):
+                for i in range(1, 2 ** 16 - 1):
                     if i not in ids:
                         prog.header.id = i
                         break
@@ -1369,6 +1390,12 @@ class UICoreRos(UICore):
 
             if obj.object_type in self.selected_object_types:
 
+                # this mainly serves for detection of objects in feeder so let's count only objects not on table
+                o = self.get_object(obj.object_id)
+
+                if o and o.on_table:
+                    continue
+
                 cnt += 1
 
         self.objects_by_sensor[msg.header.frame_id] = [cnt, msg.header.stamp]
@@ -1388,7 +1415,7 @@ class UICoreRos(UICore):
                 return
 
             frames = ["/r_forearm_cam_optical_frame", "/l_forearm_cam_optical_frame"]
-            names = [translate("UICoreRos", "Right arm"), translate("UICoreRos", "Left arm")]
+            names = [translate("UICoreRos", "Right arm (%1)"), translate("UICoreRos", "Left arm (%1)")]
 
             for i in range(len(frames)):
 
@@ -1400,8 +1427,8 @@ class UICoreRos(UICore):
 
                     cnt = 0
 
-                self.grasp_dialog.items[i].set_enabled(cnt > 0)
-                self.grasp_dialog.items[i].set_caption(names[i] + " (" + str(cnt) + ")")
+                self.grasp_dialog.items[i].set_enabled(cnt == 1)
+                self.grasp_dialog.items[i].set_caption(names[i].arg(cnt))
 
     def object_raw_cb(self, msg):
 

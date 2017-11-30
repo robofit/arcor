@@ -60,7 +60,7 @@ class ProgramItem(Item):
 
             bmsg = self.ph.get_program().blocks[i]
 
-            bdata.append(translate("ProgramItem", "Block {0}\n{1}".format(str(bmsg.id), bmsg.name)))
+            bdata.append(translate("ProgramItem", "Block %1\n%2").arg(bmsg.id).arg(bmsg.name))
             idx = len(bdata) - 1
             self.blocks_map[idx] = bmsg.id
             self.blocks_map_rev[bmsg.id] = idx
@@ -210,63 +210,50 @@ class ProgramItem(Item):
 
         item = self.ph.get_item_msg(block_id, item_id)
 
-        text = ""
+        text = str(item.id)
+        text += " | "
 
-        # TODO nejak zprehlednit / graficky ztvarnit :)
-        text += "ID" + str(item.id)
+        if item.type == ProgIt.GET_READY:
 
-        text += " S" + str(item.on_success) + " F" + str(item.on_failure) + ""
+            text += translate("ProgramItem", "GET_READY").toUpper()
+
+        elif item.type == ProgIt.WAIT_FOR_USER:
+
+            text += translate("ProgramItem", "WAIT_FOR_USER").toUpper()
+
+        elif item.type == ProgIt.WAIT_UNTIL_USER_FINISHES:
+
+            text += translate("ProgramItem", "WAIT_UNTIL_USER_FINISHES").toUpper()
+
+        elif item.type == ProgIt.PICK_FROM_POLYGON:
+
+            text += translate("ProgramItem", "PICK_FROM_POLYGON").toUpper()
+
+        elif item.type == ProgIt.PICK_FROM_FEEDER:
+
+            text += translate("ProgramItem", "PICK_FROM_FEEDER").toUpper()
+
+        elif item.type == ProgIt.PLACE_TO_POSE:
+
+            text += translate("ProgramItem", "PLACE_TO_POSE").toUpper()
+
+            text += ' ' + translate("ProgramItem", "object from step %1").toUpper().arg(item.ref_id[0])
+
+        elif item.type == ProgIt.PLACE_TO_GRID:
+
+            text += translate("ProgramItem", "PLACE_TO_GRID").toUpper()
+
+        elif item.type == ProgIt.DRILL_POINTS:
+
+            text += translate("ProgramItem", "DRILL POINTS").toUpper()
 
         if len(item.ref_id) > 0:
 
             if self.ph.item_has_nothing_to_set(block_id, item_id):
 
-                text += " C" + str(item.ref_id[0])
-
-            else:
-
-                text += " R"
-
-                for idx in range(len(item.ref_id)):
-
-                    text += str(item.ref_id[idx])
-
-                    if idx < len(item.ref_id) - 1:
-                        text += ","
-
-        text += " "
-
-        if item.type == ProgIt.GET_READY:
-
-            text += translate("ProgramItem", "GET_READY")
-
-        elif item.type == ProgIt.WAIT_FOR_USER:
-
-            text += translate("ProgramItem", "WAIT_FOR_USER")
-
-        elif item.type == ProgIt.WAIT_UNTIL_USER_FINISHES:
-
-            text += translate("ProgramItem", "WAIT_UNTIL_USER_FINISHES")
-
-        elif item.type == ProgIt.PICK_FROM_POLYGON:
-
-            text += translate("ProgramItem", "PICK_FROM_POLYGON")
-
-        elif item.type == ProgIt.PICK_FROM_FEEDER:
-
-            text += translate("ProgramItem", "PICK_FROM_FEEDER")
-
-        elif item.type == ProgIt.PLACE_TO_POSE:
-
-            text += translate("ProgramItem", "PLACE_TO_POSE")
-
-        elif item.type == ProgIt.PLACE_TO_GRID:
-
-            text += translate("ProgramItem", "PLACE_TO_GRID")
-
-        elif item.type == ProgIt.DRILL_POINTS:
-
-            text += translate("ProgramItem", "DRILL POINTS")
+                text += translate("ProgramItem", " (copy of %1)").arg(item.ref_id[0])
+            # else:
+            #    text += translate("ProgramItem", " (refers to %1)").arg(', '.join(str(x) for x in item.ref_id))
 
         if item.type in self.ph.ITEMS_USING_OBJECT:
 
@@ -282,11 +269,11 @@ class ProgramItem(Item):
 
                 obj_txt = "??"
 
-            text += translate("ProgramItem", "object type: {0}".format(obj_txt))
+            text += translate("ProgramItem", "     Object type: %1").arg(obj_txt)
 
             if ref_id != item_id:
 
-                text += " (" + str(ref_id) + ")"
+                text += translate("ProgramItem", " (same as in %1)").arg(ref_id)
 
         if item.type == ProgIt.DRILL_POINTS:
 
@@ -298,7 +285,10 @@ class ProgramItem(Item):
                 if self.ph.is_pose_set(block_id, item_id, i):
                     ps_learned += 1
 
-            text += translate("ProgramItem", " learned poses: {0}%".format(ps_learned / len(ps) * 100.0))
+            text += translate("ProgramItem", " learned poses: %1/%2").arg(ps_learned).arg(len(ps))
+
+        text += "\n"
+        text += translate("ProgramItem", "     Success: %1, failure: %2").arg(item.on_success).arg(item.on_failure)
 
         return text
 
@@ -729,14 +719,14 @@ class ProgramItem(Item):
 
                 painter.setPen(QtCore.Qt.red)
 
-            painter.drawText(sp, 2 * sp, translate("ProgramItem", "Block {0}".format(str(self.block_id))))
+            painter.drawText(sp, 2 * sp, translate("ProgramItem", "Program %1, block %2").arg(self.ph.get_program_id()).arg(self.block_id))
         else:
 
             if not self.program_learned and not self.readonly:
 
                 painter.setPen(QtCore.Qt.red)
 
-            painter.drawText(sp, 2 * sp, translate("ProgramItem", "Program {0}".format(str(self.ph.get_program_id()))))
+            painter.drawText(sp, 2 * sp, translate("ProgramItem", "Program %1").arg(self.ph.get_program_id()))
 
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.NoPen)
