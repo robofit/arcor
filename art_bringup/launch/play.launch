@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="pr2_kinect" default="true"/>
+    <arg name="pr2_camera" default="true"/>
     <arg name="n1_kinect" default="true"/>
     <arg name="n2_kinect" default="true"/>
     <arg name="usb_cam" default="true"/>
-    <arg name="surv_kinect" default="true"/>
+    <arg name="surv_kinect" default="false"/>
 
-    <group if="$(arg pr2_kinect)">
+    <group if="$(arg pr2_camera)">
 
-        <node pkg="image_view" name="play1" type="image_view" args="image:=/pr2_kinect/image compressed" >
+        <node pkg="image_view" name="play1" type="image_view" args="image:=/pr2_camera/image compressed" >
 
         </node>
     </group>
