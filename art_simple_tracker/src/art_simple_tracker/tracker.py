@@ -205,9 +205,14 @@ class ArtSimpleTracker:
         self.srv_clear_all_flags = rospy.Service('/art/object_detector/flag/clear_all', Empty, self.srv_clear_all_flags_cb)
 
         self.use_forearm_cams = False
+        self.detection_enabled = True
         self.forearm_cams = ("/l_forearm_cam_optical_frame", "/r_forearm_cam_optical_frame")
         self.srv_enable_forearm = rospy.Service('/art/object_detector/forearm/enable', Empty, self.srv_enable_forearm_cb)
         self.srv_disable_forearm = rospy.Service('/art/object_detector/forearm/disable', Empty, self.srv_disable_forearm_cb)
+        self.srv_enable_detection = rospy.Service('/art/object_detector/all/enable', Empty,
+                                                  self.srv_enable_detection_cb)
+        self.srv_disable_detection = rospy.Service('/art/object_detector/all/disable', Empty,
+                                                   self.srv_disable_detection_cb)
 
     def srv_enable_forearm_cb(self, req):
 
@@ -220,6 +225,30 @@ class ArtSimpleTracker:
 
         rospy.loginfo("Disabling forearm cameras.")
         self.use_forearm_cams = False
+
+        with self.lock:
+            for object_id, obj in self.objects.iteritems():
+
+                for cf in self.forearm_cams:
+
+                    try:
+                        del obj.meas[cf]
+                    except KeyError:
+                        pass
+
+        return EmptyResponse()
+
+    def srv_enable_detection_cb(self, req):
+
+        rospy.loginfo("Enabling object detection.")
+        self.detection_enabled = True
+
+        return EmptyResponse()
+
+    def srv_disable_detection_cb(self, req):
+
+        rospy.loginfo("Disabling object detection.")
+        self.detection_enabled = False
 
         with self.lock:
             for object_id, obj in self.objects.iteritems():
@@ -335,6 +364,8 @@ class ArtSimpleTracker:
 
     def cb(self, msg):
 
+        if not self.detection_enabled:
+            return
         if not self.use_forearm_cams and msg.header.frame_id in self.forearm_cams:
             return
 
