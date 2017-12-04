@@ -78,10 +78,15 @@ class ArtCalibration(object):
 
         for cell in self.cells:
             if cell.calibrated:
-                tr = cell.get_transform()
-                self.broadcaster.sendTransform(tr.translation, tr.rotation,
-                                               time, cell.cell_frame,
-                                               cell.world_frame)
+                tr = cell.get_transform(cell_id=cell.cell_id)
+                if cell.cell_id == "n1":
+                    self.broadcaster.sendTransform(tr.translation, tr.rotation,
+                                                   time, cell.cell_frame,
+                                                   "marker_n1")
+                else:
+                    self.broadcaster.sendTransform(tr.translation, tr.rotation,
+                                                   time, cell.cell_frame,
+                                                   cell.world_frame)
 
             else:
                 calibrated = False
