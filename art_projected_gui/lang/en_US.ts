@@ -74,7 +74,7 @@
 <context>
     <name>ProgramItem</name>
     <message>
-        <location filename="src/art_projected_gui/items/program_item.py" line="529"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="538"/>
         <source>Done</source>
         <translation type="unfinished"></translation>
     </message>
@@ -185,7 +185,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/items/program_item.py" line="729"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="738"/>
         <source>Program %1</source>
         <translation type="unfinished"></translation>
     </message>
@@ -210,18 +210,28 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/items/program_item.py" line="291"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="300"/>
         <source>     Success: %1, failure: %2</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/art_projected_gui/items/program_item.py" line="722"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="731"/>
         <source>Program %1, block %2</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="src/art_projected_gui/items/program_item.py" line="240"/>
         <source>object from step %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/items/program_item.py" line="295"/>
+        <source>     Pose stored.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/items/program_item.py" line="297"/>
+        <source>     Pose has to be set.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

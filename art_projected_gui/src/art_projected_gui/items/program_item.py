@@ -287,6 +287,15 @@ class ProgramItem(Item):
 
             text += translate("ProgramItem", " learned poses: %1/%2").arg(ps_learned).arg(len(ps))
 
+        if item.type == ProgIt.PICK_FROM_FEEDER:
+
+            text += "\n"
+
+            if self.ph.is_pose_set(block_id, item_id):
+                text += translate("ProgramItem", "     Pose stored.")
+            else:
+                text += translate("ProgramItem", "     Pose has to be set.")
+
         text += "\n"
         text += translate("ProgramItem", "     Success: %1, failure: %2").arg(item.on_success).arg(item.on_failure)
 
