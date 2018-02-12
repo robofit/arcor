@@ -16,7 +16,7 @@ class ArtPr2ArmNavigation(object):
         moveit_action_client = actionlib.SimpleActionClient("/move_group", MoveGroupAction)
         moveit_action_client.wait_for_server()
 
-        server_name_prefix = rospy.get_param("server_name", "/art/pr2/")
+        server_name_prefix = rospy.get_param("server_name", "/art/robot/")
         groups_names = rospy.get_param("groups", ['left_arm', 'right_arm'])
         groups = []
         for group in groups_names:

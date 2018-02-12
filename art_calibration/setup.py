@@ -6,7 +6,6 @@ setup_args = generate_distutils_setup(
     packages=['art_calibration'],
     package_dir={
         'art_calibration': 'src/art_calibration',
-                })
+    })
 
 setup(**setup_args)
-

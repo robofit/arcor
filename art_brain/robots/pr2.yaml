@@ -1,0 +1,20 @@
+robot_id: pr2
+arms:
+  left_arm:
+    gripper_link: l_gripper_tool_frame
+    capabilities:
+      pick_place: yes
+      drill: yes
+      interactive_mode: yes
+      manipulation: yes
+      move_to_user: yes
+      get_ready: yes
+  right_arm:
+    gripper_link: r_gripper_tool_frame
+    capabilities:
+      pick_place: yes
+      drill: yes
+      interactive_mode: yes
+      manipulation: yes
+      move_to_user: yes
+      get_ready: yes

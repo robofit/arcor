@@ -10,7 +10,7 @@ translate = QtCore.QCoreApplication.translate
 
 class ProgramListItem(Item):
 
-    def __init__(self, scene, x, y, program_headers, learned_dict, selected_program_id=None, program_selected_cb=None):
+    def __init__(self, scene, x, y, program_headers, learned_dict, selected_program_id=None, program_selected_cb=None, program_selection_changed_cb=None):
 
         self.w = 100
         self.h = 100
@@ -18,6 +18,7 @@ class ProgramListItem(Item):
         self.program_headers = program_headers
         self.learned_dict = learned_dict
         self.program_selected_cb = program_selected_cb
+        self.program_selection_changed_cb = program_selection_changed_cb
 
         super(ProgramListItem, self).__init__(scene, x, y)
 
@@ -31,14 +32,16 @@ class ProgramListItem(Item):
         self.map_from_idx_to_program_id = {}
         self.map_from_program_id_to_idx = {}
 
+        self.program_headers.sort(key=lambda p: p.id)
+
         for ph in self.program_headers:
 
-            data.append("ID: " + str(ph.id) + "\nName: " + ph.name)
-            idx = len(data)-1
+            data.append("Program " + str(ph.id) + "\n" + ph.name)
+            idx = len(data) - 1
             self.map_from_idx_to_program_id[idx] = ph.id
             self.map_from_program_id_to_idx[ph.id] = idx
 
-        self.list = ListItem(scene, 0, 0, 0.2-2*0.005, data, self.item_selected_cb, parent=self)
+        self.list = ListItem(scene, 0, 0, 0.2 - 2 * 0.005, data, self.item_selected_cb, parent=self)
 
         for idx in range(0, len(data)):
 
@@ -59,16 +62,20 @@ class ProgramListItem(Item):
 
         sp = self.m2pix(0.005)
         h = 50
-        self.list.setPos(sp,  h)
+        self.list.setPos(sp, h)
         h += self.list._height()
-        h += 2*sp
+        h += 2 * sp
 
         self. _place_childs_horizontally(h, sp, [self.run_btn, self.edit_btn, self.template_btn])
 
         h += self.run_btn._height()
-        h += 3*sp
+        h += 3 * sp
 
         self.h = h
+
+        self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+
         self.update()
 
     def item_selected_cb(self):
@@ -79,13 +86,25 @@ class ProgramListItem(Item):
             self.edit_btn.set_enabled(False)
             self.template_btn.set_enabled(False)
 
+            if self.program_selection_changed_cb:
+                self.program_selection_changed_cb(None)
+
         else:
 
             pid = self.map_from_idx_to_program_id[self.list.selected_item_idx]
             self.run_btn.setEnabled(self.learned_dict[pid])
 
-            self.edit_btn.set_enabled(True)
+            for ph in self.program_headers:
+
+                if ph.id == pid:
+
+                    self.edit_btn.set_enabled(not ph.readonly)
+                    break
+
             self.template_btn.set_enabled(True)
+
+            if self.program_selection_changed_cb:
+                self.program_selection_changed_cb(ph.id, ro=ph.readonly, learned=self.learned_dict[ph.id])
 
     def get_current_header(self):
 
@@ -124,7 +143,7 @@ class ProgramListItem(Item):
         painter.setPen(QtCore.Qt.white)
 
         sp = self.m2pix(0.01)
-        painter.drawText(sp, 2*sp, translate("ProgramListItem", "Program list"))
+        painter.drawText(sp, 2 * sp, translate("ProgramListItem", "Program list"))
 
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.NoPen)

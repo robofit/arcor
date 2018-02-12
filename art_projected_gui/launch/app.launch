@@ -1,19 +1,30 @@
 <?xml version="1.0"?>
 <launch>
 
+    <arg name="projectors" default=""/>
+    <arg name="scene_server" default="localhost" />
+    <arg name="scene_size" default="1.0,0.5"/>
+    <arg name="scene_origin" default="0,0"/>
+    <arg name="rpm" default="2000"/>
+
     <group ns="/art/interface/projected_gui">
 
-        <include file="$(find art_projected_gui)/launch/common_params.launch" />
+        <param name="scene_origin" value="$(arg scene_origin)"/>
+        <param name="scene_size" value="$(arg scene_size)"/>
+        <param name="rpm" value="$(arg rpm)"/>
+        <param name="scene_server" value="$(arg scene_server)"/>
+        <param name="scene_server_port" value="1234"/>
     
-        <node pkg="art_projected_gui" name="app" type="app.py" output="screen">
+        <node pkg="art_projected_gui" name="app" type="app.py" output="screen" launch-prefix="xvfb-run"> <!-- launch-prefix="python -m cProfile -o art_projected_gui.txt"-->
 
-            <rosparam param="cursors">["/art/user/pointing_left"]</rosparam>
-            
-            <!-- n1 temporarily removed as projector is out of order -->
-            <rosparam param="projectors">["n1","n2"]</rosparam> <!-- comment this param for testing purposes - gui will not wait for projector nodes -->
+            <!--rosparam param="cursors">["cokoliv"]</rosparam-->
+
+            <param name="projectors" value="$(arg projectors)"/>
 
             <!-- open window with scene - for debugging purposes (can be controlled using mouse) -->
             <param name="show_scene" value="false"/>
+            <param name="show_touch_points" value="false"/>
+
         </node>
     
     </group>

@@ -17,7 +17,7 @@ def sigint_handler(*args):
 
 def main(args):
 
-    rospy.init_node('projected_gui', anonymous=True)
+    rospy.init_node('projected_gui', anonymous=True, log_level=rospy.DEBUG)
 
     signal.signal(signal.SIGINT, sigint_handler)
 
@@ -26,11 +26,10 @@ def main(args):
     rospack = rospkg.RosPack()
 
     translator = QtCore.QTranslator()
-    translator.load(QtCore.QLocale.system().name() + '.qm', rospack.get_path('art_projected_gui') + '/lang')
+    translator.load(rospy.get_param('~locale', 'cs_CZ') + '.qm', rospack.get_path('art_projected_gui') + '/lang')
     app.installTranslator(translator)
 
     ui = UICoreRos()
-    ui.start()
 
     dbg = rospy.get_param('~show_scene', False)
     if dbg:
@@ -41,6 +40,7 @@ def main(args):
     timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
 
     sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     try:

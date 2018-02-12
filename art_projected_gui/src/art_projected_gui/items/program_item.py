@@ -2,19 +2,20 @@
 
 from PyQt4 import QtGui, QtCore
 from item import Item
-from art_msgs.msg import ProgramItem as ProgIt,  LearningRequestGoal
-from geometry_msgs.msg import Point32
+from art_msgs.msg import ProgramItem as ProgIt, LearningRequestGoal
+from geometry_msgs.msg import Point32, Pose
 from button_item import ButtonItem
 from art_projected_gui.helpers import conversions
 from list_item import ListItem
 from art_projected_gui.helpers.items import group_enable, group_visible
+from geometry_msgs.msg import PoseStamped
 
 translate = QtCore.QCoreApplication.translate
 
 
 class ProgramItem(Item):
 
-    def __init__(self, scene, x, y, program_helper, done_cb=None, item_switched_cb=None,  learning_request_cb=None):
+    def __init__(self, scene, x, y, program_helper, done_cb=None, item_switched_cb=None, learning_request_cb=None, pause_cb=None, cancel_cb=None, stopped=False):
 
         self.w = 100
         self.h = 100
@@ -22,8 +23,11 @@ class ProgramItem(Item):
         self.done_cb = done_cb
         self.item_switched_cb = item_switched_cb
         self.learning_request_cb = learning_request_cb
+        self.pause_cb = pause_cb
+        self.cancel_cb = cancel_cb
 
         self.readonly = False
+        self.stopped = stopped
 
         super(ProgramItem, self).__init__(scene, x, y)
 
@@ -35,6 +39,7 @@ class ProgramItem(Item):
 
         self.block_id = None
         self.item_id = None
+
         self.block_learned = False
         self.program_learned = False
 
@@ -51,22 +56,14 @@ class ProgramItem(Item):
         self.blocks_map = {}  # map from indexes (key) to block_id (value)
         self.blocks_map_rev = {}
 
-        block_id = self.ph.get_first_block_id()
+        for i in range(len(self.ph.get_program().blocks)):
 
-        while block_id != 0:
+            bmsg = self.ph.get_program().blocks[i]
 
-            bmsg = self.ph.get_block_msg(block_id)
-
-            bdata.append("Block ID: " + str(block_id) + "\nName: " + bmsg.name)
+            bdata.append(translate("ProgramItem", "Block %1\n%2").arg(bmsg.id).arg(bmsg.name))
             idx = len(bdata) - 1
-            self.blocks_map[idx] = block_id
-            self.blocks_map_rev[block_id] = idx
-
-            block_id = self.ph.get_block_on_success(block_id)
-
-            # test for cycle
-            if block_id in self.blocks_map_rev:
-                break
+            self.blocks_map[idx] = bmsg.id
+            self.blocks_map_rev[bmsg.id] = idx
 
         self.blocks_list = ListItem(self.scene(), 0, 0, 0.2 - 2 * 0.005, bdata, self.block_selected_cb, parent=self)
 
@@ -86,15 +83,16 @@ class ProgramItem(Item):
         group_enable((self.block_edit_btn, self.block_on_failure_btn), False)
 
         self.h = y
-        self.update()
 
         # items "view"
         self.item_edit_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Edit"), self, self.item_edit_btn_cb)
         self.item_run_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Run"), self, self.item_run_btn_cb)
+        self.item_on_success_btn = ButtonItem(self.scene(), 0, 0, translate(
+            "ProgramItem", "On S"), self, self.item_on_success_btn_cb)
         self.item_on_failure_btn = ButtonItem(self.scene(), 0, 0, translate(
-            "ProgramItem", "On fail"), self, self.item_on_failure_btn_cb)
+            "ProgramItem", "On F"), self, self.item_on_failure_btn_cb)
 
         self.item_finished_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Back to blocks"), self, self.item_finished_btn_cb)
@@ -102,18 +100,19 @@ class ProgramItem(Item):
         self.items_list = None
 
         group_visible((self.item_finished_btn, self.item_run_btn,
-                       self.item_on_failure_btn, self.item_edit_btn), False)
+                       self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
 
         # readonly (program running) "view"
         self.pr_pause_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Pause"), self, self.pr_pause_btn_cb)
-        self.pr_repeat_btn = ButtonItem(self.scene(), 0, 0, translate(
-            "ProgramItem", "Repeat"), self, self.pr_repeat_btn_cb)
-        self.pr_cancel_btn = ButtonItem(self.scene(), 0, 0, translate(
-            "ProgramItem", "Cancel"), self, self.pr_cancel_btn_cb)
 
-        group_visible((self.pr_pause_btn, self.pr_repeat_btn,
-                       self.pr_cancel_btn), False)
+        if self.stopped:
+            self.pr_pause_btn.set_caption(translate("ProgramItem", "Resume"))
+
+        self.pr_cancel_btn = ButtonItem(self.scene(), 0, 0, translate(
+            "ProgramItem", "Stop"), self, self.pr_cancel_btn_cb)
+
+        group_visible((self.pr_pause_btn, self.pr_cancel_btn), False)
 
         self.fixed = False
 
@@ -121,23 +120,41 @@ class ProgramItem(Item):
         self.edit_request = False
         self.run_request = False
 
+        self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+
         self.setZValue(100)
+
+        self._update_learned()
+        self.update()
+
+        if self.item_switched_cb:
+            self.item_switched_cb(None, None, blocks=True)
 
     def pr_pause_btn_cb(self, btn):
 
-        pass
+        if self.pause_cb is not None:
+            ret = self.pause_cb()
 
-    def pr_repeat_btn_cb(self, btn):
+            if ret:
 
-        pass
+                # set disabled and wait for state update
+                self.set_enabled(False)
 
     def pr_cancel_btn_cb(self, btn):
 
-        pass
+        if self.cancel_cb is not None:
+            ret = self.cancel_cb()
+
+            if ret:
+
+                # set disabled and wait for state update
+                self.set_enabled(False)
 
     def _update_learned(self):
 
-        self.block_learned = self.ph.block_learned(self.block_id)
+        if self.block_id is not None:
+            self.block_learned = self.ph.block_learned(self.block_id)
         self.program_learned = self.ph.program_learned()
 
     def set_readonly(self, readonly):
@@ -155,8 +172,7 @@ class ProgramItem(Item):
 
             group_visible((self.block_finished_btn,
                            self.block_edit_btn, self.block_on_failure_btn), False)
-            group_visible((self.pr_pause_btn, self.pr_repeat_btn,
-                           self.pr_cancel_btn), True)
+            group_enable((self.pr_pause_btn, self.pr_cancel_btn), True)
 
         else:
 
@@ -165,16 +181,16 @@ class ProgramItem(Item):
 
         self.update()
 
+    def set_program_btns_enabled(self, state):
+
+        group_enable((self.pr_pause_btn, self.pr_cancel_btn), state)
+
     def set_active(self, block_id, item_id):
 
         old_block_id = self.block_id
 
         self.block_id = block_id
         self.item_id = item_id
-
-        if not self.readonly:
-
-            self.set_readonly(True)
 
         if old_block_id != self.block_id:
 
@@ -183,100 +199,105 @@ class ProgramItem(Item):
         self.items_list.set_current_idx(
             self.items_map_rev[self.item_id], select=True)
 
+        self._handle_item_btns()
+
+        if self.item_id is not None:
+
+            group_visible((self.block_finished_btn,
+                           self.block_edit_btn, self.block_on_failure_btn), False)
+
     def get_text_for_item(self, block_id, item_id):
 
         item = self.ph.get_item_msg(block_id, item_id)
 
-        text = "(" + str(item.id) + ") "
+        text = str(item.id)
+        text += " | "
 
         if item.type == ProgIt.GET_READY:
 
-            text += QtCore.QCoreApplication.translate(
-                "ProgramItem", "GET_READY")
+            text += translate("ProgramItem", "GET_READY").toUpper()
 
         elif item.type == ProgIt.WAIT_FOR_USER:
 
-            text += QtCore.QCoreApplication.translate(
-                "ProgramItem", "WAIT_FOR_USER")
+            text += translate("ProgramItem", "WAIT_FOR_USER").toUpper()
 
         elif item.type == ProgIt.WAIT_UNTIL_USER_FINISHES:
 
-            text += QtCore.QCoreApplication.translate(
-                "ProgramItem", "WAIT_UNTIL_USER_FINISHES")
+            text += translate("ProgramItem", "WAIT_UNTIL_USER_FINISHES").toUpper()
 
         elif item.type == ProgIt.PICK_FROM_POLYGON:
 
-            text += QtCore.QCoreApplication.translate(
-                "ProgramItem", "PICK_FROM_POLYGON")
-
-            if self.ph.is_object_set(block_id,  item_id):
-
-                text += "\n" + "object type=" + item.object[0]
-
-            else:
-
-                text += "\n" + "object type=??"
+            text += translate("ProgramItem", "PICK_FROM_POLYGON").toUpper()
 
         elif item.type == ProgIt.PICK_FROM_FEEDER:
 
-            text += QtCore.QCoreApplication.translate(
-                "ProgramItem", "PICK_FROM_FEEDER")
-
-            if self.ph.is_pose_set(block_id, item_id):
-
-                text += "\n" + "x=" + str(round(item.pose[0].pose.position.x, 2)) + ", y=" + str(round(
-                    item.pose[0].pose.position.y, 2)) + ", z=" + str(round(item.pose[0].pose.position.z, 2))
-
-            else:
-
-                text += "\n" + "x=??, y=??, z=??"
-
-            if self.ph.is_object_set(block_id,  item_id):
-
-                text += "\n" + "object type=" + item.object[0]
-
-            else:
-
-                text += "\n" + "object type=??"
-
-        elif item.type == ProgIt.PICK_OBJECT_ID:
-
-            text += QtCore.QCoreApplication.translate(
-                "ProgramItem", "PICK_OBJECT_ID")
-
-            if self.ph.is_object_set(block_id,  item_id):
-
-                text += "\n" + "object ID=" + item.object[0]
-
-            else:
-
-                text += "\n" + "object ID=??"
+            text += translate("ProgramItem", "PICK_FROM_FEEDER").toUpper()
 
         elif item.type == ProgIt.PLACE_TO_POSE:
 
-            text += QtCore.QCoreApplication.translate(
-                "ProgramItem", "PLACE_TO_POSE")
+            text += translate("ProgramItem", "PLACE_TO_POSE").toUpper()
 
-            if self.ph.is_object_set(block_id,  item.ref_id[0]):
+            text += ' ' + translate("ProgramItem", "object from step %1").toUpper().arg(item.ref_id[0])
 
-                ref_item = self.ph.get_item_msg(block_id, item.ref_id[0])
+        elif item.type == ProgIt.PLACE_TO_GRID:
 
-                text += "\n" + \
-                    "object from (" + \
-                    str(item.ref_id[0]) + ")=" + ref_item.object[0]
+            text += translate("ProgramItem", "PLACE_TO_GRID").toUpper()
+
+        elif item.type == ProgIt.DRILL_POINTS:
+
+            text += translate("ProgramItem", "DRILL POINTS").toUpper()
+
+        if len(item.ref_id) > 0:
+
+            if self.ph.item_has_nothing_to_set(block_id, item_id):
+
+                text += translate("ProgramItem", " (copy of %1)").arg(item.ref_id[0])
+            # else:
+            #    text += translate("ProgramItem", " (refers to %1)").arg(', '.join(str(x) for x in item.ref_id))
+
+        if item.type in self.ph.ITEMS_USING_OBJECT:
+
+            (obj, ref_id) = self.ph.get_object(block_id, item_id)
+
+            text += "\n"
+
+            if self.ph.is_object_set(block_id, item_id):
+
+                obj_txt = obj[0]
 
             else:
 
-                text += "\n" + "object from (" + str(item.ref_id[0]) + ")=??"
+                obj_txt = "??"
+
+            text += translate("ProgramItem", "     Object type: %1").arg(obj_txt)
+
+            if ref_id != item_id:
+
+                text += translate("ProgramItem", " (same as in %1)").arg(ref_id)
+
+        if item.type == ProgIt.DRILL_POINTS:
+
+            ps, ref_id = self.ph.get_pose(block_id, item_id)
+            ps_learned = 0.0
+
+            for i in range(len(ps)):
+
+                if self.ph.is_pose_set(block_id, item_id, i):
+                    ps_learned += 1
+
+            text += translate("ProgramItem", " learned poses: %1/%2").arg(ps_learned).arg(len(ps))
+
+        if item.type == ProgIt.PICK_FROM_FEEDER:
+
+            text += "\n"
 
             if self.ph.is_pose_set(block_id, item_id):
-
-                text += "\n" + "x=" + str(round(item.pose[0].pose.position.x, 2)) + ", y=" + str(
-                    round(item.pose[0].pose.position.y, 2))
-
+                text += translate("ProgramItem", "     Pose stored.")
             else:
+                text += translate("ProgramItem", "     Pose has to be set.")
 
-                text += "\n" + "x=??, y=??"
+        text += "\n"
+        text += translate("ProgramItem", "     Success: %1, failure: %2").arg(item.on_success).arg(item.on_failure)
 
         return text
 
@@ -286,20 +307,15 @@ class ProgramItem(Item):
         self.items_map = {}  # map from indexes (key) to item_id (value)
         self.items_map_rev = {}
 
-        item_id = self.ph.get_first_item_id(self.block_id)
+        bmsg = self.ph.get_block_msg(self.block_id)
 
-        while item_id[0] == self.block_id:
+        for i in range(len(bmsg.items)):
 
-            idata.append(self.get_text_for_item(*item_id))
-            idx = len(idata) - 1
-            self.items_map[idx] = item_id[1]
-            self.items_map_rev[item_id[1]] = idx
+            item_id = bmsg.items[i].id
 
-            item_id = self.ph.get_id_on_success(*item_id)
-
-            # test for cycle (e.g. jump from the last item to the first one)
-            if item_id[1] in self.items_map_rev:
-                break
+            idata.append(self.get_text_for_item(self.block_id, item_id))
+            self.items_map[i] = item_id
+            self.items_map_rev[item_id] = i
 
         self.items_list = ListItem(self.scene(
         ), 0, 0, 0.2 - 2 * 0.005, idata, self.item_selected_cb, parent=self)
@@ -318,7 +334,7 @@ class ProgramItem(Item):
         if not self.readonly:
 
             self. _place_childs_horizontally(
-                y, self.sp, [self.item_edit_btn, self.item_run_btn, self.item_on_failure_btn])
+                y, self.sp, [self.item_edit_btn, self.item_run_btn, self.item_on_success_btn, self.item_on_failure_btn])
 
             y += self.item_finished_btn._height() + self.sp
 
@@ -328,36 +344,36 @@ class ProgramItem(Item):
             y += self.item_finished_btn._height() + 3 * self.sp
 
             group_visible((self.item_finished_btn, self.item_run_btn,
-                           self.item_on_failure_btn, self.item_edit_btn), True)
+                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), True)
             self.item_finished_btn.setEnabled(True)
             group_enable((self.item_run_btn, self.item_on_failure_btn,
-                          self.item_on_failure_btn), False)
+                          self.item_on_success_btn, self.item_on_failure_btn), False)
 
-            group_visible((self.pr_pause_btn, self.pr_repeat_btn,
-                           self.pr_cancel_btn), False)
+            group_visible((self.pr_pause_btn, self.pr_cancel_btn), False)
 
         else:
 
             self.items_list.setEnabled(False)
 
             self. _place_childs_horizontally(
-                y, self.sp, [self.pr_pause_btn, self.pr_repeat_btn, self.pr_cancel_btn])
+                y, self.sp, [self.pr_pause_btn, self.pr_cancel_btn])
             y += self.pr_pause_btn._height() + 3 * self.sp
 
-            pr = (self.pr_pause_btn, self.pr_repeat_btn, self.pr_cancel_btn)
-            group_visible(pr, True)
-            group_enable(pr, False)
+            pr = (self.pr_pause_btn, self.pr_cancel_btn)
+            group_enable(pr, True)
 
             group_visible((self.item_finished_btn, self.item_run_btn,
-                           self.item_on_failure_btn, self.item_edit_btn), False)
+                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
 
         self.h = y
         self.update()
+        if self.item_switched_cb:
+            self.item_switched_cb(self.block_id, None, blocks=False)
 
     def block_edit_btn_cb(self, btn):
 
         group_visible((self.block_finished_btn, self.block_edit_btn,
-                       self.block_on_failure_btn, self.blocks_list), False)
+                       self.item_on_success_btn, self.block_on_failure_btn, self.blocks_list), False)
 
         self. _init_items_list()
 
@@ -374,9 +390,9 @@ class ProgramItem(Item):
 
             self.block_edit_btn.set_enabled(True)
 
-            if self.item_switched_cb is not None:
+            if self.item_switched_cb:
 
-                self.item_switched_cb(self.block_id, None)
+                self.item_switched_cb(self.block_id, None, blocks=True)
 
             self._update_learned()
 
@@ -387,30 +403,41 @@ class ProgramItem(Item):
             self.block_edit_btn.set_enabled(False)
             self.block_on_failure_btn.set_enabled(False)
 
+        if self.item_switched_cb is not None:
+            self.item_switched_cb(self.block_id, None, blocks=True)
+
     def _handle_item_btns(self):
 
-        of = self.ph.get_id_on_failure(self.block_id, self.item_id)
-
-        if of[0] == self.block_id and of[1] != 0:
-            self.item_on_failure_btn.set_enabled(True)
-        else:
-            self.item_on_failure_btn.set_enabled(False)
+        # print ("_handle_item_btns, self.editing_item: " + str(self.editing_item))
 
         if not self.editing_item:
+
+            of = self.ph.get_id_on_failure(self.block_id, self.item_id)
+            os = self.ph.get_id_on_success(self.block_id, self.item_id)
+
+            self.item_on_failure_btn.set_enabled(of[0] != 0 and not (of[0] == self.block_id and of[1] == self.item_id))
+            self.item_on_success_btn.set_enabled(os[0] != 0 and not (os[0] == self.block_id and os[1] == self.item_id))
 
             if self.ph.item_requires_learning(self.block_id, self.item_id) and self.ph.item_learned(self.block_id, self.item_id):
                 self.item_run_btn.set_enabled(True)
             else:
                 self.item_run_btn.set_enabled(False)
 
+            # TODO place pose with object through ref_id - disable Edit when object is not set
             self.item_edit_btn.set_enabled(
-                self.ph.item_requires_learning(self.block_id, self.item_id))
+                self.ph.item_requires_learning(self.block_id, self.item_id) and not self.ph.item_has_nothing_to_set(self.block_id, self.item_id))
 
         else:
 
+            self.item_edit_btn.set_enabled(True)
+            self.item_edit_btn.set_caption(translate("ProgramItem", "Done"))
+            group_enable((self.item_finished_btn, self.items_list), False)
             self.item_run_btn.set_enabled(False)
+            group_visible((self.pr_cancel_btn, self.pr_pause_btn), False)
 
     def item_selected_cb(self):
+
+        # print ("self.items_list.selected_item_idx", self.items_list.selected_item_idx)
 
         if self.items_list.selected_item_idx is not None:
 
@@ -418,22 +445,20 @@ class ProgramItem(Item):
 
             self._handle_item_btns()
 
-            if self.item_switched_cb is not None:
-
-                self.item_switched_cb(self.block_id, self.item_id)
-
             self._update_learned()
 
         else:
 
             self.item_id = None
             group_enable(
-                (self.item_run_btn, self.item_on_failure_btn, self.item_edit_btn), False)
+                (self.item_run_btn, self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
+
+        if self.item_switched_cb is not None:
+            self.item_switched_cb(self.block_id, self.item_id)
 
     def block_on_failure_btn(self, btn):
 
-        # TODO switch to on_failure item
-        pass
+        self.set_active(*self.ph.get_id_on_failure(self.block_id, self.item_id))
 
     def block_finished_btn_cb(self, btn):
 
@@ -447,7 +472,7 @@ class ProgramItem(Item):
         group_visible((self.block_finished_btn, self.block_edit_btn,
                        self.block_on_failure_btn, self.blocks_list), True)
         group_visible((self.item_finished_btn, self.item_run_btn,
-                       self.item_on_failure_btn, self.item_edit_btn), False)
+                       self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
         self.block_selected_cb()  # TODO extract method to set buttons to proper state
         self.blocks_list.setEnabled(True)
         self.block_finished_btn.setEnabled(True)
@@ -460,9 +485,21 @@ class ProgramItem(Item):
 
             self.item_switched_cb(self.block_id, self.item_id)
 
+        self.update()
+
     def item_on_failure_btn_cb(self, btn):
 
-        pass
+        of = self.ph.get_id_on_failure(self.block_id, self.item_id)
+        self.set_active(*of)
+        if self.item_switched_cb is not None:
+            self.item_switched_cb(*of)
+
+    def item_on_success_btn_cb(self, btn):
+
+        of = self.ph.get_id_on_success(self.block_id, self.item_id)
+        self.set_active(*of)
+        if self.item_switched_cb is not None:
+            self.item_switched_cb(*of)
 
     def item_run_btn_cb(self, btn):
 
@@ -498,52 +535,107 @@ class ProgramItem(Item):
             if not self.editing_item:
 
                 self.editing_item = True
-                self.item_edit_btn.set_caption("Done")
-                group_enable((self.item_finished_btn, self.items_list), False)
+                self.item_edit_btn.set_caption(translate("ProgramItem", "Done"))
+                group_enable((self.item_finished_btn, self.items_list, self.item_on_failure_btn, self.item_on_success_btn), False)
 
             else:
 
                 self.editing_item = False
-                self.item_edit_btn.set_caption("Edit")
+                self.item_edit_btn.set_caption(translate("ProgramItem", "Edit"))
                 group_enable((self.item_finished_btn, self.items_list), True)
                 self._update_learned()
 
             self._handle_item_btns()
 
-            if self.item_switched_cb is not None:
-
-                self.item_switched_cb(
-                    self.block_id, self.item_id, not self.editing_item)
-
         elif self.run_request:
 
             self.run_request = False
+
+        if self.item_switched_cb is not None:
+            self.item_switched_cb(
+                self.block_id, self.item_id, not self.editing_item)
 
     def boundingRect(self):
 
         return QtCore.QRectF(0, 0, self.w, self.h)
 
-    def set_place_pose(self, x, y,  yaw):
+    def set_place_pose(self, place):
 
         msg = self.get_current_item()
 
-        msg.pose[0].pose.position.x = x
-        msg.pose[0].pose.position.y = y
-        msg.pose[0].pose.orientation = conversions.yaw2quaternion(yaw)
+        assert len(msg.pose) > 0
+
+        msg.pose[0].pose.position.x = place.position[0]
+        msg.pose[0].pose.position.y = place.position[1]
+        msg.pose[0].pose.position.z = place.position[2]
+        msg.pose[0].pose.orientation = conversions.a2q(place.quaternion)
 
         self._update_item()
 
-    def set_pose(self,  ps):
+    '''
+        Method which saves place poses of all objects (in the grid) into the ProgramItem message.
+    '''
+
+    def set_place_poses(self, poses):
 
         msg = self.get_current_item()
+
+        poses_count = len(poses)
+        msg_poses_count = len(msg.pose)
+
+        # TODO nemel by byt pocet objektu v gridu spis fixni (dany strukturou programu)?
+
+        if poses_count > msg_poses_count:
+            for i in range(poses_count - msg_poses_count):
+                ps = PoseStamped()
+                msg.pose.append(ps)
+        elif poses_count < msg_poses_count:
+            for i in range(msg_poses_count - poses_count):
+                msg.pose.pop()
+
+        for i, pose in enumerate(poses):
+            pos = pose.get_pos()
+            msg.pose[i].pose.position.x = pos[0]
+            msg.pose[i].pose.position.y = pos[1]
+            msg.pose[i].pose.orientation = conversions.yaw2quaternion(pose.rotation())
+
+        self._update_item()
+
+    def set_pose(self, ps):
+
+        msg = self.get_current_item()
+
+        assert len(msg.pose) > 0
+
         msg.pose[0] = ps
 
         self._update_item()
 
+    def update_pose(self, ps, idx):
+
+        msg = self.get_current_item()
+        msg.pose[idx] = ps
+        self._update_item()
+
+    def clear_poses(self):
+
+        for ps in self.get_current_item().pose:
+
+            ps.pose = Pose()
+
+        self._update_item()
+
+    def get_poses_count(self):
+        msg = self.get_current_item()
+        return len(msg.pose)
+
     def set_object(self, obj):
 
         msg = self.get_current_item()
-        msg.object = [obj]
+
+        assert len(msg.object) > 0
+
+        msg.object[0] = obj
 
         self._update_item()
 
@@ -551,10 +643,29 @@ class ProgramItem(Item):
 
         msg = self.get_current_item()
 
+        assert len(msg.polygon) > 0
+
         del msg.polygon[0].polygon.points[:]
 
         for pt in pts:
 
+            msg.polygon[0].polygon.points.append(Point32(pt[0], pt[1], 0))
+
+        self._update_item()
+
+    '''
+        Method which saves 4 points forming a grid into the ProgramItem message.
+    '''
+
+    def set_place_grid(self, pts):
+
+        msg = self.get_current_item()
+
+        assert len(msg.polygon) > 0
+
+        del msg.polygon[0].polygon.points[:]
+
+        for pt in pts:
             msg.polygon[0].polygon.points.append(Point32(pt[0], pt[1], 0))
 
         self._update_item()
@@ -570,25 +681,25 @@ class ProgramItem(Item):
 
     def _update_item(self, block_id=None, item_id=None):
 
-        if block_id is None and item_id is None:
+        if block_id is None:
             block_id = self.block_id
-            item_id = self.item_id
 
-        idx = self.items_map_rev[item_id]
+        # need to update all items in block as there might be various dependencies (ref_id)
+        for idx, item_id in self.items_map.iteritems():
 
-        if self.ph.item_learned(block_id, item_id):
-            self.items_list.items[idx].set_background_color()
-        else:
-            self.items_list.items[idx].set_background_color(QtCore.Qt.red)
+            if self.ph.item_learned(block_id, item_id):
+                self.items_list.items[idx].set_background_color()
+            else:
+                self.items_list.items[idx].set_background_color(QtCore.Qt.red)
 
-        self.items_list.items[idx].set_caption(
-            self.get_text_for_item(block_id, item_id))
+            self.items_list.items[idx].set_caption(
+                self.get_text_for_item(block_id, item_id))
 
         self._update_block(block_id)
 
     def get_current_item(self):
 
-        if (self.block_id is not None and self.item_id is not None):
+        if self.block_id is not None and self.item_id is not None:
 
             return self.ph.get_item_msg(self.block_id, self.item_id)
 
@@ -611,20 +722,20 @@ class ProgramItem(Item):
 
         sp = self.m2pix(0.01)
 
-        if self.block_id is not None:
+        if self.items_list is not None:
 
             if not self.block_learned and not self.readonly:
 
                 painter.setPen(QtCore.Qt.red)
 
-            painter.drawText(sp, 2 * sp, translate("ProgramItem", "Block") + " ID: " + str(self.block_id))
+            painter.drawText(sp, 2 * sp, translate("ProgramItem", "Program %1, block %2").arg(self.ph.get_program_id()).arg(self.block_id))
         else:
 
             if not self.program_learned and not self.readonly:
 
                 painter.setPen(QtCore.Qt.red)
 
-            painter.drawText(sp, 2 * sp, translate("ProgramItem", "Program") + " ID: " + str(self.ph.get_program_id()))
+            painter.drawText(sp, 2 * sp, translate("ProgramItem", "Program %1").arg(self.ph.get_program_id()))
 
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.NoPen)

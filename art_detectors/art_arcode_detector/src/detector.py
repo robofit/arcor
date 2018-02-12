@@ -16,8 +16,8 @@ class ArCodeDetector:
     def __init__(self):
 
         self.ar_code_sub = rospy.Subscriber("ar_pose_marker", AlvarMarkers, self.ar_code_cb)
-        self.detected_objects_pub = rospy.Publisher("/art/object_detector/object", InstancesArray, queue_size=10)
-        self.visualize_pub = rospy.Publisher("art/object_detector/visualize_objects", Marker, queue_size=10)
+        self.detected_objects_pub = rospy.Publisher("/art/object_detector/object", InstancesArray, queue_size=1)
+        self.visualize_pub = rospy.Publisher("art/object_detector/visualize_objects", Marker, queue_size=1)
 
         # TODO make a timer clearing this cache from time to time
         self.objects_cache = {}
@@ -37,7 +37,9 @@ class ArCodeDetector:
 
             # list of allowed object ids
             # TODO load from param
-            if aid not in [4, 5, 3, 21, 26, 31]:
+            if aid not in [50, 51, 52, 53, 54, 55, 56, 57, 60, 61, 62, 63, 1001, 1002, 1003, 1004, 1005, 1006, 1007,
+                           1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022,
+                           1023, 1024, 1025, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 3001, 3002, 3003, 3004]:
                 continue
 
             if aid not in self.objects_cache:
@@ -45,10 +47,15 @@ class ArCodeDetector:
                 # TODO AR code ID / object type assignment should be done somewhere...
                 # type "profile_20_60" is just for example (used in art_db/test_db.py)
 
-                if aid == 21:
-                    object_type = self.art.get_object_type("profile_20_60_longer")
-                else:
-                    object_type = self.art.get_object_type("profile_20_60")
+                object_type = None
+
+                if aid in [50, 51, 52, 53, 54, 55, 56, 57, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010,
+                           1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022, 1023, 1024, 1025]:
+                    object_type = self.art.get_object_type("Spojka")
+                elif aid in [60, 61, 62, 63, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008]:
+                    object_type = self.art.get_object_type("Kratka_noha")
+                elif aid in [60, 61, 62, 63, 3001, 3002, 3003, 3004]:
+                    object_type = self.art.get_object_type("Dlouha_noha")
 
                 if object_type is None:
 

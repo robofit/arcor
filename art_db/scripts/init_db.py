@@ -2,11 +2,12 @@
 
 import sys
 import rospy
-from art_msgs.msg import Program,  ProgramBlock, ProgramItem,  ObjectType
-from art_msgs.srv import storeProgram,   getObjectType,  storeObjectType
+from art_msgs.msg import Program, ProgramBlock, ProgramItem, ObjectType
+from art_msgs.srv import storeProgram, getObjectType, storeObjectType
 from shape_msgs.msg import SolidPrimitive
 from geometry_msgs.msg import PoseStamped, PolygonStamped, Point32
 from copy import deepcopy
+from art_msgs.msg import KeyValue
 
 
 def store_object_type(ot):
@@ -17,7 +18,7 @@ def store_object_type(ot):
         store_object_srv = rospy.ServiceProxy(
             '/art/db/object_type/store', storeObjectType)
         resp = store_object_srv(ot)
-    except rospy.ServiceException, e:
+    except rospy.ServiceException as e:
         print "Service call failed: " + str(e)
         return
 
@@ -30,7 +31,9 @@ def store_program(prog):
         store_program_srv = rospy.ServiceProxy(
             '/art/db/program/store', storeProgram)
         resp = store_program_srv(program=prog)
-    except rospy.ServiceException, e:
+        if not resp.success:
+            print "Failed to save program ID: " + str(prog.header.id) + ", error: " + resp.error
+    except rospy.ServiceException as e:
         print "Service call failed: " + str(e)
         return
 
@@ -74,39 +77,20 @@ def main(args):
     p.on_success = 4
     p.on_failure = 0
     p.type = ProgramItem.PICK_FROM_FEEDER
-    p.object.append("profile_20_60")
+    p.object.append("")
     pf = PoseStamped()
-    pf.header.frame_id = "marker"
-    pf.pose.position.x = 0.75
-    pf.pose.position.y = 0.5
     p.pose.append(pf)
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 4
-    p.on_success = 5
+    p.on_success = 6
     p.on_failure = 0
     p.type = ProgramItem.PLACE_TO_POSE
     p.ref_id.append(3)
-    p.ref_id.append(5)
     pp = PoseStamped()
     pp.header.frame_id = "marker"
-    pp.pose.position.x = 0.75
-    pp.pose.position.y = 0.5
     p.pose.append(pp)
-    pb.items.append(deepcopy(p))
-
-    p = ProgramItem()
-    p.id = 5
-    p.on_success = 6
-    p.on_failure = 0
-    p.type = ProgramItem.PICK_FROM_FEEDER
-    p.object.append("profile_20_60")
-    pf = PoseStamped()
-    pf.header.frame_id = "marker"
-    pf.pose.position.x = 0.75
-    pf.pose.position.y = 0.5
-    p.pose.append(pf)
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
@@ -127,27 +111,20 @@ def main(args):
     p.id = 8
     p.on_success = 9
     p.on_failure = 0
-    p.type = ProgramItem.PICK_FROM_POLYGON
-    p.object.append("profile_20_60")
-    pp = PolygonStamped()
+    p.type = ProgramItem.PICK_FROM_FEEDER
+    p.object.append("")
     pp.header.frame_id = "marker"
-    pp.polygon.points.append(Point32(0.4, 0.1, 0))
-    pp.polygon.points.append(Point32(1.0, 0.1, 0))
-    pp.polygon.points.append(Point32(1.0, 0.6, 0))
-    pp.polygon.points.append(Point32(0.4, 0.6, 0))
-    p.polygon.append(pp)
+    pf = PoseStamped()
+    p.pose.append(pf)
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 9
-    p.on_success = 4
+    p.on_success = 1
     p.on_failure = 0
     p.type = ProgramItem.PLACE_TO_POSE
     p.ref_id.append(8)
     pp = PoseStamped()
-    pp.header.frame_id = "marker"
-    pp.pose.position.x = 0.75
-    pp.pose.position.y = 0.5
     p.pose.append(pp)
     pb.items.append(deepcopy(p))
 
@@ -155,7 +132,7 @@ def main(args):
 
     # -------------------------------------------------------------------------------------------
     prog = Program()
-    prog.header.id = 1
+    prog.header.id = 3
     prog.header.name = "Basic pick&place"
 
     pb = ProgramBlock()
@@ -397,16 +374,19 @@ def main(args):
     p.on_success = 2
     p.on_failure = 0
     p.type = ProgramItem.GET_READY
+    p.flags = [KeyValue]
+    p.flags[0].key = "CLEAR_OBJECT_FLAGS"
+    p.flags[0].value = "true"
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 2
     p.on_success = 2
-    p.on_failure = 0
+    p.on_failure = 3
     p.type = ProgramItem.DRILL_POINTS
-    p.object.append("")
+    p.object.append("profile_20_60")
     pf = PoseStamped()
-    pf.header.frame_id = "marker"
+    pf.header.frame_id = "object_id_profile_20_60"
     pf.pose.position.x = 0.4
     pf.pose.position.y = 0.4
     pf.pose.position.z = 0.30
@@ -421,9 +401,98 @@ def main(args):
     p.pose.append(deepcopy(pf))
     pf.pose.position.x = 0.4
     p.pose.append(deepcopy(pf))
+
+    dp = PolygonStamped()
+    dp.header.frame_id = "marker"
+    p.polygon.append(dp)
+
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 3
+    p.on_success = 3
+    p.on_failure = 0
+    p.type = ProgramItem.DRILL_POINTS
+    p.object.append("profile_20_60")
+    pf = PoseStamped()
+    pf.header.frame_id = "object_id_profile_20_60"
+    pf.pose.position.x = 0.4
+    pf.pose.position.y = 0.4
+    pf.pose.position.z = 0.30
+    pf.pose.orientation.x = -0.707
+    pf.pose.orientation.y = 0
+    pf.pose.orientation.z = 0.707
+    pf.pose.orientation.w = 0
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.5
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.y = 0.2
+    p.pose.append(deepcopy(pf))
+    pf.pose.position.x = 0.4
+    p.pose.append(deepcopy(pf))
+
+    dp = PolygonStamped()
+    dp.header.frame_id = "marker"
+    p.polygon.append(dp)
+
     pb.items.append(deepcopy(p))
 
     store_program(prog)
+    # -------------------------------------------------------------------------------------------
+    """
+    prog = Program()
+    prog.header.id = 9
+    prog.header.name = "Place to grid"
+
+    pb = ProgramBlock()
+    pb.id = 1  # can't be zero
+    pb.name = "First Block"
+    pb.on_success = 1
+    pb.on_failure = 0
+    prog.blocks.append(pb)
+
+    p = ProgramItem()
+    p.id = 1
+    p.on_success = 2
+    p.on_failure = 0
+    p.type = ProgramItem.GET_READY
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 2
+    p.on_success = 3
+    p.on_failure = 0
+    p.type = ProgramItem.WAIT_FOR_USER
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 3
+    p.on_success = 4
+    p.on_failure = 0
+    p.type = ProgramItem.PICK_FROM_POLYGON
+    p.object.append("")
+    p.object.append("profile_20_60")
+    pp = PolygonStamped()
+    pp.header.frame_id = "marker"
+    p.polygon.append(pp)
+    pb.items.append(deepcopy(p))
+
+    p = ProgramItem()
+    p.id = 4
+    p.on_success = 3
+    p.on_failure = 0
+    p.type = ProgramItem.PLACE_TO_GRID
+    pp = PolygonStamped()
+    p.polygon.append(pp)
+    p.ref_id.append(3)
+    p.pose.append(PoseStamped())
+    p.pose.append(PoseStamped())
+    p.pose.append(PoseStamped())
+    p.pose.append(PoseStamped())
+    pb.items.append(deepcopy(p))
+
+    store_program(prog)
+    """
 
     # -------------------------------------------------------------------------------------------
     # OBJECT TYPES
@@ -435,12 +504,45 @@ def main(args):
     ot.bbox.dimensions.append(0.05)
     ot.bbox.dimensions.append(0.05)
     ot.bbox.dimensions.append(0.16)
+    store_object_type(ot)
+
+    ot = ObjectType()
+    ot.name = "placka"
+    ot.bbox.type = SolidPrimitive.BOX
+    ot.bbox.dimensions.append(0.1)
+    ot.bbox.dimensions.append(0.1)
+    ot.bbox.dimensions.append(0.008)
+    store_object_type(ot)
+
+    ot = ObjectType()
+    ot.name = "wood_46_150"
+    ot.bbox.type = SolidPrimitive.BOX
+    ot.bbox.dimensions.append(0.046)
+    ot.bbox.dimensions.append(0.046)
+    ot.bbox.dimensions.append(0.154)
+    store_object_type(ot)
+
+    ot = ObjectType()
+    ot.name = "wood_46_300"
+    ot.bbox.type = SolidPrimitive.BOX
+    ot.bbox.dimensions.append(0.046)
+    ot.bbox.dimensions.append(0.046)
+    ot.bbox.dimensions.append(0.298)
+    store_object_type(ot)
+
+    ot = ObjectType()
+    ot.name = "karta"
+    ot.bbox.type = SolidPrimitive.BOX
+    ot.bbox.dimensions.append(0.08)
+    ot.bbox.dimensions.append(0.04)
+    ot.bbox.dimensions.append(0.002)
 
     store_object_type(ot)
 
     ot.name = "profile_20_80"
 
     store_object_type(ot)
+
 
 if __name__ == '__main__':
     try:

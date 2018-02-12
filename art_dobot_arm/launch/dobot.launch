@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!--  Arm Controllers -->
+
+    <arg name="run_dobot_server" default="true" />
+    <arg name="static_calibration" default="true" />
+    <arg name="dobot_port" default="/dev/ttyUSB0" />
+
+    <node pkg="dobot" type="DobotServer" name="dobot_arm_server"
+        args="$(arg dobot_port)" if="$(arg run_dobot_server)" respawn="true" />
+
+    <node ns="/art/robot/" name="dobot_arm_client" pkg="art_dobot_arm"
+        type="dobot_client.py" output="screen" respawn="false" />
+
+    <node pkg="tf" type="static_transform_publisher" name="dobot_broadcaster"
+          args="0.45 0.47 0.059 -1.57 0 0 marker base_link 100" if="$(arg static_calibration)"/>
+
+
+
+</launch>

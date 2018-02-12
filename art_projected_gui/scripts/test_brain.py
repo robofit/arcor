@@ -2,16 +2,16 @@
 
 import sys
 import rospy
-from art_msgs.srv import startProgram,  startProgramResponse
-from art_msgs.msg import InterfaceState,  ProgramItem,  LearningRequestAction, LearningRequestFeedback, LearningRequestResult
-from art_utils import InterfaceStateManager,  ProgramHelper, ArtApiHelper
+from art_msgs.srv import ProgramIdTrigger, ProgramIdTriggerResponse
+from art_msgs.msg import InterfaceState, ProgramItem, LearningRequestAction, LearningRequestFeedback, LearningRequestResult
+from art_utils import InterfaceStateManager, ProgramHelper, ArtApiHelper
 import actionlib
 from std_srvs.srv import Trigger, TriggerResponse
 from geometry_msgs.msg import PoseStamped
 from copy import deepcopy
 
 prog_timer = None
-current_item = (0,  0)  # block_id, item_id
+current_item = (0, 0)  # block_id, item_id
 state_manager = None
 ph = None
 art = None
@@ -62,8 +62,8 @@ def timer_callback(event):
     if it.type == ProgramItem.PICK_FROM_POLYGON or it.type == ProgramItem.PLACE_TO_POSE:
         flags["SELECTED_OBJECT_ID"] = "my_object"
 
-    state_manager.update_program_item(ph.get_program().header.id,  current_item[
-                                      0],  ph.get_item_msg(*current_item),  flags)
+    state_manager.update_program_item(ph.get_program().header.id, current_item[
+                                      0], ph.get_item_msg(*current_item), flags)
 
     if iters < 1:
         current_item = ph.get_id_on_success(*current_item)
@@ -87,17 +87,17 @@ def start_program(req):
     program = art.load_program(req.program_id)
 
     if program is None:
-        return startProgramResponse(success=False)
+        return ProgramIdTriggerResponse(success=False)
 
     if not ph.load(program):
-        return startProgramResponse(success=False)
+        return ProgramIdTriggerResponse(success=False)
 
     current_item = ph.get_first_item_id()
     iters = 0
 
     state_manager.set_system_state(InterfaceState.STATE_PROGRAM_RUNNING)
     prog_timer = rospy.Timer(rospy.Duration(4), timer_callback)
-    return startProgramResponse(success=True)
+    return ProgramIdTriggerResponse(success=True)
 
 # def stop_program(req):
 #
@@ -107,7 +107,7 @@ def start_program(req):
 #    return stopProgramResponse(success=True)
 
 
-def callback(old_state,  new_state,  flags):
+def callback(old_state, new_state, flags):
 
     print "Got state update"
 
@@ -135,10 +135,25 @@ def learning_request_cb(goal):
 
 def learning_srv_cb(req):
 
+    global state_manager
+    global art
+    global ph
+
+    program = art.load_program(req.program_id)
+
+    if program is None:
+        return ProgramIdTriggerResponse(success=False)
+
+    if not ph.load(program):
+        return ProgramIdTriggerResponse(success=False)
+
+    current_item = ph.get_first_item_id()
+
+    state_manager.update_program_item(req.program_id, current_item[0], ph.get_item_msg(*current_item), auto_send=False)
+    state_manager.set_system_state(InterfaceState.STATE_LEARNING)
+
     rospy.loginfo("learning_srv_cb")
-    resp = TriggerResponse()
-    resp.success = True
-    return resp
+    return ProgramIdTriggerResponse(success=True)
 
 
 def main(args):
@@ -153,12 +168,14 @@ def main(args):
 
     rospy.init_node('test_brain')
 
-    state_manager = InterfaceStateManager(InterfaceState.BRAIN_ID,  callback)
+    state_manager = InterfaceStateManager(InterfaceState.BRAIN_ID, callback)
     ph = ProgramHelper()
 
-    rospy.Service('/art/brain/program/start',  startProgram, start_program)
-    rospy.Service('/art/brain/learning/start',  Trigger, learning_srv_cb)
-    rospy.Service('/art/brain/learning/stop',  Trigger, learning_srv_cb)
+    state_manager.set_system_state(InterfaceState.STATE_IDLE)
+
+    rospy.Service('/art/brain/program/start', ProgramIdTrigger, start_program)
+    rospy.Service('/art/brain/learning/start', ProgramIdTrigger, learning_srv_cb)
+    rospy.Service('/art/brain/learning/stop', Trigger, learning_srv_cb)
     # rospy.Service('/art/brain/program/stop',  stopProgram, stop_program)
 
     art = ArtApiHelper()
@@ -173,6 +190,7 @@ def main(args):
     gripper_timer = rospy.Timer(rospy.Duration(0.5), gripper_timer)
 
     rospy.spin()
+
 
 if __name__ == '__main__':
     try:

@@ -15,6 +15,7 @@
 #include <boost/thread/recursive_mutex.hpp>
 #include <moveit_visual_tools/visual_tools.h>
 #include <stdexcept>
+#include <vector>
 
 namespace art_pr2_grasping
 {
@@ -23,16 +24,17 @@ typedef struct
   std::string object_id;
   geometry_msgs::PoseStamped pose;
   art_msgs::ObjectType type;
+  bool on_table;
 }
-  TObjectInfo;
+TObjectInfo;
 
 typedef std::map<std::string, TObjectInfo> TObjectMap;
+typedef std::map<std::string, art_msgs::ObjectType> TObjCache;
 
 class Objects
 {
 public:
-  Objects(boost::shared_ptr<tf::TransformListener> tfl,
-          std::string target_frame);
+  Objects(boost::shared_ptr<tf::TransformListener> tfl, std::string target_frame);
 
   bool isKnownObject(std::string id);
 
@@ -44,9 +46,17 @@ public:
 
   TObjectInfo getObject(std::string object_id);  // TODO(ZdenekM) return pointer?
 
+  std::vector<std::string> getObjects();
+
   void setGrasped(std::string object_id, bool grasped);
 
   void clear();
+
+  void setPaused(bool paused, bool clear = false);
+
+  void publishObject(std::string object_id);
+
+  void setPose(std::string object_id, geometry_msgs::PoseStamped ps);
 
 private:
   std::string objects_frame_id_;
@@ -62,11 +72,14 @@ private:
   bool transformPose(geometry_msgs::PoseStamped& ps);
 
   void detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr& msg);
-  void publishObject(std::string object_id);
 
   moveit_visual_tools::VisualToolsPtr visual_tools_;
 
   std::set<std::string> grasped_objects_;
+
+  bool paused_;
+
+  TObjCache obj_cache_;
 };
 
 }  // namespace art_pr2_grasping

@@ -18,7 +18,7 @@ class ListItem(Item):
 
         self.item_selected_cb = item_selected_cb
 
-        super(ListItem, self).__init__(scene, x, y, parent)
+        super(ListItem, self).__init__(scene, x, y, parent=parent)
 
         self.w = self.m2pix(w)
         self.h = self.m2pix(0.2)
@@ -42,7 +42,7 @@ class ListItem(Item):
         self.down_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Down"), self, self.down_btn_cb, width=w, image_path=icons_path + "arrow-down.svg")
 
-        self.up_btn.setPos(0,  0)
+        self.up_btn.setPos(0, 0)
         self.down_btn.setPos(0, self.h - self.down_btn.boundingRect().height())
 
         self.set_current_idx(min(1, len(self.items) - 1))
@@ -79,7 +79,7 @@ class ListItem(Item):
 
         return self.middle_item_idx
 
-    def set_current_idx(self,  idx, select=False):
+    def set_current_idx(self, idx, select=False):
 
         if select:
 
@@ -94,7 +94,7 @@ class ListItem(Item):
             else:
                 self.up_btn.set_enabled(True)
 
-            if (idx < len(self.items) - 2):
+            if idx < len(self.items) - 2:
                 self.down_btn.set_enabled(True)
             else:
                 self.down_btn.set_enabled(False)
@@ -112,12 +112,12 @@ class ListItem(Item):
         self.items[self.middle_item_idx].setVisible(True)
 
         if select:
-            self.items[self.middle_item_idx].set_pressed(True)
+            self.items[self.selected_item_idx].set_pressed(True)
 
         # how much vert. space is used
         vspace = self.items[self.middle_item_idx].boundingRect().height()
 
-        # fill space above selected item
+        # fill space above middle item
         for idx in range(self.middle_item_idx - 1, -1, -1):
 
             h = self.items[idx].boundingRect().height()
@@ -130,7 +130,7 @@ class ListItem(Item):
             self.items[idx].setVisible(True)
             vspace += self.sp + h
 
-        # fill space below selected item
+        # fill space below middle item
         for idx in range(self.middle_item_idx + 1, len(self.items)):
 
             h = self.items[idx].boundingRect().height()
