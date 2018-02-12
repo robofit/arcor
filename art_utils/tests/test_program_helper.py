@@ -4,7 +4,7 @@ import rospy
 import unittest
 import rostest
 from art_utils import ProgramHelper
-from art_msgs.msg import Program,  ProgramBlock,  ProgramItem
+from art_msgs.msg import Program, ProgramBlock, ProgramItem
 import sys
 from copy import deepcopy
 from geometry_msgs.msg import Point32, PoseStamped, PolygonStamped
@@ -125,6 +125,60 @@ class TestProgramHelper(unittest.TestCase):
         p.pose.append(pp)
         pb.items.append(deepcopy(p))
 
+    def test_alt_prog_item(self):
+
+        prog = Program()
+        prog.header.id = 123
+
+        pb = ProgramBlock()
+        pb.id = 10
+        prog.blocks.append(pb)
+
+        pi = ProgramItem()
+        pi.id = 1
+        pi.type = ProgramItem.PICK_FROM_FEEDER
+        pi.object.append("obj1")
+        pi.pose.append(PoseStamped())
+        pi.on_success = 2
+        pb.items.append(pi)
+
+        pi = ProgramItem()
+        pi.id = 2
+        pi.type = ProgramItem.PLACE_TO_GRID
+        pi.polygon.append(PolygonStamped())
+        pi.ref_id.append(1)
+
+        for i in range(0, 3):
+            pi.pose.append(PoseStamped())
+
+        pi.on_success = 1
+        pi.on_failure = 3
+        pb.items.append(pi)
+
+        pi = ProgramItem()
+        pi.id = 3
+        pi.type = ProgramItem.DRILL_POINTS
+        pi.ref_id.append(2)
+        pi.pose.append(PoseStamped())
+        pi.on_success = 3
+        pi.on_failure = 1
+        pb.items.append(pi)
+
+        res = self.ph.load(prog)
+        self.assertEquals(res, True, "alt program")
+
+        ret = self.ph.get_object(10, 3)
+
+        self.assertEquals(ret[0][0], "obj1", "ref_id object")
+        self.assertEquals(ret[1], 1, "ref_id object - source item id")
+
+        ret = self.ph.get_polygon(10, 3)
+
+        self.assertEquals(len(ret[0]), 1, "ref_id polygon")
+        self.assertEquals(ret[1], 2, "ref_id polygon - source item id")
+
+        self.assertRaises(ValueError, self.ph.get_polygon, 10, 1)
+
     def test_empty_program(self):
 
         res = self.ph.load(Program())
@@ -175,7 +229,7 @@ class TestProgramHelper(unittest.TestCase):
         res = self.ph.load(self.prog)
         self.assertEquals(res, True, "on_success")
 
-        (block_id,  item_id) = self.ph.get_id_on_success(1,  2)
+        (block_id, item_id) = self.ph.get_id_on_success(1, 2)
         self.assertEquals(block_id, 1, "on_success - block_id")
         self.assertEquals(item_id, 3, "on_success - item_id")
 
@@ -184,7 +238,7 @@ class TestProgramHelper(unittest.TestCase):
         res = self.ph.load(self.prog)
         self.assertEquals(res, True, "on_failure")
 
-        (block_id,  item_id) = self.ph.get_id_on_failure(1,  4)
+        (block_id, item_id) = self.ph.get_id_on_failure(1, 4)
         self.assertEquals(block_id, 0, "on_failure - block_id")
         self.assertEquals(item_id, 0, "on_failure - item_id")
 
@@ -193,8 +247,8 @@ class TestProgramHelper(unittest.TestCase):
         res = self.ph.load(self.prog)
         self.assertEquals(res, True, "get_item_msg")
 
-        msg = self.ph.get_item_msg(1,  4)
-        self.assertEquals(isinstance(msg,  ProgramItem), True, "get_item_msg - type")
+        msg = self.ph.get_item_msg(1, 4)
+        self.assertEquals(isinstance(msg, ProgramItem), True, "get_item_msg - type")
         self.assertEquals(msg.id, 4, "get_item_msg - id")
 
     def test_get_block_msg(self):
@@ -203,7 +257,7 @@ class TestProgramHelper(unittest.TestCase):
         self.assertEquals(res, True, "get_block_msg")
 
         msg = self.ph.get_block_msg(1)
-        self.assertEquals(isinstance(msg,  ProgramBlock), True, "get_block_msg - type")
+        self.assertEquals(isinstance(msg, ProgramBlock), True, "get_block_msg - type")
         self.assertEquals(msg.id, 1, "get_block_msg - id")
 
     def test_get_first_block_id(self):
@@ -219,7 +273,7 @@ class TestProgramHelper(unittest.TestCase):
         res = self.ph.load(self.prog)
         self.assertEquals(res, True, "get_first_block_id")
 
-        (block_id,  item_id) = self.ph.get_first_item_id()
+        (block_id, item_id) = self.ph.get_first_item_id()
         self.assertEquals(block_id, self.prog.blocks[0].id, "get_first_item_id - block")
         self.assertEquals(item_id, self.prog.blocks[0].items[0].id, "get_first_item_id - item")
 
@@ -244,6 +298,7 @@ class TestProgramHelper(unittest.TestCase):
         prog.blocks[0].items[0].ref_id.append(6587)
         res = self.ph.load(prog)
         self.assertEquals(res, False, "test_invalid_ref_id")
+
 
 if __name__ == '__main__':
 

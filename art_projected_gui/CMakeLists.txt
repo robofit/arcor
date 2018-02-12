@@ -32,8 +32,14 @@ if (CATKIN_ENABLE_TESTING)
   roslaunch_add_file_check(launch)
   # catkin_add_nosetests(tests/test_ui_core.py)
   add_rostest(tests/ui_core.test)
-  add_rostest(tests/ui_core_ros.test)
+  # add_rostest(tests/ui_core_ros.test)
 endif()
 
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
+
+catkin_install_python(PROGRAMS src/app.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+catkin_install_python(PROGRAMS src/projector_node.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

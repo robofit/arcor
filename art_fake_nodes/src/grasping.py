@@ -13,11 +13,11 @@ class FakeGrasping:
     RANDOM = 2
 
     def __init__(self):
-        self.left_server = SimpleActionServer('/art/pr2/left_arm/pp', PickPlaceAction,
-                                         execute_cb=self.pick_place_left_cb)
+        self.left_server = SimpleActionServer('/art/robot/left_arm/pp', PickPlaceAction,
+                                              execute_cb=self.pick_place_left_cb)
 
-        self.right_server = SimpleActionServer('/art/pr2/right_arm/pp', PickPlaceAction,
-                                         execute_cb=self.pick_place_right_cb)
+        self.right_server = SimpleActionServer('/art/robot/right_arm/pp', PickPlaceAction,
+                                               execute_cb=self.pick_place_right_cb)
         self.server = None
         self.objects = self.ALWAYS
         self.grasp = self.ALWAYS

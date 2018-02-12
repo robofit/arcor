@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- TODO fix "Machine [localhost] already added and does not match duplicate entry" issue -->
+    <!--include file="$(find art_bringup)/setups/$(optenv ARTABLE)/nuc.xml">
+      <arg name="machine_name" value="n1"/>
+      <arg name="address" value="artable-n1"/>
+    </include>
+    
+    <include file="$(find art_bringup)/setups/$(optenv ARTABLE)/nuc.xml">
+      <arg name="machine_name" value="n2"/>
+      <arg name="address" value="artable-n2"/>
+    </include-->
+
+    <include file="$(find art_calibration)/launch/pr2_indiv.launch" />
+    <include file="$(find art_calibration)/launch/art_calibration.launch">
+      <arg name="cells" value="n1,n2,pr2"/>
+      <arg name="x_offset" value="0.215"/>
+      <arg name="y_offset" value="0.125"/>
+      <arg name="z_offset" value="0.0"/>
+    </include>
+	
+    <include file="$(find art_projected_gui)/launch/app.launch">
+        <arg name="projectors" value="n2"/>
+        <arg name="scene_server" value="192.168.104.200"/>
+        <arg name="scene_size" value="1.35, 0.64"/>
+        <arg name="scene_origin" value="0.0, 0.0"/>
+    </include>
+
+    <include file="$(find art_touch_driver)/launch/touch.launch">
+        <arg name="calib_x_min" value="0.2"/>
+        <arg name="calib_x_max" value="1.3"/>
+        <arg name="calib_y_min" value="0.15"/>
+        <arg name="calib_y_max" value="0.55"/>
+    </include>
+
+    <include file="$(find art_brain)/launch/brain.launch">
+        <arg name="robot_type" value="pr2"/>
+    </include>
+    
+</launch>

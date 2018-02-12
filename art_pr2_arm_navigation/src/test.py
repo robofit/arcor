@@ -21,13 +21,13 @@ class Arm:
         self.joint_state_sub = rospy.Subscriber("/joint_states", JointState, self.js_cb)
         self.angles = None
         char = self.name[0]
-        self.joint_names = [char+'_shoulder_pan_joint',
-                                       char+'_shoulder_lift_joint',
-                                       char+'_upper_arm_roll_joint',
-                                       char+'_elbow_flex_joint',
-                                       char+'_forearm_roll_joint',
-                                       char+'_wrist_flex_joint',
-                                       char+'_wrist_roll_joint']
+        self.joint_names = [char + '_shoulder_pan_joint',
+                            char + '_shoulder_lift_joint',
+                            char + '_upper_arm_roll_joint',
+                            char + '_elbow_flex_joint',
+                            char + '_forearm_roll_joint',
+                            char + '_wrist_flex_joint',
+                            char + '_wrist_roll_joint']
 
     def move(self):
 
@@ -36,17 +36,17 @@ class Arm:
 
         point = JointTrajectoryPoint()
         angles = self.angles
-        for i in xrange(6*4):
-            angles[6] += i*0.1
+        for i in xrange(6 * 4):
+            angles[6] += i * 0.1
 
             point.positions = angles
-            point.time_from_start = rospy.Duration(1*0.25*i)
-            rospy.loginfo(str(angles[6]) + ": " + str(rospy.Duration(1*0.25*i)))
+            point.time_from_start = rospy.Duration(1 * 0.25 * i)
+            rospy.loginfo(str(angles[6]) + ": " + str(rospy.Duration(1 * 0.25 * i)))
             goal.trajectory.points.append(deepcopy(point))
         self.jta.send_goal_and_wait(goal)
 
     def js_cb(self, data):
-        self.angles = [0]*7
+        self.angles = [0] * 7
         positions = zip(data.name, data.position)
         for name, position in positions:
             if name in self.joint_names:
@@ -58,7 +58,6 @@ def main():
     while arm.angles is None:
         rospy.sleep(1)
     arm.move()
-
 
 
 if __name__ == '__main__':

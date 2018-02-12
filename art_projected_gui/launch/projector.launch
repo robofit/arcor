@@ -5,14 +5,13 @@
 
     <arg name="screen_number" default="1"/>
     <arg name="machine" default="localhost"/>
+    <arg name="projector_id" default="$(arg machine)"/>
 
-    <group ns="/art/$(arg machine)">
-
-        <include file="$(find art_projected_gui)/launch/common_params.launch" />
+    <group ns="/art/$(arg projector_id)">
 
         <node pkg="art_projected_gui" name="projector" machine="$(arg machine)" type="projector_node.py" output="screen">
 
-            <param name="projector_id" value="$(arg machine)"/>
+            <param name="projector_id" value="$(arg projector_id)"/>
             <param name="screen_number" value="$(arg screen_number)"/>
 
         </node>

@@ -6,12 +6,16 @@ from item import Item
 
 class PointItem(Item):
 
-    def __init__(self, scene, x, y, parent, changed_cb=None,  fixed=False):
+    def __init__(self, scene, x, y, parent, changed_cb=None, fixed=False):
 
         self.outline_diameter = 0.025
         self.changed_cb = changed_cb
-        super(PointItem, self).__init__(scene, x, y, parent)
+        super(PointItem, self).__init__(scene, x, y, parent=parent)
         self.fixed = fixed
+
+        if not self.fixed:
+            self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
+            self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
 
     def boundingRect(self):
 
@@ -32,18 +36,31 @@ class PointItem(Item):
         path.addEllipse(QtCore.QPoint(0, 0), es / 2, es / 2)
         return path
 
+    def mouseMoveEvent(self, event):
+
+        self.changed_cb(self, False)
+        super(Item, self).mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+
+        self.changed_cb(self, True)
+        super(Item, self).mouseReleaseEvent(event)
+
     def item_moved(self):
 
         if self.changed_cb is not None:
-            self.changed_cb(self,  False)
+            self.changed_cb(self, False)
 
     def cursor_release(self):
 
-        self.changed_cb(self,  True)
+        self.changed_cb(self, True)
 
     def paint(self, painter, option, widget):
 
         if not self.scene():
+            return
+
+        if self.fixed:
             return
 
         painter.setClipRect(option.exposedRect)

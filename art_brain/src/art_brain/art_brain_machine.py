@@ -16,39 +16,41 @@ class ArtBrainMachine(object):
               State(name='program_run', on_enter=[
                     'state_program_run'], on_exit=[]),
               State(name='program_paused', on_enter=[
-                  'state_program_paused'], on_exit=[]),
+                    'state_program_paused'], on_exit=[]),
 
               # basic instructions
               State(name='get_ready', on_enter=[
-                    'state_get_ready'], on_exit=[]),
+                    'state_update_program_item', 'check_robot_in', 'state_get_ready'], on_exit=['check_robot_out']),
 
               # synchronization with the user
               State(name='wait_for_user', on_enter=[
-                    'state_wait_for_user'], on_exit=[]),
+                    'state_update_program_item', 'check_robot_in', 'state_wait_for_user'], on_exit=['check_robot_out']),
               State(name='wait_until_user_finishes', on_enter=[
-                    'state_wait_until_user_finishes'], on_exit=[]),
+                    'state_update_program_item', 'check_robot_in', 'state_wait_until_user_finishes'], on_exit=['check_robot_out']),
 
               # manipulation - pick
               State(name='pick_from_polygon', on_enter=[
-                    'state_pick_from_polygon'], on_exit=[]),
+                    'state_update_program_item', 'check_robot_in', 'state_pick_from_polygon'], on_exit=['check_robot_out']),
               State(name='pick_from_feeder', on_enter=[
-                    'state_pick_from_feeder'], on_exit=[]),
+                    'state_update_program_item', 'check_robot_in', 'state_pick_from_feeder'], on_exit=['check_robot_out']),
               State(name='pick_object_id', on_enter=[
-                    'state_pick_object_id'], on_exit=[]),
+                    'state_update_program_item', 'check_robot_in', 'state_pick_object_id'], on_exit=['check_robot_out']),
 
               # manipulation - place
               State(name='place_to_pose', on_enter=[
-                    'state_place_to_pose'], on_exit=[]),
+                    'state_update_program_item', 'check_robot_in', 'state_place_to_pose'], on_exit=['check_robot_out']),
+              State(name='place_to_grid', on_enter=[
+                    'state_update_program_item', 'check_robot_in', 'state_place_to_grid'], on_exit=['check_robot_out']),
 
               # manipulation
               State(name='path_through_points', on_enter=[
-                  'state_path_through_points'], on_exit=[]),
+                    'state_update_program_item', 'check_robot_in', 'state_path_through_points'], on_exit=['check_robot_out']),
               State(name='welding_points', on_enter=[
-                  'state_welding_points'], on_exit=[]),
+                    'state_update_program_item', 'check_robot_in', 'state_welding_points'], on_exit=['check_robot_out']),
               State(name='welding_seam', on_enter=[
-                  'state_welding_seam'], on_exit=[]),
+                    'state_update_program_item', 'check_robot_in', 'state_welding_seam'], on_exit=['check_robot_out']),
               State(name='drill_points', on_enter=[
-                  'state_drill_points'], on_exit=[]),
+                    'state_update_program_item', 'check_robot_in', 'state_drill_points'], on_exit=['check_robot_out']),
 
               State(name='program_error', on_enter=[
                     'state_program_error'], on_exit=[]),
@@ -59,49 +61,76 @@ class ArtBrainMachine(object):
 
               # learning
               State(name='learning_init', on_enter=[
-                    'state_learning_init'], on_exit=[]),
+                    'learning_load_block_id', 'state_learning_init'], on_exit=[]),
               State(name='learning_run', on_enter=[
-                    'state_learning_run'], on_exit=[]),
+                    'learning_load_block_id', 'state_learning_run'], on_exit=[]),
 
               # learning picking
               State(name='learning_pick_from_polygon', on_enter=[
-                    'state_learning_pick_from_polygon'], on_exit=[]),
-              State(name='learning_pick_from_feeder', on_enter=['state_learning_pick_from_feeder'],
-                    on_exit=['state_learning_pick_from_feeder_exit']),
+                    'learning_load_block_id', 'state_learning_pick_from_polygon'], on_exit=[]),
+              State(name='learning_pick_from_feeder', on_enter=[
+                    'check_robot_in', 'learning_load_block_id', 'state_learning_pick_from_feeder'],
+                    on_exit=['check_robot_out', 'state_learning_pick_from_feeder_exit']),
               State(name='learning_pick_object_id', on_enter=[
-                    'state_learning_pick_object_id'], on_exit=[]),
+                    'learning_load_block_id', 'state_learning_pick_object_id'], on_exit=[]),
 
               State(name='learning_pick_from_polygon_run', on_enter=[
-                    'state_learning_pick_from_polygon_run'], on_exit=[]),
-              State(name='learning_pick_from_feeder_run', on_enter=['state_learning_pick_from_feeder_run'],
-                    on_exit=[]),
-              State(name='learning_pick_object_id_run', on_enter=[
-                    'state_learning_pick_object_id_run'], on_exit=[]),
+                    'check_robot_in', 'learning_load_block_id', 'state_learning_pick_from_polygon_run'],
+                    on_exit=['check_robot_out']),
+              State(name='learning_pick_from_feeder_run', on_enter=[
+                  'check_robot_in', 'learning_load_block_id', 'state_learning_pick_from_feeder_run'],
+        on_exit=['check_robot_out']),
+        State(name='learning_pick_object_id_run', on_enter=[
+            'learning_load_block_id', 'state_learning_pick_object_id_run'], on_exit=[]),
 
-              # learning placing
-              State(name='learning_place_to_pose', on_enter=[
-                    'state_learning_place_to_pose'], on_exit=[]),
-              State(name='learning_place_to_pose_run', on_enter=[
-                    'state_learning_place_to_pose_run'], on_exit=[]),
+        # learning placing
+        State(name='learning_place_to_pose', on_enter=[
+            'learning_load_block_id', 'state_learning_place_to_pose'], on_exit=[]),
+        State(name='learning_place_to_pose_run', on_enter=[
+            'check_robot_in', 'learning_load_block_id', 'state_learning_place_to_pose_run'],
+        on_exit=['check_robot_out']),
+        State(name='learning_place_to_grid', on_enter=[
+            'learning_load_block_id', 'state_learning_place_to_grid'], on_exit=[]),
 
-              State(name='learning_wait', on_enter=[
-                    'state_learning_wait'], on_exit=[]),
-              State(name='learning_step_done', on_enter=[
-                    'state_learning_step_done'], on_exit=[]),
-              State(name='learning_step_error', on_enter=[
-                    'state_learning_step_error'], on_exit=[]),
-              State(name='learning_done', on_enter=['state_learning_done'], on_exit=[])]
+        # learning drilling and welding
+        State(name='learning_welding_point', on_enter=[
+            'learning_load_block_id', 'state_learning_welding_point'], on_exit=[]),
+        State(name='learning_welding_point_run', on_enter=[
+            'learning_load_block_id', 'state_learning_welding_point_run'], on_exit=[]),
+
+        State(name='learning_welding_seam', on_enter=[
+            'learning_load_block_id', 'state_learning_welding_seam'], on_exit=[]),
+        State(name='learning_welding_seam_run', on_enter=[
+            'learning_load_block_id', 'state_learning_welding_seam_run'], on_exit=[]),
+
+        State(name='learning_drill_points', on_enter=[
+            'check_robot_in', 'learning_load_block_id', 'state_learning_drill_points'], on_exit=[
+            'check_robot_out', 'state_learning_drill_points_exit']),
+        State(name='learning_drill_points_run', on_enter=[
+            'check_robot_in', 'learning_load_block_id', 'state_learning_drill_points_run'],
+        on_exit=['check_robot_out']),
+
+        # learning others
+
+        State(name='learning_wait', on_enter=[
+            'learning_load_block_id', 'state_learning_wait'], on_exit=[]),
+        State(name='learning_step_done', on_enter=[
+            'learning_load_block_id', 'state_learning_step_done'], on_exit=[]),
+        State(name='learning_step_error', on_enter=[
+            'learning_load_block_id', 'state_learning_step_error'], on_exit=[]),
+        State(name='learning_done', on_enter=[
+            'learning_load_block_id', 'state_learning_done'], on_exit=[])]
 
     def __init__(self):
         self.name = 'brain'
-        self.machine = Machine(model=self,  states=ArtBrainMachine.states, initial='pre_init',
+        self.machine = Machine(model=self, states=ArtBrainMachine.states, initial='pre_init',
                                auto_transitions=False, send_event=True, queued=True)
 
         # *** transitions ***
 
-        self.machine.add_transition('init',  'pre_init',  'init')
+        self.machine.add_transition('init', 'pre_init', 'init')
         self.machine.add_transition(
-            'init_done',  'init',  'waiting_for_action', conditions='is_everything_calibrated')
+            'init_done', 'init', 'waiting_for_action', conditions='is_everything_calibrated')
         self.machine.add_transition(
             'program_start', 'waiting_for_action', 'program_init')
         self.machine.add_transition(
@@ -109,15 +138,15 @@ class ArtBrainMachine(object):
 
         # program
         self.machine.add_transition(
-            'program_init_done',  'program_init',  'program_run')
-        self.machine.add_transition('error',  'program_init',  'program_error')
-        self.machine.add_transition('error',  'program_run',  'program_error')
+            'program_init_done', 'program_init', 'program_run')
+        self.machine.add_transition('error', 'program_init', 'program_error')
+        self.machine.add_transition('error', 'program_run', 'program_error')
         self.machine.add_transition(
-            'program_error_handled', 'program_error',  'program_load_instruction')
+            'program_error_handled', 'program_error', 'program_load_instruction')
         self.machine.add_transition(
-            'program_error_shutdown', 'program_error',  'shutdown')
+            'program_error_shutdown', 'program_error', 'shutdown')
         self.machine.add_transition(
-            'program_error_fatal', 'program_error',  'program_finished')
+            'program_error_fatal', 'program_error', 'program_finished')
         self.machine.add_transition(
             'try_again', 'program_error', 'program_run')
         self.machine.add_transition(
@@ -125,13 +154,13 @@ class ArtBrainMachine(object):
         self.machine.add_transition(
             'fail', 'program_error', 'program_load_instruction')
         self.machine.add_transition(
-            'done', 'program_load_instruction',  'program_run')
+            'done', 'program_load_instruction', 'program_run')
         self.machine.add_transition(
-            'error', 'program_load_instruction',  'program_error')
+            'error', 'program_load_instruction', 'program_error')
         self.machine.add_transition(
-            'finished', 'program_load_instruction',  'program_finished')
+            'finished', 'program_load_instruction', 'program_finished')
         self.machine.add_transition(
-            'done', 'program_finished',  'waiting_for_action')
+            'done', 'program_finished', 'waiting_for_action')
         self.machine.add_transition(
             'finished', 'program_run', 'program_finished')
         self.machine.add_transition(
@@ -147,11 +176,11 @@ class ArtBrainMachine(object):
 
         # pick_from_polygon instruction
         self.machine.add_transition(
-            'pick_from_polygon',  'program_run',  'pick_from_polygon')
+            'pick_from_polygon', 'program_run', 'pick_from_polygon')
         self.machine.add_transition(
-            'done',  'pick_from_polygon',  'program_load_instruction')
+            'done', 'pick_from_polygon', 'program_load_instruction')
         self.machine.add_transition(
-            'error',  'pick_from_polygon',  'program_error')
+            'error', 'pick_from_polygon', 'program_error')
 
         # pick_from_feeder instruction
         self.machine.add_transition(
@@ -170,11 +199,19 @@ class ArtBrainMachine(object):
 
         # place_to_pose instruction
         self.machine.add_transition(
-            'place_to_pose',  'program_run',  'place_to_pose')
+            'place_to_pose', 'program_run', 'place_to_pose')
         self.machine.add_transition(
-            'done',  'place_to_pose',  'program_load_instruction')
+            'done', 'place_to_pose', 'program_load_instruction')
         self.machine.add_transition(
-            'error',  'place_to_pose',  'program_error')
+            'error', 'place_to_pose', 'program_error')
+
+        # place_to_grid instruction
+        self.machine.add_transition(
+            'place_to_grid', 'program_run', 'place_to_grid')
+        self.machine.add_transition(
+            'done', 'place_to_grid', 'program_load_instruction')
+        self.machine.add_transition(
+            'error', 'place_to_grid', 'program_error')
 
         # path through poses instruction
         self.machine.add_transition(
@@ -210,11 +247,11 @@ class ArtBrainMachine(object):
 
         # wait instruction
         self.machine.add_transition(
-            'wait_for_user',  'program_run',  'wait_for_user')
+            'wait_for_user', 'program_run', 'wait_for_user')
         self.machine.add_transition(
-            'done',  'wait_for_user',  'program_load_instruction')
+            'done', 'wait_for_user', 'program_load_instruction')
         self.machine.add_transition(
-            'error',  'wait_for_user',  'program_error')
+            'error', 'wait_for_user', 'program_error')
 
         # wait instruction
         self.machine.add_transition(
@@ -295,6 +332,56 @@ class ArtBrainMachine(object):
             'done', 'learning_place_to_pose_run', 'learning_run')
         self.machine.add_transition(
             'error', 'learning_place_to_pose_run', 'learning_step_error')
+
+        # learning welding_point
+        self.machine.add_transition(
+            'welding_point', 'learning_run', 'learning_welding_point')
+        self.machine.add_transition(
+            'done', 'learning_welding_point', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_welding_point', 'learning_step_error')
+        self.machine.add_transition(
+            'welding_point_run', 'learning_run', 'learning_welding_point_run')
+        self.machine.add_transition(
+            'done', 'learning_welding_point_run', 'learning_run')
+        self.machine.add_transition(
+            'error', 'learning_welding_point_run', 'learning_step_error')
+
+        # learning welding_seam
+        self.machine.add_transition(
+            'welding_seam', 'learning_run', 'learning_welding_seam')
+        self.machine.add_transition(
+            'done', 'learning_welding_seam', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_welding_seam', 'learning_step_error')
+        self.machine.add_transition(
+            'welding_seam_run', 'learning_run', 'learning_welding_seam_run')
+        self.machine.add_transition(
+            'done', 'learning_welding_seam_run', 'learning_run')
+        self.machine.add_transition(
+            'error', 'learning_welding_seam_run', 'learning_step_error')
+
+        # learning drill_points
+        self.machine.add_transition(
+            'drill_points', 'learning_run', 'learning_drill_points')
+        self.machine.add_transition(
+            'done', 'learning_drill_points', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_drill_points', 'learning_step_error')
+        self.machine.add_transition(
+            'drill_points_run', 'learning_run', 'learning_drill_points_run')
+        self.machine.add_transition(
+            'done', 'learning_drill_points_run', 'learning_run')
+        self.machine.add_transition(
+            'error', 'learning_drill_points_run', 'learning_step_error')
+
+        # learning place_to_grid
+        self.machine.add_transition(
+            'place_to_grid', 'learning_run', 'learning_place_to_grid')
+        self.machine.add_transition(
+            'done', 'learning_place_to_grid', 'learning_step_done')
+        self.machine.add_transition(
+            'error', 'learning_place_to_grid', 'learning_step_error')
 
         # learning wait
         self.machine.add_transition('wait', 'learning_run', 'learning_wait')

@@ -4,23 +4,24 @@ import rospy
 from actionlib import SimpleActionServer
 from art_msgs.msg import ObjInstance, InstancesArray
 from geometry_msgs.msg import Pose
-from std_msgs.msg import Header,  Bool
+from std_msgs.msg import Header, Bool
 import time
 import random
-from std_srvs.srv import Empty,  EmptyResponse
+from std_srvs.srv import Empty, EmptyResponse
 
 
 class FakeTouchTable:
 
     def __init__(self):
-        rospy.Service("/art/interface/touchtable/calibrate",  Empty,  self.calibrated_cb)
-        self.calibrated_pub = rospy.Publisher("/art/interface/touchtable/calibrated",  Bool,  latch=True,  queue_size=1)
+        rospy.Service("/art/interface/touchtable/calibrate", Empty, self.calibrated_cb)
+        self.calibrated_pub = rospy.Publisher("/art/interface/touchtable/calibrated", Bool, latch=True, queue_size=1)
 
-    def calibrated_cb(self,  req):
+    def calibrated_cb(self, req):
         r = Bool()
         r.data = True
         self.calibrated_pub.publish(r)
         return EmptyResponse()
+
 
 if __name__ == '__main__':
     rospy.init_node('fake_touchtable')

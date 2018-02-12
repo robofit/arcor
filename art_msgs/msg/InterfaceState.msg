@@ -25,6 +25,8 @@ uint16 block_id
 ProgramItem program_current_item
 KeyValue[] flags # flags associated to program_current_item (e.g. selected object id when doing type-based manipulation)
 
+bool edit_enabled
+
 int32 error_severity
 
 # program and learning error severities
@@ -48,3 +50,8 @@ int32 ERROR_NO_OBJECT_IN_GRIPPER = 1203
 int32 ERROR_PICK_FAILED = 1301
 int32 ERROR_PICK_PLACE_SERVER_NOT_READY = 1302
 int32 ERROR_PLACE_FAILED = 1401
+int32 ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT = 1402
+int32 ERROR_DRILL_FAILED = 1501
+
+# learning errors
+int32 ERROR_GRIPPER_MOVE_FAILED = 2101

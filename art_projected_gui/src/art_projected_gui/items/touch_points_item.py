@@ -10,7 +10,7 @@ translate = QtCore.QCoreApplication.translate
 
 class TouchPointsItem(Item):
 
-    def __init__(self, scene, points=[],  outline_diameter=0.04):
+    def __init__(self, scene, points=[], outline_diameter=0.01):
 
         self.outline_diameter = outline_diameter
         self.points = points
@@ -22,7 +22,7 @@ class TouchPointsItem(Item):
         if not self.scene():
             return QtCore.QRectF()
 
-        es = self.m2pix(self.outline_diameter*6) + 2*self.m2pix(self.outline_diameter*0.2)
+        es = self.m2pix(self.outline_diameter * 6) + 2 * self.m2pix(self.outline_diameter * 0.2)
         return QtCore.QRectF(-es / 2, -es / 2, es, es)
 
     def next(self):
@@ -50,16 +50,16 @@ class TouchPointsItem(Item):
 
         pen = QtGui.QPen()
         pen.setColor(QtCore.Qt.white)
-        pen.setWidth(self.m2pix(self.outline_diameter*0.2))
+        pen.setWidth(self.m2pix(self.outline_diameter * 0.2))
         painter.setPen(pen)
 
         painter.setBrush(QtCore.Qt.NoBrush)
 
-        for i in range(5,  0,  -2):
+        for i in range(5, 0, -2):
 
-            pix = self.m2pix(self.outline_diameter*i)
+            pix = self.m2pix(self.outline_diameter * i)
 
-            painter.drawEllipse(QtCore.QPoint(0, 0), (es+pix) / 2, (es+pix) / 2)
+            painter.drawEllipse(QtCore.QPoint(0, 0), (es + pix) / 2, (es + pix) / 2)
 
         painter.setBrush(QtCore.Qt.white)
         painter.setPen(QtCore.Qt.white)

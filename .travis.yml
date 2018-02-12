@@ -68,6 +68,8 @@ addons:
     - artable-n1
     - artable-n2
     - pr1027
+    - c1
+    - c2
 
 ################################################################################
 
@@ -81,17 +83,16 @@ before_install:
   # Prepare rosdep to install dependencies.
   - sudo rosdep init
   - rosdep update
+  - sudo pip install catkin-tools
 
 # Create a catkin workspace with the package under integration.
 install:
   - mkdir -p ~/catkin_ws/src
   - cd ~/catkin_ws/src
-  - catkin_init_workspace
   # Create the devel/setup.bash (run catkin_make with an empty workspace) and
   # source it to set the path variables.
   - cd ~/catkin_ws
-  - catkin_make
-  - source devel/setup.bash
+  - catkin init
   # Add the package under integration to the workspace using a symlink.
   - cd ~/catkin_ws/src
   - ln -s $CI_SOURCE_PATH .
@@ -117,6 +118,10 @@ before_script:
   - sudo apt-get install -y mongodb-clients mongodb-server -o Dpkg::Options::="--force-confdef" # default actions
   - rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
 
+  # needed by kinect2_registration
+  - sudo apt-get install -y mercurial
+  - hg clone https://bitbucket.org/eigen/eigen#3.3 /tmp/eigen && mkdir /tmp/eigen-build && cd /tmp/eigen-build && cmake . /tmp/eigen && make && sudo make install
+
 # install other package dependencies using script
   - cd $CI_SOURCE_PATH
   - chmod +x install_dependencies.sh
@@ -141,12 +146,17 @@ before_script:
 # Compile and test.
 script:
   - cd ~/catkin_ws/
+#  - catking config --install
+  - catkin build
+  - source devel/setup.bash
   - catkin_lint $CI_SOURCE_PATH
-  - catkin_make_isolated --install
+  - cd ~/catkin_ws/src/artable
   - export ARTABLE=1
-  - catkin_make_isolated --make-args test
+  - export ROBOT=pr2
+  - ./run_tests.sh
+  - export ROBOT=dobot
   - export ARTABLE=2
-  - catkin_make_isolated --make-args test
+  - ./run_tests.sh
 
 after_failure:
   - cd ~/catkin_ws

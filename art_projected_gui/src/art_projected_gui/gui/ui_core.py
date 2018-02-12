@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 from PyQt4 import QtGui, QtCore, QtNetwork
-from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem
+from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem, SquareItem, DialogItem
 import rospy
 from art_projected_gui.helpers import conversions
 from art_msgs.srv import NotifyUserRequest
+from std_srvs.srv import Empty, EmptyRequest
 # import time
+import unicodedata
 
 
 class customGraphicsView(QtGui.QGraphicsView):
@@ -69,7 +71,7 @@ class UICore(QtCore.QObject):
         # be good for dynamic scenes
 
         self.bottom_label = LabelItem(
-            self.scene, 0.2, 0.05, self.width - 0.4, 0.05)
+            self.scene, 0.30, 0.07, self.width - 0.2, 0.03)
 
         self.selected_object_ids = []
         self.selected_object_types = []
@@ -95,6 +97,13 @@ class UICore(QtCore.QObject):
             self.send_to_clients_evt)
         self.scene_timer.start(1.0 / 15 * 1000)
 
+        self.sound_info_srv = rospy.ServiceProxy("/art/interface/sound/info", Empty)
+        self.sound_warning_srv = rospy.ServiceProxy("/art/interface/sound/warning", Empty)
+
+        rospy.loginfo("Waiting for sound services...")
+        self.sound_info_srv.wait_for_service()
+        self.sound_warning_srv.wait_for_service()
+
     def new_connection(self):
 
         rospy.loginfo('Some projector node just connected.')
@@ -105,7 +114,10 @@ class UICore(QtCore.QObject):
         # TODO deal with disconnected clients!
         # self.connections[-1].disconnected.connect(clientConnection.deleteLater)
 
-    def send_to_clients_evt(self, client=None):
+    def send_to_clients_evt(self):
+
+        if len(self.connections) == 0:
+            return
 
         # start = time.time()
 
@@ -135,20 +147,30 @@ class UICore(QtCore.QObject):
 
         # print block.size()
 
-        if client is None:
+        for con in self.connections:
 
-            for con in self.connections:
-
-                con.write(block)
-
-        else:
-
-            client.write(block)
+            con.write(block)
 
         # end = time.time()
         # rospy.logdebug("Image sent in: " + str(end-start))
 
-    def notif(self, msg, min_duration=3.0, temp=False,
+    def snd_info(self):
+
+        try:
+            self.sound_info_srv.call()
+        except rospy.ServiceException:
+            rospy.logerr("Sound service call failed!")
+            pass
+
+    def snd_warn(self):
+
+        try:
+            self.sound_warning_srv.call()
+        except rospy.ServiceException:
+            rospy.logerr("Sound service call failed!")
+            pass
+
+    def notif(self, msg, min_duration=10.0, temp=False,
               message_type=NotifyUserRequest.INFO):
         """Display message (notification) to the user.
 
@@ -163,11 +185,15 @@ class UICore(QtCore.QObject):
             log_func = rospy.logwarn
         elif message_type == NotifyUserRequest.ERROR:
             log_func = rospy.logerr
+        elif message_type == NotifyUserRequest.INFO:
+            log_func = rospy.loginfo
+
+        msg_ascii = unicodedata.normalize('NFKD', unicode(msg)).encode('ascii', 'ignore')
 
         if temp:
-            log_func("Notification (temp): " + msg)
+            log_func("Notification (temp): " + msg_ascii)
         else:
-            log_func("Notification: " + msg)
+            log_func("Notification: " + msg_ascii)
 
         self.bottom_label.add_msg(
             msg, message_type, rospy.Duration(min_duration), temp)
@@ -199,7 +225,7 @@ class UICore(QtCore.QObject):
 
             self.scene.removeItem(it)
 
-    def add_object(self, object_id, object_type, x, y, yaw, sel_cb=None):
+    def add_object(self, object_id, object_type, x, y, z, quaternion, sel_cb=None):
         """Adds object to the scene.
 
         Args:
@@ -209,7 +235,7 @@ class UICore(QtCore.QObject):
             sel_cb (method): Callback which gets called one the object is selected.
         """
 
-        obj = ObjectItem(self.scene, object_id, object_type, x, y, yaw, sel_cb)
+        obj = ObjectItem(self.scene, object_id, object_type, x, y, z, quaternion, sel_cb)
 
         if object_id in self.selected_object_ids or object_type.name in self.selected_object_types:
 
@@ -275,14 +301,13 @@ class UICore(QtCore.QObject):
         """Returns ObjectItem with given object_id or None if the ID is not found."""
 
         for it in self.get_scene_items_by_type(ObjectItem):
-
             if it.object_id == obj_id:
                 return it
 
         return None
 
     def add_place(self, caption, pose_stamped, object_type,
-                  object_id=None, place_cb=None, fixed=False):
+                  object_id=None, place_cb=None, fixed=False, dashed=False):
 
         # TODO check frame_id in pose_stamped and transform if needed
         PlaceItem(
@@ -290,11 +315,13 @@ class UICore(QtCore.QObject):
             caption,
             pose_stamped.pose.position.x,
             pose_stamped.pose.position.y,
+            pose_stamped.pose.position.z,
+            conversions.q2a(pose_stamped.pose.orientation),
             object_type,
             object_id,
             place_pose_changed=place_cb,
             fixed=fixed,
-            yaw=conversions.quaternion2yaw(pose_stamped.pose.orientation)
+            dashed=dashed
         )
 
     def add_polygon(self, caption, obj_coords=[], poly_points=[],
@@ -307,6 +334,15 @@ class UICore(QtCore.QObject):
             poly_points,
             polygon_changed,
             fixed)
+
+    '''
+        Method which creates instance of SquareItem class.
+    '''
+
+    def add_square(self, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points=[], square_changed=None, fixed=False):
+
+        SquareItem(self.scene, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points, self.scene.items,
+                   square_changed, fixed)
 
     def clear_places(self):
 
@@ -323,3 +359,4 @@ class UICore(QtCore.QObject):
 
         self.remove_scene_items_by_type(PlaceItem)
         self.remove_scene_items_by_type(PolygonItem)
+        self.remove_scene_items_by_type(SquareItem)
