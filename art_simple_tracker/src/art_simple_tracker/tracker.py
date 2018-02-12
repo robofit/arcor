@@ -190,6 +190,7 @@ class ArtSimpleTracker:
         self.target_frame = target_frame
         self.tfl = tf.TransformListener()
         self.lock = threading.Lock()
+        self.detection_enabled = True
         self.sub = rospy.Subscriber(
             "/art/object_detector/object", InstancesArray, self.cb, queue_size=1)
         self.pub = rospy.Publisher(
@@ -205,7 +206,6 @@ class ArtSimpleTracker:
         self.srv_clear_all_flags = rospy.Service('/art/object_detector/flag/clear_all', Empty, self.srv_clear_all_flags_cb)
 
         self.use_forearm_cams = False
-        self.detection_enabled = True
         self.forearm_cams = ("/l_forearm_cam_optical_frame", "/r_forearm_cam_optical_frame")
         self.srv_enable_forearm = rospy.Service('/art/object_detector/forearm/enable', Empty, self.srv_enable_forearm_cb)
         self.srv_disable_forearm = rospy.Service('/art/object_detector/forearm/disable', Empty, self.srv_disable_forearm_cb)
