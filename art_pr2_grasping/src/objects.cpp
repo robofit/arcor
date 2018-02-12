@@ -167,27 +167,25 @@ void Objects::detectedObjectsCallback(const art_msgs::InstancesArrayConstPtr& ms
     }
     else
     {
-
       TObjCache::iterator it = obj_cache_.find(msg->instances[i].object_type);
-      if (it == obj_cache_.end()) {
+      if (it == obj_cache_.end())
+      {
+        art_msgs::getObjectType srv;
+        srv.request.name = msg->instances[i].object_type;
 
-          art_msgs::getObjectType srv;
-          srv.request.name = msg->instances[i].object_type;
+        if (!object_type_srv_.call(srv))
+        {
+          ROS_ERROR_NAMED("objects", "Failed to call object_type service");
+          continue;
+        }
 
-          if (!object_type_srv_.call(srv))
-          {
-            ROS_ERROR_NAMED("objects", "Failed to call object_type service");
-            continue;
-          }
+        if (!srv.response.success)
+        {
+          ROS_ERROR_NAMED("objects", "Call to object_type service returned failure.");
+          continue;
+        }
 
-          if (!srv.response.success) {
-
-            ROS_ERROR_NAMED("objects", "Call to object_type service returned failure.");
-            continue;
-          }
-
-          obj_cache_[msg->instances[i].object_type] = srv.response.object_type;
-
+        obj_cache_[msg->instances[i].object_type] = srv.response.object_type;
       }
 
       TObjectInfo obj;

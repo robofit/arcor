@@ -52,7 +52,7 @@ public:
 
   void clear();
 
-  void setPaused(bool paused, bool clear=false);
+  void setPaused(bool paused, bool clear = false);
 
   void publishObject(std::string object_id);
 
@@ -80,7 +80,6 @@ private:
   bool paused_;
 
   TObjCache obj_cache_;
-
 };
 
 }  // namespace art_pr2_grasping
