@@ -182,7 +182,7 @@ class ArtGripper(object):
     def prepare_for_interaction(self):
         if self.move_to_user_client is None or self.interaction_on_client is None:
             return False, ArtBrainErrors.ERROR_LEARNING_GRIPPER_INTERACTION_MODE_SWITCH_FAILED
-        #result = self.move_to_user_client.call()
+        # result = self.move_to_user_client.call()
 
         # if not result.success:
         #    rospy.logwarn("Can't move gripper to the user: " +

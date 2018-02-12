@@ -1044,7 +1044,9 @@ class ArtBrain(object):
     def drill_points(self, instruction, set_drilled_flag=True):
 
         # TODO drill_enabled() je metoda ArtRobotArmHelper - jenze tady jeste nevim ktere rameno se bude pouzivat
-        # TODO ERROR_NOT_IMPLEMENTED -> myslim ze by bylo lepsi zkontrolovat program pri pozadavku na spusteni - jestli neobsahuje robotem nepodporovane instrukce a pak uz se tim nezabyvat - ke spusteni programu s instrukci co robot nepodporuje by vubec nemelo dojit
+        # TODO ERROR_NOT_IMPLEMENTED -> myslim ze by bylo lepsi zkontrolovat program pri pozadavku na spusteni -
+        # jestli neobsahuje robotem nepodporovane instrukce a pak uz se tim nezabyvat - ke spusteni programu s
+        # instrukci co robot nepodporuje by vubec nemelo dojit
         # if not self.rh.drill_enabled():
         #    self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
         #                   error=ArtBrainErrors.ERROR_NOT_IMPLEMENTED)
