@@ -119,7 +119,17 @@ class ArtBrainMachine(object):
         State(name='learning_step_error', on_enter=[
             'learning_load_block_id', 'state_learning_step_error'], on_exit=[]),
         State(name='learning_done', on_enter=[
-            'learning_load_block_id', 'state_learning_done'], on_exit=[])]
+            'learning_load_block_id', 'state_learning_done'], on_exit=[]),
+
+        # visualize
+
+        State(name='visualize_init', on_enter=[
+            'visualize_load_block_id', 'state_visualize_init'], on_exit=[]),
+        State(name='visualize_run', on_enter=[
+          'visualize_load_block_id', 'state_visualize_run'], on_exit=[]),
+        State(name='visualize_done', on_enter=[
+          'state_visualize_done'], on_exit=[])
+        ]
 
     def __init__(self):
         self.name = 'brain'
@@ -135,6 +145,8 @@ class ArtBrainMachine(object):
             'program_start', 'waiting_for_action', 'program_init')
         self.machine.add_transition(
             'learning_start', 'waiting_for_action', 'learning_init')
+        self.machine.add_transition(
+            'visualize_start', 'waiting_for_action', 'visualize_init')
 
         # program
         self.machine.add_transition(
@@ -389,6 +401,15 @@ class ArtBrainMachine(object):
             'done', 'learning_wait', 'learning_step_done')
         self.machine.add_transition(
             'error', 'learning_wait', 'learning_step_error')
+
+        # visualize
+
+        self.machine.add_transition(
+            'init_done', 'visualize_init', 'visualize_run')
+        self.machine.add_transition(
+            'done', 'visualize_done', 'waiting_for_action')
+        self.machine.add_transition(
+            'visualize_done', 'visualize_run', 'visualize_done')
 
         # learning pick_from_feeder
         # self.machine.add_transition('pick_from_feeder', 'learning_pick', 'learning_pick_from_feeder')

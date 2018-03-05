@@ -106,6 +106,11 @@ class ArtBrain(object):
         self.fsm.state_learning_drill_points_run = self.state_learning_drill_points_run
         self.fsm.state_learning_drill_points_exit = self.state_learning_drill_points_exit
 
+        self.fsm.visualize_load_block_id = self.visualize_load_block_id
+        self.fsm.state_visualize_done = self.state_visualize_done
+        self.fsm.state_visualize_init = self.state_visualize_init
+        self.fsm.state_visualize_run = self.state_visualize_run
+
         self.block_id = None
         self.user_id = 0
         self.objects = InstancesArray()
@@ -156,7 +161,7 @@ class ArtBrain(object):
 
         if self.rh.get_robot_type() == "pr2":
             self.robot = ArtPr2Interface(self.rh)
-        elif self.get_robot_type() == "dobot":
+        elif self.rh.get_robot_type() == "dobot":
             self.robot = ArtDobotInterface(self.rh)
         else:
             rospy.logerr("Robot " + str(self.robot_type) + " unknown")
@@ -192,6 +197,11 @@ class ArtBrain(object):
             '/art/brain/learning/start', ProgramIdTrigger, self.learning_start_cb)
         self.srv_learning_stop = rospy.Service(
             '/art/brain/learning/stop', Trigger, self.learning_stop_cb)
+
+        self.srv_learning_start = rospy.Service(
+            '/art/brain/visualize/start', ProgramIdTrigger, self.visualize_start_cb)
+        self.srv_learning_stop = rospy.Service(
+            '/art/brain/visualize/stop', Trigger, self.visualize_stop_cb)
 
         self.srv_program_error_response = rospy.Service(
             '/art/brain/program/error_response',
@@ -839,6 +849,33 @@ class ArtBrain(object):
         rospy.logdebug('Current state: state_learning_done')
         self.fsm.done()
         pass
+
+    """State(name='visualize_init', on_enter=[
+            'visualize_load_block_id', 'state_visualize_init'], on_exit=[]),
+        State(name='visualize_run', on_enter=[
+          'visualize_load_block_id', 'state_visualize_run'], on_exit=[]),
+        State(name='visualize_done', on_enter=[
+          'state_visualize_done'], on_exit=[])"""
+
+    # ***************************************************************************************
+    #                                   STATES VISUALIZE
+    # ***************************************************************************************
+
+    def visualize_load_block_id(self, event):
+        self.block_id = self.state_manager.state.block_id
+
+    def state_visualize_init(self, event):
+        rospy.logdebug('Current state: state_visualize_init')
+        self.fsm.init_done()
+        pass
+
+    def state_visualize_run(self, event):
+        rospy.logdebug('Current state: state_visualize_run')
+        pass
+
+    def state_visualize_done(self, event):
+        rospy.logdebug('Current state: state_visualize_done')
+        self.fsm.done()
 
     # ***************************************************************************************
     #                                     MANIPULATION
@@ -1599,6 +1636,37 @@ class ArtBrain(object):
         self.fsm.learning_start()
         return resp
 
+    def visualize_start_cb(self, req):
+        resp = ProgramIdTriggerResponse()
+        resp.success = False
+
+        if not self.is_everything_calibrated():
+
+            resp.error = 'Something is not calibrated'
+            rospy.logwarn('Something is not calibrated')
+            return resp
+
+        if not self.fsm.is_waiting_for_action():
+
+            resp.error = 'Not ready for visualize start!'
+            rospy.logwarn('Not ready for visualize start!')
+            return resp
+
+        program = self.art.load_program(req.program_id)
+
+        if not self.ph.load(program):
+            resp.success = False
+            resp.error = 'Cannot get program.'
+            return resp
+
+        rospy.logdebug('Starting visualize')
+        (self.block_id, item_id) = self.ph.get_first_item_id()
+        self.state_manager.update_program_item(req.program_id, self.block_id, self.ph.get_item_msg(self.block_id, item_id), auto_send=False)
+        self.state_manager.set_system_state(InterfaceState.STATE_VISUALIZE)
+        resp.success = True
+        self.fsm.visualize_start()
+        return resp
+
     def learning_stop_cb(self, req):
         resp = TriggerResponse()
         if not self.fsm.is_learning_run:
@@ -1608,6 +1676,15 @@ class ArtBrain(object):
         rospy.set_param("/art/brain/learning_program", False)
         resp.success = True
         self.fsm.learning_done()
+        return resp
+
+    def visualize_stop_cb(self, req):
+        resp = TriggerResponse()
+        if not self.fsm.is_visualize_run:
+            resp.success = False
+        rospy.logdebug('Stopping visualize')
+        resp.success = True
+        self.fsm.visualize_done()
         return resp
 
     def interface_state_manager_cb(self,
