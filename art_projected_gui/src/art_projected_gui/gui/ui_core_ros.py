@@ -1227,7 +1227,7 @@ class UICoreRos(UICore):
             rospy.logwarn("Failed to stop learning mode.")
             return
 
-    def program_selected_cb(self, prog_id, run=False, template=False):
+    def program_selected_cb(self, prog_id, run=False, template=False, visualize=False):
 
         self.template = template
 
@@ -1243,6 +1243,9 @@ class UICoreRos(UICore):
             self.notif(
                 translate("UICoreRos", "Starting program %1...").arg(prog_id))
             self.program_list.set_enabled(False)
+
+        elif visualize:
+            pass
 
         else:
 

@@ -12,6 +12,7 @@ int16 STATE_LEARNING=2
 int16 STATE_PROGRAM_RUNNING=3
 int16 STATE_PROGRAM_STOPPED=4
 int16 STATE_PROGRAM_FINISHED=5
+int16 STATE_VISUALIZE=6
 
 string interface_id # should be unique for each interface and BRAIN_ID for the brain
 int16 system_state

@@ -51,10 +51,12 @@ class ProgramListItem(Item):
         self.run_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Run"), self, self.run_btn_cb)
         self.edit_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Edit"), self, self.edit_btn_cb)
         self.template_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Template"), self, self.template_btn_cb)
+        self.visualize_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Visualize"), self, self.visualize_btn_cb)
 
         self.run_btn.set_enabled(False)
         self.edit_btn.set_enabled(False)
         self.template_btn.set_enabled(False)
+        self.visualize_btn.set_enabled(False)
 
         if selected_program_id is not None:
 
@@ -66,7 +68,7 @@ class ProgramListItem(Item):
         h += self.list._height()
         h += 2 * sp
 
-        self. _place_childs_horizontally(h, sp, [self.run_btn, self.edit_btn, self.template_btn])
+        self. _place_childs_horizontally(h, sp, [self.run_btn, self.edit_btn, self.template_btn, self.visualize_btn])
 
         h += self.run_btn._height()
         h += 3 * sp
@@ -85,6 +87,7 @@ class ProgramListItem(Item):
             self.run_btn.set_enabled(False)
             self.edit_btn.set_enabled(False)
             self.template_btn.set_enabled(False)
+            self.visualize_btn.set_enabled(False)
 
             if self.program_selection_changed_cb:
                 self.program_selection_changed_cb(None)
@@ -102,6 +105,7 @@ class ProgramListItem(Item):
                     break
 
             self.template_btn.set_enabled(True)
+            self.visualize_btn.set_enabled(True)
 
             if self.program_selection_changed_cb:
                 self.program_selection_changed_cb(ph.id, ro=ph.readonly, learned=self.learned_dict[ph.id])
@@ -119,6 +123,11 @@ class ProgramListItem(Item):
 
         if self.program_selected_cb is not None:
             self.program_selected_cb(self.get_current_header().id)
+
+    def visualize_btn_cb(self, btn):
+
+        if self.program_selected_cb is not None:
+            self.program_selected_cb(self.get_current_header().id, visualize=True)
 
     def template_btn_cb(self, btn):
 
