@@ -142,6 +142,11 @@ class UICoreRos(UICore):
         self.stop_learning_srv = rospy.ServiceProxy(
             '/art/brain/learning/stop', Trigger)  # TODO wait for service? where?
 
+        self.start_visualizing_srv = rospy.ServiceProxy(
+            '/art/brain/visualize/start', ProgramIdTrigger)  # TODO wait for service? where?
+        self.stop_visualizing_srv = rospy.ServiceProxy(
+            '/art/brain/visualize/stop', Trigger)  # TODO wait for service? where?
+
         self.program_pause_srv = rospy.ServiceProxy(
             '/art/brain/program/pause', Trigger)
 
@@ -583,6 +588,10 @@ class UICoreRos(UICore):
 
             self.state_running(old_state, state, flags, system_state_changed)
 
+        elif state.system_state == InterfaceState.STATE_VISUALIZE:
+
+            self.state_visualizing(old_state, state, flags, system_state_changed)
+
     def interface_state_cb(self, old_state, state, flags):
 
         # print state
@@ -731,7 +740,7 @@ class UICoreRos(UICore):
             self.add_polygon(translate("UICoreRos", "Objects to be drilled"),
                              poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)
 
-    def show_program_vis(self, readonly=False, stopped=False, running=False):
+    def show_program_vis(self, readonly=False, stopped=False, running=False, visualize=False):
 
         if not running:
             item_switched_cb = self.active_item_switched
@@ -741,7 +750,7 @@ class UICoreRos(UICore):
         rospy.logdebug("Showing ProgramItem with readonly=" + str(readonly) + ", stopped=" + str(stopped))
         self.program_vis = ProgramItem(self.scene, self.last_prog_pos[0], self.last_prog_pos[1], self.ph, done_cb=self.learning_done_cb,
                                        item_switched_cb=item_switched_cb,
-                                       learning_request_cb=self.learning_request_cb, stopped=stopped, pause_cb=self.pause_cb, cancel_cb=self.cancel_cb)
+                                       learning_request_cb=self.learning_request_cb, stopped=stopped, pause_cb=self.pause_cb, cancel_cb=self.cancel_cb, visualize=visualize)
 
         self.program_vis.set_readonly(readonly)
 
@@ -834,6 +843,40 @@ class UICoreRos(UICore):
                     continue
                 self.remove_scene_items_by_type(type(it))
                 it = None
+
+    def state_visualizing(self, old_state, state, flags, system_state_changed):
+        """For HoloLens visualization"""
+
+        if system_state_changed:
+
+            self.last_edited_prog_id = state.program_id
+
+            if not self.ph.load(self.art.load_program(state.program_id)):
+
+                self.notif(
+                    translate("UICoreRos", "Failed to load program from database."), message_type=NotifyUserRequest.ERROR)
+
+                # TODO what to do?
+                return
+
+            self.show_program_vis(visualize=True)
+
+        if state.block_id == 0 or state.program_current_item.id == 0:
+            rospy.logerr("Invalid state!")
+            return
+
+        if old_state.block_id != state.block_id or old_state.program_current_item.id != state.program_current_item.id:
+            self.clear_all()
+
+        # TODO overit funkcnost - pokud ma state novejsi timestamp nez nas - ulozit ProgramItem
+        # if old_state.timestamp == rospy.Time(0) or old_state.timestamp - state.timestamp > rospy.Duration(0):
+        #
+        #     rospy.logdebug('Got state with newer timestamp!')
+        #     item = self.ph.get_item_msg(state.block_id, state.program_current_item.id)
+        #     item = state.program_current_item
+        #     self.clear_all()
+        #
+        #     self.learning_vis(state)
 
     def state_learning(self, old_state, state, flags, system_state_changed):
 
@@ -1244,8 +1287,25 @@ class UICoreRos(UICore):
                 translate("UICoreRos", "Starting program %1...").arg(prog_id))
             self.program_list.set_enabled(False)
 
+        # for hololens visualization
         elif visualize:
-            pass
+            if not self.ph.load(self.art.load_program(prog_id), template):
+
+                self.notif(
+                    translate("UICoreRos", "Failed to load program from database."), message_type=NotifyUserRequest.ERROR)
+                return
+
+            req = ProgramIdTriggerRequest()
+            req.program_id = self.ph.get_program_id()
+            resp = None
+            try:
+                resp = self.start_visualizing_srv(req)
+            except rospy.ServiceException as e:
+                print "Service call failed: %s" % e
+
+            if resp is None or not resp.success:
+                self.notif(
+                    translate("UICoreRos", "Failed to start visualize mode."), message_type=NotifyUserRequest.ERROR)
 
         else:
 

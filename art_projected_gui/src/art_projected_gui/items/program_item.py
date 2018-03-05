@@ -15,7 +15,7 @@ translate = QtCore.QCoreApplication.translate
 
 class ProgramItem(Item):
 
-    def __init__(self, scene, x, y, program_helper, done_cb=None, item_switched_cb=None, learning_request_cb=None, pause_cb=None, cancel_cb=None, stopped=False):
+    def __init__(self, scene, x, y, program_helper, done_cb=None, item_switched_cb=None, learning_request_cb=None, pause_cb=None, cancel_cb=None, stopped=False, visualize=False):
 
         self.w = 100
         self.h = 100
@@ -28,6 +28,7 @@ class ProgramItem(Item):
 
         self.readonly = False
         self.stopped = stopped
+        self.visualize = visualize
 
         super(ProgramItem, self).__init__(scene, x, y)
 
@@ -50,6 +51,11 @@ class ProgramItem(Item):
             "ProgramItem", "Edit"), self, self.block_edit_btn_cb)
         self.block_on_failure_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "On fail"), self, self.block_on_failure_btn)
+
+        self.block_visualize_btn = ButtonItem(self.scene(), 0, 0, translate(
+            "ProgramItem", "Visualize"), self, self.block_visualize_btn_cb)
+        self.block_back_btn = ButtonItem(self.scene(), 0, 0, translate(
+            "ProgramItem", "Back"), self, self.block_back_btn_cb)
 
         bdata = []
 
@@ -75,12 +81,21 @@ class ProgramItem(Item):
         self.blocks_list.setPos(self.sp, y)
         y += self.blocks_list._height() + self.sp
 
-        self. _place_childs_horizontally(y, self.sp, [
-                                         self.block_finished_btn, self.block_edit_btn, self.block_on_failure_btn])
+        if visualize:
+            self._place_childs_horizontally(y, self.sp, [
+                self.block_visualize_btn, self.block_back_btn])
 
-        y += self.block_finished_btn._height() + self.sp
+            y += self.block_visualize_btn._height() + self.sp
 
-        group_enable((self.block_edit_btn, self.block_on_failure_btn), False)
+            group_enable((self.block_visualize_btn, self.block_back_btn), True)
+
+        else:
+            self. _place_childs_horizontally(y, self.sp, [
+                                             self.block_finished_btn, self.block_edit_btn, self.block_on_failure_btn])
+
+            y += self.block_finished_btn._height() + self.sp
+
+            group_enable((self.block_edit_btn, self.block_on_failure_btn), False)
 
         self.h = y
 
@@ -113,6 +128,19 @@ class ProgramItem(Item):
             "ProgramItem", "Stop"), self, self.pr_cancel_btn_cb)
 
         group_visible((self.pr_pause_btn, self.pr_cancel_btn), False)
+
+        # buttons for HoloLens visualization
+        self.vis_pause_btn = ButtonItem(self.scene(), 0, 0, translate(
+            "ProgramItem", "Pause"), self, self.vis_pause_btn_cb)
+        if self.stopped:
+            self.vis_pause_btn.set_caption(translate("ProgramItem", "Resume"))
+        self.vis_stop_btn = ButtonItem(self.scene(), 0, 0, translate(
+            "ProgramItem", "Stop"), self, self.vis_stop_btn_cb)
+        self.vis_replay_btn = ButtonItem(self.scene(), 0, 0, translate(
+            "ProgramItem", "Replay"), self, self.vis_replay_btn_cb)
+        self.vis_back_btn = ButtonItem(self.scene(), 0, 0, translate(
+            "ProgramItem", "Back to blocks"), self, self.vis_back_btn_cb)
+        group_visible((self.vis_pause_btn, self.vis_stop_btn, self.vis_replay_btn, self.vis_back_btn), False)
 
         self.fixed = False
 
@@ -150,6 +178,33 @@ class ProgramItem(Item):
 
                 # set disabled and wait for state update
                 self.set_enabled(False)
+
+    def vis_pause_btn_cb(self, btn):
+        pass
+
+    def vis_stop_btn_cb(self, btn):
+        pass
+
+    def vis_replay_btn_cb(self, btn):
+        pass
+
+    def vis_back_btn_cb(self, btn):
+
+        # go back to blocks view
+        group_visible((self.block_visualize_btn, self.block_back_btn), True)
+        self.show_visualization_buttons(False)
+        self.block_selected_cb()  # TODO extract method to set buttons to proper state
+        self.blocks_list.setEnabled(True)
+
+        self.scene().removeItem(self.items_list)
+        self.items_list = None
+        self.item_id = None
+
+        if self.item_switched_cb is not None:
+
+            self.item_switched_cb(self.block_id, self.item_id)
+
+        self.update()
 
     def _update_learned(self):
 
@@ -301,6 +356,10 @@ class ProgramItem(Item):
 
         return text
 
+    def show_visualization_buttons(self, buttons_visible):
+        """Shows or hides buttons for visualization mode for HoloLens"""
+        group_visible((self.vis_pause_btn, self.vis_stop_btn, self.vis_replay_btn, self.vis_back_btn), buttons_visible)
+
     def _init_items_list(self):
 
         idata = []
@@ -331,7 +390,48 @@ class ProgramItem(Item):
         self.items_list.setPos(self.sp, y)
         y += self.items_list._height() + self.sp
 
-        if not self.readonly:
+        # in running state
+        if self.readonly:
+
+            self.items_list.setEnabled(False)
+
+            self. _place_childs_horizontally(
+                y, self.sp, [self.pr_pause_btn, self.pr_cancel_btn])
+            y += self.pr_pause_btn._height() + 3 * self.sp
+
+            pr = (self.pr_pause_btn, self.pr_cancel_btn)
+            group_enable(pr, True)
+
+            group_visible((self.item_finished_btn, self.item_run_btn,
+                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
+
+            self.show_visualization_buttons(False)
+
+        # going to HoloLens visualization
+        elif self.visualize:
+
+            self.items_list.setEnabled(False)
+
+            self._place_childs_horizontally(
+                y, self.sp, [self.vis_pause_btn, self.vis_stop_btn, self.vis_replay_btn])
+
+            y += self.vis_back_btn._height() + self.sp
+
+            self._place_childs_horizontally(
+                y, self.sp, [self.vis_back_btn])
+
+            y += self.vis_back_btn._height() + 3 * self.sp
+
+            self.show_visualization_buttons(True)
+            self.vis_back_btn.set_enabled(True)
+
+            group_visible((self.pr_pause_btn, self.pr_cancel_btn), False)
+
+            group_visible((self.item_run_btn,
+                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
+
+        # in learning state
+        else:
 
             self. _place_childs_horizontally(
                 y, self.sp, [self.item_edit_btn, self.item_run_btn, self.item_on_success_btn, self.item_on_failure_btn])
@@ -351,19 +451,7 @@ class ProgramItem(Item):
 
             group_visible((self.pr_pause_btn, self.pr_cancel_btn), False)
 
-        else:
-
-            self.items_list.setEnabled(False)
-
-            self. _place_childs_horizontally(
-                y, self.sp, [self.pr_pause_btn, self.pr_cancel_btn])
-            y += self.pr_pause_btn._height() + 3 * self.sp
-
-            pr = (self.pr_pause_btn, self.pr_cancel_btn)
-            group_enable(pr, True)
-
-            group_visible((self.item_finished_btn, self.item_run_btn,
-                           self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
+            self.show_visualization_buttons(False)
 
         self.h = y
         self.update()
@@ -371,6 +459,20 @@ class ProgramItem(Item):
             self.item_switched_cb(self.block_id, None, blocks=False)
 
     def block_edit_btn_cb(self, btn):
+
+        group_visible((self.block_finished_btn, self.block_edit_btn,
+                       self.item_on_success_btn, self.block_on_failure_btn, self.blocks_list), False)
+
+        self. _init_items_list()
+
+    def block_visualize_btn_cb(self, btn):
+
+        group_visible((self.block_finished_btn, self.block_edit_btn,
+                       self.item_on_success_btn, self.block_on_failure_btn, self.blocks_list), False)
+
+        self. _init_items_list()
+
+    def block_back_btn_cb(self, btn):
 
         group_visible((self.block_finished_btn, self.block_edit_btn,
                        self.item_on_success_btn, self.block_on_failure_btn, self.blocks_list), False)
@@ -389,6 +491,7 @@ class ProgramItem(Item):
                 self.block_on_failure_btn.set_enabled(False)
 
             self.block_edit_btn.set_enabled(True)
+            self.block_visualize_btn.set_enabled(True)
 
             if self.item_switched_cb:
 
@@ -402,6 +505,7 @@ class ProgramItem(Item):
             self.item_id = None
             self.block_edit_btn.set_enabled(False)
             self.block_on_failure_btn.set_enabled(False)
+            self.block_visualize_btn.set_enabled(False)
 
         if self.item_switched_cb is not None:
             self.item_switched_cb(self.block_id, None, blocks=True)
