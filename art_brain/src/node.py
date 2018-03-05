@@ -919,6 +919,8 @@ class ArtBrain(object):
 
         while True:
 
+            rospy.sleep(0.1)
+
             now = rospy.Time.now()
 
             if start_time + rospy.Duration(5.0) < now:
@@ -954,7 +956,6 @@ class ArtBrain(object):
                 ps = self.tf_listener.transformPose(self.robot.get_arm_by_id(arm_id).gripper_link, ps)
                 # distance in x does not matter - we want the object closest to the x-axis of gripper
                 dist = math.sqrt(ps.pose.position.y ** 2 + ps.pose.position.z ** 2)
-                rospy.logdebug("Distance to object ID " + inst.object_id + " is: " + str(dist) + ", dist to gripper: " + str(ps.pose.position.x))
 
                 if dist > 0.1:
 
