@@ -52,6 +52,7 @@ class ProgramItem(Item):
         self.block_on_failure_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "On fail"), self, self.block_on_failure_btn)
 
+        # block "view" when in visualization
         self.block_visualize_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Visualize"), self, self.block_visualize_btn_cb)
         self.block_back_btn = ButtonItem(self.scene(), 0, 0, translate(
