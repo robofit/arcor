@@ -142,10 +142,15 @@ class UICoreRos(UICore):
         self.stop_learning_srv = rospy.ServiceProxy(
             '/art/brain/learning/stop', Trigger)  # TODO wait for service? where?
 
+        # HoloLens visualization
         self.start_visualizing_srv = rospy.ServiceProxy(
             '/art/brain/visualize/start', ProgramIdTrigger)  # TODO wait for service? where?
         self.stop_visualizing_srv = rospy.ServiceProxy(
             '/art/brain/visualize/stop', Trigger)  # TODO wait for service? where?
+        # for checking if HoloLens is connected
+        self.hololens_active_sub = rospy.Subscriber(
+            '/art/interface/hololens/active/', Bool, self.hololens_active_cb)
+        self.hololens_connected = False
 
         self.program_pause_srv = rospy.ServiceProxy(
             '/art/brain/program/pause', Trigger)
@@ -747,10 +752,13 @@ class UICoreRos(UICore):
         else:
             item_switched_cb = None
 
+        if visualize:
+            item_switched_cb = self.active_item_switched_for_visualization
+
         rospy.logdebug("Showing ProgramItem with readonly=" + str(readonly) + ", stopped=" + str(stopped))
         self.program_vis = ProgramItem(self.scene, self.last_prog_pos[0], self.last_prog_pos[1], self.ph, done_cb=self.learning_done_cb,
                                        item_switched_cb=item_switched_cb,
-                                       learning_request_cb=self.learning_request_cb, stopped=stopped, pause_cb=self.pause_cb, cancel_cb=self.cancel_cb, visualize=visualize)
+                                       learning_request_cb=self.learning_request_cb, stopped=stopped, pause_cb=self.pause_cb, cancel_cb=self.cancel_cb, visualize=visualize, vis_back_cb=self.vis_back_cb)
 
         self.program_vis.set_readonly(readonly)
 
@@ -868,15 +876,23 @@ class UICoreRos(UICore):
         if old_state.block_id != state.block_id or old_state.program_current_item.id != state.program_current_item.id:
             self.clear_all()
 
-        # TODO overit funkcnost - pokud ma state novejsi timestamp nez nas - ulozit ProgramItem
-        # if old_state.timestamp == rospy.Time(0) or old_state.timestamp - state.timestamp > rospy.Duration(0):
-        #
-        #     rospy.logdebug('Got state with newer timestamp!')
-        #     item = self.ph.get_item_msg(state.block_id, state.program_current_item.id)
-        #     item = state.program_current_item
-        #     self.clear_all()
-        #
-        #     self.learning_vis(state)
+    def vis_back_cb(self):
+        """Callback for BACK button in visualization mode"""
+        resp = None
+        try:
+            resp = self.stop_visualizing_srv()
+        except rospy.ServiceException as e:
+            print "Service call failed: %s" % e
+
+        if resp is not None and resp.success:
+            self.notif(
+                translate("UICoreRos", "Program visualization stopped."))
+            return True
+
+        else:
+            self.notif(
+                translate("UICoreRos", "Failed to stop program visualization."), temp=True, message_type=NotifyUserRequest.ERROR)
+            return True
 
     def state_learning(self, old_state, state, flags, system_state_changed):
 
@@ -1166,6 +1182,26 @@ class UICoreRos(UICore):
 
             self.learning_vis(self.state_manager.state)
 
+    def active_item_switched_for_visualization(self, block_id, item_id, read_only=True, blocks=False):
+
+        rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) +
+                       ", active item ID: " + str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
+
+        self.clear_all()
+
+        if blocks:
+
+            if block_id is None:
+                self.notif(
+                    translate("UICoreRos",
+                              "Select program block and visualize it. Press 'Back' to return to program list."))
+            else:
+
+                if self.ph.block_learned(block_id):
+                    self.notif(
+                        translate("UICoreRos",
+                                  "Press 'Visualize' for visualizing instructions of block %1.").arg(block_id))
+
     def get_def_pose(self):
 
         ps = PoseStamped()
@@ -1270,6 +1306,10 @@ class UICoreRos(UICore):
             rospy.logwarn("Failed to stop learning mode.")
             return
 
+    def hololens_active_cb(self, msg):
+        self.hololens_connected = msg.data
+        # rospy.logerr("HoloLens activity: " + str(self.hololens_connected))
+
     def program_selected_cb(self, prog_id, run=False, template=False, visualize=False):
 
         self.template = template
@@ -1295,17 +1335,25 @@ class UICoreRos(UICore):
                     translate("UICoreRos", "Failed to load program from database."), message_type=NotifyUserRequest.ERROR)
                 return
 
-            req = ProgramIdTriggerRequest()
-            req.program_id = self.ph.get_program_id()
-            resp = None
-            try:
-                resp = self.start_visualizing_srv(req)
-            except rospy.ServiceException as e:
-                print "Service call failed: %s" % e
-
-            if resp is None or not resp.success:
+            # TODO check if HoloLens are connected
+            if self.hololens_connected:
                 self.notif(
-                    translate("UICoreRos", "Failed to start visualize mode."), message_type=NotifyUserRequest.ERROR)
+                    translate("UICoreRos", "HoloLens device successfully contacted."), message_type=NotifyUserRequest.INFO)
+                req = ProgramIdTriggerRequest()
+                req.program_id = self.ph.get_program_id()
+                resp = None
+                try:
+                    resp = self.start_visualizing_srv(req)
+                except rospy.ServiceException as e:
+                    print "Service call failed: %s" % e
+
+                if resp is None or not resp.success:
+                    self.notif(
+                        translate("UICoreRos", "Failed to start visualize mode."), message_type=NotifyUserRequest.ERROR)
+            else:
+                self.notif(
+                    translate("UICoreRos", "Failed to contact HoloLens device."), message_type=NotifyUserRequest.ERROR)
+                return
 
         else:
 

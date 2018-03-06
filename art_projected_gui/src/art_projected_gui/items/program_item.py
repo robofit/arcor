@@ -15,7 +15,7 @@ translate = QtCore.QCoreApplication.translate
 
 class ProgramItem(Item):
 
-    def __init__(self, scene, x, y, program_helper, done_cb=None, item_switched_cb=None, learning_request_cb=None, pause_cb=None, cancel_cb=None, stopped=False, visualize=False):
+    def __init__(self, scene, x, y, program_helper, done_cb=None, item_switched_cb=None, learning_request_cb=None, pause_cb=None, cancel_cb=None, stopped=False, visualize=False, vis_back_cb=None):
 
         self.w = 100
         self.h = 100
@@ -29,6 +29,7 @@ class ProgramItem(Item):
         self.readonly = False
         self.stopped = stopped
         self.visualize = visualize
+        self.vis_back_cb = vis_back_cb
 
         super(ProgramItem, self).__init__(scene, x, y)
 
@@ -88,7 +89,10 @@ class ProgramItem(Item):
 
             y += self.block_visualize_btn._height() + self.sp
 
-            group_enable((self.block_visualize_btn, self.block_back_btn), True)
+            self.block_back_btn.set_enabled(True)
+            self.block_visualize_btn.set_enabled(False)
+            # hide edit block buttons
+            group_visible((self.block_finished_btn, self.block_edit_btn, self.block_on_failure_btn), False)
 
         else:
             self. _place_childs_horizontally(y, self.sp, [
@@ -97,6 +101,8 @@ class ProgramItem(Item):
             y += self.block_finished_btn._height() + self.sp
 
             group_enable((self.block_edit_btn, self.block_on_failure_btn), False)
+            # hide visualization block buttons
+            group_visible((self.block_visualize_btn, self.block_back_btn), False)
 
         self.h = y
 
@@ -191,8 +197,9 @@ class ProgramItem(Item):
 
     def vis_back_btn_cb(self, btn):
 
-        # go back to blocks view
-        group_visible((self.block_visualize_btn, self.block_back_btn), True)
+        # go back to blocks view from visualization
+        group_visible((self.block_visualize_btn, self.block_back_btn, self.blocks_list), True)
+        self.block_back_btn.set_enabled(True)
         self.show_visualization_buttons(False)
         self.block_selected_cb()  # TODO extract method to set buttons to proper state
         self.blocks_list.setEnabled(True)
@@ -468,17 +475,16 @@ class ProgramItem(Item):
 
     def block_visualize_btn_cb(self, btn):
 
-        group_visible((self.block_finished_btn, self.block_edit_btn,
-                       self.item_on_success_btn, self.block_on_failure_btn, self.blocks_list), False)
+        group_visible((self.block_visualize_btn, self.block_back_btn, self.blocks_list), False)
 
         self. _init_items_list()
 
+    # go back from block view visualization into main menu
     def block_back_btn_cb(self, btn):
 
-        group_visible((self.block_finished_btn, self.block_edit_btn,
-                       self.item_on_success_btn, self.block_on_failure_btn, self.blocks_list), False)
-
-        self. _init_items_list()
+        group_visible((self.block_visualize_btn, self.block_back_btn), False)
+        if self.vis_back_cb is not None:
+            self.vis_back_cb()
 
     def block_selected_cb(self):
 
