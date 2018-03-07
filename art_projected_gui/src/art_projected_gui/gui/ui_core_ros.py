@@ -4,6 +4,7 @@ from art_projected_gui.gui import UICore
 from PyQt4 import QtCore, QtGui
 import rospy
 from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt, LearningRequestAction, LearningRequestGoal
+from art_msgs.msg import HololensState
 from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, TouchPointsItem, LabelItem, TouchTableItem, ProgramListItem, ProgramItem, DialogItem, PolygonItem
 from art_projected_gui.helpers import ProjectorHelper, conversions
 from art_utils import InterfaceStateManager, ArtApiHelper, ProgramHelper
@@ -19,6 +20,7 @@ import tf
 from math import sqrt
 import matplotlib.path as mplPath
 import numpy as np
+
 
 translate = QtCore.QCoreApplication.translate
 
@@ -151,6 +153,8 @@ class UICoreRos(UICore):
         self.hololens_active_sub = rospy.Subscriber(
             '/art/interface/hololens/active/', Bool, self.hololens_active_cb)
         self.hololens_connected = False
+        self.hololens_state_pub = rospy.Publisher(
+            '/art/interface/hololens/state', HololensState)
 
         self.program_pause_srv = rospy.ServiceProxy(
             '/art/brain/program/pause', Trigger)
@@ -757,8 +761,10 @@ class UICoreRos(UICore):
 
         rospy.logdebug("Showing ProgramItem with readonly=" + str(readonly) + ", stopped=" + str(stopped))
         self.program_vis = ProgramItem(self.scene, self.last_prog_pos[0], self.last_prog_pos[1], self.ph, done_cb=self.learning_done_cb,
-                                       item_switched_cb=item_switched_cb,
-                                       learning_request_cb=self.learning_request_cb, stopped=stopped, pause_cb=self.pause_cb, cancel_cb=self.cancel_cb, visualize=visualize, vis_back_cb=self.vis_back_cb)
+                                       item_switched_cb=item_switched_cb, learning_request_cb=self.learning_request_cb,
+                                       stopped=stopped, pause_cb=self.pause_cb, cancel_cb=self.cancel_cb,
+                                       visualize=visualize, v_visualize_cb=self.v_visualize_cb, v_back_cb=self.v_back_cb,
+                                       vis_pause_cb=self.vis_pause_cb, vis_stop_cb=self.vis_stop_cb, vis_replay_cb=self.vis_replay_cb, vis_back_to_blocks_cb=self.vis_back_to_blocks_cb)
 
         self.program_vis.set_readonly(readonly)
 
@@ -876,8 +882,30 @@ class UICoreRos(UICore):
         if old_state.block_id != state.block_id or old_state.program_current_item.id != state.program_current_item.id:
             self.clear_all()
 
-    def vis_back_cb(self):
-        """Callback for BACK button in visualization mode"""
+    def create_hololens_state_msg(self, hololens_state, visualization_state=None):
+        msg = HololensState()
+        msg.hololens_state = hololens_state
+
+        if hololens_state == HololensState.STATE_VISUALIZING and visualization_state is not None:
+            msg.visualization_state = visualization_state
+        # visualization not running at all
+        else:
+            msg.visualization_state = HololensState.VISUALIZATION_DISABLED
+
+        return msg
+
+    def v_visualize_cb(self):
+        """Callback for VISUALIZE button in visualization mode.
+            Notify HoloLens device that visualization started."""
+
+        self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_VISUALIZING, HololensState.VISUALIZATION_RUN))
+
+    def v_back_cb(self):
+        """Callback for BACK button in visualization mode.
+            Notify HoloLens device that visualization ended."""
+
+        self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_IDLE))
+
         resp = None
         try:
             resp = self.stop_visualizing_srv()
@@ -893,6 +921,34 @@ class UICoreRos(UICore):
             self.notif(
                 translate("UICoreRos", "Failed to stop program visualization."), temp=True, message_type=NotifyUserRequest.ERROR)
             return True
+
+    def vis_pause_cb(self, visualization_paused):
+        """Callback for PAUSE button while visualizing.
+            Notify HoloLens device that pause/resume button was hit."""
+        # if visualization is paused .. then resume it - e.g. hit RESUME button
+        if visualization_paused:
+            self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_VISUALIZING, HololensState.VISUALIZATION_RESUME))
+        # or visualization is running .. then pause it - e.g. hit PAUSE button
+        else:
+            self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_VISUALIZING, HololensState.VISUALIZATION_PAUSE))
+
+    def vis_stop_cb(self):
+        """Callback for STOP button while visualizing.
+            Notify HoloLens device that stop button was hit."""
+
+        self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_VISUALIZING, HololensState.VISUALIZATION_STOP))
+
+    def vis_replay_cb(self):
+        """Callback for REPLAY button while visualizing.
+            Notify HoloLens device that replay button was hit."""
+
+        self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_VISUALIZING, HololensState.VISUALIZATION_REPLAY))
+
+    def vis_back_to_blocks_cb(self):
+        """Callback for BACK_TO_BLOCKS button while visualizing.
+            Notify HoloLens device that visualization ended."""
+
+        self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_IDLE))
 
     def state_learning(self, old_state, state, flags, system_state_changed):
 
@@ -1201,6 +1257,13 @@ class UICoreRos(UICore):
                     self.notif(
                         translate("UICoreRos",
                                   "Press 'Visualize' for visualizing instructions of block %1.").arg(block_id))
+
+                    # get first program item from clicked block
+                    _item_id = self.ph.get_first_item_id(block_id=block_id)[1]
+                    # actualize InterfaceState msg with currently clicked block
+                    if None not in (block_id, _item_id):
+                        self.state_manager.update_program_item(
+                            self.ph.get_program_id(), block_id, self.ph.get_item_msg(block_id, _item_id))
 
     def get_def_pose(self):
 

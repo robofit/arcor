@@ -34,6 +34,7 @@ add_message_files(
   Touch.msg
   User.msg
   UserArray.msg
+  HololensState.msg
 )
 
 add_service_files(

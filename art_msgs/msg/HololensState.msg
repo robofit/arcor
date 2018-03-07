@@ -1,0 +1,19 @@
+#message for communication with HoloLens device
+
+# Hololens states
+int16 STATE_IDLE=0
+int16 STATE_VISUALIZING=1
+int16 STATE_LEARNING_DRILL=2
+int16 STATE_LEARNING_PICK_FROM_FEEDER=3
+
+int16 hololens_state
+
+# visualization controls
+int16 VISUALIZATION_DISABLED=0
+int16 VISUALIZATION_RUN=1
+int16 VISUALIZATION_PAUSE=2
+int16 VISUALIZATION_RESUME=3
+int16 VISUALIZATION_STOP=4
+int16 VISUALIZATION_REPLAY=5
+
+int16 visualization_state

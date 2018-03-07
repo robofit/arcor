@@ -15,7 +15,8 @@ translate = QtCore.QCoreApplication.translate
 
 class ProgramItem(Item):
 
-    def __init__(self, scene, x, y, program_helper, done_cb=None, item_switched_cb=None, learning_request_cb=None, pause_cb=None, cancel_cb=None, stopped=False, visualize=False, vis_back_cb=None):
+    def __init__(self, scene, x, y, program_helper, done_cb=None, item_switched_cb=None, learning_request_cb=None, pause_cb=None, cancel_cb=None, stopped=False,
+                 visualize=False, v_visualize_cb=None, v_back_cb=None, vis_pause_cb=None, vis_stop_cb=None, vis_replay_cb=None, vis_back_to_blocks_cb=None):
 
         self.w = 100
         self.h = 100
@@ -28,8 +29,17 @@ class ProgramItem(Item):
 
         self.readonly = False
         self.stopped = stopped
+
+        # variables for HoloLens visualization
         self.visualize = visualize
-        self.vis_back_cb = vis_back_cb
+        self.visualization_paused = False
+        # callbacks for visualization buttons
+        self.v_visualize_cb = v_visualize_cb
+        self.v_back_cb = v_back_cb
+        self.vis_pause_cb = vis_pause_cb
+        self.vis_stop_cb = vis_stop_cb
+        self.vis_replay_cb = vis_replay_cb
+        self.vis_back_to_blocks_cb = vis_back_to_blocks_cb
 
         super(ProgramItem, self).__init__(scene, x, y)
 
@@ -138,9 +148,10 @@ class ProgramItem(Item):
 
         # buttons for HoloLens visualization
         self.vis_pause_btn = ButtonItem(self.scene(), 0, 0, translate(
-            "ProgramItem", "Pause"), self, self.vis_pause_btn_cb)
-        if self.stopped:
-            self.vis_pause_btn.set_caption(translate("ProgramItem", "Resume"))
+            "ProgramItem", "Resume"), self, self.vis_pause_btn_cb)
+        # quick hack .. init button with 'Resume' caption and switch back to 'Pause' to keep the button large enough for text switching
+        if not self.visualization_paused:
+            self.vis_pause_btn.set_caption(translate("ProgramItem", "Pause"))
         self.vis_stop_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Stop"), self, self.vis_stop_btn_cb)
         self.vis_replay_btn = ButtonItem(self.scene(), 0, 0, translate(
@@ -187,15 +198,40 @@ class ProgramItem(Item):
                 self.set_enabled(False)
 
     def vis_pause_btn_cb(self, btn):
-        pass
+        # callback which notifies HoloLens that pause/resume button was hit
+        if self.vis_pause_cb is not None:
+            self.vis_pause_cb(self.visualization_paused)
+
+        # if visualization is paused .. then resume it - e.g. hit RESUME button
+        if self.visualization_paused:
+            self.visualization_paused = False
+            self.vis_pause_btn.set_caption(translate("ProgramItem", "Pause"))
+        # or visualization is running .. then pause it - e.g. hit PAUSE button
+        else:
+            self.visualization_paused = True
+            self.vis_pause_btn.set_caption(translate("ProgramItem", "Resume"))
 
     def vis_stop_btn_cb(self, btn):
-        pass
+        # callback which notifies HoloLens that stop button was hit
+        if self.vis_stop_cb is not None:
+            self.vis_stop_cb()
+
+        group_enable((self.vis_stop_btn, self.vis_pause_btn), False)
+        self.vis_replay_btn.set_enabled(True)
 
     def vis_replay_btn_cb(self, btn):
-        pass
+        # callback which notifies HoloLens that replay button was hit
+        if self.vis_replay_cb is not None:
+            self.vis_replay_cb()
+
+        group_enable((self.vis_stop_btn, self.vis_pause_btn), True)
+        self.vis_replay_btn.set_enabled(False)
 
     def vis_back_btn_cb(self, btn):
+
+        # callback which notifies HoloLens that visualization ended
+        if self.vis_back_to_blocks_cb is not None:
+            self.vis_back_to_blocks_cb()
 
         # go back to blocks view from visualization
         group_visible((self.block_visualize_btn, self.block_back_btn, self.blocks_list), True)
@@ -431,7 +467,7 @@ class ProgramItem(Item):
             y += self.vis_back_btn._height() + 3 * self.sp
 
             self.show_visualization_buttons(True)
-            self.vis_back_btn.set_enabled(True)
+            group_enable((self.vis_pause_btn, self.vis_stop_btn, self.vis_back_btn), True)
 
             group_visible((self.pr_pause_btn, self.pr_cancel_btn), False)
 
@@ -477,14 +513,20 @@ class ProgramItem(Item):
 
         group_visible((self.block_visualize_btn, self.block_back_btn, self.blocks_list), False)
 
+        # callback which notifies HoloLens that visualization started
+        if self.v_visualize_cb is not None:
+            self.v_visualize_cb()
+
         self. _init_items_list()
 
     # go back from block view visualization into main menu
     def block_back_btn_cb(self, btn):
 
         group_visible((self.block_visualize_btn, self.block_back_btn), False)
-        if self.vis_back_cb is not None:
-            self.vis_back_cb()
+
+        # callback which notifies HoloLens that visualization ended
+        if self.v_back_cb is not None:
+            self.v_back_cb()
 
     def block_selected_cb(self):
 
