@@ -948,7 +948,7 @@ class UICoreRos(UICore):
         """Callback for BACK_TO_BLOCKS button while visualizing.
             Notify HoloLens device that visualization ended."""
 
-        self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_IDLE))
+        self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_VISUALIZING, HololensState.VISUALIZATION_DISABLED))
 
     def state_learning(self, old_state, state, flags, system_state_changed):
 
