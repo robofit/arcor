@@ -1238,7 +1238,7 @@ class UICoreRos(UICore):
 
             self.learning_vis(self.state_manager.state)
 
-    def active_item_switched_for_visualization(self, block_id, item_id, read_only=True, blocks=False):
+    def active_item_switched_for_visualization(self, block_id, item_id, read_only=True, blocks=False, show_all=False):
 
         rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) +
                        ", active item ID: " + str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
@@ -1258,12 +1258,19 @@ class UICoreRos(UICore):
                         translate("UICoreRos",
                                   "Press 'Visualize' for visualizing instructions of block %1.").arg(block_id))
 
-                    # get first program item from clicked block
+                    # get first program item from clicked block .. [1] because function returns tuple - (block_id, item_id)
                     _item_id = self.ph.get_first_item_id(block_id=block_id)[1]
                     # actualize InterfaceState msg with currently clicked block
                     if None not in (block_id, _item_id):
                         self.state_manager.update_program_item(
                             self.ph.get_program_id(), block_id, self.ph.get_item_msg(block_id, _item_id))
+
+        if show_all:
+            _item_id = self.ph.get_first_item_id(block_id=block_id)[1]
+            self.state_manager.update_program_item(
+                self.ph.get_program_id(), block_id, self.ph.get_item_msg(block_id, _item_id))
+
+            self.learning_vis(self.state_manager.state)
 
     def get_def_pose(self):
 
