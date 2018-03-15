@@ -896,9 +896,93 @@ class UICoreRos(UICore):
 
     def v_visualize_cb(self):
         """Callback for VISUALIZE button in visualization mode.
-            Notify HoloLens device that visualization started."""
+            Notify HoloLens device that visualization started.
+            Draw all elements of current program."""
 
         self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_VISUALIZING, HololensState.VISUALIZATION_RUN))
+
+        self.show_all_instructions_at_once(self.state_manager.state)
+
+    def show_all_instructions_at_once(self, state):
+        """Draws all drawable elements of program to table (like polygon from pick_from_polygon, place pose, etc.)"""
+        block_id = state.block_id
+        item_ids = self.ph.get_items_ids(block_id)
+
+        for item_id in item_ids:
+            self.show_instruction_visualization(block_id, item_id)
+
+    def show_instruction_visualization(self, block_id, item_id):
+        """Draws program visualization element based on block id and item id."""
+        it = self.ph.get_item_msg(block_id, item_id)
+
+        if it.type == ProgIt.GET_READY:
+
+            pass
+
+        elif it.type == ProgIt.WAIT_FOR_USER:
+
+            pass
+
+        elif it.type == ProgIt.WAIT_UNTIL_USER_FINISHES:
+
+            pass
+
+        elif it.type == ProgIt.PICK_FROM_POLYGON:
+
+            self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
+
+            self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
+                             poly_points=conversions.get_pick_polygon_points(self.ph.get_polygon(block_id, it.id)[0]), fixed=True)
+
+        elif it.type == ProgIt.PICK_FROM_FEEDER:
+
+            self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
+
+        elif it.type == ProgIt.PICK_OBJECT_ID:
+            if self.ph.is_object_set(block_id, item_id):
+                self.select_object(self.ph.get_object(block_id, item_id)[0][0])
+
+        elif it.type == ProgIt.PLACE_TO_POSE:
+
+            object_type = None
+            object_id = None
+
+            self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
+
+            if self.ph.is_object_set(block_id, it.id):
+                object_type = self.art.get_object_type(self.ph.get_object(block_id, it.id)[0][0])
+
+            if object_type is not None:
+
+                place_pose = self.ph.get_pose(block_id, it.id)[0][0]
+
+                self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),
+                               place_pose, object_type, object_id, fixed=True)
+
+        elif it.type == ProgIt.PLACE_TO_GRID:
+
+            self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
+
+            polygons = self.ph.get_polygon(block_id, it.id)[0]
+            poses = self.ph.get_pose(block_id, it.id)[0]
+            object_type_name = self.ph.get_object(block_id, it.id)[0][0]
+
+            object_type = self.art.get_object_type(object_type_name)
+
+            self.notif(translate("UICoreRos", "Going to place objects into grid"))
+            self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
+                            0.075, object_type, poses, grid_points=conversions.get_pick_polygon_points(polygons),
+                            square_changed=self.square_changed, fixed=True)
+
+        elif it.type == ProgIt.DRILL_POINTS:
+
+            self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
+
+            polygons = self.ph.get_polygon(block_id, it.id)[0]
+            poses = self.ph.get_pose(block_id, it.id)[0]
+
+            self.add_polygon(translate("UICoreRos", "Objects to be drilled"),
+                             poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)
 
     def v_back_cb(self):
         """Callback for BACK button in visualization mode.
@@ -946,9 +1030,12 @@ class UICoreRos(UICore):
 
     def vis_back_to_blocks_cb(self):
         """Callback for BACK_TO_BLOCKS button while visualizing.
-            Notify HoloLens device that visualization ended."""
+            Notify HoloLens device that visualization ended.
+            Clear all drawed program visualization elements."""
 
         self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_VISUALIZING, HololensState.VISUALIZATION_DISABLED))
+
+        self.clear_all()
 
     def state_learning(self, old_state, state, flags, system_state_changed):
 
@@ -1238,12 +1325,12 @@ class UICoreRos(UICore):
 
             self.learning_vis(self.state_manager.state)
 
-    def active_item_switched_for_visualization(self, block_id, item_id, read_only=True, blocks=False, show_all=False):
-
+    def active_item_switched_for_visualization(self, block_id, item_id, read_only=True, blocks=False):
+        """For HoloLens visualization. Called when clicked on specific block."""
         rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) +
                        ", active item ID: " + str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
 
-        self.clear_all()
+        # self.clear_all()
 
         if blocks:
 
@@ -1264,13 +1351,6 @@ class UICoreRos(UICore):
                     if None not in (block_id, _item_id):
                         self.state_manager.update_program_item(
                             self.ph.get_program_id(), block_id, self.ph.get_item_msg(block_id, _item_id))
-
-        if show_all:
-            _item_id = self.ph.get_first_item_id(block_id=block_id)[1]
-            self.state_manager.update_program_item(
-                self.ph.get_program_id(), block_id, self.ph.get_item_msg(block_id, _item_id))
-
-            self.learning_vis(self.state_manager.state)
 
     def get_def_pose(self):
 

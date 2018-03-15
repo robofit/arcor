@@ -474,10 +474,6 @@ class ProgramItem(Item):
             group_visible((self.item_run_btn,
                            self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
 
-            # show visualization of all instructions at once
-            if self.item_switched_cb:
-                self.item_switched_cb(self.block_id, None, show_all=True)
-
         # in learning state
         else:
 
