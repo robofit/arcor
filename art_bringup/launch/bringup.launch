@@ -1,11 +1,17 @@
 <?xml version="1.0"?>
 <launch>
 
-  <!-- Common API-->
-  <rosparam command="load" ns="/art/api" file="$(find art_bringup)/config/api.yaml" />
+    <!-- Common API-->
+    <!--rosparam command="load" ns="/art/api" file="$(find art_bringup)/config/api.yaml" /-->
   
-  <include file="$(find art_bringup)/launch/common.xml"/>
+    <include file="$(find art_bringup)/launch/common.xml"/>
   
-  <include file="$(find art_bringup)/setups/$(optenv ARTABLE)/bringup.xml"/>
+    <include file="$(find $(optenv ARTABLE_SETUP_PKG))/launch/bringup.launch"/>
+    <include file="$(find $(optenv ARTABLE_ROBOT_PKG))/launch/bringup.launch"/>
+
+    <!-- TODO kde poustet brain? kde vzit robot_interface? -->
+    <include file="$(find art_brain)/launch/brain.launch">
+        <arg name="robot_interface" value="art_pr2_interface.ArtPr2Interface"/>
+    </include>
 
 </launch>
