@@ -1,8 +1,8 @@
 from brain_utils import ArtBrainUtils, ArtBrainErrors, ArtBrainErrorSeverities
 import actionlib
-from art_msgs.msg import PickPlaceAction, PickPlaceGoal, PickPlaceResult, \
+from art_msgs.msg import PickPlaceAction, PickPlaceGoal, \
     ArmNavigationAction, ArmNavigationGoal, ArmNavigationResult
-from std_srvs.srv import Empty, Trigger, TriggerRequest, TriggerResponse
+from std_srvs.srv import Trigger, TriggerRequest, TriggerResponse
 import rospy
 from art_msgs.msg import ObjInstance
 from std_msgs.msg import Bool

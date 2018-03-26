@@ -13,7 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   roslaunch
 )
 
-set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
+set(ROSLINT_PYTHON_OPTS "--max-line-length=120")
 roslint_python()
 roslint_add_test()
 

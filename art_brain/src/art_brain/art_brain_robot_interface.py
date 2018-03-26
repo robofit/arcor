@@ -2,9 +2,8 @@ from art_gripper import ArtGripper
 from brain_utils import ArtBrainErrors, ArtBrainErrorSeverities
 import abc
 import rospy
-from art_msgs.msg import InterfaceState, PickPlaceGoal
-import math
-from std_srvs.srv import TriggerRequest, TriggerResponse, Trigger
+from art_msgs.msg import PickPlaceGoal
+from std_srvs.srv import TriggerResponse, Trigger
 from art_msgs.srv import ReinitArms, ReinitArmsResponse, ReinitArmsRequest
 from actionlib.simple_action_client import SimpleGoalState
 

@@ -4,13 +4,12 @@ from art_msgs.msg import InstancesArray, ObjInstance, KeyValue
 from art_msgs.srv import ObjectFlagSetResponse, ObjectFlagSet, ObjectFlagClear, ObjectFlagClearResponse
 from std_srvs.srv import Empty, EmptyResponse
 import tf
-from geometry_msgs.msg import Pose, PoseStamped
-from math import sqrt
+from geometry_msgs.msg import PoseStamped
 import numpy as np
 from scipy.spatial import distance
 import threading
 from tf import transformations
-from math import pi, cos, sin, atan2
+from math import cos, sin, atan2
 
 
 # TODO publish TF

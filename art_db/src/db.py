@@ -2,7 +2,8 @@
 
 from art_msgs.msg import Program, ObjectType
 from art_msgs.srv import getProgram, getProgramResponse, getProgramHeaders, getProgramHeadersResponse, \
-    storeProgram, storeProgramResponse, getObjectType, getObjectTypeResponse, storeObjectType, storeObjectTypeResponse, ProgramIdTrigger, ProgramIdTriggerResponse
+    storeProgram, storeProgramResponse, getObjectType, getObjectTypeResponse, storeObjectType, storeObjectTypeResponse,\
+    ProgramIdTrigger, ProgramIdTriggerResponse
 import sys
 import rospy
 from art_utils import ProgramHelper

@@ -1,7 +1,6 @@
 # from transitions import Machine
 # from transitions.extensions import GraphMachine as Machine
 from transitions.extensions import LockedMachine as Machine
-
 from transitions import State
 
 

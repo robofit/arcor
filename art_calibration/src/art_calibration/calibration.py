@@ -1,21 +1,16 @@
 #!/usr/bin/env python
 
-from art_utils import ArtCalibrationHelper
 from tf import TransformBroadcaster, transformations
 import rospy
-from geometry_msgs.msg import Transform
 from art_calibration import ArtRobotCalibration, ArtCellCalibration
 from std_msgs.msg import Bool
-from art_msgs.srv import RecalibrateCell, RecalibrateCellRequest, RecalibrateCellResponse
+from art_msgs.srv import RecalibrateCell, RecalibrateCellResponse
 from pcl.registration import icp, icp_nl, gicp
 import tf
 from std_msgs.msg import Header
 
-
 from dynamic_reconfigure.server import Server
 from art_calibration.cfg import CalibrationConfig
-
-from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 import sensor_msgs.point_cloud2 as pc2
 
 

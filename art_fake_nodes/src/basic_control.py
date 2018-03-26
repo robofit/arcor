@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 
 import rospy
-from actionlib import SimpleActionServer
-from art_msgs.msg import UserStatus
-import time
-import random
 from std_srvs.srv import Empty, EmptyResponse, Trigger, TriggerResponse
 from std_msgs.msg import Bool, Float32
 from geometry_msgs.msg import PointStamped
