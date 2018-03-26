@@ -1,12 +1,11 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="robot_type" default="$(optenv ROBOT)"/>
-    <arg name="robot_ns" default="/art/robot"/>
+    <arg name="robot_interface"/>
 
     <group ns="/art/brain">
 
-        <param name="robot_ns" value="$(arg robot_ns)"/>
+        <param name="robot_interface" value="$(arg robot_interface)"/>
         <node pkg="art_brain" name="brain" type="node.py" output="screen">
 
         </node>

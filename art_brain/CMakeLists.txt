@@ -18,6 +18,8 @@ find_package(catkin REQUIRED COMPONENTS
   art_simple_tracker
 )
 
+catkin_python_setup()
+
 set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
 roslint_python()
 roslint_add_test()

@@ -1,17 +1,18 @@
 <?xml version="1.0"?>
 <launch>
 
-    <!-- Common API-->
-    <!--rosparam command="load" ns="/art/api" file="$(find art_bringup)/config/api.yaml" /-->
+    <!-- https://answers.ros.org/question/35283/nested-substitution-args-in-launch-files/ -->
+    <arg name="dollar" value="$" />
+
+    <arg name="robot_pkg"  default="$(optenv ARTABLE_ROBOT_PKG false)"/>
+    <arg name="robot_pkg_path"   value="(find $(arg robot_pkg)/launch/bringup.launch)"/>
+
+    <arg name="setup_pkg"  default="$(optenv ARTABLE_SETUP_PKG)"/>
+    <arg name="setup_pkg_path"   value="(find $(arg setup_pkg)/launch/bringup.launch)"/>
   
     <include file="$(find art_bringup)/launch/common.xml"/>
   
-    <include file="$(find $(optenv ARTABLE_SETUP_PKG))/launch/bringup.launch"/>
-    <include file="$(find $(optenv ARTABLE_ROBOT_PKG))/launch/bringup.launch"/>
-
-    <!-- TODO kde poustet brain? kde vzit robot_interface? -->
-    <include file="$(find art_brain)/launch/brain.launch">
-        <arg name="robot_interface" value="art_pr2_interface.ArtPr2Interface"/>
-    </include>
+    <include if="$(optenv ARTABLE_ROBOT_PKG false)" file="$(arg dollar)$(arg robot_pkg_path)"/>
+    <include file="$(arg dollar)$(arg setup_pkg_path)"/>
 
 </launch>

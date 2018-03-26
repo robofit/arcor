@@ -2,33 +2,28 @@
 # coding=utf-8
 
 import rospy
-import time
 import copy
 import sys
 import math
+import importlib
 
 import actionlib
-from art_msgs.msg import LocalizeAgainstUMFAction, LocalizeAgainstUMFGoal, LocalizeAgainstUMFResult
-from std_srvs.srv import Empty, EmptyRequest, EmptyResponse, Trigger, TriggerResponse
+from std_srvs.srv import Empty, EmptyRequest, Trigger, TriggerResponse
 from art_msgs.msg import UserStatus, UserActivity, InterfaceState
-from art_msgs.srv import ProgramIdTrigger, ProgramIdTriggerResponse, getProgram, \
-    ObjectFlagClear, ObjectFlagClearRequest, ObjectFlagClearResponse, \
-    ObjectFlagSet, ObjectFlagSetRequest, ObjectFlagSetResponse
-from geometry_msgs.msg import PoseStamped, Pose
-from std_msgs.msg import String, Bool
-from art_msgs.msg import PickPlaceAction, PickPlaceGoal, SystemState, ObjInstance, InstancesArray, ProgramItem, \
-    ObjectType, LearningRequestAction, LearningRequestGoal, LearningRequestResult
+from art_msgs.srv import ProgramIdTrigger, ProgramIdTriggerResponse, \
+    ObjectFlagClear, ObjectFlagSet, ObjectFlagSetRequest
+from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Bool
+from art_msgs.msg import PickPlaceGoal, SystemState, ObjInstance, InstancesArray, ProgramItem, \
+    LearningRequestAction, LearningRequestGoal, LearningRequestResult
 from shape_msgs.msg import SolidPrimitive
 from art_msgs.srv import getObjectType, ProgramErrorResolveRequest, ProgramErrorResolveResponse, ProgramErrorResolve
-import matplotlib.path as mplPath
 import numpy as np
-import random
 from art_utils import InterfaceStateManager, ArtApiHelper, ProgramHelper, ArtRobotHelper, \
     UnknownRobot, RobotParametersNotOnParameterServer
-from art_brain.art_pr2_interface import ArtPr2Interface
-from art_brain.art_dobot_interface import ArtDobotInterface
 
-from tf import TransformerROS, TransformListener
+from tf import TransformListener
+from art_brain import ArtBrainRobotInterface
 
 
 import logging
@@ -135,32 +130,34 @@ class ArtBrain(object):
 
         rospy.loginfo('Waiting for other nodes to come up...')
 
-        self.robot_ns = rospy.get_param("robot_ns", "/art/robot")
-
-        self.robot_parameters = rospy.get_param(self.robot_ns)
-        self.robot_type = rospy.get_param(self.robot_ns + "/robot_id", "")
-
-        self.program_resume_after_restart = rospy.get_param("/art/brain/executing_program", False)
-        self.learning_resume_after_restart = rospy.get_param("/art/brain/learning_program", False)
+        self.program_resume_after_restart = rospy.get_param("executing_program", False)
+        self.learning_resume_after_restart = rospy.get_param("learning_program", False)
         self.rh = None
 
-        while self.rh is None:
+        while not self.rh:
             try:
                 self.rh = ArtRobotHelper()
             except UnknownRobot:
-                rospy.logerr("Unknown robot")
-                rospy.signal_shutdown("Unknown robot")
+                ArtBrain.fatal("Unknown robot")
+                return
             except RobotParametersNotOnParameterServer:
-                rospy.logerr("Robot parameters not on parameters server")
+                rospy.logerr("Robot parameters not on parameter server yet...")
                 rospy.sleep(1)
 
-        if self.rh.get_robot_type() == "pr2":
-            self.robot = ArtPr2Interface(self.rh)
-        elif self.get_robot_type() == "dobot":
-            self.robot = ArtDobotInterface(self.rh)
-        else:
-            rospy.logerr("Robot " + str(self.robot_type) + " unknown")
-            rospy.signal_shutdown("Robot " + str(self.robot_type) + " unknown")
+        try:
+            p, m = rospy.get_param("robot_interface").rsplit('.', 1)
+        except KeyError:
+            ArtBrain.fatal("Robot interface not set!")
+            return
+        try:
+            mod = importlib.import_module(p)
+            self.robot = getattr(mod, m)(self.rh)
+        except (ImportError, AttributeError, TypeError) as e:
+            ArtBrain.fatal("Failed to import robot interface: " + str(e))
+            return
+
+        if not isinstance(self.robot, ArtBrainRobotInterface):
+            ArtBrain.fatal("Invalid robot interface.")
             return
 
         rospy.loginfo("Robot initialized")
@@ -179,27 +176,27 @@ class ArtBrain(object):
             "/art/interface/projected_gui/app/projectors_calibrated", Bool, self.projectors_calibrated_cb)
 
         self.srv_program_start = rospy.Service(
-            '/art/brain/program/start', ProgramIdTrigger, self.program_start_cb)
+            'program/start', ProgramIdTrigger, self.program_start_cb)
         self.srv_program_stop = rospy.Service(
-            '/art/brain/program/stop', Trigger, self.program_stop_cb)
+            'program/stop', Trigger, self.program_stop_cb)
 
         self.srv_program_pause = rospy.Service(
-            '/art/brain/program/pause', Trigger, self.program_pause_cb)
+            'program/pause', Trigger, self.program_pause_cb)
         self.srv_program_resume = rospy.Service(
-            '/art/brain/program/resume', Trigger, self.program_resume_cb)
+            'program/resume', Trigger, self.program_resume_cb)
 
         self.srv_learning_start = rospy.Service(
-            '/art/brain/learning/start', ProgramIdTrigger, self.learning_start_cb)
+            'learning/start', ProgramIdTrigger, self.learning_start_cb)
         self.srv_learning_stop = rospy.Service(
-            '/art/brain/learning/stop', Trigger, self.learning_stop_cb)
+            'learning/stop', Trigger, self.learning_stop_cb)
 
         self.srv_program_error_response = rospy.Service(
-            '/art/brain/program/error_response',
+            'program/error_response',
             ProgramErrorResolve,
             self.program_error_response_cb)
 
         self.as_learning_request = actionlib.SimpleActionServer(
-            "/art/brain/learning_request",
+            "learning_request",
             LearningRequestAction,
             execute_cb=self.learning_request_cb,
             auto_start=True)
@@ -221,7 +218,7 @@ class ArtBrain(object):
         # TODO use this topic instead of system_state in InterfaceState (duplication) ??
         # TODO move (pub/sub) to InterfaceStateManager?
         self.state_publisher = rospy.Publisher(
-            "/art/brain/system_state", SystemState, queue_size=1)
+            "system_state", SystemState, queue_size=1)
 
         self.tf_listener = TransformListener()
 
@@ -302,6 +299,12 @@ class ArtBrain(object):
         self.initialized = True
         self.fsm.init()
 
+    @staticmethod
+    def fatal(msg):
+
+        rospy.logfatal(msg)
+        rospy.signal_shutdown(msg)
+
     # ***************************************************************************************
     #                                       STATES
     # ***************************************************************************************
@@ -314,9 +317,9 @@ class ArtBrain(object):
         rospy.logdebug('Current state: state_waiting_for_action')
 
         if self.program_resume_after_restart or self.learning_resume_after_restart:
-            program_id = rospy.get_param("/art/brain/program_id", None)
-            self.block_id = rospy.get_param("/art/brain/block_id", None)
-            item_id = rospy.get_param("/art/brain/item_id", None)
+            program_id = rospy.get_param("program_id", None)
+            self.block_id = rospy.get_param("block_id", None)
+            item_id = rospy.get_param("item_id", None)
             if self.block_id is None or item_id is None or program_id is None:
                 rospy.logwarn("Could not resume program!")
                 self.learning_resume_after_restart = False
@@ -358,7 +361,7 @@ class ArtBrain(object):
     def state_program_init(self, event):
         rospy.logdebug('Current state: state_program_init')
         rospy.logdebug('New program ready!')
-        rospy.set_param("/art/brain/executing_program", True)
+        rospy.set_param("executing_program", True)
 
         if self.ph is None:
             self.fsm.error(severity=ArtBrainErrorSeverities.SEVERE,
@@ -366,16 +369,16 @@ class ArtBrain(object):
             return
         item_id = None
         if self.program_resume_after_restart:
-            item_id = rospy.get_param("/art/brain/item_id", None)
+            item_id = rospy.get_param("item_id", None)
         else:
             self.clear_all_object_flags_srv_client.call(EmptyRequest())
 
             (self.block_id, item_id) = self.ph.get_first_item_id()
         self.instruction = self.ph.get_item_msg(self.block_id, item_id)
 
-        rospy.set_param("/art/brain/program_id", self.ph.get_program_id())
-        rospy.set_param("/art/brain/block_id", self.block_id)
-        rospy.set_param("/art/brain/item_id", item_id)
+        rospy.set_param("program_id", self.ph.get_program_id())
+        rospy.set_param("block_id", self.block_id)
+        rospy.set_param("item_id", item_id)
         self.executing_program = True
         self.program_paused = False
         self.program_pause_request = False
@@ -438,9 +441,9 @@ class ArtBrain(object):
             ProgramItem.WAIT_FOR_USER: self.fsm.wait_for_user,
             ProgramItem.WAIT_UNTIL_USER_FINISHES: self.fsm.wait_until_user_finishes,
         }
-        rospy.set_param("/art/brain/program_id", self.ph.get_program_id())
-        rospy.set_param("/art/brain/block_id", self.block_id)
-        rospy.set_param("/art/brain/item_id", self.instruction.id)
+        rospy.set_param("program_id", self.ph.get_program_id())
+        rospy.set_param("block_id", self.block_id)
+        rospy.set_param("item_id", self.instruction.id)
         instruction_transition = instructions.get(self.instruction.type, None)
         rospy.logdebug(instruction_transition)
         rospy.logdebug(self.instruction.type)
@@ -626,10 +629,10 @@ class ArtBrain(object):
         self.state_manager.send()
         self.executing_program = False
         self.robot.arms_reinit()
-        rospy.set_param("/art/brain/executing_program", False)
-        rospy.delete_param("/art/brain/program_id")
-        rospy.delete_param("/art/brain/block_id")
-        rospy.delete_param("/art/brain/item_id")
+        rospy.set_param("executing_program", False)
+        rospy.delete_param("program_id")
+        rospy.delete_param("block_id")
+        rospy.delete_param("item_id")
         self.program_resume_after_restart = False
         self.fsm.done()
 
@@ -684,7 +687,7 @@ class ArtBrain(object):
     def state_learning_init(self, event):
         rospy.logdebug('Current state: Teaching init')
         self.learning = True
-        rospy.set_param("/art/brain/learning_program", True)
+        rospy.set_param("learning_program", True)
         self.fsm.init_done()
 
     def learning_load_block_id(self, event):
@@ -1604,7 +1607,7 @@ class ArtBrain(object):
             resp.success = False
         rospy.logdebug('Stopping learning')
         self.learning = False
-        rospy.set_param("/art/brain/learning_program", False)
+        rospy.set_param("learning_program", False)
         resp.success = True
         self.fsm.learning_done()
         return resp
@@ -1640,9 +1643,9 @@ class ArtBrain(object):
         if msg.interface_id != InterfaceState.BRAIN_ID:
             if msg.system_state == InterfaceState.STATE_LEARNING:
                 self.ph.set_item_msg(msg.block_id, msg.program_current_item)
-                rospy.set_param("/art/brain/program_id", self.ph.get_program_id())
-                rospy.set_param("/art/brain/block_id", self.block_id)
-                rospy.set_param("/art/brain/item_id", msg.program_current_item.id)
+                rospy.set_param("program_id", self.ph.get_program_id())
+                rospy.set_param("block_id", self.block_id)
+                rospy.set_param("item_id", msg.program_current_item.id)
                 self.art.store_program(self.ph.get_program())
         pass
 
