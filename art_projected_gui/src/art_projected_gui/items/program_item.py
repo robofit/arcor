@@ -15,7 +15,18 @@ translate = QtCore.QCoreApplication.translate
 
 class ProgramItem(Item):
 
-    def __init__(self, scene, x, y, program_helper, done_cb=None, item_switched_cb=None, learning_request_cb=None, pause_cb=None, cancel_cb=None, stopped=False):
+    def __init__(
+            self,
+            scene,
+            x,
+            y,
+            program_helper,
+            done_cb=None,
+            item_switched_cb=None,
+            learning_request_cb=None,
+            pause_cb=None,
+            cancel_cb=None,
+            stopped=False):
 
         self.w = 100
         self.h = 100
@@ -418,14 +429,22 @@ class ProgramItem(Item):
             self.item_on_failure_btn.set_enabled(of[0] != 0 and not (of[0] == self.block_id and of[1] == self.item_id))
             self.item_on_success_btn.set_enabled(os[0] != 0 and not (os[0] == self.block_id and os[1] == self.item_id))
 
-            if self.ph.item_requires_learning(self.block_id, self.item_id) and self.ph.item_learned(self.block_id, self.item_id):
+            if self.ph.item_requires_learning(
+                    self.block_id,
+                    self.item_id) and self.ph.item_learned(
+                    self.block_id,
+                    self.item_id):
                 self.item_run_btn.set_enabled(True)
             else:
                 self.item_run_btn.set_enabled(False)
 
             # TODO place pose with object through ref_id - disable Edit when object is not set
             self.item_edit_btn.set_enabled(
-                self.ph.item_requires_learning(self.block_id, self.item_id) and not self.ph.item_has_nothing_to_set(self.block_id, self.item_id))
+                self.ph.item_requires_learning(
+                    self.block_id,
+                    self.item_id) and not self.ph.item_has_nothing_to_set(
+                    self.block_id,
+                    self.item_id))
 
         else:
 
@@ -536,7 +555,8 @@ class ProgramItem(Item):
 
                 self.editing_item = True
                 self.item_edit_btn.set_caption(translate("ProgramItem", "Done"))
-                group_enable((self.item_finished_btn, self.items_list, self.item_on_failure_btn, self.item_on_success_btn), False)
+                group_enable((self.item_finished_btn, self.items_list,
+                              self.item_on_failure_btn, self.item_on_success_btn), False)
 
             else:
 
@@ -728,7 +748,15 @@ class ProgramItem(Item):
 
                 painter.setPen(QtCore.Qt.red)
 
-            painter.drawText(sp, 2 * sp, translate("ProgramItem", "Program %1, block %2").arg(self.ph.get_program_id()).arg(self.block_id))
+            painter.drawText(
+                sp,
+                2 *
+                sp,
+                translate(
+                    "ProgramItem",
+                    "Program %1, block %2").arg(
+                    self.ph.get_program_id()).arg(
+                    self.block_id))
         else:
 
             if not self.program_learned and not self.readonly:

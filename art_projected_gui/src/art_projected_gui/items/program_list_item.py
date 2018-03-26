@@ -10,7 +10,16 @@ translate = QtCore.QCoreApplication.translate
 
 class ProgramListItem(Item):
 
-    def __init__(self, scene, x, y, program_headers, learned_dict, selected_program_id=None, program_selected_cb=None, program_selection_changed_cb=None):
+    def __init__(
+            self,
+            scene,
+            x,
+            y,
+            program_headers,
+            learned_dict,
+            selected_program_id=None,
+            program_selected_cb=None,
+            program_selection_changed_cb=None):
 
         self.w = 100
         self.h = 100

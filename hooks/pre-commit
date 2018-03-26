@@ -13,7 +13,7 @@ import tempfile
 select_codes = []
 ignore_codes = ['E721']
 # Add things like "--max-line-length=120" below
-overrides = ["--max-line-length=250"]
+overrides = ["--max-line-length=120"]
 
 
 def system(*args, **kwargs):

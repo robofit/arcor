@@ -26,7 +26,25 @@ class PlaceItem(ObjectItem):
 
     """
 
-    def __init__(self, scene, caption, x, y, z, quaternion, object_type, object_id=None, place_pose_changed=None, selected=False, fixed=False, txt=True, rot=True, rot_point=None, rotation_changed=None, parent=None, dashed=False):
+    def __init__(
+            self,
+            scene,
+            caption,
+            x,
+            y,
+            z,
+            quaternion,
+            object_type,
+            object_id=None,
+            place_pose_changed=None,
+            selected=False,
+            fixed=False,
+            txt=True,
+            rot=True,
+            rot_point=None,
+            rotation_changed=None,
+            parent=None,
+            dashed=False):
 
         self.in_collision = False
         self.caption = caption
@@ -42,7 +60,18 @@ class PlaceItem(ObjectItem):
         if quaternion == (0, 0, 0, 1):
             quaternion = (0.707, 0, 0, 0.707)
 
-        super(PlaceItem, self).__init__(scene, object_id, object_type, x, y, z, quaternion, parent=parent, dashed=dashed)
+        super(
+            PlaceItem,
+            self).__init__(
+            scene,
+            object_id,
+            object_type,
+            x,
+            y,
+            z,
+            quaternion,
+            parent=parent,
+            dashed=dashed)
 
         self.update_text()
         self.fixed = fixed
@@ -211,7 +240,8 @@ class PlaceItem(ObjectItem):
     def point_changed(self, pt, finished=False):
 
         # follow angle between "free" point and object center, after release put object back on topLeft corner
-        angle = math.atan2(self.point.scenePos().y() - self.scenePos().y(), self.point.scenePos().x() - self.scenePos().x()) + 2.355
+        angle = math.atan2(self.point.scenePos().y() - self.scenePos().y(),
+                           self.point.scenePos().x() - self.scenePos().x()) + 2.355
 
         if self.last_angle is None:
 
@@ -257,9 +287,11 @@ class PlaceItem(ObjectItem):
                         in_collision = True
                         break
                 if in_collision:
-                    self.rotation_changed([])  # in case of collision, new rotations of objects are NOT saved into the ProgramItem message
+                    self.rotation_changed(
+                        [])  # in case of collision, new rotations of objects are NOT saved into the ProgramItem message
                 else:
-                    self.rotation_changed([self] + self.other_items)    # saving new rotations of objects into the ProgramItem message
+                    # saving new rotations of objects into the ProgramItem message
+                    self.rotation_changed([self] + self.other_items)
 
             if self.place_pose_changed is not None:
                 self.place_pose_changed(self)

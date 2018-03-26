@@ -3,7 +3,8 @@
 import sys
 import rospy
 from art_msgs.srv import ProgramIdTrigger, ProgramIdTriggerResponse
-from art_msgs.msg import InterfaceState, ProgramItem, LearningRequestAction, LearningRequestFeedback, LearningRequestResult
+from art_msgs.msg import InterfaceState, ProgramItem, LearningRequestAction, LearningRequestFeedback,\
+    LearningRequestResult
 from art_utils import InterfaceStateManager, ProgramHelper, ArtApiHelper
 import actionlib
 from std_srvs.srv import Trigger, TriggerResponse

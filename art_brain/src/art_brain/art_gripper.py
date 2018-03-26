@@ -23,17 +23,29 @@ class ArtGripper(object):
         if pp_client is not None:
             self.pp_client = actionlib.SimpleActionClient(
                 self.pp_client_name, PickPlaceAction)
-            rospy.loginfo("Waiting for " + str(arm_id) + "'s gripper pick&place action client")
+            rospy.loginfo(
+                "Waiting for " +
+                str(arm_id) +
+                "'s gripper pick&place action client")
             self.pp_client.wait_for_server()
-            rospy.loginfo("Connected to " + str(arm_id) + "'s gripper pick&place action client")
+            rospy.loginfo(
+                "Connected to " +
+                str(arm_id) +
+                "'s gripper pick&place action client")
         else:
             self.pp_client = None
         if manipulation_client is not None:
             self.manip_client = actionlib.SimpleActionClient(
                 self.manip_client_name, ArmNavigationAction)
-            rospy.loginfo("Waiting for " + str(arm_id) + "'s gripper manipulation action client")
+            rospy.loginfo(
+                "Waiting for " +
+                str(arm_id) +
+                "'s gripper manipulation action client")
             self.manip_client.wait_for_server()
-            rospy.loginfo("Connected to " + str(arm_id) + "'s gripper pick&place action client")
+            rospy.loginfo(
+                "Connected to " +
+                str(arm_id) +
+                "'s gripper pick&place action client")
         else:
             self.manip_client = None
 
@@ -68,11 +80,13 @@ class ArtGripper(object):
 
         if interaction_state is not None:
             rospy.loginfo("Waiting for arm interaction state message")
-            self.interaction_state = rospy.wait_for_message(interaction_state, Bool).data
+            self.interaction_state = rospy.wait_for_message(
+                interaction_state, Bool).data
             if self.interaction_state:
                 self.interaction_off()
             rospy.loginfo("Got it")
-            self.interaction_state_sub = rospy.Subscriber(interaction_state, Bool, self.interaction_state_cb)
+            self.interaction_state_sub = rospy.Subscriber(
+                interaction_state, Bool, self.interaction_state_cb)
 
         else:
             self.interaction_state_sub = None
@@ -93,7 +107,8 @@ class ArtGripper(object):
     def get_ready(self):
         if self.get_ready_client is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_NOT_IMPLEMENTED
-        resp = self.get_ready_client.call(TriggerRequest())  # type: TriggerResponse
+        resp = self.get_ready_client.call(
+            TriggerRequest())  # type: TriggerResponse
         if resp.success:
             return None, None
         else:
@@ -102,7 +117,8 @@ class ArtGripper(object):
     def move_to_user(self):
         if self.move_to_user_client is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_NOT_IMPLEMENTED
-        resp = self.move_to_user_client.call(TriggerRequest())  # type: TriggerResponse
+        resp = self.move_to_user_client.call(
+            TriggerRequest())  # type: TriggerResponse
         if resp.success:
             return None, None
         else:
@@ -111,7 +127,8 @@ class ArtGripper(object):
     def interaction_on(self):
         if self.interaction_on_client is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_NOT_IMPLEMENTED
-        resp = self.interaction_on_client.call(TriggerRequest())  # type: TriggerResponse
+        resp = self.interaction_on_client.call(
+            TriggerRequest())  # type: TriggerResponse
         if resp.success:
             return None, None
         else:
@@ -120,7 +137,8 @@ class ArtGripper(object):
     def interaction_off(self):
         if self.interaction_off_client is None:
             return ArtBrainErrorSeverities.ERROR, ArtBrainErrors.ERROR_NOT_IMPLEMENTED
-        resp = self.interaction_off_client.call(TriggerRequest())  # type: TriggerResponse
+        resp = self.interaction_off_client.call(
+            TriggerRequest())  # type: TriggerResponse
         if resp.success:
             return None, None
         else:

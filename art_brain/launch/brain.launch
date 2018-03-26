@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="robot_interface"/>
+    <arg name="robot_interface" default=""/>
 
     <group ns="/art/brain">
 

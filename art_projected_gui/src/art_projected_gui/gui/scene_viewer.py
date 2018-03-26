@@ -93,7 +93,12 @@ class SceneViewer(QtGui.QWidget):
                 return
 
             pix = pix.mirrored(vertical=True)
-            image = QtGui.QPixmap.fromImage(pix.scaled(self.pix_label.width(), self.pix_label.height(), QtCore.Qt.KeepAspectRatio, transformMode=QtCore.Qt.SmoothTransformation))
+            image = QtGui.QPixmap.fromImage(
+                pix.scaled(
+                    self.pix_label.width(),
+                    self.pix_label.height(),
+                    QtCore.Qt.KeepAspectRatio,
+                    transformMode=QtCore.Qt.SmoothTransformation))
             self.pix_label.setPixmap(image)
             self.update()
 

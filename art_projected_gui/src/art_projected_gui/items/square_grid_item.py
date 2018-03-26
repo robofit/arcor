@@ -129,7 +129,20 @@ class SquarePointItem(Item):
 class SquareItem(Item):
 
     # Class constructor
-    def __init__(self, scene, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points, scene_items, square_changed=None, fixed=False):
+    def __init__(
+            self,
+            scene,
+            caption,
+            min_x,
+            min_y,
+            square_width,
+            square_height,
+            object_type,
+            poses,
+            grid_points,
+            scene_items,
+            square_changed=None,
+            fixed=False):
 
         self.scn = scene
         self.caption = caption
@@ -238,7 +251,10 @@ class SquareItem(Item):
                 self.items.append(it)
 
             if self.items:
-                self.items[0].set_other_items(self.items[1:])   # rotation of all objects in a grid (list of all objects is handed over to the first object. When the first object is rotated, all objects are rotated)
+                # rotation of all objects in a grid (list of all objects is handed over to
+                # the first object. When the first object is rotated, all objects are
+                # rotated)
+                self.items[0].set_other_items(self.items[1:])
                 self.plus_btn.setEnabled(True)
                 self.minus_btn.setEnabled(True)
                 self.dialog = DialogItem(self.scene(),
@@ -256,7 +272,8 @@ class SquareItem(Item):
                     self.dialog_cb)
 
         if self.square_changed is not None:
-            self.square_changed(self.get_square_points(), self.items)   # to save grid points and objects into the ProgramItem message
+            # to save grid points and objects into the ProgramItem message
+            self.square_changed(self.get_square_points(), self.items)
 
         self.update_bound()
         self.update()
@@ -393,8 +410,16 @@ class SquareItem(Item):
             else:
                 self.object_side_length_y = self.object_type.bbox.dimensions[2] + self.space
 
-            width_count = int(modf(round((((self.max[0] - self.min[0]) - self.space) / self.object_side_length_x), 5))[1])
-            height_count = int(modf(round((((self.max[1] - self.min[1]) - self.space) / self.object_side_length_y), 5))[1])
+            width_count = int(
+                modf(
+                    round(
+                        (((self.max[0] - self.min[0]) - self.space) / self.object_side_length_x),
+                        5))[1])
+            height_count = int(
+                modf(
+                    round(
+                        (((self.max[1] - self.min[1]) - self.space) / self.object_side_length_y),
+                        5))[1])
             if self.previous_width != width_count or self.previous_height != height_count:
                 ps = PoseStamped()
                 if corner == "BR" or corner == "TR":
@@ -478,7 +503,9 @@ class SquareItem(Item):
 
             self.last_corner = corner
 
-            # rotation of all objects in a grid (list of all objects is handed over to the first object. When the first object is rotated, all objects are rotated)
+            # rotation of all objects in a grid (list of all objects is handed over to
+            # the first object. When the first object is rotated, all objects are
+            # rotated)
             if self.items:
                 self.items[0].set_other_items(self.items[1:])
 
@@ -491,9 +518,11 @@ class SquareItem(Item):
 
                 for i, it in enumerate(self.items):
                     if self.last_corner == "BR" or self.last_corner == "TR":
-                        new_x = self.pom_min[0] + self.space / 2 + new_object_length_x / 2 + new_object_length_x * (i % self.previous_width)
+                        new_x = self.pom_min[0] + self.space / 2 + new_object_length_x / \
+                            2 + new_object_length_x * (i % self.previous_width)
                     else:
-                        new_x = self.pom_max[0] - self.space / 2 - new_object_length_x / 2 - new_object_length_x * (i % self.previous_width)
+                        new_x = self.pom_max[0] - self.space / 2 - new_object_length_x / \
+                            2 - new_object_length_x * (i % self.previous_width)
 
                     if self.last_corner == "BR" or self.last_corner == "BL":
                         new_y = self.pom_max[1] - self.space / 2 - new_object_length_y / 2 - new_object_length_y * (
@@ -510,7 +539,7 @@ class SquareItem(Item):
             self.plus_btn.setEnabled(True)
             self.minus_btn.setEnabled(True)
 
-            if self.last_corner == "BR" or self.last_corner == "BL":  # TODO: skontrolovat ci nema byt TR a TL!!!!!!!!!!!!!!!!!!!!
+            if self.last_corner == "BR" or self.last_corner == "BL":  # TODO: skontrolovat ci nema byt TR a TL!!
                 self.items.reverse()    # we want robot always to place object from furthest line
 
             in_collision = False
@@ -519,9 +548,11 @@ class SquareItem(Item):
                     in_collision = True
                     break
             if in_collision:
-                self.square_changed(self.get_square_points(), [])  # to save only grid points into the ProgramItem message
+                # to save only grid points into the ProgramItem message
+                self.square_changed(self.get_square_points(), [])
             else:
-                self.square_changed(self.get_square_points(), self.items)  # to save grid points and objects into the ProgramItem message
+                # to save grid points and objects into the ProgramItem message
+                self.square_changed(self.get_square_points(), self.items)
 
         self.update()
 
@@ -567,9 +598,11 @@ class SquareItem(Item):
                     in_collision = True
                     break
             if in_collision:
-                self.square_changed(self.get_square_points(), [])  # to save only grid points into the ProgramItem message
+                # to save only grid points into the ProgramItem message
+                self.square_changed(self.get_square_points(), [])
             else:
-                self.square_changed(self.get_square_points(), self.items)  # to save grid points and objects into the ProgramItem message
+                # to save grid points and objects into the ProgramItem message
+                self.square_changed(self.get_square_points(), self.items)
 
     def cursor_press(self):
 
@@ -581,7 +614,8 @@ class SquareItem(Item):
 
     def items_rotation_changed(self, items):
 
-        self.square_changed(self.get_square_points(), items)  # to save grid points and objects into the ProgramItem message
+        # to save grid points and objects into the ProgramItem message
+        self.square_changed(self.get_square_points(), items)
 
     '''
         Method returns the shape of this grid as a QPainterPath in local coordinates.
@@ -599,7 +633,21 @@ class SquareItem(Item):
 
     def boundingRect(self):
 
-        return QtCore.QRectF(self.m2pix(self.min[0]) - 2.5, self.m2pix(self.min[1]) - 2.5, self.m2pix(self.max[0] - self.min[0]) + 5, self.m2pix(self.max[1] - self.min[1]) + 5)
+        return QtCore.QRectF(
+            self.m2pix(
+                self.min[0]) -
+            2.5,
+            self.m2pix(
+                self.min[1]) -
+            2.5,
+            self.m2pix(
+                self.max[0] -
+                self.min[0]) +
+            5,
+            self.m2pix(
+                self.max[1] -
+                self.min[1]) +
+            5)
 
     '''
         Method paints the grid.

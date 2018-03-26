@@ -57,7 +57,9 @@ class TouchPointItem(Item):
                 if self.collidesWithItem(it):
 
                     parent = it.parentItem()
-                    if not isinstance(it, ButtonItem) and it.fixed and parent is not None and isinstance(parent, Item) and not parent.fixed:
+                    if not isinstance(
+                            it, ButtonItem) and it.fixed and parent is not None and isinstance(
+                            parent, Item) and not parent.fixed:
 
                         it = it.parentItem()
 
@@ -192,7 +194,8 @@ class TouchTableItem(Item):
 
             # TODO check frame_id
             rospy.logdebug("new touch point, id: " + str(msg.id))
-            self.touch_points[msg.id] = TouchPointItem(self.scene(), msg.point.point.x, msg.point.point.y, self, show=self.show_touch_points)
+            self.touch_points[msg.id] = TouchPointItem(
+                self.scene(), msg.point.point.x, msg.point.point.y, self, show=self.show_touch_points)
 
         else:
 
