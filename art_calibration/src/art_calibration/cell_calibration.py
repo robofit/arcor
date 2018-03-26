@@ -60,7 +60,8 @@ class ArtCellCalibration(object):
 
             m = np.matrix(ast.literal_eval(m))
 
-            self.transformation.rotation = ArtCalibrationHelper.normalize_vector(transformations.quaternion_from_matrix(m))
+            self.transformation.rotation = ArtCalibrationHelper.normalize_vector(
+                transformations.quaternion_from_matrix(m))
             self.transformation.translation = transformations.translation_from_matrix(m)
             self.calibrated = True
             rospy.loginfo("Cell: " + str(self.cell_id) + " calibration loaded from param")
@@ -147,7 +148,8 @@ class ArtCellCalibration(object):
             if p is not None:
                 self.positions[i] += p
                 self.cnt[i] += 1
-                rospy.loginfo("Cell: " + str(self.cell_id) + " gets marker id " + str(i + 10) + ", cnt: " + str(self.cnt[i]))
+                rospy.loginfo("Cell: " + str(self.cell_id) +
+                              " gets marker id " + str(i + 10) + ", cnt: " + str(self.cnt[i]))
 
         if all_markers:
 
@@ -181,7 +183,7 @@ class ArtCellCalibration(object):
         try:
             print self.cell_frame
             print self.main_cell_frame
-            # translation, rotation = self.listener.lookupTransform(pc.header.frame_id, self.main_cell_frame, rospy.Time(0))
+
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return
         transform = TransformStamped()

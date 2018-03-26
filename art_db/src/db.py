@@ -20,10 +20,15 @@ class ArtDB:
         self.lock = threading.RLock()
 
         self.srv_get_program = rospy.Service('/art/db/program/get', getProgram, self.srv_get_program_cb)
-        self.srv_get_program_headers = rospy.Service('/art/db/program_headers/get', getProgramHeaders, self.srv_get_program_headers_cb)
+        self.srv_get_program_headers = rospy.Service('/art/db/program_headers/get',
+                                                     getProgramHeaders,
+                                                     self.srv_get_program_headers_cb)
+
         self.srv_store_program = rospy.Service('/art/db/program/store', storeProgram, self.srv_store_program_cb)
         self.srv_delete_program = rospy.Service('/art/db/program/delete', ProgramIdTrigger, self.srv_delete_program_cb)
-        self.srv_ro_set_program = rospy.Service('/art/db/program/readonly/set', ProgramIdTrigger, self.srv_ro_set_program_cb)
+        self.srv_ro_set_program = rospy.Service('/art/db/program/readonly/set',
+                                                ProgramIdTrigger,
+                                                self.srv_ro_set_program_cb)
         self.srv_ro_clear_program = rospy.Service('/art/db/program/readonly/clear', ProgramIdTrigger,
                                                   self.srv_ro_clear_program_cb)
 

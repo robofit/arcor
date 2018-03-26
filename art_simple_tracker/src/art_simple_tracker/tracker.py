@@ -52,7 +52,8 @@ class TrackedObject:
         dist = distance.euclidean((0, 0, 0), (ps.pose.position.x, ps.pose.position.y, ps.pose.position.z))
 
         if dist > self.max_dist or dist < self.min_dist:
-            rospy.logdebug("Object " + self.object_id + " seen by " + ps.header.frame_id + " is too far (or too close): " + str(dist))
+            rospy.logdebug("Object " + self.object_id +
+                           " seen by " + ps.header.frame_id + " is too far (or too close): " + str(dist))
             return
 
         try:
@@ -202,12 +203,15 @@ class ArtSimpleTracker:
 
         self.srv_set_flag = rospy.Service('/art/object_detector/flag/set', ObjectFlagSet, self.srv_set_flag_cb)
         self.srv_clear_flag = rospy.Service('/art/object_detector/flag/clear', ObjectFlagClear, self.srv_clear_flag_cb)
-        self.srv_clear_all_flags = rospy.Service('/art/object_detector/flag/clear_all', Empty, self.srv_clear_all_flags_cb)
+        self.srv_clear_all_flags = rospy.Service('/art/object_detector/flag/clear_all',
+                                                 Empty, self.srv_clear_all_flags_cb)
 
         self.use_forearm_cams = False
         self.forearm_cams = ("/l_forearm_cam_optical_frame", "/r_forearm_cam_optical_frame")
-        self.srv_enable_forearm = rospy.Service('/art/object_detector/forearm/enable', Empty, self.srv_enable_forearm_cb)
-        self.srv_disable_forearm = rospy.Service('/art/object_detector/forearm/disable', Empty, self.srv_disable_forearm_cb)
+        self.srv_enable_forearm = rospy.Service('/art/object_detector/forearm/enable',
+                                                Empty, self.srv_enable_forearm_cb)
+        self.srv_disable_forearm = rospy.Service('/art/object_detector/forearm/disable',
+                                                 Empty, self.srv_disable_forearm_cb)
         self.srv_enable_detection = rospy.Service('/art/object_detector/all/enable', Empty,
                                                   self.srv_enable_detection_cb)
         self.srv_disable_detection = rospy.Service('/art/object_detector/all/disable', Empty,
@@ -353,7 +357,8 @@ class ArtSimpleTracker:
                 ia.instances.append(inst)
 
                 self.br.sendTransform((inst.pose.position.x, inst.pose.position.y, inst.pose.position.z),
-                                      q2a(inst.pose.orientation), ia.header.stamp, "object_id_" + inst.object_id, self.target_frame)
+                                      q2a(inst.pose.orientation),
+                                      ia.header.stamp, "object_id_" + inst.object_id, self.target_frame)
 
             # commented out in order to keep object flags even if object is lost for some time
             # for obj_id in objects_to_delete:

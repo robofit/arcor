@@ -37,7 +37,8 @@ class ArtCalibration(object):
                 self.cells.append(ArtCellCalibration(cell, '/art/' + cell + '/ar_pose_marker',
                                                      'marker_detected', cell + '_kinect2_link',
                                                      cell_names[0] + '_kinect2_link',
-                                                     '/art/' + cell + '/kinect2/qhd/pointsHACK', self.listener))  # TODO: kapi hack
+                                                     '/art/' + cell + '/kinect2/qhd/pointsHACK',
+                                                     self.listener))  # TODO: kapi hack
 
         self.calibrated_pub = rospy.Publisher('/art/system/calibrated', Bool,
                                               queue_size=10, latch=True)
@@ -117,7 +118,8 @@ class ArtCalibration(object):
                 pcloud = pc2.create_cloud_xyz32(h, c.last_pc_transformed.to_list())
                 c.pc_pub.publish(pcloud)
                 continue
-            converged, transf, estimate, fitness = icp(main_cell.last_pc_transformed, c.last_pc_transformed, max_iter=25)
+            converged, transf, estimate, fitness = icp(main_cell.last_pc_transformed, c.last_pc_transformed,
+                                                       max_iter=25)
 
             print converged
             print fitness
@@ -126,8 +128,9 @@ class ArtCalibration(object):
             h.frame_id = c.world_frame
             print transf
             tt = transformations.inverse_matrix(transf)
-            ttt = transformations.concatenate_matrices(transformations.translation_matrix(c.get_transform().translation),
-                                                       transformations.quaternion_matrix(c.get_transform().rotation))
+            ttt = transformations.concatenate_matrices(
+                transformations.translation_matrix(c.get_transform().translation),
+                transformations.quaternion_matrix(c.get_transform().rotation))
             translation2 = transformations.translation_from_matrix(
 
                 transformations.translation_matrix(transformations.translation_from_matrix(tt)) *

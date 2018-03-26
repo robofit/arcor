@@ -13,8 +13,10 @@ class FakeUserState:
         self.left_arm_mann = False
         self.right_arm_mann = False
 
-        self.left_interaction_on = rospy.Service("/art/robot/left_arm/interaction/on", Trigger, self.left_interaction_on_cb)
-        self.left_interaction_off = rospy.Service("/art/robot/left_arm/interaction/off", Trigger, self.left_interaction_off_cb)
+        self.left_interaction_on = rospy.Service("/art/robot/left_arm/interaction/on",
+                                                 Trigger, self.left_interaction_on_cb)
+        self.left_interaction_off = rospy.Service("/art/robot/left_arm/interaction/off",
+                                                  Trigger, self.left_interaction_off_cb)
         self.left_get_ready = rospy.Service("/art/robot/left_arm/get_ready", Trigger,
                                             self.left_interaction_get_ready_cb)
         self.left_move_to_user = rospy.Service("/art/robot/left_arm/move_to_user", Trigger,
@@ -23,8 +25,10 @@ class FakeUserState:
                                          self.arm_up_cb)
         self.left_int_pub = rospy.Publisher("/art/robot/left_arm/interaction/state", Bool, queue_size=1, latch=True)
 
-        self.right_interaction_on = rospy.Service("/art/robot/right_arm/interaction/on", Trigger, self.right_interaction_on_cb)
-        self.right_interaction_off = rospy.Service("/art/robot/right_arm/interaction/off", Trigger, self.right_interaction_off_cb)
+        self.right_interaction_on = rospy.Service("/art/robot/right_arm/interaction/on",
+                                                  Trigger, self.right_interaction_on_cb)
+        self.right_interaction_off = rospy.Service("/art/robot/right_arm/interaction/off",
+                                                   Trigger, self.right_interaction_off_cb)
         self.right_get_ready = rospy.Service("/art/robot/right_arm/get_ready", Trigger,
                                              self.right_interaction_get_ready_cb)
         self.right_move_to_user = rospy.Service("/art/robot/right_arm/move_to_user", Trigger,
