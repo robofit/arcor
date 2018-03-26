@@ -76,7 +76,8 @@ def main(args):
         print "Faulty program"
         return
 
-    A = pgv.AGraph(label="<<B>Program ID: " + str(prog.header.id) + "<br/>" + escape(prog.header.name) + "</B>>", directed=True, strict=False)
+    A = pgv.AGraph(label="<<B>Program ID: " + str(prog.header.id) + "<br/>" + escape(prog.header.name) + "</B>>",
+                   directed=True, strict=False)
     A.graph_attr['outputorder'] = 'edgesfirst'
 
     A.add_node("start", label="Program start")
@@ -102,14 +103,17 @@ def main(args):
 
             for ref in item_msg.ref_id:
 
-                A.add_edge(get_node_name(block_id, ref), nn, color="gray", style="dashed", key="ref_" + nn + "_" + get_node_name(block_id, ref))
+                A.add_edge(get_node_name(block_id, ref), nn, color="gray", style="dashed",
+                           key="ref_" + nn + "_" + get_node_name(block_id, ref))
 
             A.get_node(nn).attr['label'] = 'Item ID: ' + str(item_id) + '\n' + get_type_string(item_msg)
             A.get_node(nn).attr['shape'] = 'box'
             A.get_node(nn).attr['style'] = 'rounded'
             ids.append(nn)
 
-        sg = A.subgraph(name="cluster_" + str(block_id), label="<<b>Group ID: " + str(block_id) + "<br/>" + escape(block_msg.name) + "</b>>", color="gray")
+        sg = A.subgraph(name="cluster_" + str(block_id),
+                        label="<<b>Group ID: " + str(block_id) + "<br/>" + escape(block_msg.name) + "</b>>",
+                        color="gray")
         sg.add_nodes_from(ids)
 
     A.layout(prog='dot')

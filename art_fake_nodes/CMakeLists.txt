@@ -28,9 +28,9 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-if (CATKIN_ENABLE_TESTING)
-  roslaunch_add_file_check(launch)
-endif()
+# if (CATKIN_ENABLE_TESTING)
+#  roslaunch_add_file_check(launch)
+# endif()
 
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)

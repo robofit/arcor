@@ -15,7 +15,8 @@ class InterfaceStateManager(object):
 
             rospy.loginfo('InterfaceStateManager: brain mode')
             self.brain = True
-            self.interface_state_pub = rospy.Publisher("/art/interface/state", InterfaceState, queue_size=10, latch=True)
+            self.interface_state_pub = rospy.Publisher("/art/interface/state",
+                                                       InterfaceState, queue_size=10, latch=True)
             self.interface_state_sub = rospy.Subscriber('/art/interface/state_evt', InterfaceState, self.state_cb)
 
         else:

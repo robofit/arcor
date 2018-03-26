@@ -57,7 +57,7 @@ class ArtWtf():
         for machine in self.machines_to_check:
 
             ping_ret = subprocess.call(
-                ["ping", "-c 1", machine], stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
+                ["ping", "-c 1", machine], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             if ping_ret != 0:
 
@@ -90,7 +90,8 @@ class ArtWtf():
     def check_api(self):
 
         if not rospy.has_param("/art/api"):
-            print("  ERROR: API definition not loaded, please run 'roslaunch art_bringup upload_api_definition.launch' first.")
+            print("  ERROR: API definition not loaded, please run "
+                  "'roslaunch art_bringup upload_api_definition.launch' first.")
             return False
 
         api = ArtAPI()
@@ -175,7 +176,8 @@ if __name__ == '__main__':
 
         node = ArtWtf()
 
-        print("This script tries to find out what might be wrong with ARTable. You may also try to use 'roswtf' utility to find out general ROS issues.")
+        print("This script tries to find out what might be wrong with ARTable. "
+              "You may also try to use 'roswtf' utility to find out general ROS issues.")
         print
 
         print("Checking time synchronization...")

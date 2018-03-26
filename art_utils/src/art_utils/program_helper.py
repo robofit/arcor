@@ -14,7 +14,8 @@ class ProgramHelper():
 
     """
 
-    ITEMS_USING_OBJECT = [Pi.PICK_FROM_POLYGON, Pi.PICK_FROM_FEEDER, Pi.PICK_OBJECT_ID, Pi.PLACE_TO_POSE, Pi.PLACE_TO_GRID, Pi.DRILL_POINTS]
+    ITEMS_USING_OBJECT = [Pi.PICK_FROM_POLYGON, Pi.PICK_FROM_FEEDER, Pi.PICK_OBJECT_ID, Pi.PLACE_TO_POSE,
+                          Pi.PLACE_TO_GRID, Pi.DRILL_POINTS]
     ITEMS_USING_POSE = [Pi.PICK_FROM_FEEDER, Pi.PLACE_TO_POSE, Pi.DRILL_POINTS, Pi.PLACE_TO_GRID]
     ITEMS_USING_POLYGON = [Pi.PICK_FROM_POLYGON, Pi.DRILL_POINTS, Pi.PLACE_TO_GRID]
     PICK_ITEMS = [Pi.PICK_FROM_POLYGON, Pi.PICK_FROM_FEEDER, Pi.PICK_OBJECT_ID]
@@ -106,12 +107,14 @@ class ProgramHelper():
                 # 0 means jump to the end
                 if vv["on_success"] != 0 and vv["on_success"] not in cache[k]["items"]:
 
-                    rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has invalid on_success: " + str(vv["on_success"]))
+                    rospy.logerr("Block id: " + str(k) + ", item id: " +
+                                 str(kk) + " has invalid on_success: " + str(vv["on_success"]))
                     return False
 
                 if vv["on_failure"] != 0 and vv["on_failure"] not in cache[k]["items"]:
 
-                    rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has invalid on_failure: " + str(vv["on_failure"]))
+                    rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) +
+                                 " has invalid on_failure: " + str(vv["on_failure"]))
                     return False
 
                 item = prog.blocks[v["idx"]].items[vv["idx"]]
@@ -121,7 +124,8 @@ class ProgramHelper():
 
                     if ref not in cache[k]["items"]:
 
-                        rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has invalid ref_id: " + str(ref))
+                        rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) +
+                                     " has invalid ref_id: " + str(ref))
                         return False
 
                 # at least one 'object' mandatory for following types
@@ -165,7 +169,8 @@ class ProgramHelper():
 
                         if ref_msg.type not in self.PICK_ITEMS:
 
-                            rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) + " has ref_id which is not PICK_*!")
+                            rospy.logerr("Block id: " + str(k) + ", item id: " + str(kk) +
+                                         " has ref_id which is not PICK_*!")
                             return False
 
                 # TODO refactor into separate method
@@ -280,7 +285,12 @@ class ProgramHelper():
 
     def item_requires_learning(self, block_id, item_id):
 
-        return self.get_item_type(block_id, item_id) in [Pi.PICK_FROM_POLYGON, Pi.PICK_FROM_FEEDER, Pi.PICK_OBJECT_ID, Pi.PLACE_TO_POSE, Pi.PLACE_TO_GRID, Pi.DRILL_POINTS]
+        return self.get_item_type(block_id, item_id) in [Pi.PICK_FROM_POLYGON,
+                                                         Pi.PICK_FROM_FEEDER,
+                                                         Pi.PICK_OBJECT_ID,
+                                                         Pi.PLACE_TO_POSE,
+                                                         Pi.PLACE_TO_GRID,
+                                                         Pi.DRILL_POINTS]
 
     def _check_for_pose(self, msg):
 
@@ -443,7 +453,9 @@ class ProgramHelper():
 
         msg = self.get_item_msg(block_id, item_id)
 
-        arr = ((self.ITEMS_USING_POLYGON, self.is_polygon_set), (self.ITEMS_USING_POSE, self.is_pose_set), (self.ITEMS_USING_OBJECT, self.is_object_set))
+        arr = ((self.ITEMS_USING_POLYGON, self.is_polygon_set),
+               (self.ITEMS_USING_POSE, self.is_pose_set),
+               (self.ITEMS_USING_OBJECT, self.is_object_set))
 
         for ar in arr:
 
