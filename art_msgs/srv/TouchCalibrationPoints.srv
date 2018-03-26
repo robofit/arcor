@@ -1,4 +1,0 @@
-# points to be displayed by an interface
-geometry_msgs/PointStamped[] points
----
-bool success

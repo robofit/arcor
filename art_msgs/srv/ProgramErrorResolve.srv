@@ -1,8 +1,0 @@
-int16 user_response_type
-
-int16 TRY_AGAIN = 1
-int16 SKIP_INSTRUCTION = 2
-int16 FAIL_INSTRUCTION = 3
-int16 END_PROGRAM = 4
----
-bool success
