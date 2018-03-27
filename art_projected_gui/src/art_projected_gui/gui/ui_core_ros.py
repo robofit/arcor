@@ -879,6 +879,10 @@ class UICoreRos(UICore):
             rospy.logerr("Invalid state!")
             return
 
+        # select currently visualized instruction
+        self.program_vis.set_active(
+            state.block_id, state.program_current_item.id)
+
         if old_state.block_id != state.block_id or old_state.program_current_item.id != state.program_current_item.id:
             self.clear_all()
 
@@ -1458,7 +1462,6 @@ class UICoreRos(UICore):
 
     def hololens_active_cb(self, msg):
         self.hololens_connected = msg.data
-        # rospy.logerr("HoloLens activity: " + str(self.hololens_connected))
 
     def program_selected_cb(self, prog_id, run=False, template=False, visualize=False):
 

@@ -303,7 +303,7 @@ class ProgramItem(Item):
         if self.item_id is not None:
 
             group_visible((self.block_finished_btn,
-                           self.block_edit_btn, self.block_on_failure_btn), False)
+                           self.block_edit_btn, self.block_on_failure_btn, self.block_visualize_btn, self.block_back_btn), False)
 
     def get_text_for_item(self, block_id, item_id):
 
