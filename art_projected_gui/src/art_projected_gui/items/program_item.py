@@ -216,8 +216,13 @@ class ProgramItem(Item):
         if self.vis_stop_cb is not None:
             self.vis_stop_cb()
 
+        # make sure that visualization is not paused and handle it's button caption properly
+        if self.visualization_paused:
+            self.visualization_paused = False
+            self.vis_pause_btn.set_caption(translate("ProgramItem", "Pause"))
+
         group_enable((self.vis_stop_btn, self.vis_pause_btn), False)
-        self.vis_replay_btn.set_enabled(True)
+        group_enable((self.vis_replay_btn, self.vis_back_btn), True)
 
     def vis_replay_btn_cb(self, btn):
         # callback which notifies HoloLens that replay button was hit
@@ -225,7 +230,7 @@ class ProgramItem(Item):
             self.vis_replay_cb()
 
         group_enable((self.vis_stop_btn, self.vis_pause_btn), True)
-        self.vis_replay_btn.set_enabled(False)
+        group_enable((self.vis_replay_btn, self.vis_back_btn), False)
 
     def vis_back_btn_cb(self, btn):
 
@@ -467,7 +472,8 @@ class ProgramItem(Item):
             y += self.vis_back_btn._height() + 3 * self.sp
 
             self.show_visualization_buttons(True)
-            group_enable((self.vis_pause_btn, self.vis_stop_btn, self.vis_back_btn), True)
+            group_enable((self.vis_pause_btn, self.vis_stop_btn), True)
+            self.vis_back_btn.set_enabled(False)
 
             group_visible((self.pr_pause_btn, self.pr_cancel_btn), False)
 

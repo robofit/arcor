@@ -155,6 +155,7 @@ class UICoreRos(UICore):
         self.hololens_connected = False
         self.hololens_state_pub = rospy.Publisher(
             '/art/interface/hololens/state', HololensState)
+        self.visualizing = False
 
         self.program_pause_srv = rospy.ServiceProxy(
             '/art/brain/program/pause', Trigger)
@@ -859,7 +860,8 @@ class UICoreRos(UICore):
                 it = None
 
     def state_visualizing(self, old_state, state, flags, system_state_changed):
-        """For HoloLens visualization"""
+        """For HoloLens visualization.
+        Called everytime when system has changed and it's state is InterfaceState.STATE_VISUALIZE."""
 
         if system_state_changed:
 
@@ -879,12 +881,22 @@ class UICoreRos(UICore):
             rospy.logerr("Invalid state!")
             return
 
-        # select currently visualized instruction
-        self.program_vis.set_active(
-            state.block_id, state.program_current_item.id)
+        # if visualize button in block view was hit
+        if self.visualizing:
+            # select currently visualized instruction
+            self.program_vis.set_active(
+                state.block_id, state.program_current_item.id)
 
-        if old_state.block_id != state.block_id or old_state.program_current_item.id != state.program_current_item.id:
-            self.clear_all()
+        # check flags for UI control
+        for key, value in flags.items():
+            if key == "HOLOLENS_VISUALIZATION":
+                # if program has finished or user has stopped it with voice
+                if value == "STOP":
+                    self.program_vis.vis_stop_btn_cb(None)
+                if value == "REPLAY":
+                    self.program_vis.vis_replay_btn_cb(None)
+                if value == "PAUSE":
+                    self.program_vis.vis_pause_btn_cb(None)
 
     def create_hololens_state_msg(self, hololens_state, visualization_state=None):
         msg = HololensState()
@@ -906,6 +918,8 @@ class UICoreRos(UICore):
         self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_VISUALIZING, HololensState.VISUALIZATION_RUN))
 
         self.show_all_instructions_at_once(self.state_manager.state)
+
+        self.visualizing = True
 
     def show_all_instructions_at_once(self, state):
         """Draws all drawable elements of program to table (like polygon from pick_from_polygon, place pose, etc.)"""
@@ -994,6 +1008,8 @@ class UICoreRos(UICore):
 
         self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_IDLE))
 
+        self.visualizing = False
+
         resp = None
         try:
             resp = self.stop_visualizing_srv()
@@ -1026,11 +1042,15 @@ class UICoreRos(UICore):
 
         self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_VISUALIZING, HololensState.VISUALIZATION_STOP))
 
+        self.visualizing = False
+
     def vis_replay_cb(self):
         """Callback for REPLAY button while visualizing.
             Notify HoloLens device that replay button was hit."""
 
         self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_VISUALIZING, HololensState.VISUALIZATION_REPLAY))
+
+        self.visualizing = True
 
     def vis_back_to_blocks_cb(self):
         """Callback for BACK_TO_BLOCKS button while visualizing.
@@ -1038,6 +1058,8 @@ class UICoreRos(UICore):
             Clear all drawed program visualization elements."""
 
         self.hololens_state_pub.publish(self.create_hololens_state_msg(HololensState.STATE_VISUALIZING, HololensState.VISUALIZATION_DISABLED))
+
+        self.visualizing = False
 
         self.clear_all()
 
