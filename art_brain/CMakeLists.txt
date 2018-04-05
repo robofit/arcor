@@ -10,12 +10,6 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   roslint
   roslaunch
-  art_db
-  ar_track_alvar
-  art_calibration
-  art_arcode_detector
-  art_projected_gui
-  art_simple_tracker
 )
 
 catkin_python_setup()
