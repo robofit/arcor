@@ -1,1 +1,2 @@
 - git: {local-name: artable-msgs, uri: 'https://github.com/robofit/artable-msgs', version: master}
+- git: {local-name: artable-msgs, uri: 'https://github.com/robofit/artable-utils', version: master}
