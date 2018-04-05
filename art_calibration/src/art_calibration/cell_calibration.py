@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
-import numpy as np
 from art_utils import ArtCalibrationHelper
-from tf import TransformBroadcaster, transformations
+from tf import transformations
 import rospy
-from geometry_msgs.msg import Transform
 from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
 from std_msgs.msg import Bool
 import ast
@@ -12,12 +10,10 @@ from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
 import pcl
 import numpy as np
-from sensor_msgs.msg import PointField
 from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 from geometry_msgs.msg import Transform, TransformStamped, Vector3, Quaternion
 import tf
 from std_msgs.msg import Header
-import struct
 from copy import deepcopy
 
 
@@ -64,7 +60,8 @@ class ArtCellCalibration(object):
 
             m = np.matrix(ast.literal_eval(m))
 
-            self.transformation.rotation = ArtCalibrationHelper.normalize_vector(transformations.quaternion_from_matrix(m))
+            self.transformation.rotation = ArtCalibrationHelper.normalize_vector(
+                transformations.quaternion_from_matrix(m))
             self.transformation.translation = transformations.translation_from_matrix(m)
             self.calibrated = True
             rospy.loginfo("Cell: " + str(self.cell_id) + " calibration loaded from param")
@@ -151,7 +148,8 @@ class ArtCellCalibration(object):
             if p is not None:
                 self.positions[i] += p
                 self.cnt[i] += 1
-                rospy.loginfo("Cell: " + str(self.cell_id) + " gets marker id " + str(i + 10) + ", cnt: " + str(self.cnt[i]))
+                rospy.loginfo("Cell: " + str(self.cell_id) +
+                              " gets marker id " + str(i + 10) + ", cnt: " + str(self.cnt[i]))
 
         if all_markers:
 
@@ -185,7 +183,7 @@ class ArtCellCalibration(object):
         try:
             print self.cell_frame
             print self.main_cell_frame
-            # translation, rotation = self.listener.lookupTransform(pc.header.frame_id, self.main_cell_frame, rospy.Time(0))
+
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return
         transform = TransformStamped()

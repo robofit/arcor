@@ -13,7 +13,8 @@ def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
 
 def yaw2orientation(roll, pitch, yaw):
 
-    quaternion = tf.transformations.quaternion_from_euler(roll / 360.0 * 2 * pi, pitch / 360.0 * 2 * pi, yaw / 360.0 * 2 * pi)
+    quaternion = tf.transformations.quaternion_from_euler(
+        roll / 360.0 * 2 * pi, pitch / 360.0 * 2 * pi, yaw / 360.0 * 2 * pi)
     orientation = Quaternion()
 
     orientation.x = quaternion[0]
@@ -80,11 +81,17 @@ def main():
 
         for obj in arr.instances:
 
-            br.sendTransform((obj.pose.position.x, obj.pose.position.y, obj.pose.position.z),
-                             (obj.pose.orientation.x, obj.pose.orientation.y, obj.pose.orientation.z, obj.pose.orientation.w),
-                             arr.header.stamp,
-                             "object_id_" + obj.object_id,
-                             "marker")
+            br.sendTransform(
+                (obj.pose.position.x,
+                 obj.pose.position.y,
+                 obj.pose.position.z),
+                (obj.pose.orientation.x,
+                 obj.pose.orientation.y,
+                 obj.pose.orientation.z,
+                 obj.pose.orientation.w),
+                arr.header.stamp,
+                "object_id_" + obj.object_id,
+                "marker")
 
         rospy.sleep(0.25)
 

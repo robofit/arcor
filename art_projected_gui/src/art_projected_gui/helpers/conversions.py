@@ -9,7 +9,9 @@ def is_close(a, b, rel_tol=1e-09, abs_tol=0.0):
 
 def pos2str(pos):
 
-    return "[X: " + str(round(pos[0], 3)).ljust(5, '0') + ", Y: " + str(round(pos[1], 3)).ljust(5, '0') + ", Z: " + str(round(pos[2], 3)).ljust(5, '0') + "]"
+    return "[X: " + str(round(pos[0], 3)).ljust(5, '0') +\
+           ", Y: " + str(round(pos[1], 3)).ljust(5, '0') +\
+           ", Z: " + str(round(pos[2], 3)).ljust(5, '0') + "]"
 
 
 def q2a(q):

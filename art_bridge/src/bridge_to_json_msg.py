@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import rospy
 import jsonpickle
-from art_msgs.msg import InstancesArray, ObjInstance
+from art_msgs.msg import InstancesArray
 from std_msgs.msg import String
-from art_msgs.srv import getObjectTypeRequest, getObjectTypeResponse, getObjectType
+from art_msgs.srv import getObjectTypeRequest, getObjectType
 
 
 class BridgeToJsonMsg:
@@ -40,7 +40,7 @@ class BridgeToJsonMsg:
                 continue
             to_json = {'name': obj.object_id,
                        'type': obj.object_type,
-                       'position': {'x': obj.pose.position.x,  #in meters 
+                       'position': {'x': obj.pose.position.x,  # in meters
                                     'y': obj.pose.position.y,
                                     'z': obj.pose.position.z},
                        'orientation': {'x': obj.pose.orientation.x,

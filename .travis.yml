@@ -118,30 +118,10 @@ before_script:
   - sudo apt-get install -y mongodb-clients mongodb-server -o Dpkg::Options::="--force-confdef" # default actions
   - rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
 
-  # needed by kinect2_registration
-  - sudo apt-get install -y mercurial
-  - hg clone https://bitbucket.org/eigen/eigen#3.3 /tmp/eigen && mkdir /tmp/eigen-build && cd /tmp/eigen-build && cmake . /tmp/eigen && make && sudo make install
-
 # install other package dependencies using script
   - cd $CI_SOURCE_PATH
   - chmod +x install_dependencies.sh
   - ./install_dependencies.sh
-  
-  # install libfreenect
-  - cd ~
-  - git clone https://github.com/OpenKinect/libfreenect2.git
-  - cd libfreenect2
-  - cd depends; ./download_debs_trusty.sh
-  - sudo apt-get install -y build-essential cmake pkg-config
-  - sudo dpkg -i debs/libusb*deb
-  - sudo apt-get -y install libturbojpeg libjpeg-turbo8-dev
-  - sudo dpkg -i debs/libglfw3*deb; sudo apt-get install -f; sudo apt-get install 
-  - sudo apt-get -y install libopenni2-dev
-  - cd ..
-  - mkdir build && cd build
-  - cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/freenect2 -DENABLE_CXX11=ON
-  - make
-  - make install
 
 # Compile and test.
 script:
@@ -151,11 +131,6 @@ script:
   - source devel/setup.bash
   - catkin_lint $CI_SOURCE_PATH
   - cd ~/catkin_ws/src/artable
-  - export ARTABLE=1
-  - export ROBOT=pr2
-  - ./run_tests.sh
-  - export ROBOT=dobot
-  - export ARTABLE=2
   - ./run_tests.sh
 
 after_failure:

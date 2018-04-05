@@ -8,7 +8,19 @@ translate = QtCore.QCoreApplication.translate
 
 class ButtonItem(Item):
 
-    def __init__(self, scene, x, y, caption, parent, clicked, scale=1.0, background_color=QtCore.Qt.green, width=None, push_button=False, image_path=None):
+    def __init__(
+            self,
+            scene,
+            x,
+            y,
+            caption,
+            parent,
+            clicked,
+            scale=1.0,
+            background_color=QtCore.Qt.green,
+            width=None,
+            push_button=False,
+            image_path=None):
 
         self.background_color = background_color
         self.scale = scale
@@ -127,8 +139,13 @@ class ButtonItem(Item):
 
         if self.img is not None:
 
-            painter.drawImage(QtCore.QRectF((self.w - self.img.width()) / 2, (self.h -
-                                                                              self.img.height()) / 2, self.img.width(), self.img.height()), self.img)
+            painter.drawImage(
+                QtCore.QRectF(
+                    (self.w - self.img.width()) / 2,
+                    (self.h - self.img.height()) / 2,
+                    self.img.width(),
+                    self.img.height()),
+                self.img)
 
         else:
 

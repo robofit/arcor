@@ -104,7 +104,8 @@ class Item(QtGui.QGraphicsItem):
 
             items[0].setPos((self._width() - items[0]._width()) / 2, y)
 
-        elif len(items) > 1:  # more than one - place them with equal space between them (with padding on left and right)
+        # more than one - place them with equal space between them (with padding on left and right)
+        elif len(items) > 1:
 
             total_width = 0
 

@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 
 import rospy
-from actionlib import SimpleActionServer
 from art_msgs.msg import ObjInstance, InstancesArray
 from geometry_msgs.msg import Pose
 from std_msgs.msg import Header
-import time
-import random
 
 
 class FakeObjectTracker:

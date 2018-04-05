@@ -13,7 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   roslaunch
 )
 
-set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
+set(ROSLINT_PYTHON_OPTS "--max-line-length=120")
 roslint_python()
 roslint_add_test()
 
@@ -27,10 +27,3 @@ catkin_package(
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
-
-if (CATKIN_ENABLE_TESTING)
-  roslaunch_add_file_check(launch)
-endif()
-
-install(DIRECTORY launch/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)

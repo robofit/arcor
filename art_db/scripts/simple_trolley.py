@@ -5,7 +5,8 @@ import rospy
 from art_msgs.msg import Program, ProgramBlock, ProgramItem
 from copy import deepcopy
 from art_utils import ArtApiHelper
-from art_utils.art_msgs_functions import obj_type, wait_item, feeder_item, grid_item, drill_item, place_item, item, polygon_item
+from art_utils.art_msgs_functions import obj_type, wait_item, feeder_item, grid_item, drill_item, place_item,\
+    item, polygon_item
 
 
 def main(args):

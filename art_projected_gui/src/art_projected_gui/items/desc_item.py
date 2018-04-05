@@ -20,7 +20,15 @@ class DescItem(Item):
 
         font = QtGui.QFont(self.default_font, self.get_font_size(self.scale))
         metrics = QtGui.QFontMetrics(font)
-        return QtCore.QRectF(metrics.boundingRect(QtCore.QRect(0, 0, 10000, 10000), QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self.text))
+        return QtCore.QRectF(
+            metrics.boundingRect(
+                QtCore.QRect(
+                    0,
+                    0,
+                    10000,
+                    10000),
+                QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap,
+                self.text))
 
     def set_content(self, text, scale=1.0):
 
@@ -49,4 +57,5 @@ class DescItem(Item):
 
         font = QtGui.QFont(self.default_font, self.get_font_size(self.scale))
         painter.setFont(font)
-        painter.drawText(self.boundingRect(), QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self.text)
+        painter.drawText(self.boundingRect(), QtCore.Qt.AlignLeft |
+                         QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap, self.text)
