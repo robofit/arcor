@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package>
+  <name>art_utils</name>
+  <version>0.0.0</version>
+  <description>The art_interface_utils package</description>
+
+  <maintainer email="zdenal@todo.todo">zdenal</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roslint</build_depend>
+  <build_depend>art_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>rospy</build_depend>
+  <run_depend>art_msgs</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>rospy</run_depend>
+  <test_depend>rostest</test_depend>
+
+</package>
