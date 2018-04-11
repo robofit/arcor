@@ -7,6 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   roslint
   rostest
+  tf
 )
 
 catkin_python_setup()
