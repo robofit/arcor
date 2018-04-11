@@ -6,19 +6,23 @@ ARTable - vision of a near future workspace, where human and robot may safely an
 
 ### Repositories / packages
 
-This repository holds the main components of the system, which are not specific for any particular setup (combination and type of components) or robot:
+This repository holds the main components of the system, which are not specific to any particular setup (combination and type of components) or robot:
 
- * [art_brain](https://github.com/robofit/artable/tree/master/art_brain) - decision making
- * [art_bringup](https://github.com/robofit/artable/tree/master/art_bringup) - to launch the system
- * [art_calibration](https://github.com/robofit/artable/tree/master/art_calibration) - AR marker-based calibration of cameras.
+ * [art_brain](https://github.com/robofit/artable/tree/master/art_brain) - central node which communicates with robot, manages program execution, holds current system state etc.
+ * [art_bringup](https://github.com/robofit/artable/tree/master/art_bringup) - to launch the system.
+ * [art_calibration](https://github.com/robofit/artable/tree/master/art_calibration) - AR marker-based mutual calibration of cameras.
  * [art_db](https://github.com/robofit/artable/tree/master/art_db) - permanent storage for object types, programs, etc.
- * [art_projected_gui](https://github.com/robofit/artable/tree/master/art_projected_gui) - shows system state, allows to set program parameters, etc-
- * [art_simple_tracker](https://github.com/robofit/artable/tree/master/art_simple_tracker) - not a real tracker, it "tracks" objects based on already assigned IDs and performs position/orientation filtering from multiple detectors
+ * [art_projected_gui](https://github.com/robofit/artable/tree/master/art_projected_gui) - shows system state, allows to set program parameters, etc. 
+ * [art_simple_tracker](https://github.com/robofit/artable/tree/master/art_simple_tracker) - not a real tracker, it "tracks" objects based on already assigned IDs and performs position/orientation filtering from multiple detectors.
  * [art_sound](https://github.com/robofit/artable/tree/master/art_sound) - a sound interface: plays sound for selected system events (error).
  * [art_table_pointing](https://github.com/robofit/artable/tree/master/art_table_pointing) - uses Kinect skeleton tracking to compute where user points on the table.
  * [art_touch_driver](https://github.com/robofit/artable/tree/master/art_touch_driver) - reads data from touch foil (which is HID device) a publishes it as ROS messages.
 
-There is also repository with [ROS messages](https://github.com/robofit/artable-msgs) and [various utilities](https://github.com/robofit/artable-utils).
+Additional repositories:
+
+ * [artable-msgs](https://github.com/robofit/artable-msgs) - ROS messages, services, actions.
+ * [artable-utils](https://github.com/robofit/artable-utils) - Python helper classes.
+ * [artable-detectors](https://github.com/robofit/artable-detectors) - detectors (currently, only AR code detector wrapper).
 
 For each integrated robot, there are two repositories: one with custom packages providing high-level functions compatible with ARTable ROS API and one with implementation of art_brain plugin (```-interface``` one):
 
@@ -60,6 +64,7 @@ TBD
 ### Contributing
 
  - Follow [PyStyleGuide](http://wiki.ros.org/PyStyleGuide) or [CppStyleGuide](http://wiki.ros.org/CppStyleGuide)
+   - for Python, you may use [pre-commit hook](https://github.com/robofit/artable/blob/master/hooks/pre-commit) to automatically format your code according to PEP8 (just copy the file into .git/hooks).
  - Use [catkin_lint](http://fkie.github.io/catkin_lint/) to check for common problems (```catkin_lint -W2 your_package_name```)
  - Use [roslint](http://wiki.ros.org/roslint) to run static analysis of your code.
  - Ideally, create and use unit tests.
