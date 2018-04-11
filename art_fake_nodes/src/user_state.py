@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
 import rospy
-from actionlib import SimpleActionServer
 from art_msgs.msg import UserStatus
 import time
-import random
 
 
 class FakeUserState:

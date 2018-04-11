@@ -1,7 +1,0 @@
-robot_id: dobot
-arms:
-  arm:
-    gripper_link: suction_cup
-    capabilities:
-      pick_place: yes
-      get_ready: yes

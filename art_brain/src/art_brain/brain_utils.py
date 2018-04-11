@@ -1,14 +1,10 @@
 import matplotlib.path as mplPath
 import numpy as np
 import rospy
-import actionlib
-from art_msgs.msg import PickPlaceAction, ObjInstance, ArmNavigationAction, \
-    ArmNavigationGoal, ArmNavigationFeedback, ArmNavigationResult
+from art_msgs.msg import ObjInstance
 import copy
-from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import Pose
 from art_msgs.msg import InterfaceState, InstancesArray
-from geometry_msgs.msg import PoseStamped
 import random
 
 from enum import IntEnum  # sudo pip install enum34

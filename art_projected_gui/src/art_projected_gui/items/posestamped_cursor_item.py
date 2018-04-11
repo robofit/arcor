@@ -131,7 +131,9 @@ class PoseStampedCursorItem(Item):
                 if self.pointed_item is None and self.collidesWithItem(it):
 
                     parent = it.parentItem()
-                    if not isinstance(it, ButtonItem) and it.fixed and parent is not None and isinstance(parent, Item) and not parent.fixed:
+                    if not isinstance(
+                            it, ButtonItem) and it.fixed and parent is not None and isinstance(
+                            parent, Item) and not parent.fixed:
 
                         it = it.parentItem()
 
@@ -186,7 +188,11 @@ class PoseStampedCursorItem(Item):
 
                     self.last_move = rospy.Time.now()
 
-                if click or ((rospy.Time.now() - self.last_move) > rospy.Duration(2.0) and (self.last_move - self.pointed_time) > rospy.Duration(3.0)):
+                if click or (
+                    (rospy.Time.now() -
+                     self.last_move) > rospy.Duration(2.0) and (
+                        self.last_move -
+                        self.pointed_time) > rospy.Duration(3.0)):
 
                     rospy.logdebug("releasing pointed item: " + self.pointed_item.__class__.__name__)
                     self.pointed_item.set_hover(False, self)

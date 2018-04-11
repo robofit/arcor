@@ -2,7 +2,7 @@
 
 import sys
 import rospy
-from art_msgs.srv import TouchCalibrationPoints,  TouchCalibrationPointsRequest
+from art_msgs.srv import TouchCalibrationPoints, TouchCalibrationPointsRequest
 from std_msgs.msg import Bool, Empty
 from geometry_msgs.msg import PointStamped
 from copy import deepcopy
@@ -16,8 +16,8 @@ class TestTouchCalibration():
 
         self.ns = '/art/interface/touchtable/'
         self.calib_srv = rospy.ServiceProxy('/art/interface/projected_gui/touch_calibration', TouchCalibrationPoints)
-        self.calibrated_pub = rospy.Publisher(self.ns + 'calibrated', Bool, queue_size=1,  latch=True)
-        self.calibrating_pub = rospy.Publisher(self.ns + 'calibrating', Bool, queue_size=1,  latch=True)
+        self.calibrated_pub = rospy.Publisher(self.ns + 'calibrated', Bool, queue_size=1, latch=True)
+        self.calibrating_pub = rospy.Publisher(self.ns + 'calibrating', Bool, queue_size=1, latch=True)
         self.touch_pub = rospy.Publisher(self.ns + 'touch_detected', Empty, queue_size=10)
 
         self.calibrated_pub.publish(False)
@@ -49,7 +49,7 @@ class TestTouchCalibration():
 
         try:
             resp = self.calib_srv(req)
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
             print "Service call failed: %s" % e
 
         if resp.success:
@@ -63,7 +63,7 @@ class TestTouchCalibration():
 
             rospy.logerr('Failed to start calibration')
 
-    def tmr_cb(self,  evt):
+    def tmr_cb(self, evt):
 
         if self.touch_cnt < 4:
 
@@ -83,6 +83,7 @@ def main(args):
     rospy.init_node('test_touch_calibration')
     TestTouchCalibration()
     rospy.spin()
+
 
 if __name__ == '__main__':
 

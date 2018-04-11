@@ -15,7 +15,7 @@ def sigint_handler(*args):
 
 def main(args):
 
-    rospy.init_node('projected_gui_projector',  anonymous=True)
+    rospy.init_node('projected_gui_projector', anonymous=True)
     rospy.sleep(1)
 
     signal.signal(signal.SIGINT, sigint_handler)
@@ -29,6 +29,7 @@ def main(args):
     timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
 
     sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     try:

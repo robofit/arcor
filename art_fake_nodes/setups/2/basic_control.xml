@@ -1,6 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-
-  <node name="fake_basic_control" type="basic_control_dobot.py" pkg="art_fake_nodes"/>
-
-</launch>

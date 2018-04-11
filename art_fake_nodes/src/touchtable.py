@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from actionlib import SimpleActionServer
-from art_msgs.msg import ObjInstance, InstancesArray
-from geometry_msgs.msg import Pose
-from std_msgs.msg import Header, Bool
-import time
-import random
+from std_msgs.msg import Bool
 from std_srvs.srv import Empty, EmptyResponse
 
 

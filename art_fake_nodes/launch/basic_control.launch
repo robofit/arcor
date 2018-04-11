@@ -1,6 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-
-  <include file="$(find art_fake_nodes)/setups/$(optenv ARTABLE)/basic_control.xml"/>
-
-</launch>

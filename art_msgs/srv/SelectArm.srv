@@ -1,7 +1,0 @@
-float64 pickPosition # (0;1) from left to right
-float64 placePosition # (0;1) from left to right
----
-int16 NO_ARM=0
-int16 LEFT_ARM=1
-int16 RIGHT_ARM=2
-int16 arm

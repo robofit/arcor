@@ -15,7 +15,10 @@ class TouchPointsItem(Item):
         self.outline_diameter = outline_diameter
         self.points = points
         self.current_point_idx = 0
-        super(TouchPointsItem, self).__init__(scene, self.points[self.current_point_idx][0], self.points[self.current_point_idx][1])
+        super(TouchPointsItem,
+              self).__init__(scene,
+                             self.points[self.current_point_idx][0],
+                             self.points[self.current_point_idx][1])
 
     def boundingRect(self):
 

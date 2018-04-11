@@ -3,7 +3,6 @@
 import rospy
 from actionlib import SimpleActionServer
 from art_msgs.msg import PickPlaceAction, PickPlaceGoal, PickPlaceResult, PickPlaceFeedback
-import time
 import random
 
 

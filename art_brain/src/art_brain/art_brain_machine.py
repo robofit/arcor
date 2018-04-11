@@ -1,7 +1,6 @@
 # from transitions import Machine
 # from transitions.extensions import GraphMachine as Machine
 from transitions.extensions import LockedMachine as Machine
-
 from transitions import State
 
 
@@ -26,27 +25,35 @@ class ArtBrainMachine(object):
               State(name='wait_for_user', on_enter=[
                     'state_update_program_item', 'check_robot_in', 'state_wait_for_user'], on_exit=['check_robot_out']),
               State(name='wait_until_user_finishes', on_enter=[
-                    'state_update_program_item', 'check_robot_in', 'state_wait_until_user_finishes'], on_exit=['check_robot_out']),
+                    'state_update_program_item', 'check_robot_in', 'state_wait_until_user_finishes'],
+                    on_exit=['check_robot_out']),
 
               # manipulation - pick
               State(name='pick_from_polygon', on_enter=[
-                    'state_update_program_item', 'check_robot_in', 'state_pick_from_polygon'], on_exit=['check_robot_out']),
+                    'state_update_program_item', 'check_robot_in', 'state_pick_from_polygon'],
+                    on_exit=['check_robot_out']),
               State(name='pick_from_feeder', on_enter=[
-                    'state_update_program_item', 'check_robot_in', 'state_pick_from_feeder'], on_exit=['check_robot_out']),
+                    'state_update_program_item', 'check_robot_in', 'state_pick_from_feeder'],
+                    on_exit=['check_robot_out']),
               State(name='pick_object_id', on_enter=[
-                    'state_update_program_item', 'check_robot_in', 'state_pick_object_id'], on_exit=['check_robot_out']),
+                    'state_update_program_item', 'check_robot_in', 'state_pick_object_id'],
+                    on_exit=['check_robot_out']),
 
               # manipulation - place
               State(name='place_to_pose', on_enter=[
-                    'state_update_program_item', 'check_robot_in', 'state_place_to_pose'], on_exit=['check_robot_out']),
+                    'state_update_program_item', 'check_robot_in', 'state_place_to_pose'],
+                    on_exit=['check_robot_out']),
               State(name='place_to_grid', on_enter=[
-                    'state_update_program_item', 'check_robot_in', 'state_place_to_grid'], on_exit=['check_robot_out']),
+                    'state_update_program_item', 'check_robot_in', 'state_place_to_grid'],
+                    on_exit=['check_robot_out']),
 
               # manipulation
               State(name='path_through_points', on_enter=[
-                    'state_update_program_item', 'check_robot_in', 'state_path_through_points'], on_exit=['check_robot_out']),
+                    'state_update_program_item', 'check_robot_in', 'state_path_through_points'],
+                    on_exit=['check_robot_out']),
               State(name='welding_points', on_enter=[
-                    'state_update_program_item', 'check_robot_in', 'state_welding_points'], on_exit=['check_robot_out']),
+                    'state_update_program_item', 'check_robot_in', 'state_welding_points'],
+                    on_exit=['check_robot_out']),
               State(name='welding_seam', on_enter=[
                     'state_update_program_item', 'check_robot_in', 'state_welding_seam'], on_exit=['check_robot_out']),
               State(name='drill_points', on_enter=[
@@ -126,10 +133,10 @@ class ArtBrainMachine(object):
         State(name='visualize_init', on_enter=[
             'visualize_load_block_id', 'state_visualize_init'], on_exit=[]),
         State(name='visualize_run', on_enter=[
-          'visualize_load_block_id', 'state_visualize_run'], on_exit=[]),
+            'visualize_load_block_id', 'state_visualize_run'], on_exit=[]),
         State(name='visualize_done', on_enter=[
-          'state_visualize_done'], on_exit=[])
-        ]
+            'state_visualize_done'], on_exit=[])
+    ]
 
     def __init__(self):
         self.name = 'brain'

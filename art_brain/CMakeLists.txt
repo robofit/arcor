@@ -10,15 +10,11 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   roslint
   roslaunch
-  art_db
-  ar_track_alvar
-  art_calibration
-  art_arcode_detector
-  art_projected_gui
-  art_simple_tracker
 )
 
-set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
+catkin_python_setup()
+
+set(ROSLINT_PYTHON_OPTS "--max-line-length=120")
 roslint_python()
 roslint_add_test()
 
@@ -34,9 +30,6 @@ endif()
 
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
-
-install(DIRECTORY robots/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/robots)
 
 catkin_install_python(PROGRAMS src/node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
