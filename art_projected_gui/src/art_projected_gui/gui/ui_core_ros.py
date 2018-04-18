@@ -1480,6 +1480,13 @@ class UICoreRos(UICore):
                         "UICoreRos",
                         "Select program block and edit it. Press 'Done' to save changes and return to program list."))
             else:
+                # get first program item from clicked block .. [1] because function
+                # returns tuple - (block_id, item_id)
+                _item_id = self.ph.get_first_item_id(block_id=block_id)[1]
+                # actualize InterfaceState msg with currently clicked block
+                if None not in (block_id, _item_id):
+                    self.state_manager.update_program_item(
+                        self.ph.get_program_id(), block_id, self.ph.get_item_msg(block_id, _item_id))
 
                 if self.ph.block_learned(block_id):
                     self.notif(
