@@ -33,7 +33,7 @@ def main(args):
 
     pb = ProgramBlock()
     pb.id = 1
-    pb.name = "Zvedni ze stolu a poloz"
+    pb.name = "Pick from table and place"
     pb.on_success = 1
     pb.on_failure = 0
     prog.blocks.append(pb)
@@ -56,7 +56,7 @@ def main(args):
 
     pb = ProgramBlock()
     pb.id = 1
-    pb.name = "Zvedni z podavace a poloz"
+    pb.name = "Pick from feeder and place"
     pb.on_success = 1
     pb.on_failure = 0
     prog.blocks.append(pb)
@@ -81,7 +81,7 @@ def main(args):
 
     pb = ProgramBlock()
     pb.id = 1
-    pb.name = "Aplikace lepidla"
+    pb.name = "Glue application"
     pb.on_success = 0
     pb.on_failure = 0
     prog.blocks.append(pb)
