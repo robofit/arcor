@@ -12,12 +12,11 @@ class SceneViewer(QtGui.QWidget):
 
         super(SceneViewer, self).__init__()
 
-        ns = "/art/interface/projected_gui/"
+        self.ns = "/art/interface/projected_gui/"
 
-        self.server = rospy.get_param(ns + "scene_server")
-        self.port = rospy.get_param(ns + "scene_server_port")
-        rospy.loginfo(self.server)
-        rospy.loginfo(self.port)
+        self.server = rospy.get_param(self.ns + "scene_server")
+        self.port = rospy.get_param(self.ns + "scene_server_port")
+        rospy.loginfo("Server: " + self.server + ":" + str(self.port))
 
         self.show()
 
@@ -92,15 +91,17 @@ class SceneViewer(QtGui.QWidget):
                 rospy.logerr("Failed to load image from received data")
                 return
 
-            pix = pix.mirrored(vertical=True)
-            image = QtGui.QPixmap.fromImage(
-                pix.scaled(
-                    self.pix_label.width(),
-                    self.pix_label.height(),
-                    QtCore.Qt.KeepAspectRatio,
-                    transformMode=QtCore.Qt.SmoothTransformation))
-            self.pix_label.setPixmap(image)
-            self.update()
+    def get_image(self, pix):
+
+        pix = pix.mirrored(vertical=True)
+        image = QtGui.QPixmap.fromImage(
+            pix.scaled(
+                self.pix_label.width(),
+                self.pix_label.height(),
+                QtCore.Qt.KeepAspectRatio,
+                transformMode=QtCore.Qt.SmoothTransformation))
+        self.pix_label.setPixmap(image)
+        self.update()
 
     def resizeEvent(self, event):
 
