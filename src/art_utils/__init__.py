@@ -4,6 +4,7 @@ from art_robot_helper import ArtRobotArmHelper, ArtRobotHelper, UnknownRobot, Ro
 from interface_state_manager import InterfaceStateManager
 from calibration_helper import ArtCalibrationHelper
 from api_definition import APIGroup, Topic, Service, Action, ArtAPI
+from object_helper import ObjectHelper
 
 import rospy
 
