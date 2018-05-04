@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
 import rospy
-from art_msgs.srv import getProgram, storeProgram, ProgramIdTrigger, getObjectType, getProgramHeaders, storeObjectType
+from art_msgs.srv import getProgram, storeProgram, ProgramIdTrigger, getObjectType, getProgramHeaders, storeObjectType,\
+    GetCollisionPrimitives, AddCollisionPrimitive, ClearCollisionPrimitives
+from art_msgs.msg import CollisionPrimitive
 
 # TODO make brain version a new class (based on ArtApiHelper)
 
+class ArtApiException(Exception):
+    pass
 
 class ArtApiHelper(object):
 
@@ -20,6 +24,12 @@ class ArtApiHelper(object):
         self.get_obj_type_srv = rospy.ServiceProxy('/art/db/object_type/get', getObjectType)
         self.store_obj_type_srv = rospy.ServiceProxy('/art/db/object_type/store', storeObjectType)
 
+        self.get_collision_primitives_srv = rospy.ServiceProxy('/art/db/collision_primitives/get',
+                                                               GetCollisionPrimitives)
+        self.add_collision_primitive_srv = rospy.ServiceProxy('/art/db/collision_primitives/add', AddCollisionPrimitive)
+        self.clear_collision_primitives_srv = rospy.ServiceProxy('/art/db/collision_primitives/clear',
+                                                                 ClearCollisionPrimitives)
+
         # Brain API
         self.brain = brain
         if not self.brain:
@@ -27,16 +37,56 @@ class ArtApiHelper(object):
 
         self._object_type_cache = {}
 
-    def wait_for_api(self):
+    def wait_for_db_api(self):
 
         self.get_prog_srv.wait_for_service()
         self.store_prog_srv.wait_for_service()
         self.get_program_headers_srv.wait_for_service()
         self.get_obj_type_srv.wait_for_service()
         self.store_obj_type_srv.wait_for_service()
+        self.get_collision_primitives_srv.wait_for_service()
+        self.add_collision_primitive_srv.wait_for_service()
+        self.clear_collision_primitives_srv.wait_for_service()
+
+    def wait_for_api(self):
+
+        self.wait_for_db_api()
 
         if not self.brain:
             self.start_program_srv.wait_for_service()
+
+    def get_collision_primitives(self, setup, names=[]):
+
+        assert setup != ""
+
+        try:
+            resp = self.get_collision_primitives_srv(setup, names)
+        except rospy.ServiceException as e:
+            raise ArtApiException(str(e))
+
+        return resp.primitives
+
+    def add_collision_primitive(self, primitive):
+
+        assert isinstance(primitive, CollisionPrimitive)
+
+        try:
+            resp = self.add_collision_primitive_srv(primitive)
+        except rospy.ServiceException as e:
+            raise ArtApiException(str(e))
+
+        return resp.success
+
+    def clear_collision_primitives(self, setup, names=[]):
+
+        assert setup != ""
+
+        try:
+            resp = self.clear_collision_primitives_srv(setup, names)
+        except rospy.ServiceException as e:
+            raise ArtApiException(str(e))
+
+        return resp.success
 
     def load_program(self, prog_id):
 
