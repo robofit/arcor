@@ -33,7 +33,7 @@ class ObjectHelper(object):
 
                 self.callback(self.OBJECT_UPDATED, msg.header, inst)
 
-            self.objects[inst.object_id]
+            self.objects[inst.object_id] = inst
 
         for k,v in self.objects.iteritems():
 
