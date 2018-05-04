@@ -83,13 +83,15 @@ class SceneViewer(QtGui.QWidget):
 
             # skip this frame if there is another one in buffer
             if self.tcpSocket.bytesAvailable() > 0:
-                rospy.logdebug("Frame dropped")
+                rospy.loginfo("Frame dropped")
                 continue
 
             # 16ms
             if not pix.loadFromData(ba, "JPG"):
                 rospy.logerr("Failed to load image from received data")
                 return
+
+            self.get_image(pix)
 
     def get_image(self, pix):
 
