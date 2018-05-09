@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from PyQt4 import QtGui, QtCore, QtNetwork
+from PyQt4 import QtGui, QtCore
 import rospkg
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image, CameraInfo
@@ -16,16 +16,10 @@ from geometry_msgs.msg import PointStamped, Pose, PoseArray
 import tf
 import ast
 from art_utils import array_from_param
+from art_projected_gui.gui import SceneViewer
 
 
-# import time
-
-# TODO create ProjectorROS (to separate QT / ROS stuff)
-# podle vysky v pointcloudu / pozice projektoru se vymaskuji mista kde je
-# neco vyssiho - aby se promitalo jen na plochu stolu ????
-
-
-class Projector(QtGui.QWidget):
+class Projector(SceneViewer):
 
     def __init__(self):
 
@@ -51,14 +45,10 @@ class Projector(QtGui.QWidget):
         self.map_x = None
         self.map_y = None
 
-        ns = "/art/interface/projected_gui/"
+        self.rpm = int(rospy.get_param(self.ns + 'rpm'))
 
-        self.rpm = int(rospy.get_param(ns + 'rpm'))
-        self.server = rospy.get_param(ns + "scene_server")
-        self.port = rospy.get_param(ns + "scene_server_port")
-
-        self.scene_size = array_from_param(ns + "scene_size", float, 2)
-        self.scene_origin = array_from_param(ns + "scene_origin", float, 2)
+        self.scene_size = array_from_param(self.ns + "scene_size", float, 2)
+        self.scene_origin = array_from_param(self.ns + "scene_origin", float, 2)
 
         rospy.loginfo("Projector '" + self.proj_id +
                       "', on screen " + str(self.screen))
@@ -81,17 +71,6 @@ class Projector(QtGui.QWidget):
         p = self.palette()
         p.setColor(self.backgroundRole(), QtCore.Qt.black)
         self.setPalette(p)
-
-        self.pix_label = QtGui.QLabel(self)
-        self.pix_label.setAlignment(
-            QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
-        # self.pix_label.setScaledContents(True)
-        self.pix_label.resize(self.size())
-
-        self.tcpSocket = QtNetwork.QTcpSocket(self)
-        self.blockSize = 0
-        self.tcpSocket.readyRead.connect(self.getScene)
-        self.tcpSocket.error.connect(self.on_error)
 
         self.projectors_calibrated_sub = rospy.Subscriber(
             '/art/interface/projected_gui/app/projectors_calibrated', Bool, self.projectors_calibrated_cb,
@@ -124,13 +103,6 @@ class Projector(QtGui.QWidget):
             self.init_map_from_matrix(np.matrix(ast.literal_eval(h_matrix)))
         else:
             self.calibrated_pub.publish(self.is_calibrated())
-
-        self.connect()
-
-    def keyPressEvent(self, e):
-
-        if e.key() == QtCore.Qt.Key_Escape:
-            self.close()
 
     def init_map_from_matrix(self, m):
 
@@ -171,82 +143,31 @@ class Projector(QtGui.QWidget):
         self.projectors_calibrated = msg.data
         self.emit(QtCore.SIGNAL('show_pix_label'), self.projectors_calibrated)
 
-    def connect(self):
+    def get_image(self, pix):
 
-        r = rospy.Rate(1.0 / 5)
-
-        while not self.tcpSocket.waitForConnected(1):
-
-            if rospy.is_shutdown():
-                return
-            rospy.loginfo("Waiting for scene server...")
-            self.tcpSocket.connectToHost(self.server, self.port)
-            r.sleep()
-
-        rospy.loginfo('Connected to scene server.')
-
-    def on_error(self):
-
-        rospy.logerr("socket error")
-        QtCore.QTimer.singleShot(0, self.connect)
-
-    def getScene(self):
-
-        instr = QtCore.QDataStream(self.tcpSocket)
-        instr.setVersion(QtCore.QDataStream.Qt_4_0)
-
-        while True:
-
-            if self.blockSize == 0:
-                if self.tcpSocket.bytesAvailable() < 4:
-                    return
-
-                self.blockSize = instr.readUInt32()
-
-            if self.tcpSocket.bytesAvailable() < self.blockSize:
-                return
-
-            self.blockSize = 0
-
-            pix = QtGui.QImage()
-            ba = QtCore.QByteArray()
-            instr >> ba
-
-            # skip this frame if there is another one in buffer
-            if self.tcpSocket.bytesAvailable() > 0:
-                rospy.logdebug("Frame dropped")
-                continue
-
-            # start = time.time()
-
-            # 16ms
-            if not pix.loadFromData(ba, "JPG"):
-                rospy.logerr("Failed to load image from received data")
-                return
-
-            if self.calibrating or not self.projectors_calibrated or not self.maps_ready:
-                return
-
-            # 3ms
-            img = pix.convertToFormat(QtGui.QImage.Format_ARGB32)
-            v = qimage2ndarray.rgb_view(img)
-
-            # TODO some further optimalization? this is about 30ms (with INTER_LINEAR)s...
-            image_np = cv2.remap(v, self.map_x, self.map_y, cv2.INTER_LINEAR)
-
-            # this is about 3ms
-            height, width, channel = image_np.shape
-            bytesPerLine = 3 * width
-            image = QtGui.QPixmap.fromImage(QtGui.QImage(
-                image_np.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888))
-
-            self.pix_label.setPixmap(image)
-            self.update()
-
-            # end = time.time()
-            # rospy.logdebug("Frame loaded in: " + str(end-start))
-
+        if self.calibrating or not self.projectors_calibrated or not self.maps_ready:
             return
+
+        # 3ms
+        img = pix.convertToFormat(QtGui.QImage.Format_ARGB32)
+        v = qimage2ndarray.rgb_view(img)
+
+        # TODO some further optimalization? this is about 30ms (with INTER_LINEAR)s...
+        image_np = cv2.remap(v, self.map_x, self.map_y, cv2.INTER_LINEAR)
+
+        # this is about 3ms
+        height, width, channel = image_np.shape
+        bytesPerLine = 3 * width
+        image = QtGui.QPixmap.fromImage(QtGui.QImage(
+            image_np.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888))
+
+        self.pix_label.setPixmap(image)
+        self.update()
+
+        # end = time.time()
+        # rospy.logdebug("Frame loaded in: " + str(end-start))
+
+        return
 
     def calibrate(self, image, info, depth):
 

@@ -9,7 +9,7 @@
 
     <group ns="/art/$(arg projector_id)">
 
-        <node pkg="art_projected_gui" name="projector" machine="$(arg machine)" type="projector_node.py" output="screen">
+        <node pkg="art_projector" name="projector" machine="$(arg machine)" type="projector_node.py" output="screen">
 
             <param name="projector_id" value="$(arg projector_id)"/>
             <param name="screen_number" value="$(arg screen_number)"/>
