@@ -213,7 +213,7 @@ class CollisionEnv(object):
         self._paused = val
         self.paused_pub.publish(val)
 
- def _remove_name(self, name):
+    def _remove_name(self, name):
 
         with self.lock:
 
