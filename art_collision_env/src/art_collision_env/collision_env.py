@@ -10,6 +10,7 @@ import uuid
 from threading import RLock
 from shape_msgs.msg import SolidPrimitive
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
+from interactive_markers.menu_handler import MenuHandler
 from visualization_msgs.msg import InteractiveMarkerControl, InteractiveMarkerFeedback, InteractiveMarker, Marker
 
 
@@ -46,16 +47,17 @@ class CollisionEnv(object):
 
         self.im_server = InteractiveMarkerServer("art_collision_env")
 
-        for prim in self.api.get_collision_primitives(self.setup):
+        self.menu_handler = MenuHandler()
+        self.menu_handler.insert("Remove", callback=self.menu_remove_cb)
 
-            rospy.loginfo("Loading object: " + prim.name)
-            self._add_primitive(prim)
+        self._load_from_db()
 
         self.collision_objects_pub = rospy.Publisher("artificial", CollisionObjects, latch=True, queue_size=1)
         self.pub_artificial()
 
         self.timer = rospy.Timer(rospy.Duration(1.0), self.timer_cb)
 
+        self.srv_art_clear_all = rospy.Service("artificial/reload", EmptySrv, self.srv_art_reload_cb)
         self.srv_art_clear_all = rospy.Service("artificial/clear/all", EmptySrv, self.srv_art_clear_all_cb)
         self.srv_art_clear_name = rospy.Service("artificial/clear/name", StringTrigger, self.srv_art_clear_name_cb)
 
@@ -72,10 +74,21 @@ class CollisionEnv(object):
 
         rospy.loginfo("Ready")
 
+    def menu_remove_cb(self, feedback):
+
+        self._remove_name(feedback.marker_name)
+
     def process_im_feedback(self, feedback):
 
         if feedback.event_type == InteractiveMarkerFeedback.POSE_UPDATE:
             rospy.loginfo(feedback.marker_name + ": pose changed")
+
+    def _load_from_db(self):
+
+        for prim in self.api.get_collision_primitives(self.setup):
+
+            rospy.loginfo("Loading object: " + prim.name)
+            self._add_primitive(prim)
 
     def _add_primitive(self, p):
 
@@ -86,7 +99,7 @@ class CollisionEnv(object):
         im.header.frame_id = p.pose.header.frame_id
         im.pose = p.pose.pose
         im.name = p.name
-        im.description = "Artificial collision object"
+        im.description = p.name  # + "\n(artificial)"
         im.scale = 1
 
         marker = Marker()
@@ -102,6 +115,7 @@ class CollisionEnv(object):
 
         control = InteractiveMarkerControl()
         control.always_visible = True
+        control.interaction_mode = InteractiveMarkerControl.BUTTON
         control.markers.append(marker)
         im.controls.append(control)
 
@@ -160,6 +174,7 @@ class CollisionEnv(object):
         im.controls.append(cpz)
 
         self.im_server.insert(im, self.process_im_feedback)
+        self.menu_handler.apply(self.im_server, p.name)
         self.im_server.applyChanges()
 
     def pub_artificial(self):
@@ -183,24 +198,52 @@ class CollisionEnv(object):
         self._paused = val
         self.paused_pub.publish(val)
 
-    def srv_art_clear_name_cb(self, req):
+    def _remove_name(self, name):
 
         with self.lock:
 
-            if req.str not in self.artificial_objects:
-                msg = "Unknown artificial object: " + req.str
-                rospy.logwarn(msg)
-                return StringTriggerResponse(success=False, message=msg)
+            if name not in self.artificial_objects:
+                rospy.logwarn("Unknown artificial object: " + name)
+                return False
 
-            self.ps.remove_world_object(req.str)
-            del self.artificial_objects[req.str]
+            self.ps.remove_world_object(name)
+            del self.artificial_objects[name]
             self.pub_artificial()
 
-        if not self.api.clear_collision_primitives(self.setup, names=[req.str]):
+        if not self.api.clear_collision_primitives(self.setup, names=[name]):
             rospy.logwarn("Failed to remove from permanent storage")
 
-        rospy.loginfo("Removed object: " + req.str)
-        return StringTriggerResponse(success=True)
+        self.im_server.erase(name)
+        self.im_server.applyChanges()
+
+        rospy.loginfo("Removed object: " + name)
+        return True
+
+    def _clear_all(self, permanent=True):
+
+        with self.lock:
+
+            rospy.loginfo("Clearing " + str(len(self.artificial_objects)) + " artificial objects...")
+
+            for k, v in self.artificial_objects.iteritems():
+
+                self.ps.remove_world_object(k)
+
+            self.artificial_objects = {}
+            self.pub_artificial()
+
+        if permanent and not self.api.clear_collision_primitives(self.setup):
+            rospy.logwarn("Failed to remove from permanent storage")
+
+    def srv_art_reload_cb(self, req):
+
+        self._clear_all(permanent=False)
+        self._load_from_db()
+        return EmptyResponse()
+
+    def srv_art_clear_name_cb(self, req):
+
+        return StringTriggerResponse(success=self._remove_name(req.str))
 
     def srv_collision_primitive_cb(self, req):
 
@@ -219,7 +262,7 @@ class CollisionEnv(object):
                 return AddCollisionPrimitiveResponse(name=req.primitive.name, success=False)
 
             if req.primitive.name == "":
-                req.primitive.name = str(uuid.uuid4())
+                req.primitive.name = str(uuid.uuid4())[:8]
 
             req.primitive.setup = self.setup
 
@@ -238,20 +281,7 @@ class CollisionEnv(object):
 
     def srv_art_clear_all_cb(self, req):
 
-        with self.lock:
-
-            rospy.loginfo("Clearing " + str(len(self.artificial_objects)) + " artificial objects...")
-
-            for k, v in self.artificial_objects.iteritems():
-
-                self.ps.remove_world_object(k)
-
-            self.artificial_objects = {}
-            self.pub_artificial()
-
-        if not self.api.clear_collision_primitives(self.setup):
-            rospy.logwarn("Failed to remove from permanent storage")
-
+        self._clear_all()
         return EmptyResponse()
 
     def srv_clear_on_table_cb(self, req):
