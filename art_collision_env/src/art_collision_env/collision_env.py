@@ -26,6 +26,7 @@ ability to set/store/update artificial objects wrt the program block/instruction
 class CollisionEnv(object):
 
     DETECTED_OBJECT_PREFIX = "dobj_"
+    NS = "/art/collision_env/"
 
     def __init__(self, setup):
 
@@ -45,31 +46,37 @@ class CollisionEnv(object):
         self.oh = ObjectHelper(self.object_cb)
         self.artificial_objects = {}
 
-        self.im_server = InteractiveMarkerServer("art_collision_env")
+        self.im_server = InteractiveMarkerServer(self.NS + "markers")
 
         self.menu_handler = MenuHandler()
         self.menu_handler.insert("Remove", callback=self.menu_remove_cb)
 
         self._load_from_db()
 
-        self.collision_objects_pub = rospy.Publisher("artificial", CollisionObjects, latch=True, queue_size=1)
+        self.collision_objects_pub = rospy.Publisher(self.NS + "artificial", CollisionObjects, latch=True, queue_size=1)
         self.pub_artificial()
 
         self.timer = rospy.Timer(rospy.Duration(1.0), self.timer_cb)
 
-        self.srv_art_clear_all = rospy.Service("artificial/reload", EmptySrv, self.srv_art_reload_cb)
-        self.srv_art_clear_all = rospy.Service("artificial/clear/all", EmptySrv, self.srv_art_clear_all_cb)
-        self.srv_art_clear_name = rospy.Service("artificial/clear/name", StringTrigger, self.srv_art_clear_name_cb)
+        self.srv_art_clear_all = rospy.Service(self.NS + "artificial/reload", EmptySrv, self.srv_art_reload_cb)
+        self.srv_art_clear_all = rospy.Service(self.NS + "artificial/clear/all", EmptySrv, self.srv_art_clear_all_cb)
+        self.srv_art_clear_name = rospy.Service(
+            self.NS + "artificial/clear/name",
+            StringTrigger,
+            self.srv_art_clear_name_cb)
 
-        self.srv_clear_all = rospy.Service("detected/clear/all", EmptySrv, self.srv_clear_all_cb)
-        self.srv_clear_on_table = rospy.Service("detected/clear/on_table", EmptySrv, self.srv_clear_on_table_cb)
+        self.srv_clear_all = rospy.Service(self.NS + "detected/clear/all", EmptySrv, self.srv_clear_all_cb)
+        self.srv_clear_on_table = rospy.Service(
+            self.NS + "detected/clear/on_table",
+            EmptySrv,
+            self.srv_clear_on_table_cb)
 
-        self.paused_pub = rospy.Publisher("paused", Bool, latch=True, queue_size=1)
+        self.paused_pub = rospy.Publisher(self.NS + "paused", Bool, latch=True, queue_size=1)
         self.paused = False
-        self.srv_pause = rospy.Service("pause", EmptySrv, self.srv_pause_cb)
-        self.srv_resume = rospy.Service("resume", EmptySrv, self.srv_resume_cb)
+        self.srv_pause = rospy.Service(self.NS + "pause", EmptySrv, self.srv_pause_cb)
+        self.srv_resume = rospy.Service(self.NS + "resume", EmptySrv, self.srv_resume_cb)
 
-        self.srv_collision_primitive = rospy.Service("artificial/add/primitive", AddCollisionPrimitive,
+        self.srv_collision_primitive = rospy.Service(self.NS + "artificial/add/primitive", AddCollisionPrimitive,
                                                      self.srv_collision_primitive_cb)
 
         rospy.loginfo("Ready")
@@ -81,7 +88,14 @@ class CollisionEnv(object):
     def process_im_feedback(self, feedback):
 
         if feedback.event_type == InteractiveMarkerFeedback.POSE_UPDATE:
-            rospy.loginfo(feedback.marker_name + ": pose changed")
+
+            with self.lock:
+
+                p = self.artificial_objects[feedback.marker_name]
+                assert p.pose.header.frame_id == feedback.header.frame_id
+                p.pose.pose = feedback.pose
+                self.ps.add_box(p.name, p.pose, p.bbox.dimensions)
+                self.api.add_collision_primitive(p)  # TODO timer?
 
     def _load_from_db(self):
 
@@ -94,6 +108,7 @@ class CollisionEnv(object):
 
         self.artificial_objects[p.name] = p
         self.ps.add_box(p.name, p.pose, p.bbox.dimensions)
+        self.api.add_collision_primitive(p)
 
         im = InteractiveMarker()
         im.header.frame_id = p.pose.header.frame_id
@@ -198,7 +213,7 @@ class CollisionEnv(object):
         self._paused = val
         self.paused_pub.publish(val)
 
-    def _remove_name(self, name):
+ def _remove_name(self, name):
 
         with self.lock:
 
