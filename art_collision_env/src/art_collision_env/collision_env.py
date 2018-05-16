@@ -2,37 +2,35 @@ import rospy
 from moveit_commander import PlanningSceneInterface
 from art_utils import ObjectHelper, ArtApiHelper
 from geometry_msgs.msg import PoseStamped
-from std_srvs.srv import Empty as EmptySrv, EmptyResponse
 from std_msgs.msg import Bool
-from art_msgs.srv import AddCollisionPrimitive, AddCollisionPrimitiveResponse, StringTrigger, StringTriggerResponse
 from art_msgs.msg import CollisionObjects
 import uuid
 from threading import RLock
 from shape_msgs.msg import SolidPrimitive
-from interactive_markers.interactive_marker_server import InteractiveMarkerServer
-from interactive_markers.menu_handler import MenuHandler
-from visualization_msgs.msg import InteractiveMarkerControl, InteractiveMarkerFeedback, InteractiveMarker, Marker
-
 
 """
 TODO
 tests!!!
-service to set detected object pose - usefull in paused state (fake pose)
 grouping of artificial objects - to move whole group at once
 ability to set/store/update artificial objects wrt the program block/instruction?
 """
 
 
+class CollisionEnvException(Exception):
+    pass
+
+
 class CollisionEnv(object):
 
-    DETECTED_OBJECT_PREFIX = "dobj_"
     NS = "/art/collision_env/"
 
-    def __init__(self, setup):
+    def __init__(self, setup, world_frame):
 
         assert setup != ""
 
+        self.ready = False
         self.setup = setup
+        self.world_frame = world_frame
 
         self.api = ArtApiHelper()
         rospy.loginfo("Waiting for DB API")
@@ -46,151 +44,59 @@ class CollisionEnv(object):
         self.oh = ObjectHelper(self.object_cb)
         self.artificial_objects = {}
 
-        self.im_server = InteractiveMarkerServer(self.NS + "markers")
-
-        self.menu_handler = MenuHandler()
-        self.menu_handler.insert("Remove", callback=self.menu_remove_cb)
-
-        self._load_from_db()
-
         self.collision_objects_pub = rospy.Publisher(self.NS + "artificial", CollisionObjects, latch=True, queue_size=1)
         self.pub_artificial()
 
         self.timer = rospy.Timer(rospy.Duration(1.0), self.timer_cb)
 
-        self.srv_art_clear_all = rospy.Service(self.NS + "artificial/reload", EmptySrv, self.srv_art_reload_cb)
-        self.srv_art_clear_all = rospy.Service(self.NS + "artificial/clear/all", EmptySrv, self.srv_art_clear_all_cb)
-        self.srv_art_clear_name = rospy.Service(
-            self.NS + "artificial/clear/name",
-            StringTrigger,
-            self.srv_art_clear_name_cb)
-
-        self.srv_clear_all = rospy.Service(self.NS + "detected/clear/all", EmptySrv, self.srv_clear_all_cb)
-        self.srv_clear_on_table = rospy.Service(
-            self.NS + "detected/clear/on_table",
-            EmptySrv,
-            self.srv_clear_on_table_cb)
-
         self.paused_pub = rospy.Publisher(self.NS + "paused", Bool, latch=True, queue_size=1)
         self.paused = False
-        self.srv_pause = rospy.Service(self.NS + "pause", EmptySrv, self.srv_pause_cb)
-        self.srv_resume = rospy.Service(self.NS + "resume", EmptySrv, self.srv_resume_cb)
 
-        self.srv_collision_primitive = rospy.Service(self.NS + "artificial/add/primitive", AddCollisionPrimitive,
-                                                     self.srv_collision_primitive_cb)
+    def start(self):
 
+        self.ready = True
         rospy.loginfo("Ready")
 
-    def menu_remove_cb(self, feedback):
-
-        self._remove_name(feedback.marker_name)
-
-    def process_im_feedback(self, feedback):
-
-        if feedback.event_type == InteractiveMarkerFeedback.POSE_UPDATE:
-
-            with self.lock:
-
-                p = self.artificial_objects[feedback.marker_name]
-                assert p.pose.header.frame_id == feedback.header.frame_id
-                p.pose.pose = feedback.pose
-                self.ps.add_box(p.name, p.pose, p.bbox.dimensions)
-                self.api.add_collision_primitive(p)  # TODO timer?
-
-    def _load_from_db(self):
+    def load_from_db(self):
 
         for prim in self.api.get_collision_primitives(self.setup):
 
             rospy.loginfo("Loading object: " + prim.name)
-            self._add_primitive(prim)
+            self.add_primitive(prim)
 
-    def _add_primitive(self, p):
+    def save_primitive(self, name):
 
-        self.artificial_objects[p.name] = p
-        self.ps.add_box(p.name, p.pose, p.bbox.dimensions)
-        self.api.add_collision_primitive(p)
+        with self.lock:
 
-        im = InteractiveMarker()
-        im.header.frame_id = p.pose.header.frame_id
-        im.pose = p.pose.pose
-        im.name = p.name
-        im.description = p.name  # + "\n(artificial)"
-        im.scale = 1
+            if name not in self.artificial_objects:
+                raise CollisionEnvException("Unknown object name")
 
-        marker = Marker()
+            p = self.artificial_objects[name]
+            self.api.add_collision_primitive(p)
 
-        marker.type = Marker.CUBE
-        marker.scale.x = p.bbox.dimensions[0]
-        marker.scale.y = p.bbox.dimensions[1]
-        marker.scale.z = p.bbox.dimensions[2]
-        marker.color.r = 0.5
-        marker.color.g = 0.5
-        marker.color.b = 0.5
-        marker.color.a = 1.0
+    def save_primitives(self):
 
-        control = InteractiveMarkerControl()
-        control.always_visible = True
-        control.interaction_mode = InteractiveMarkerControl.BUTTON
-        control.markers.append(marker)
-        im.controls.append(control)
+        with self.lock:
 
-        crx = InteractiveMarkerControl()
-        crx.orientation.w = 1
-        crx.orientation.x = 1
-        crx.orientation.y = 0
-        crx.orientation.z = 0
-        crx.name = "rotate_x"
-        crx.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
-        im.controls.append(crx)
+            for name in self.artificial_objects.keys():
 
-        cry = InteractiveMarkerControl()
-        cry.orientation.w = 1
-        cry.orientation.x = 0
-        cry.orientation.y = 0
-        cry.orientation.z = 1
-        cry.name = "rotate_y"
-        cry.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
-        im.controls.append(cry)
+                self.save_primitive(name)
 
-        crz = InteractiveMarkerControl()
-        crz.orientation.w = 1
-        crz.orientation.x = 0
-        crz.orientation.y = 1
-        crz.orientation.z = 0
-        crz.name = "rotate_z"
-        crz.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
-        im.controls.append(crz)
+    def set_primitive_pose(self, name, ps):
 
-        cpx = InteractiveMarkerControl()
-        cpx.orientation.w = 1
-        cpx.orientation.x = 1
-        cpx.orientation.y = 0
-        cpx.orientation.z = 0
-        cpx.name = "move_x"
-        cpx.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
-        im.controls.append(cpx)
+        with self.lock:
 
-        cpy = InteractiveMarkerControl()
-        cpy.orientation.w = 1
-        cpy.orientation.x = 0
-        cpy.orientation.y = 0
-        cpy.orientation.z = 1
-        cpy.name = "move_y"
-        cpy.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
-        im.controls.append(cpy)
+            p = self.artificial_objects[name]
+            assert p.pose.header.frame_id == ps.header.frame_id
+            p.pose.pose = ps.pose
+            self.ps.add_box(p.name, p.pose, p.bbox.dimensions)
 
-        cpz = InteractiveMarkerControl()
-        cpz.orientation.w = 1
-        cpz.orientation.x = 0
-        cpz.orientation.y = 1
-        cpz.orientation.z = 0
-        cpz.name = "move_z"
-        cpz.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
-        im.controls.append(cpz)
+    def add_primitive(self, p):
 
-        self.im_server.insert(im, self.process_im_feedback)
-        self.menu_handler.apply(self.im_server, p.name)
-        self.im_server.applyChanges()
+        with self.lock:
+
+            self.artificial_objects[p.name] = p
+            self.ps.add_box(p.name, p.pose, p.bbox.dimensions)
 
     def pub_artificial(self):
 
@@ -213,7 +119,7 @@ class CollisionEnv(object):
         self._paused = val
         self.paused_pub.publish(val)
 
-    def _remove_name(self, name):
+    def remove_name(self, name):
 
         with self.lock:
 
@@ -228,13 +134,10 @@ class CollisionEnv(object):
         if not self.api.clear_collision_primitives(self.setup, names=[name]):
             rospy.logwarn("Failed to remove from permanent storage")
 
-        self.im_server.erase(name)
-        self.im_server.applyChanges()
-
         rospy.loginfo("Removed object: " + name)
         return True
 
-    def _clear_all(self, permanent=True):
+    def clear_all(self, permanent=True):
 
         with self.lock:
 
@@ -250,98 +153,50 @@ class CollisionEnv(object):
         if permanent and not self.api.clear_collision_primitives(self.setup):
             rospy.logwarn("Failed to remove from permanent storage")
 
-    def srv_art_reload_cb(self, req):
+    def reload(self):
 
-        self._clear_all(permanent=False)
-        self._load_from_db()
-        return EmptyResponse()
+        self.clear_all(permanent=False)
+        self.load_from_db()
 
-    def srv_art_clear_name_cb(self, req):
+    def _generate_name(self):
 
-        return StringTriggerResponse(success=self._remove_name(req.str))
+        # as we use only part of uuid, there might be collisions...
+        while True:
 
-    def srv_collision_primitive_cb(self, req):
+            name = str(uuid.uuid4())[:8]
+            if name not in self.artificial_objects.keys():
+                break
 
-        with self.lock:
+        return name
 
-            if req.primitive.bbox.type != SolidPrimitive.BOX:
-                rospy.logwarn("Only BOX is supported so far.")
-                return AddCollisionPrimitiveResponse(name=req.primitive.name, success=False)
+    def set_det_pose(self, name, ps):
 
-            if len(req.primitive.bbox.dimensions) < 3:
-                rospy.logwarn("BOX needs three dimensions.")
-                return AddCollisionPrimitiveResponse(name=req.primitive.name, success=False)
+        object_type = self.api.get_object_type(self.oh.objects[name].object_type)
 
-            if req.primitive.pose.header.frame_id == "":
-                rospy.logwarn("Empty frame_id!")
-                return AddCollisionPrimitiveResponse(name=req.primitive.name, success=False)
+        if object_type is not None:
+            self.add_detected(name, ps, object_type)
 
-            if req.primitive.name == "":
-                req.primitive.name = str(uuid.uuid4())[:8]
+    def clear_det_on_table(self, inv=False, ignore=[]):
 
-            req.primitive.setup = self.setup
-
-            if req.primitive.name in self.artificial_objects:
-                rospy.loginfo("Adding collision primitive: " + req.primitive.name)
-            else:
-                rospy.loginfo("Updating collision primitive: " + req.primitive.name)
-
-            self._add_primitive(req.primitive)
-            self.pub_artificial()
-
-        if not self.api.add_collision_primitive(req.primitive):
-            self.logwarn("Failed to save to permanent storage.")
-
-        return AddCollisionPrimitiveResponse(name=req.primitive.name, success=True)
-
-    def srv_art_clear_all_cb(self, req):
-
-        self._clear_all()
-        return EmptyResponse()
-
-    def srv_clear_on_table_cb(self, req):
-
-        cnt = 0
+        ret = []
 
         with self.lock:
 
-            for k, v in self.oh.objects:
+            for k, v in self.oh.objects.iteritems():
 
-                if not v.on_table:
+                if v.object_id in ignore:
                     continue
 
-                cnt += 1
-                self.ps.remove_world_object(self.DETECTED_OBJECT_PREFIX + v.object_id)
+                if not inv and not v.on_table:
+                    continue
 
-        rospy.loginfo("Cleared " + str(cnt) + " detected objects on table.")
-        return EmptyResponse()
+                if inv and v.on_table:
+                    continue
 
-    def srv_clear_all_cb(self, req):
+                ret.append(v.object_id)
+                self.clear_detected(v.object_id)
 
-        with self.lock:
-
-            rospy.loginfo("Clearing all (" + str(len(self.oh.objects)) + ") detected objects.")
-
-            for k, v in self.oh.objects:
-                self.ps.remove_world_object(self.DETECTED_OBJECT_PREFIX + v.object_id)
-
-        return EmptyResponse()
-
-    def srv_pause_cb(self, req):
-
-        rospy.loginfo("Paused")
-        self.paused = True
-        return EmptyResponse()
-
-    def srv_resume_cb(self, req):
-
-        rospy.loginfo("Resumed")
-        self.paused = False
-        return EmptyResponse()
-
-    def srv_clear_cb(self, req):
-
-        return EmptyResponse()
+        return ret
 
     def timer_cb(self, evt):
 
@@ -354,10 +209,10 @@ class CollisionEnv(object):
 
             for name in known_objects:
 
-                if name.startswith(self.DETECTED_OBJECT_PREFIX) and name not in self.oh.objects:
+                if name not in self.artificial_objects and name not in self.oh.objects:
 
                     rospy.loginfo("Removing outdated detected object: " + name)
-                    self.ps.remove_world_object(name)
+                    self.clear_detected(name)
 
             # restore artificial objects if they are lost somehow (e.g. by restart  of MoveIt!)
             for k, v in self.artificial_objects.iteritems():
@@ -374,7 +229,7 @@ class CollisionEnv(object):
 
     def object_cb(self, evt, h, inst):
 
-        if self.paused:
+        if self.paused or not self.ready:
             return
 
         with self.lock:
@@ -394,10 +249,38 @@ class CollisionEnv(object):
 
                 if object_type is not None:
 
-                    self.ps.add_box(self.DETECTED_OBJECT_PREFIX + inst.object_id, ps, object_type.bbox.dimensions)
+                    self.add_detected(inst.object_id, ps, object_type)
 
             elif evt == ObjectHelper.OBJECT_LOST:
 
                 if inst.object_id not in attached_objects:
 
-                    self.ps.remove_world_object(self.DETECTED_OBJECT_PREFIX + inst.object_id)
+                    self.clear_detected(inst.object_id)
+
+    def add_detected(self, name, ps, object_type):
+
+        with self.lock:
+
+            self.ps.add_box(name, ps, object_type.bbox.dimensions)
+
+    def clear_detected(self, name):
+
+        with self.lock:
+
+            self.ps.remove_world_object(name)
+
+    def clear_all_det(self, ignore=[]):
+
+        ret = []
+
+        with self.lock:
+
+            for k, v in self.oh.objects.iteritems():
+                name = v.object_id
+                if name in ignore:
+                    continue
+                self.clear_detected(name)
+                ret.append(name)
+
+        rospy.loginfo("Removed " + str(len(ret)) + " detected objects.")
+        return ret
