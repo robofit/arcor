@@ -17,9 +17,13 @@ class ObjectHelper(object):
         self.objects_sub = rospy.Subscriber(
             '/art/object_detector/object_filtered', InstancesArray, self.objects_cb, queue_size=1)
 
+        self.header = None
+
     def objects_cb(self, msg):
 
         detected_objects = {}
+
+        self.header = msg.header
 
         for inst in msg.instances:
 
