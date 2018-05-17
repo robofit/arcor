@@ -4,9 +4,7 @@ project(art_projected_gui)
 find_package(catkin REQUIRED COMPONENTS
   roslint
   art_msgs
-  cv_bridge
   geometry_msgs
-  image_geometry
   rospy
   std_msgs
   roslaunch
@@ -39,7 +37,4 @@ install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
 
 catkin_install_python(PROGRAMS src/app.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
-catkin_install_python(PROGRAMS src/projector_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
