@@ -39,7 +39,7 @@ class ObjectHelper(object):
 
             self.objects[inst.object_id] = inst
 
-        for k,v in self.objects.iteritems():
+        for k, v in self.objects.iteritems():
 
             if k not in detected_objects:
 
@@ -48,4 +48,3 @@ class ObjectHelper(object):
     def filter_by_type(self, object_type):
 
         return {k: v for k, v in self.objects.iteritems() if v.object_type == object_type}
-

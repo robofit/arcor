@@ -7,8 +7,10 @@ from art_msgs.msg import CollisionPrimitive
 
 # TODO make brain version a new class (based on ArtApiHelper)
 
+
 class ArtApiException(Exception):
     pass
+
 
 class ArtApiHelper(object):
 
@@ -55,9 +57,12 @@ class ArtApiHelper(object):
         if not self.brain:
             self.start_program_srv.wait_for_service()
 
-    def get_collision_primitives(self, setup, names=[]):
+    def get_collision_primitives(self, setup, names=None):
 
         assert setup != ""
+
+        if names is None:
+            names = []
 
         try:
             resp = self.get_collision_primitives_srv(setup, names)
@@ -77,9 +82,12 @@ class ArtApiHelper(object):
 
         return resp.success
 
-    def clear_collision_primitives(self, setup, names=[]):
+    def clear_collision_primitives(self, setup, names=None):
 
         assert setup != ""
+
+        if names is None:
+            names = []
 
         try:
             resp = self.clear_collision_primitives_srv(setup, names)
