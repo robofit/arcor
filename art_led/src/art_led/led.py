@@ -1,11 +1,7 @@
 import rospy
 from art_msgs.msg import InterfaceState
 from art_utils import InterfaceStateManager
-import rospkg
-import os
 from std_srvs.srv import Empty, EmptyResponse
-from threading import Thread
-from Queue import Queue
 from art_msgs.msg import Color
 
 
