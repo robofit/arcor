@@ -6,7 +6,7 @@ from art_collision_env.int_collision_env import IntCollisionEnv
 import os
 
 
-def main(args):
+def main():
 
     rospy.init_node('collision_env_node', anonymous=True)
 
@@ -25,6 +25,6 @@ def main(args):
 
 if __name__ == '__main__':
     try:
-        main(sys.argv)
+        main()
     except KeyboardInterrupt:
         print("Shutting down")

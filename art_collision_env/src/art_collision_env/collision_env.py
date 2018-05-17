@@ -90,6 +90,7 @@ class CollisionEnv(object):
             assert p.pose.header.frame_id == ps.header.frame_id
             p.pose.pose = ps.pose
             self.ps.add_box(p.name, p.pose, p.bbox.dimensions)
+            self.pub_artificial()
 
     def add_primitive(self, p):
 
@@ -97,12 +98,13 @@ class CollisionEnv(object):
 
             self.artificial_objects[p.name] = p
             self.ps.add_box(p.name, p.pose, p.bbox.dimensions)
+            self.pub_artificial()
 
     def pub_artificial(self):
 
         msg = CollisionObjects()
 
-        for k, v in self.artificial_objects.iteritems():
+        for v in self.artificial_objects.values():
 
             msg.primitives.append(v)
 
@@ -143,7 +145,7 @@ class CollisionEnv(object):
 
             rospy.loginfo("Clearing " + str(len(self.artificial_objects)) + " artificial objects...")
 
-            for k, v in self.artificial_objects.iteritems():
+            for k in self.artificial_objects.keys():
 
                 self.ps.remove_world_object(k)
 
@@ -157,6 +159,7 @@ class CollisionEnv(object):
 
         self.clear_all(permanent=False)
         self.load_from_db()
+        self.pub_artificial()
 
     def _generate_name(self):
 
@@ -176,13 +179,16 @@ class CollisionEnv(object):
         if object_type is not None:
             self.add_detected(name, ps, object_type)
 
-    def clear_det_on_table(self, inv=False, ignore=[]):
+    def clear_det_on_table(self, inv=False, ignore=None):
+
+        if ignore is None:
+            ignore = []
 
         ret = []
 
         with self.lock:
 
-            for k, v in self.oh.objects.iteritems():
+            for v in self.oh.objects.values():
 
                 if v.object_id in ignore:
                     continue
@@ -269,13 +275,16 @@ class CollisionEnv(object):
 
             self.ps.remove_world_object(name)
 
-    def clear_all_det(self, ignore=[]):
+    def clear_all_det(self, ignore=None):
+
+        if ignore is None:
+            ignore = []
 
         ret = []
 
         with self.lock:
 
-            for k, v in self.oh.objects.iteritems():
+            for v in self.oh.objects.values():
                 name = v.object_id
                 if name in ignore:
                     continue

@@ -4,8 +4,7 @@ from interactive_markers.menu_handler import MenuHandler
 from visualization_msgs.msg import InteractiveMarkerControl, InteractiveMarkerFeedback, InteractiveMarker, Marker
 from art_msgs.msg import CollisionPrimitive
 from shape_msgs.msg import SolidPrimitive
-from int_funcs import *
-import rospy
+from art_collision_env.int_funcs import *
 from geometry_msgs.msg import PoseStamped
 
 
@@ -25,7 +24,8 @@ class IntCollisionEnv(CollisionEnvServices):
         g_art = self.global_menu_handler.insert("Artificial")
         self.global_menu_handler.insert("Add primitive", parent=g_art, callback=self.global_menu_add_prim_cb)
         self.global_menu_handler.insert("Clear all", parent=g_art, callback=self.global_menu_clear_all_cb)
-        self.global_menu_handler.insert("Clear all (permanent)", parent=g_art, callback=self.global_menu_clear_all_perm_cb)
+        self.global_menu_handler.insert("Clear all (permanent)", parent=g_art,
+                                        callback=self.global_menu_clear_all_perm_cb)
         self.global_menu_handler.insert("Save all", parent=g_art, callback=self.global_menu_save_all_cb)
         self.global_menu_handler.insert("Reload", parent=g_art, callback=self.global_menu_reload_cb)
 

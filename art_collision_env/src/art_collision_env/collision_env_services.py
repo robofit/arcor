@@ -28,12 +28,14 @@ class CollisionEnvServices(CollisionEnv):
             EmptySrv,
             self.srv_clear_on_table_cb)
 
-        self.srv_clear_except = rospy.Service(self.NS + "detected/clear/except", StringTrigger, self.srv_clear_except_cb)
+        self.srv_clear_except = rospy.Service(self.NS + "detected/clear/except", StringTrigger,
+                                              self.srv_clear_except_cb)
 
-        self.srv_clear_out_of_table_except = rospy.Service(self.NS + "detected/out_of_table/clear/except", StringTrigger,
-                                                           self.srv_clear_out_of_table_except_cb)
+        self.srv_clear_out_of_table_except = rospy.Service(self.NS + "detected/out_of_table/clear/except",
+                                                           StringTrigger, self.srv_clear_out_of_table_except_cb)
 
-        self.srv_det_set_pose = rospy.Service(self.NS + "detected/set_pose", PoseStampedTrigger, self.srv_det_set_pose_cb)
+        self.srv_det_set_pose = rospy.Service(self.NS + "detected/set_pose", PoseStampedTrigger,
+                                              self.srv_det_set_pose_cb)
 
         self.srv_pause = rospy.Service(self.NS + "pause", EmptySrv, self.srv_pause_cb)
         self.srv_resume = rospy.Service(self.NS + "resume", EmptySrv, self.srv_resume_cb)
