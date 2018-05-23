@@ -45,7 +45,7 @@ class TestProgramHelper(unittest.TestCase):
 
         p = ProgramItem()
         p.id = 3
-        p.on_success = 4
+        p.on_success = 31
         p.on_failure = 0
         p.type = ProgramItem.PICK_FROM_FEEDER
         p.object.append("profile")
@@ -53,6 +53,20 @@ class TestProgramHelper(unittest.TestCase):
         pf.header.frame_id = "marker"
         pf.pose.position.x = 0.75
         pf.pose.position.y = 0.5
+        p.pose.append(pf)
+        pb.items.append(deepcopy(p))
+
+        p = ProgramItem()
+        p.id = 31
+        p.on_success = 4
+        p.on_failure = 0
+        p.type = ProgramItem.VISUAL_INSPECTION
+        p.ref_id.append(3)
+        pf = PoseStamped()
+        pf.header.frame_id = "marker"
+        pf.pose.position.x = 0.75
+        pf.pose.position.y = 0.5
+        pf.pose.position.z = 0.1
         p.pose.append(pf)
         pb.items.append(deepcopy(p))
 

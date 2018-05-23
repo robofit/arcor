@@ -5,7 +5,7 @@ from art_msgs.msg import Program, ProgramItem as Pi
 from geometry_msgs.msg import Pose, Polygon
 
 
-class ProgramHelper():
+class ProgramHelper(object):
 
     """ProgramHelper simplifies work with Program message.
 
@@ -14,12 +14,13 @@ class ProgramHelper():
 
     """
 
-    ITEMS_USING_OBJECT = [Pi.PICK_FROM_POLYGON, Pi.PICK_FROM_FEEDER, Pi.PICK_OBJECT_ID, Pi.PLACE_TO_POSE,
-                          Pi.PLACE_TO_GRID, Pi.DRILL_POINTS]
-    ITEMS_USING_POSE = [Pi.PICK_FROM_FEEDER, Pi.PLACE_TO_POSE, Pi.DRILL_POINTS, Pi.PLACE_TO_GRID]
-    ITEMS_USING_POLYGON = [Pi.PICK_FROM_POLYGON, Pi.DRILL_POINTS, Pi.PLACE_TO_GRID]
-    PICK_ITEMS = [Pi.PICK_FROM_POLYGON, Pi.PICK_FROM_FEEDER, Pi.PICK_OBJECT_ID]
-    PLACE_ITEMS = [Pi.PLACE_TO_POSE, Pi.PLACE_TO_GRID]
+    ITEMS_USING_OBJECT = frozenset([Pi.PICK_FROM_POLYGON, Pi.PICK_FROM_FEEDER, Pi.PICK_OBJECT_ID, Pi.PLACE_TO_POSE,
+                                    Pi.PLACE_TO_GRID, Pi.DRILL_POINTS])
+    ITEMS_USING_POSE = frozenset([Pi.PICK_FROM_FEEDER, Pi.PLACE_TO_POSE, Pi.DRILL_POINTS, Pi.PLACE_TO_GRID,
+                                  Pi.VISUAL_INSPECTION])
+    ITEMS_USING_POLYGON = frozenset([Pi.PICK_FROM_POLYGON, Pi.DRILL_POINTS, Pi.PLACE_TO_GRID])
+    PICK_ITEMS = frozenset([Pi.PICK_FROM_POLYGON, Pi.PICK_FROM_FEEDER, Pi.PICK_OBJECT_ID])
+    PLACE_ITEMS = frozenset([Pi.PLACE_TO_POSE, Pi.PLACE_TO_GRID])
 
     def __init__(self):
 
@@ -156,7 +157,7 @@ class ProgramHelper():
                         return False
 
                 # check if PLACE_* instruction has correct ref_id(s) - should be set and point to PICK_*
-                if item.type in self.PLACE_ITEMS:
+                if item.type in self.PLACE_ITEMS or item.type == Pi.VISUAL_INSPECTION:
 
                     if len(item.ref_id) == 0:
 
@@ -219,7 +220,7 @@ class ProgramHelper():
             block_id = self.get_first_block_id()
         items = self._cache[block_id]["items"]
         item_id = min(items, key=items.get)
-        return (block_id, item_id)
+        return block_id, item_id
 
     def get_item_msg(self, block_id, item_id):
 
@@ -260,7 +261,7 @@ class ProgramHelper():
 
         else:
 
-            return (block_id, item_id_on)
+            return block_id, item_id_on
 
     def get_id_on_success(self, block_id, item_id):
 
@@ -290,7 +291,8 @@ class ProgramHelper():
                                                          Pi.PICK_OBJECT_ID,
                                                          Pi.PLACE_TO_POSE,
                                                          Pi.PLACE_TO_GRID,
-                                                         Pi.DRILL_POINTS]
+                                                         Pi.DRILL_POINTS,
+                                                         Pi.VISUAL_INSPECTION]
 
     def _check_for_pose(self, msg):
 
