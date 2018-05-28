@@ -19,6 +19,33 @@ from art_utils import array_from_param
 from art_projected_gui.gui import SceneViewer
 
 
+class Padding(object):
+
+    def __init(self):
+
+        self.top = rospy.get_param(
+            '~padding/top', 0.0)
+
+        self.bottom = rospy.get_param(
+            '~padding/bottom', 0.0)
+
+        self.left = rospy.get_param(
+            '~padding/left', 0.0)
+
+        self.right = rospy.get_param(
+            '~padding/right', 0.0)
+
+    @property
+    def width(self):
+
+        return self.left + self.right
+
+    @property
+    def height(self):
+
+        return self.top + self.bottom
+
+
 class Projector(SceneViewer):
 
     def __init__(self):
@@ -41,6 +68,9 @@ class Projector(SceneViewer):
             '~camera_depth_topic', 'kinect2/hd/image_depth_rect')
         self.camera_info_topic = rospy.get_param(
             '~camera_info_topic', 'kinect2/hd/camera_info')
+
+        # padding serves to restrict area usable for calibration (flat surface)
+        self.padding = Padding()
 
         self.map_x = None
         self.map_y = None
@@ -253,9 +283,11 @@ class Projector(SceneViewer):
 
         self.corners_pub.publish(ppp)
 
-        dx = (self.pix_label.width() - self.pix_label.pixmap().width()) / 2.0
-        dy = (self.pix_label.height() - self.pix_label.pixmap().height()) / 2.0
-        box_size = self.pix_label.pixmap().width() / 12.0
+        dx = (self.pix_label.width() - self.pix_label.pixmap().width()) / 2.0 + self.padding.left
+        dy = (self.pix_label.height() - self.pix_label.pixmap().height()) / 2.0 + self.padding.right
+
+        # TODO this is probably not correct under all circumstances
+        box_size = (self.pix_label.pixmap().width() - self.padding.width) / 12.0
 
         # TODO self.scene_origin ???
         # generate requested table coordinates
@@ -335,10 +367,14 @@ class Projector(SceneViewer):
         if self.pix_label.isVisible():
             return
 
-        rat = 1.0  # TODO make checkerboard smaller and smaller if it cannot be detected
         self.pix_label.show()
-        self.pix_label.setPixmap(self.checkerboard_img.scaled(
-            rat * self.width(), rat * self.height(), QtCore.Qt.KeepAspectRatio))
+
+        pix = QtGui.QPixmap(self.width(), self.height())
+        painter = QtGui.QPainter(pix)
+        painter.drawImage(self.padding.left, self.padding.top, self.checkerboard_img.scaled(
+            self.width() - self.padding.width, self.height() - self.padding.height, QtCore.Qt.KeepAspectRatio))
+
+        self.pix_label.setPixmap(pix)
 
     def timeout_timer_cb(self, evt):
 

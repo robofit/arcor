@@ -7,12 +7,22 @@
     <arg name="machine" default="localhost"/>
     <arg name="projector_id" default="$(arg machine)"/>
 
+    <arg name="padding_top" default="0"/>
+    <arg name="padding_bottom" default="0"/>
+    <arg name="padding_left" default="0"/>
+    <arg name="padding_right" default="0"/>
+
     <group ns="/art/$(arg projector_id)">
 
         <node pkg="art_projector" name="projector" machine="$(arg machine)" type="projector_node.py" output="screen">
 
             <param name="projector_id" value="$(arg projector_id)"/>
             <param name="screen_number" value="$(arg screen_number)"/>
+
+            <param name="padding/top" value="$(arg padding_top)"/>
+            <param name="padding/bottom" value="$(arg padding_bottom)"/>
+            <param name="padding/left" value="$(arg padding_left)"/>
+            <param name="padding/right" value="$(arg padding_right)"/>
 
         </node>
 
