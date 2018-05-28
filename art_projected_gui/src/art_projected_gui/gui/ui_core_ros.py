@@ -23,6 +23,9 @@ from math import sqrt
 import matplotlib.path as mplPath
 import numpy as np
 
+# TODO load instructions based on current program
+from art_instructions.gui import VisualInspectionLearn, VisualInspectionRun
+
 translate = QtCore.QCoreApplication.translate
 
 
@@ -74,8 +77,7 @@ class UICoreRos(UICore):
 
         QtCore.QObject.connect(self, QtCore.SIGNAL(
             'objects'), self.object_cb_evt)
-        QtCore.QObject.connect(self, QtCore.SIGNAL(
-            'objects_raw'), self.object_raw_cb_evt)
+
         QtCore.QObject.connect(self, QtCore.SIGNAL(
             'user_status'), self.user_status_cb_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL(
@@ -178,10 +180,6 @@ class UICoreRos(UICore):
             '/art/brain/program/error_response', ProgramErrorResolve)  # TODO wait for service? where?
         self.program_error_dialog = None
 
-        self.grasp_dialog = None
-        self.grasp_dialog_timer = QtCore.QTimer()
-        self.grasp_dialog_timer.timeout.connect(self.grasp_dialog_timer_tick)
-        self.grasp_dialog_timer.start(1000)
         self.drill_dialog = None
         self.drill_pose_idx = 0
 
@@ -193,10 +191,6 @@ class UICoreRos(UICore):
         # TODO move this to ArtApiHelper ??
         self.obj_sub = rospy.Subscriber(
             '/art/object_detector/object_filtered', InstancesArray, self.object_cb, queue_size=1)
-        self.obj_raw_sub = rospy.Subscriber(
-            '/art/object_detector/object', InstancesArray, self.object_raw_cb, queue_size=1)
-
-        self.objects_by_sensor = {}
 
         self.user_status_sub = rospy.Subscriber(
             '/art/user/status', UserStatus, self.user_status_cb, queue_size=1)
@@ -240,6 +234,11 @@ class UICoreRos(UICore):
         self.state_manager = InterfaceStateManager(
             "PROJECTED UI", cb=self.interface_state_cb)
 
+        # TODO load from some param (with path or something) and get rid of type from ProgramItem
+        self.instructions_learn = {ProgIt.VISUAL_INSPECTION: VisualInspectionLearn}
+        self.instructions_run = {ProgIt.VISUAL_INSPECTION: VisualInspectionRun}
+        self.current_instruction = None
+
         rospy.loginfo("Projected GUI ready!")
 
     def get_error_string(self, error):
@@ -262,27 +261,6 @@ class UICoreRos(UICore):
         self.notif(translate(
             "UICoreRos", "Touch table calibration started. Please press the white point."))
         self.touch_points = TouchPointsItem(self.scene, pts)
-
-    def save_gripper_pose_cb(self, idx):
-
-        topics = ['/art/robot/right_arm/gripper/pose',
-                  '/art/robot/left_arm/gripper/pose']
-
-        # wait for message, set pose
-        try:
-            ps = rospy.wait_for_message(topics[idx], PoseStamped, timeout=2)
-        except(rospy.ROSException) as e:
-            rospy.logerr(str(e))
-            self.notif(
-                translate("UICoreRos", "Failed to store gripper pose."), temp=True, message_type=NotifyUserRequest.WARN)
-            return
-
-        self.notif(translate("UICoreRos", "Gripper pose stored."), temp=True)
-        self.snd_info()
-        self.program_vis.set_pose(ps)
-
-        self.grasp_dialog.items[idx].set_enabled(False)
-        self.grasp_dialog.items[idx].set_caption(translate("UICoreRos", "Stored"))
 
     def save_gripper_pose_drill_cb(self, idx):
 
@@ -616,6 +594,12 @@ class UICoreRos(UICore):
         # print state
         self.emit(QtCore.SIGNAL('interface_state'), old_state, state, flags)
 
+    def instruction_cleanup(self):
+
+        if self.current_instruction:
+            self.current_instruction.cleanup()
+            self.current_instruction = None
+
     def state_running(self, old_state, state, flags, system_state_changed):
 
         if system_state_changed:
@@ -643,6 +627,8 @@ class UICoreRos(UICore):
                 self.notif(
                     translate("UICoreRos", "Program resumed."), temp=True)
 
+            self.instruction_cleanup()
+
         # ignore not valid states
         if state.block_id == 0 or state.program_current_item.id == 0:
             rospy.logerr("Invalid state!")
@@ -655,7 +641,12 @@ class UICoreRos(UICore):
             state.block_id, state.program_current_item.id)
         it = state.program_current_item
 
-        if it.type == ProgIt.GET_READY:
+        if it.type in self.instructions_run:
+
+            # TODO create plugins for all instructions
+            self.current_instruction = self.instructions_run[it.type](self)
+
+        elif it.type == ProgIt.GET_READY:
 
             self.notif(translate("UICoreRos", "Robot is getting ready"))
 
@@ -963,7 +954,12 @@ class UICoreRos(UICore):
 
         notified = False
 
-        if msg.type == ProgIt.PICK_FROM_POLYGON:
+        if msg.type in self.instructions_learn:
+
+            # TODO create plugins for all instructions
+            self.current_instruction = self.instructions_learn[msg.type](self, state.edit_enabled)
+
+        elif msg.type == ProgIt.PICK_FROM_POLYGON:
 
             if not self.ph.is_object_set(block_id, item_id):
 
@@ -991,24 +987,6 @@ class UICoreRos(UICore):
                 if not read_only:
                     self.notif(
                         translate("UICoreRos", "Adjust pick area or select another object type."))
-
-        elif msg.type == ProgIt.PICK_FROM_FEEDER:
-
-            if self.ph.is_object_set(block_id, item_id):
-
-                self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
-
-                if state.edit_enabled:
-
-                    self.create_grasp_dialog()
-
-            else:
-
-                if not read_only:
-                    self.notif(
-                        translate("UICoreRos", "Select object type to be picked up by tapping on its outline."))
-
-                # TODO show pick pose somehow (arrow??)
 
         elif msg.type == ProgIt.DRILL_POINTS:
 
@@ -1168,32 +1146,6 @@ class UICoreRos(UICore):
                         "UICoreRos", "Left arm"), translate(
                         "UICoreRos", "Prev pose"), translate(
                         "UICoreRos", "Next pose")], self.save_gripper_pose_drill_cb)
-
-    def create_grasp_dialog(self):
-
-        if not self.grasp_dialog:
-
-            if not self.ph.is_pose_set(self.program_vis.block_id, self.program_vis.get_current_item().id):
-
-                self.notif(
-                    translate("UICoreRos", "Use robot's arm and dialog to teach pose enabling part detection."))
-
-            else:
-
-                self.notif(
-                    translate(
-                        "UICoreRos",
-                        "Learned pose for part detection may be updated or different object type could be chosen."))
-
-            self.grasp_dialog = DialogItem(
-                self.scene, self.width / 2, 0.1, translate(
-                    "UICoreRos", "Save gripper pose"), [
-                    translate(
-                        "UICoreRos", "Right arm (%1)").arg(0), translate(
-                        "UICoreRos", "Left arm (%1)").arg(0)], self.save_gripper_pose_cb)
-
-            for it in self.grasp_dialog.items:
-                it.set_enabled(False)
 
     def active_item_switched(self, block_id, item_id, read_only=True, blocks=False):
 
@@ -1515,58 +1467,6 @@ class UICoreRos(UICore):
                 translate(
                     "UICoreRos",
                     "Please select a program. Use arrows to scroll the list. Tap program to select it."))
-
-    def object_raw_cb_evt(self, msg):
-
-        cnt = 0
-
-        for obj in msg.instances:
-
-            if obj.object_type in self.selected_object_types:
-
-                # this mainly serves for detection of objects in feeder so let's count only objects not on table
-                o = self.get_object(obj.object_id)
-
-                if o and o.on_table:
-                    continue
-
-                cnt += 1
-
-        self.objects_by_sensor[msg.header.frame_id] = [cnt, msg.header.stamp]
-
-    def grasp_dialog_timer_tick(self):
-
-        now = rospy.Time.now()
-
-        for k, v in self.objects_by_sensor.iteritems():
-
-            if now - v[1] > rospy.Duration(1.0):
-                v[0] = 0
-
-        if self.grasp_dialog:
-
-            if now - self.program_vis.get_current_item().pose[0].header.stamp < rospy.Duration(3.0):
-                return
-
-            frames = ["/r_forearm_cam_optical_frame", "/l_forearm_cam_optical_frame"]
-            names = [translate("UICoreRos", "Right arm (%1)"), translate("UICoreRos", "Left arm (%1)")]
-
-            for i in range(len(frames)):
-
-                if frames[i] in self.objects_by_sensor:
-
-                    cnt = self.objects_by_sensor[frames[i]][0]
-
-                else:
-
-                    cnt = 0
-
-                self.grasp_dialog.items[i].set_enabled(cnt == 1)
-                self.grasp_dialog.items[i].set_caption(names[i].arg(cnt))
-
-    def object_raw_cb(self, msg):
-
-        self.emit(QtCore.SIGNAL('objects_raw'), msg)
 
     def object_cb(self, msg):
 

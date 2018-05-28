@@ -11,4 +11,5 @@ from touch_table_item import TouchTableItem
 from desc_item import DescItem
 from program_list_item import ProgramListItem
 from dialog_item import DialogItem
+from image_item import ImageItem
 from item import Item
