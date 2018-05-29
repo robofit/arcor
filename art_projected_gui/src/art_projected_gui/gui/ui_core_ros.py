@@ -19,6 +19,7 @@ import actionlib
 from art_utils import array_from_param
 from art_utils import ArtRobotHelper, UnknownRobot, RobotParametersNotOnParameterServer
 import tf
+import importlib
 
 # TODO load instructions dynamically (param with list (import "paths") of instructions)
 from art_instructions.gui import DrillPointsLearn, DrillPointsRun,\
@@ -225,26 +226,43 @@ class UICoreRos(UICore):
         self.projector_calib_srv = rospy.Service(
             '/art/interface/projected_gui/calibrate_projectors', Trigger, self.calibrate_projectors_cb)
 
-        # TODO load from some param (with path or something) and get rid of type from ProgramItem
-        self.instructions_learn = {ProgIt.DRILL_POINTS: DrillPointsLearn,
-                                   ProgIt.GET_READY: GetReadyLearn,
-                                   ProgIt.PICK_FROM_FEEDER: PickFromFeederLearn,
-                                   ProgIt.PICK_FROM_POLYGON: PickFromPolygonLearn,
-                                   ProgIt.PLACE_TO_GRID: PlaceToGridLearn,
-                                   ProgIt.PLACE_TO_POSE: PlaceToPoseLearn,
-                                   ProgIt.VISUAL_INSPECTION: VisualInspectionLearn,
-                                   ProgIt.WAIT_FOR_USER: WaitForUserLearn,
-                                   ProgIt.WAIT_UNTIL_USER_FINISHES: WaitUntilUserFinishesLearn}
+        while True:
+            try:
+                instr = rospy.get_param("/art/instructions")
+                break
+            except KeyError:
+                rospy.loginfo("Waiting for /art/instructions param...")
+                rospy.sleep(0.5)
 
-        self.instructions_run = {ProgIt.DRILL_POINTS: DrillPointsRun,
-                                 ProgIt.GET_READY: GetReadyRun,
-                                 ProgIt.PICK_FROM_FEEDER: PickFromFeederRun,
-                                 ProgIt.PICK_FROM_POLYGON: PickFromPolygonRun,
-                                 ProgIt.PLACE_TO_GRID: PlaceToGridRun,
-                                 ProgIt.PLACE_TO_POSE: PlaceToPoseRun,
-                                 ProgIt.VISUAL_INSPECTION: VisualInspectionRun,
-                                 ProgIt.WAIT_FOR_USER: WaitForUserRun,
-                                 ProgIt.WAIT_UNTIL_USER_FINISHES: WaitUntilUserFinishesRun}
+        self.instructions_learn = {}
+        self.instructions_run = {}
+
+        for k, v in instr["instructions"].iteritems():
+
+            mod = importlib.import_module(v["gui"]["package"])
+
+            self.instructions_learn[k] = getattr(mod, v["gui"]["learn"])
+            self.instructions_run[k] = getattr(mod, v["gui"]["run"])
+
+        # self.instructions_learn = {ProgIt.DRILL_POINTS: DrillPointsLearn,
+        #                            ProgIt.GET_READY: GetReadyLearn,
+        #                            ProgIt.PICK_FROM_FEEDER: PickFromFeederLearn,
+        #                            ProgIt.PICK_FROM_POLYGON: PickFromPolygonLearn,
+        #                            ProgIt.PLACE_TO_GRID: PlaceToGridLearn,
+        #                            ProgIt.PLACE_TO_POSE: PlaceToPoseLearn,
+        #                            ProgIt.VISUAL_INSPECTION: VisualInspectionLearn,
+        #                            ProgIt.WAIT_FOR_USER: WaitForUserLearn,
+        #                            ProgIt.WAIT_UNTIL_USER_FINISHES: WaitUntilUserFinishesLearn}
+        #
+        # self.instructions_run = {ProgIt.DRILL_POINTS: DrillPointsRun,
+        #                          ProgIt.GET_READY: GetReadyRun,
+        #                          ProgIt.PICK_FROM_FEEDER: PickFromFeederRun,
+        #                          ProgIt.PICK_FROM_POLYGON: PickFromPolygonRun,
+        #                          ProgIt.PLACE_TO_GRID: PlaceToGridRun,
+        #                          ProgIt.PLACE_TO_POSE: PlaceToPoseRun,
+        #                          ProgIt.VISUAL_INSPECTION: VisualInspectionRun,
+        #                          ProgIt.WAIT_FOR_USER: WaitForUserRun,
+        #                          ProgIt.WAIT_UNTIL_USER_FINISHES: WaitUntilUserFinishesRun}
 
         self.current_instruction = None
 

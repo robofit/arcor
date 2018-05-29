@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+
+    <rosparam command="delete" param="/art/instructions"/>
+    <rosparam command="load" ns="/art/instructions" file="$(find art_instructions)/config/instructions.yaml"/>
+
+</launch>
