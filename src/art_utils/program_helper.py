@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from art_msgs.msg import Program, ProgramItem as Pi
+from art_msgs.msg import Program
 from geometry_msgs.msg import Pose, Polygon
 
 
@@ -14,18 +14,27 @@ class ProgramHelper(object):
 
     """
 
-    ITEMS_USING_OBJECT = frozenset([Pi.PICK_FROM_POLYGON, Pi.PICK_FROM_FEEDER, Pi.PICK_OBJECT_ID, Pi.PLACE_TO_POSE,
-                                    Pi.PLACE_TO_GRID, Pi.DRILL_POINTS])
-    ITEMS_USING_POSE = frozenset([Pi.PICK_FROM_FEEDER, Pi.PLACE_TO_POSE, Pi.DRILL_POINTS, Pi.PLACE_TO_GRID,
-                                  Pi.VISUAL_INSPECTION])
-    ITEMS_USING_POLYGON = frozenset([Pi.PICK_FROM_POLYGON, Pi.DRILL_POINTS, Pi.PLACE_TO_GRID])
-    PICK_ITEMS = frozenset([Pi.PICK_FROM_POLYGON, Pi.PICK_FROM_FEEDER, Pi.PICK_OBJECT_ID])
-    PLACE_ITEMS = frozenset([Pi.PLACE_TO_POSE, Pi.PLACE_TO_GRID])
-
     def __init__(self):
 
         self._cache = {}
         self._prog = None
+
+        while True:
+            try:
+                d = rospy.get_param("/art/instructions")
+                break
+            except KeyError:
+                rospy.loginfo("Waiting for /art/instructions param...")
+                rospy.sleep(0.5)
+
+        self.KNOWN_INSTRUCTIONS = frozenset(d["instructions"].keys())
+
+        self.ITEMS_USING_OBJECT = frozenset(d["using_object"])
+        self.ITEMS_USING_POSE = frozenset(d["using_pose"])
+        self.ITEMS_USING_POLYGON = frozenset(d["using_polygon"])
+        self.PICK_ITEMS = frozenset(d["pick"])
+        self.PLACE_ITEMS = frozenset(d["place"])
+        self.REF_TO_PICK = frozenset(d["ref_to_pick"])
 
     def load(self, prog, template=False):
 
@@ -69,6 +78,11 @@ class ProgramHelper(object):
             for item_idx in range(0, len(block.items)):
 
                 item = block.items[item_idx]
+
+                if item.type not in self.KNOWN_INSTRUCTIONS:
+
+                    rospy.logerr("Unknown instruction: " + item.type)
+                    return False
 
                 if item.id in cache[block.id]["items"]:
 
@@ -157,7 +171,7 @@ class ProgramHelper(object):
                         return False
 
                 # check if PLACE_* instruction has correct ref_id(s) - should be set and point to PICK_*
-                if item.type in self.PLACE_ITEMS or item.type == Pi.VISUAL_INSPECTION:
+                if item.type in self.PLACE_ITEMS | self.REF_TO_PICK:
 
                     if len(item.ref_id) == 0:
 
@@ -286,13 +300,8 @@ class ProgramHelper(object):
 
     def item_requires_learning(self, block_id, item_id):
 
-        return self.get_item_type(block_id, item_id) in [Pi.PICK_FROM_POLYGON,
-                                                         Pi.PICK_FROM_FEEDER,
-                                                         Pi.PICK_OBJECT_ID,
-                                                         Pi.PLACE_TO_POSE,
-                                                         Pi.PLACE_TO_GRID,
-                                                         Pi.DRILL_POINTS,
-                                                         Pi.VISUAL_INSPECTION]
+        return self.get_item_type(block_id, item_id) in self.ITEMS_USING_OBJECT | \
+            self.ITEMS_USING_POLYGON | self.ITEMS_USING_POSE
 
     def _check_for_pose(self, msg):
 

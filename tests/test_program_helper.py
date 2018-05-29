@@ -33,21 +33,21 @@ class TestProgramHelper(unittest.TestCase):
         p.id = 1
         p.on_success = 2
         p.on_failure = 0
-        p.type = ProgramItem.GET_READY
+        p.type = "GetReady"
         pb.items.append(deepcopy(p))
 
         p = ProgramItem()
         p.id = 2
         p.on_success = 3
         p.on_failure = 0
-        p.type = ProgramItem.WAIT_FOR_USER
+        p.type = "WaitForUser"
         pb.items.append(deepcopy(p))
 
         p = ProgramItem()
         p.id = 3
         p.on_success = 31
         p.on_failure = 0
-        p.type = ProgramItem.PICK_FROM_FEEDER
+        p.type = "PickFromFeeder"
         p.object.append("profile")
         pf = PoseStamped()
         pf.header.frame_id = "marker"
@@ -60,7 +60,7 @@ class TestProgramHelper(unittest.TestCase):
         p.id = 31
         p.on_success = 4
         p.on_failure = 0
-        p.type = ProgramItem.VISUAL_INSPECTION
+        p.type = "VisualInspection"
         p.ref_id.append(3)
         pf = PoseStamped()
         pf.header.frame_id = "marker"
@@ -74,7 +74,7 @@ class TestProgramHelper(unittest.TestCase):
         p.id = 4
         p.on_success = 5
         p.on_failure = 0
-        p.type = ProgramItem.PLACE_TO_POSE
+        p.type = "PlaceToPose"
         p.ref_id.append(3)
         p.ref_id.append(5)
         pp = PoseStamped()
@@ -88,7 +88,7 @@ class TestProgramHelper(unittest.TestCase):
         p.id = 5
         p.on_success = 6
         p.on_failure = 0
-        p.type = ProgramItem.PICK_FROM_FEEDER
+        p.type = "PickFromFeeder"
         p.object.append("profile")
         pf = PoseStamped()
         pf.header.frame_id = "marker"
@@ -101,21 +101,21 @@ class TestProgramHelper(unittest.TestCase):
         p.id = 6
         p.on_success = 7
         p.on_failure = 0
-        p.type = ProgramItem.GET_READY
+        p.type = "GetReady"
         pb.items.append(deepcopy(p))
 
         p = ProgramItem()
         p.id = 7
         p.on_success = 8
         p.on_failure = 0
-        p.type = ProgramItem.WAIT_UNTIL_USER_FINISHES
+        p.type = "WaitUntilUserFinishes"
         pb.items.append(deepcopy(p))
 
         p = ProgramItem()
         p.id = 8
         p.on_success = 9
         p.on_failure = 0
-        p.type = ProgramItem.PICK_FROM_POLYGON
+        p.type = "PickFromPolygon"
         p.object.append("profile")
         pp = PolygonStamped()
         pp.header.frame_id = "marker"
@@ -130,7 +130,7 @@ class TestProgramHelper(unittest.TestCase):
         p.id = 9
         p.on_success = 4
         p.on_failure = 0
-        p.type = ProgramItem.PLACE_TO_POSE
+        p.type = "PlaceToPose"
         p.ref_id.append(8)
         pp = PoseStamped()
         pp.header.frame_id = "marker"
@@ -150,7 +150,7 @@ class TestProgramHelper(unittest.TestCase):
 
         pi = ProgramItem()
         pi.id = 1
-        pi.type = ProgramItem.PICK_FROM_FEEDER
+        pi.type = "PickFromFeeder"
         pi.object.append("obj1")
         pi.pose.append(PoseStamped())
         pi.on_success = 2
@@ -158,7 +158,7 @@ class TestProgramHelper(unittest.TestCase):
 
         pi = ProgramItem()
         pi.id = 2
-        pi.type = ProgramItem.PLACE_TO_GRID
+        pi.type = "PlaceToGrid"
         pi.polygon.append(PolygonStamped())
         pi.ref_id.append(1)
 
@@ -171,7 +171,7 @@ class TestProgramHelper(unittest.TestCase):
 
         pi = ProgramItem()
         pi.id = 3
-        pi.type = ProgramItem.DRILL_POINTS
+        pi.type = "DrillPoints"
         pi.ref_id.append(2)
         pi.pose.append(PoseStamped())
         pi.on_success = 3
