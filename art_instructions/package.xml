@@ -17,6 +17,6 @@
   <build_export_depend>rospy</build_export_depend>
   <exec_depend>art_utils</exec_depend>
   <exec_depend>rospy</exec_depend>
-  <run_depend>python-qt-bindings</run_depend>
+  <exec_depend>python-qt-bindings</exec_depend>
 
 </package>

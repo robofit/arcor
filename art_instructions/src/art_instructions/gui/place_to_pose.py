@@ -1,7 +1,7 @@
 from art_instructions.gui import GuiInstruction
 from PyQt4 import QtCore
 import rospy
-from art_msgs.mgs import ProgramItem as ProgIt
+from art_msgs.msg import ProgramItem as ProgIt
 
 translate = QtCore.QCoreApplication.translate
 
@@ -10,22 +10,16 @@ class PlaceToPose(GuiInstruction):
 
     CONTEXT = "PlaceToPose"
 
-    def __init__(self, ui):
+    def __init__(self, *args, **kwargs):
 
-        super(PlaceToPose, self).__init(ui)
-
-    def cleanup(self):
-
-        super(PlaceToPose, self).cleanup()
+        super(PlaceToPose, self).__init__(*args, **kwargs)
 
 
 class PlaceToPoseLearn(PlaceToPose):
 
-    def __init__(self, ui, editable):
+    def __init__(self, *args, **kwargs):
 
-        super(PlaceToPoseLearn, self).__init(ui)
-
-        self.editable = editable
+        super(PlaceToPoseLearn, self).__init__(*args, **kwargs)
 
         if not self.ui.ph.is_object_set(*self.cid):
 
@@ -50,7 +44,7 @@ class PlaceToPoseLearn(PlaceToPose):
 
                 if it_id == self.item_id:
 
-                    if editable:
+                    if self.editable:
                         self.ui.notif(
                             translate(
                                 self.CONTEXT,
@@ -68,11 +62,11 @@ class PlaceToPoseLearn(PlaceToPose):
                                 object_type,
                                 object_id,
                                 place_cb=self.ui.place_pose_changed,  # TODO place_cb should be set in add_place?
-                                fixed=not editable)
+                                fixed=not self.editable)
                     else:
 
                         self.ui.add_place(translate(self.CONTEXT, "PLACE POSE"), self.ui.get_def_pose(
-                        ), object_type, object_id, place_cb=self.ui.place_pose_changed, fixed=not editable)
+                        ), object_type, object_id, place_cb=self.ui.place_pose_changed, fixed=not self.editable)
 
                     continue
 
@@ -96,12 +90,12 @@ class PlaceToPoseLearn(PlaceToPose):
 
 class PlaceToPoseRun(PlaceToPose):
 
-    def __init__(self, ui, flags):
+    def __init__(self, *args, **kwargs):
 
-        super(PlaceToPoseRun, self).__init(ui)
+        super(PlaceToPoseRun, self).__init__(*args, **kwargs)
 
         try:
-            obj_id = flags["SELECTED_OBJECT_ID"]
+            obj_id = self.flags["SELECTED_OBJECT_ID"]
         except KeyError:
             rospy.logerr(
                 "PLACE_TO_POSE: SELECTED_OBJECT_ID flag not set")

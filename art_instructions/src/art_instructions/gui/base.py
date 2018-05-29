@@ -8,6 +8,8 @@ class GuiInstruction(QtCore.QObject):
     def __init__(self, ui, editable=False, flags=None):
 
         self.ui = ui
+        self.editable = editable
+        self.flags = flags
 
     def cleanup(self):
 

@@ -18,22 +18,16 @@ class DrillPoints(GuiInstruction):
 
     CONTEXT = "DrillPoints"
 
-    def __init__(self, ui):
+    def __init__(self, *args, **kwargs):
 
-        super(DrillPoints, self).__init(ui)
-
-    def cleanup(self):
-
-        super(DrillPoints, self).cleanup()
+        super(DrillPoints, self).__init__(*args, **kwargs)
 
 
 class DrillPointsLearn(DrillPoints):
 
-    def __init__(self, ui, editable=False):
+    def __init__(self, *args, **kwargs):
 
-        super(DrillPointsLearn, self).__init(ui)
-
-        self.editable = editable
+        super(DrillPointsLearn, self).__init__(*args, **kwargs)
 
         self.drill_dialog = None
         self.drill_pose_idx = 0
@@ -43,7 +37,7 @@ class DrillPointsLearn(DrillPoints):
 
             self.ui.select_object_type(self.ui.ph.get_object(self.block_id, self.instruction_id)[0][0])
 
-            if editable:
+            if self.editable:
                 self.create_drill_dialog()
 
             if self.ui.ph.is_polygon_set(self.block_id, self.instruction_id):
@@ -51,13 +45,13 @@ class DrillPointsLearn(DrillPoints):
 
                 self.ui.add_polygon(translate(self.CONTEXT, "OBJECTS TO BE DRILLED"),
                                     poly_points=conversions.get_pick_polygon_points(polygons),
-                                    polygon_changed=self.polygon_changed, fixed=not editable)
+                                    polygon_changed=self.polygon_changed, fixed=not self.editable)
 
         else:
 
             # TODO pokud nema byt nastaveny v teto instrukci - rict kde je potreba ho nastavit
             # TODO pokud tam neni vybrany, ani nedovolit editaci - neni co editovat
-            if editable:
+            if self.editable:
                 self.ui.notif(
                     translate(self.CONTEXT, "Select object type to be drilled"))
 
@@ -271,22 +265,22 @@ class DrillPointsLearn(DrillPoints):
 
 class DrillPointsRun(DrillPoints):
 
-    def __init__(self, ui, flags):
+    def __init__(self, *args, **kwargs):
 
-        super(DrillPointsLearn, self).__init(ui)
+        super(DrillPointsRun, self).__init__(*args, **kwargs)
 
         polygons = self.ui.ph.get_polygon(self.block_id, self.instruction_id)[0]
         poses = self.ui.ph.get_pose(self.block_id, self.instruction_id)[0]
 
         try:
-            self.select_object(flags["SELECTED_OBJECT_ID"])
+            self.select_object(self.flags["SELECTED_OBJECT_ID"])
             self.notif(
                 translate(
                     "UICoreRos",
                     "Going to drill hole %1 out of %2 into object %3.").arg(
-                    flags["DRILLED_HOLE_NUMBER"]).arg(
+                    self.flags["DRILLED_HOLE_NUMBER"]).arg(
                     len(poses)).arg(
-                    flags["SELECTED_OBJECT_ID"]))
+                    self.flags["SELECTED_OBJECT_ID"]))
         except KeyError as e:
             rospy.logerr(
                 "DRILL_POINTS - flag not set: " + str(e))

@@ -13,22 +13,16 @@ class PickFromFeeder(GuiInstruction):
 
     CONTEXT = "PickFromFeeder"
 
-    def __init__(self, ui):
+    def __init__(self, *args, **kwargs):
 
-        super(PickFromFeeder, self).__init(ui)
-
-    def cleanup(self):
-
-        super(PickFromFeeder, self).cleanup()
+        super(PickFromFeeder, self).__init__(*args, **kwargs)
 
 
 class PickFromFeederLearn(PickFromFeeder):
 
-    def __init__(self, ui, editable=False):
+    def __init__(self, *args, **kwargs):
 
-        super(PickFromFeederLearn, self).__init(ui)
-
-        self.editable = editable
+        super(PickFromFeederLearn, self).__init__(*args, **kwargs)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL(
             'objects_raw'), self.object_raw_cb_evt)
@@ -47,7 +41,7 @@ class PickFromFeederLearn(PickFromFeeder):
 
             self.select_object_type(self.ph.get_object(self.block_id, self.instruction_id)[0][0])
 
-            if editable:
+            if self.editable:
                 self.create_grasp_dialog()
 
         else:
@@ -90,7 +84,7 @@ class PickFromFeederLearn(PickFromFeeder):
         # wait for message, set pose
         try:
             ps = rospy.wait_for_message(topics[idx], PoseStamped, timeout=2)
-        except(rospy.ROSException) as e:
+        except rospy.ROSException as e:
             rospy.logerr(str(e))
             self.notif(
                 translate(self.CONTEXT, "Failed to store gripper pose."), temp=True,
@@ -125,7 +119,7 @@ class PickFromFeederLearn(PickFromFeeder):
     def object_selected(self, obj, selected, msg):
 
         # this type of object is already set
-        if len(msg.object) > 0 and obj.object_type.name == msg.object[0]:
+        if msg.object and obj.object_type.name == msg.object[0]:
             rospy.logdebug("object type " +
                            obj.object_type.name + " already selected")
             return
@@ -134,7 +128,6 @@ class PickFromFeederLearn(PickFromFeeder):
             # place
             rospy.logdebug("selecting new object type: " +
                            obj.object_type.name)
-            pass
 
         if obj.object_type.name != self.ui.ph.get_object(self.ui.program_vis.block_id, msg.id)[0][0]:
             self.ui.program_vis.clear_poses()
@@ -160,11 +153,11 @@ class PickFromFeederLearn(PickFromFeeder):
             frames = ["/r_forearm_cam_optical_frame", "/l_forearm_cam_optical_frame"]
             names = [translate(self.CONTEXT, "Right arm (%1)"), translate("UICoreRos", "Left arm (%1)")]
 
-            for i in range(len(frames)):
+            for i, frame in enumerate(frames):
 
-                if frames[i] in self.objects_by_sensor:
+                if frame in self.objects_by_sensor:
 
-                    cnt = self.objects_by_sensor[frames[i]][0]
+                    cnt = self.objects_by_sensor[frame][0]
 
                 else:
 
@@ -179,7 +172,7 @@ class PickFromFeederLearn(PickFromFeeder):
 
     def cleanup(self):
 
-        super(PickFromFeeder, self).cleanup()
+        super(PickFromFeederLearn, self).cleanup()
 
         self.ui.scene.removeItem(self.grasp_dialog)
         self.grasp_dialog = None
@@ -209,9 +202,9 @@ class PickFromFeederLearn(PickFromFeeder):
 
 class PickFromFeederRun(PickFromFeeder):
 
-    def __init__(self, ui, flags=None):
+    def __init__(self, *args, **kwargs):
 
-        super(PickFromFeederRun, self).__init(ui, flags)
+        super(PickFromFeederRun, self).__init__(*args, **kwargs)
 
         ps = self.ui.ph.get_pose(self.block_id, self.instruction_id)[0][0]
 

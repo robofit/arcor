@@ -11,26 +11,20 @@ class PickFromPolygon(GuiInstruction):
 
     CONTEXT = "PickFromPolygon"
 
-    def __init__(self, ui):
+    def __init__(self, *args, **kwargs):
 
-        super(PickFromPolygon, self).__init(ui)
-
-    def cleanup(self):
-
-        super(PickFromPolygon, self).cleanup()
+        super(PickFromPolygon, self).__init__(*args, **kwargs)
 
 
 class PickFromPolygonLearn(PickFromPolygon):
 
-    def __init__(self, ui, editable=False):
+    def __init__(self, *args, **kwargs):
 
-        super(PickFromPolygonLearn, self).__init(ui)
-
-        self.editable = editable
+        super(PickFromPolygonLearn, self).__init__(*args, **kwargs)
 
         if not self.ui.ph.is_object_set(*self.cid):
 
-            if editable:
+            if self.editable:
                 self.notif(
                     translate(self.CONTEXT, "Select object type to be picked up by tapping on its outline."))
 
@@ -49,9 +43,9 @@ class PickFromPolygonLearn(PickFromPolygon):
                     "PICK AREA"),
                 poly_points=conversions.get_pick_polygon_points(polygons),
                 polygon_changed=self.polygon_changed,
-                fixed=not editable)
+                fixed=not self.editable)
 
-            if editable:
+            if self.editable:
                 self.notif(
                     translate(self.CONTEXT, "Adjust pick area or select another object type."))
 
@@ -94,13 +88,13 @@ class PickFromPolygonLearn(PickFromPolygon):
 
 class PickFromPolygonRun(PickFromPolygon):
 
-    def __init__(self, ui, flags=None):
+    def __init__(self, *args, **kwargs):
 
-        super(PickFromPolygonRun, self).__init(ui)
+        super(PickFromPolygonRun, self).__init__(*args, **kwargs)
 
         obj_id = None
         try:
-            obj_id = flags["SELECTED_OBJECT_ID"]
+            obj_id = self.flags["SELECTED_OBJECT_ID"]
         except KeyError:
             rospy.logerr(
                 "PICK_FROM_POLYGON: SELECTED_OBJECT_ID flag not set")

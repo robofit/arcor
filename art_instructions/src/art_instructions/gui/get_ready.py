@@ -8,22 +8,22 @@ class GetReady(GuiInstruction):
 
     CONTEXT = "GetReady"
 
-    def __init__(self, ui):
+    def __init__(self, *args, **kwargs):
 
-        super(GetReady, self).__init(ui)
+        super(GetReady, self).__init__(*args, **kwargs)
 
 
 class GetReadyLearn(GetReady):
 
-    def __init__(self, ui):
+    def __init__(self, *args, **kwargs):
 
-        super(GetReadyLearn, self).__init(ui)
+        super(GetReadyLearn, self).__init__(*args, **kwargs)
 
 
 class GetReadyRun(GetReady):
 
-    def __init__(self, ui):
+    def __init__(self, *args, **kwargs):
 
-        super(GetReadyRun, self).__init(ui)
+        super(GetReadyRun, self).__init__(*args, **kwargs)
 
         self.ui.notif(translate(self.CONTEXT, "Robot is getting ready"))

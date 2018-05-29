@@ -15,9 +15,9 @@ class VisualInspection(GuiInstruction):
 
     CONTEXT = "VisualInspection"
 
-    def __init__(self, ui):
+    def __init__(self, *args, **kwargs):
 
-        super(VisualInspection, self).__init(ui)
+        super(VisualInspection, self).__init__(*args, **kwargs)
 
         self.bridge = CvBridge()
         # TODO read topic from some (setup) param
@@ -51,11 +51,9 @@ class VisualInspection(GuiInstruction):
 
 class VisualInspectionLearn(VisualInspection):
 
-    def __init__(self, ui, editable=False):
+    def __init__(self, *args, **kwargs):
 
-        super(VisualInspectionLearn, self).__init(ui)
-
-        self.editable = editable
+        super(VisualInspectionLearn, self).__init__(*args, **kwargs)
 
         self.ui.notif(
             translate(
@@ -108,9 +106,9 @@ class VisualInspectionLearn(VisualInspection):
 
 class VisualInspectionRun(VisualInspection):
 
-    def __init__(self, ui, flags=None):
+    def __init__(self, *args, **kwargs):
 
-        super(VisualInspectionRun, self).__init(ui)
+        super(VisualInspectionRun, self).__init__(*args, **kwargs)
 
         self.ui.notif(
             translate(

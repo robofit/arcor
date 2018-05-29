@@ -8,22 +8,22 @@ class WaitUntilUserFinishes(GuiInstruction):
 
     CONTEXT = "WaitUntilUserFinishes"
 
-    def __init__(self, ui):
+    def __init__(self, *args, **kwargs):
 
-        super(WaitUntilUserFinishes, self).__init(ui)
+        super(WaitUntilUserFinishes, self).__init__(*args, **kwargs)
 
 
 class WaitUntilUserFinishesLearn(WaitUntilUserFinishes):
 
-    def __init__(self, ui):
+    def __init__(self, *args, **kwargs):
 
-        super(WaitUntilUserFinishesLearn, self).__init(ui)
+        super(WaitUntilUserFinishesLearn, self).__init__(*args, **kwargs)
 
 
 class WaitUntilUserFinishesRun(WaitUntilUserFinishes):
 
-    def __init__(self, ui):
+    def __init__(self, *args, **kwargs):
 
-        super(WaitUntilUserFinishesRun, self).__init(ui)
+        super(WaitUntilUserFinishesRun, self).__init__(*args, **kwargs)
 
         self.ui.notif(translate(self.CONTEXT, "Waiting for user"))

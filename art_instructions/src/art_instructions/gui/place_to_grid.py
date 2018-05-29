@@ -9,18 +9,16 @@ class PlaceToGrid(GuiInstruction):
 
     CONTEXT = "PlaceToGrid"
 
-    def __init__(self, ui):
+    def __init__(self, *args, **kwargs):
 
-        super(PlaceToGrid, self).__init(ui)
+        super(PlaceToGrid, self).__init__(*args, **kwargs)
 
 
 class PlaceToGridLearn(PlaceToGrid):
 
-    def __init__(self, ui, editable):
+    def __init__(self, *args, **kwargs):
 
-        super(PlaceToGridLearn, self).__init(ui)
-
-        self.editable = editable
+        super(PlaceToGridLearn, self).__init__(*args, **kwargs)
 
         object_type_name = self.uiph.get_object(*self.cid)[0][0]
         poses = self.ui.ph.get_pose(*self.cid)[0]
@@ -41,7 +39,7 @@ class PlaceToGridLearn(PlaceToGrid):
             poses,
             grid_points=conversions.get_pick_polygon_points(polygons),
             square_changed=self.ui.square_changed,
-            fixed=not editable)
+            fixed=not self.editable)
 
     def object_selected(self, obj, selected, msg):
 
@@ -52,7 +50,7 @@ class PlaceToGridRun(PlaceToGrid):
 
     def __init__(self, ui, flags):
 
-        super(PlaceToGridRun, self).__init(ui)
+        super(PlaceToGridRun, self).__init__(ui)
 
         polygons = self.ui.ph.get_polygon(*self.cid)[0]
         poses = self.ui.ph.get_pose(*self.cid)[0]
