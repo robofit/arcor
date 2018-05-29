@@ -108,7 +108,7 @@ class VisualInspectionLearn(VisualInspection):
 
 class VisualInspectionRun(VisualInspection):
 
-    def __init__(self, ui):
+    def __init__(self, ui, flags=None):
 
         super(VisualInspectionRun, self).__init(ui)
 

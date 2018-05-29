@@ -1,2 +1,10 @@
 from base import GuiInstruction
+from drill_points import DrillPointsLearn, DrillPointsRun
+from get_ready import GetReadyLearn, GetReadyRun
+from pick_from_feeder import PickFromFeederLearn, PickFromFeederRun
+from pick_from_polygon import PickFromPolygonLearn, PickFromPolygonRun
+from place_to_grid import PlaceToGridLearn, PlaceToGridRun
+from place_to_pose import PlaceToPoseLearn, PlaceToPoseRun
 from visual_inspection import VisualInspectionLearn, VisualInspectionRun
+from wait_for_user import WaitForUserLearn, WaitForUserRun
+from wait_until_user_finishes import WaitUntilUserFinishesLearn, WaitUntilUserFinishesRun

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from art_projected_gui.gui import UICore
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtCore
 import rospy
 from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt, LearningRequestAction,\
     LearningRequestGoal
@@ -19,12 +19,17 @@ import actionlib
 from art_utils import array_from_param
 from art_utils import ArtRobotHelper, UnknownRobot, RobotParametersNotOnParameterServer
 import tf
-from math import sqrt
-import matplotlib.path as mplPath
-import numpy as np
 
-# TODO load instructions based on current program
-from art_instructions.gui import VisualInspectionLearn, VisualInspectionRun
+# TODO load instructions dynamically (param with list (import "paths") of instructions)
+from art_instructions.gui import DrillPointsLearn, DrillPointsRun,\
+    GetReadyRun, GetReadyLearn,\
+    PickFromFeederLearn, PickFromFeederRun,\
+    PickFromPolygonLearn, PickFromPolygonRun, \
+    PlaceToGridLearn, PlaceToGridRun, \
+    PlaceToPoseLearn, PlaceToPoseRun, \
+    VisualInspectionLearn, VisualInspectionRun, \
+    WaitForUserLearn, WaitForUserRun, \
+    WaitUntilUserFinishesLearn, WaitUntilUserFinishesRun
 
 translate = QtCore.QCoreApplication.translate
 
@@ -115,14 +120,6 @@ class UICoreRos(UICore):
                 "~show_touch_points",
                 False))
 
-        self.stop_btn = None
-        # self.stop_btn = ButtonItem(self.scene, 0, 0, "STOP", None, self.stop_btn_clicked, 2.0, QtCore.Qt.red)
-
-        if self.stop_btn:
-            self.stop_btn.setPos(self.scene.width() - self.stop_btn.boundingRect().width() -
-                                 300, self.scene.height() - self.stop_btn.boundingRect().height() - 60)
-            self.stop_btn.set_enabled(True)
-
         self.projectors = []
 
         try:
@@ -180,9 +177,6 @@ class UICoreRos(UICore):
             '/art/brain/program/error_response', ProgramErrorResolve)  # TODO wait for service? where?
         self.program_error_dialog = None
 
-        self.drill_dialog = None
-        self.drill_pose_idx = 0
-
         self.emergency_stopped = False
 
         rospy.loginfo("Waiting for ART services...")
@@ -231,13 +225,31 @@ class UICoreRos(UICore):
         self.projector_calib_srv = rospy.Service(
             '/art/interface/projected_gui/calibrate_projectors', Trigger, self.calibrate_projectors_cb)
 
+        # TODO load from some param (with path or something) and get rid of type from ProgramItem
+        self.instructions_learn = {ProgIt.DRILL_POINTS: DrillPointsLearn,
+                                   ProgIt.GET_READY: GetReadyLearn,
+                                   ProgIt.PICK_FROM_FEEDER: PickFromFeederLearn,
+                                   ProgIt.PICK_FROM_POLYGON: PickFromPolygonLearn,
+                                   ProgIt.PLACE_TO_GRID: PlaceToGridLearn,
+                                   ProgIt.PLACE_TO_POSE: PlaceToPoseLearn,
+                                   ProgIt.VISUAL_INSPECTION: VisualInspectionLearn,
+                                   ProgIt.WAIT_FOR_USER: WaitForUserLearn,
+                                   ProgIt.WAIT_UNTIL_USER_FINISHES: WaitUntilUserFinishesLearn}
+
+        self.instructions_run = {ProgIt.DRILL_POINTS: DrillPointsRun,
+                                 ProgIt.GET_READY: GetReadyRun,
+                                 ProgIt.PICK_FROM_FEEDER: PickFromFeederRun,
+                                 ProgIt.PICK_FROM_POLYGON: PickFromPolygonRun,
+                                 ProgIt.PLACE_TO_GRID: PlaceToGridRun,
+                                 ProgIt.PLACE_TO_POSE: PlaceToPoseRun,
+                                 ProgIt.VISUAL_INSPECTION: VisualInspectionRun,
+                                 ProgIt.WAIT_FOR_USER: WaitForUserRun,
+                                 ProgIt.WAIT_UNTIL_USER_FINISHES: WaitUntilUserFinishesRun}
+
+        self.current_instruction = None
+
         self.state_manager = InterfaceStateManager(
             "PROJECTED UI", cb=self.interface_state_cb)
-
-        # TODO load from some param (with path or something) and get rid of type from ProgramItem
-        self.instructions_learn = {ProgIt.VISUAL_INSPECTION: VisualInspectionLearn}
-        self.instructions_run = {ProgIt.VISUAL_INSPECTION: VisualInspectionRun}
-        self.current_instruction = None
 
         rospy.loginfo("Projected GUI ready!")
 
@@ -261,117 +273,6 @@ class UICoreRos(UICore):
         self.notif(translate(
             "UICoreRos", "Touch table calibration started. Please press the white point."))
         self.touch_points = TouchPointsItem(self.scene, pts)
-
-    def save_gripper_pose_drill_cb(self, idx):
-
-        # "Right arm", "Left arm", "Prev pose", "Next pose"
-
-        if idx in [2, 3]:
-
-            if idx == 3:
-                self.drill_pose_idx += 1
-                if self.drill_pose_idx >= self.program_vis.get_poses_count():
-                    self.drill_pose_idx = 0
-            else:
-
-                self.drill_pose_idx -= 1
-                if self.drill_pose_idx < 0:
-                    self.drill_pose_idx = self.program_vis.get_poses_count() - 1
-
-            self.drill_dialog.set_caption(self.get_drill_caption())
-
-            return
-
-        topics = ['/art/robot/right_arm/gripper/pose',
-                  '/art/robot/left_arm/gripper/pose']
-
-        rospy.logdebug("Getting pose from topic: " + topics[idx])
-
-        # wait for message, set pose
-        try:
-            ps = rospy.wait_for_message(topics[idx], PoseStamped, timeout=2)
-        except(rospy.ROSException) as e:
-            rospy.logerr(str(e))
-            self.notif(
-                translate("UICoreRos", "Failed to get gripper pose."), temp=True, message_type=NotifyUserRequest.WARN)
-            return
-
-        assert ps.header.frame_id == "marker"
-
-        obj_type = self.ph.get_object(self.program_vis.block_id, self.program_vis.get_current_item().id)[0][0]
-        polygon = self.ph.get_polygon(self.program_vis.block_id, self.program_vis.get_current_item().id)[0][0]
-        pp = []
-
-        for point in polygon.polygon.points:
-            pp.append([point.x, point.y])
-        pp.append([0, 0])
-        pol = mplPath.Path(np.array(pp), closed=True)
-
-        dist = None
-        c_obj = None
-        for obj in self.get_scene_items_by_type(ObjectItem):
-
-            # skip objects of different type or outside of polygon
-            if obj.object_type.name != obj_type or not pol.contains_point([obj.position[0], obj.position[1]]):
-                continue
-
-            d = sqrt((obj.position[0] - ps.pose.position.x)**2 +
-                     (obj.position[1] - ps.pose.position.y)**2 +
-                     (obj.position[2] - ps.pose.position.z)**2)
-
-            if dist is None or d < dist:
-
-                dist = d
-                c_obj = obj
-
-        if c_obj:
-
-            rospy.logdebug("Closest object is: " + c_obj.object_id + " (dist: " + str(dist) + ")")
-
-        else:
-
-            rospy.logdebug("No object of type " + obj_type + " found.")
-
-        if c_obj and dist < 0.4:
-
-            frame_id = "object_id_" + c_obj.object_id
-
-            try:
-                self.tfl.waitForTransform(frame_id, ps.header.frame_id, ps.header.stamp, rospy.Duration(2.0))
-                ps = self.tfl.transformPose(frame_id, ps)
-            except tf.Exception:
-
-                rospy.logerr(
-                    "Failed to transform gripper pose (" +
-                    ps.header.frame_id +
-                    ") to object frame_id: " +
-                    frame_id)
-                return
-
-            self.notif(
-                translate(
-                    "UICoreRos",
-                    "Gripper pose relative to object %1 stored").arg(
-                    c_obj.object_id),
-                temp=True)
-            self.snd_info()
-            self.program_vis.update_pose(ps, self.drill_pose_idx)
-
-            self.drill_pose_idx += 1
-            if self.drill_pose_idx >= self.program_vis.get_poses_count():
-                self.drill_pose_idx = 0
-
-            self.drill_dialog.set_caption(self.get_drill_caption())
-
-        else:
-
-            self.notif(
-                translate(
-                    "UICoreRos",
-                    "Failed to find object near gripper."),
-                temp=True,
-                message_type=NotifyUserRequest.WARN)
-            self.snd_warn()
 
     def touch_calibration_points_cb(self, req):
 
@@ -453,37 +354,10 @@ class UICoreRos(UICore):
             if halted:
 
                 self.notif(translate("UICoreRos", "Robot is halted."))
-                if self.stop_btn:
-                    self.stop_btn.set_enabled(False)
 
             else:
 
                 self.notif(translate("UICoreRos", "Robot is up again."), temp=True)
-                if self.stop_btn:
-                    self.stop_btn.set_enabled(True)
-
-    def stop_btn_clicked(self, btn):
-
-        try:
-
-            if self.emergency_stopped:
-                self.emergency_stop_reset_srv.call()
-                self.emergency_stopped = False
-                self.stop_btn.set_caption("STOP")
-                self.stop_btn.set_background_color(QtCore.Qt.red)
-                self.notif(translate("UICoreRos", "Resetting motors"), temp=True)
-            else:
-                self.emergency_stop_srv.call()
-                self.emergency_stopped = True
-                self.stop_btn.set_caption("RUN")
-                self.stop_btn.set_background_color(QtCore.Qt.green)
-                self.notif(
-                    translate("UICoreRos", "Emergency stop pressed"), temp=True)
-
-        except rospy.service.ServiceException:
-
-            self.notif(
-                translate("UICoreRos", "Failed to stop/run robot."), temp=True, message_type=NotifyUserRequest.ERROR)
 
     def program_error_dialog_cb(self, idx):
 
@@ -643,135 +517,12 @@ class UICoreRos(UICore):
 
         if it.type in self.instructions_run:
 
-            # TODO create plugins for all instructions
-            self.current_instruction = self.instructions_run[it.type](self)
+            self.current_instruction = self.instructions_run[it.type](self, flags)
 
-        elif it.type == ProgIt.GET_READY:
+        else:
 
-            self.notif(translate("UICoreRos", "Robot is getting ready"))
-
-        elif it.type == ProgIt.WAIT_FOR_USER:
-
-            self.notif(translate("UICoreRos", "Waiting for user"))
-
-        elif it.type == ProgIt.WAIT_UNTIL_USER_FINISHES:
-
-            self.notif(
-                translate("UICoreRos", "Waiting for user to finish"))
-
-        elif it.type == ProgIt.PICK_FROM_POLYGON:
-
-            obj_id = None
-            try:
-                obj_id = flags["SELECTED_OBJECT_ID"]
-            except KeyError:
-                rospy.logerr(
-                    "PICK_FROM_POLYGON: SELECTED_OBJECT_ID flag not set")
-
-            if obj_id is not None:
-                self.select_object(obj_id)
-
-                obj = self.get_object(obj_id)  # TODO notif - object type
-                if obj is not None:
-                    self.notif(
-                        translate(
-                            "UICoreRos",
-                            "Going to pick object ID ") +
-                        obj_id +
-                        translate(
-                            "UICoreRos",
-                            " of type ") +
-                        obj.object_type.name +
-                        translate(
-                            "UICoreRos",
-                            " from polygon."))
-
-            self.add_polygon(
-                translate(
-                    "UICoreRos",
-                    "PICK POLYGON"),
-                poly_points=conversions.get_pick_polygon_points(
-                    self.ph.get_polygon(
-                        state.block_id,
-                        it.id)[0]),
-                fixed=True)
-
-        elif it.type == ProgIt.PICK_FROM_FEEDER:
-
-            ps = self.ph.get_pose(state.block_id, state.program_current_item.id)[0][0]
-
-            if ps.pose.position.x < 1.5 / 2.0:
-                self.notif(
-                    translate("UICoreRos", "Picking object from feeder on my right."))
-            else:
-                self.notif(
-                    translate("UICoreRos", "Picking object from feeder on my left."))
-
-        elif it.type == ProgIt.PICK_OBJECT_ID:
-
-            obj_id = self.ph.get_object(state.block_id, it.id)[0][0]
-
-            self.notif(
-                translate("UICoreRos", "Picking object with ID=") + obj_id)
-            self.select_object(obj_id)
-
-        elif it.type == ProgIt.PLACE_TO_POSE:
-
-            try:
-                obj_id = flags["SELECTED_OBJECT_ID"]
-            except KeyError:
-                rospy.logerr(
-                    "PLACE_TO_POSE: SELECTED_OBJECT_ID flag not set")
-                return
-
-            obj = self.get_object(obj_id)
-
-            if obj is not None:
-
-                place_pose = self.ph.get_pose(state.block_id, it.id)[0][0]
-
-                self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),
-                               place_pose, obj.object_type, obj_id, fixed=True)
-
-                self.notif(translate("UICoreRos", "Placing object to pose."))
-
-            else:
-
-                rospy.logerr("Selected object_id not found: " + obj_id)
-
-        elif it.type == ProgIt.PLACE_TO_GRID:
-
-            polygons = self.ph.get_polygon(state.block_id, it.id)[0]
-            poses = self.ph.get_pose(state.block_id, it.id)[0]
-            object_type_name = self.ph.get_object(state.block_id, it.id)[0][0]
-
-            object_type = self.art.get_object_type(object_type_name)
-
-            self.notif(translate("UICoreRos", "Going to place objects into grid"))
-            self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
-                            0.075, object_type, poses, grid_points=conversions.get_pick_polygon_points(polygons),
-                            square_changed=self.square_changed, fixed=True)
-
-        elif it.type == ProgIt.DRILL_POINTS:
-
-            polygons = self.ph.get_polygon(state.block_id, it.id)[0]
-            poses = self.ph.get_pose(state.block_id, it.id)[0]
-
-            try:
-                self.select_object(flags["SELECTED_OBJECT_ID"])
-                self.notif(
-                    translate(
-                        "UICoreRos",
-                        "Going to drill hole %1 out of %2 into object %3.").arg(
-                        flags["DRILLED_HOLE_NUMBER"]).arg(
-                        len(poses)).arg(
-                        flags["SELECTED_OBJECT_ID"]))
-            except KeyError as e:
-                rospy.logerr(
-                    "DRILL_POINTS - flag not set: " + str(e))
-
-            self.add_polygon(translate("UICoreRos", "Objects to be drilled"),
-                             poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)
+            # TODO big error!
+            rospy.logfatal("Unsupported instruction!")
 
     def show_program_vis(self, readonly=False, stopped=False, running=False):
 
@@ -883,8 +634,6 @@ class UICoreRos(UICore):
 
             for it in [
                     self.program_error_dialog,
-                    self.grasp_dialog,
-                    self.drill_dialog,
                     self.program_vis,
                     self.program_list]:
 
@@ -957,164 +706,14 @@ class UICoreRos(UICore):
         if msg.type in self.instructions_learn:
 
             # TODO create plugins for all instructions
-            self.current_instruction = self.instructions_learn[msg.type](self, state.edit_enabled)
+            self.current_instruction = self.instructions_learn[msg.type](self, editable=state.edit_enabled)
 
-        elif msg.type == ProgIt.PICK_FROM_POLYGON:
+        else:
 
-            if not self.ph.is_object_set(block_id, item_id):
+            # TODO big error!
+            rospy.logfatal("Unsupported instruction!")
 
-                if not read_only:
-                    self.notif(
-                        translate("UICoreRos", "Select object type to be picked up by tapping on its outline."))
-
-            else:
-
-                object_type_name = self.ph.get_object(block_id, item_id)[0][0]
-                self.select_object_type(object_type_name)
-
-            if self.ph.is_polygon_set(block_id, item_id):
-
-                polygons = self.ph.get_polygon(block_id, item_id)[0]
-
-                self.add_polygon(
-                    translate(
-                        "UICoreRos",
-                        "PICK AREA"),
-                    poly_points=conversions.get_pick_polygon_points(polygons),
-                    polygon_changed=self.polygon_changed,
-                    fixed=read_only)
-
-                if not read_only:
-                    self.notif(
-                        translate("UICoreRos", "Adjust pick area or select another object type."))
-
-        elif msg.type == ProgIt.DRILL_POINTS:
-
-            # TODO check if object is to be set here or somewhere else!
-            if self.ph.is_object_set(block_id, item_id):
-
-                self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
-
-                if state.edit_enabled:
-
-                    self.create_drill_dialog()
-
-                if self.ph.is_polygon_set(block_id, item_id):
-                    polygons = self.ph.get_polygon(block_id, item_id)[0]
-
-                    self.add_polygon(translate("UICoreRos", "OBJECTS TO BE DRILLED"),
-                                     poly_points=conversions.get_pick_polygon_points(polygons),
-                                     polygon_changed=self.polygon_changed, fixed=read_only)
-
-            else:
-
-                # TODO pokud nema byt nastaveny v teto instrukci - rict kde je potreba ho nastavit
-                # TODO pokud tam neni vybrany, ani nedovolit editaci - neni co editovat
-                if not read_only:
-                    self.notif(
-                        translate("UICoreRos", "Select object type to be drilled"))
-
-        elif msg.type == ProgIt.PICK_OBJECT_ID:
-            if self.ph.is_object_set(block_id, item_id):
-                self.select_object(self.ph.get_object(block_id, item_id)[0][0])
-            else:
-                self.notif(
-                    translate("UICoreRos", "Select object to be picked up"))
-
-        elif msg.type == ProgIt.PLACE_TO_POSE:
-
-            if not self.ph.is_object_set(block_id, item_id):
-
-                (obj_arr, ref_id) = self.ph.get_object(block_id, item_id)
-
-                self.notif(translate(
-                    "UICoreRos", "Select object to be picked up in instruction %1").arg(ref_id))
-                notified = True
-
-            else:
-
-                for it_id in self.ph.get_items_ids(block_id):
-
-                    if self.ph.get_item_msg(block_id, it_id).type != ProgIt.PLACE_TO_POSE:
-
-                        continue
-
-                    object_type = None
-                    object_id = None
-
-                    if self.ph.is_object_set(block_id, it_id):
-
-                        object_type = self.art.get_object_type(self.ph.get_object(block_id, it_id)[0][0])
-
-                    if it_id == item_id:
-
-                        if not read_only:
-                            self.notif(
-                                translate(
-                                    "UICoreRos",
-                                    "Drag object outline to set place pose. Use blue point to set orientation."))
-
-                        if self.ph.is_pose_set(block_id, item_id):
-
-                            if object_type is not None:
-
-                                self.select_object_type(object_type.name)
-                                self.add_place(
-                                    translate(
-                                        "UICoreRos",
-                                        "PLACE POSE"),
-                                    self.ph.get_pose(
-                                        block_id,
-                                        it_id)[0][0],
-                                    object_type,
-                                    object_id,
-                                    place_cb=self.place_pose_changed,
-                                    fixed=read_only)
-                        else:
-
-                            self.add_place(translate("UICoreRos", "PLACE POSE"), self.get_def_pose(
-                            ), object_type, object_id, place_cb=self.place_pose_changed, fixed=read_only)
-
-                        continue
-
-                    if self.ph.is_pose_set(block_id, it_id):
-
-                        self.add_place(
-                            unicode(
-                                translate(
-                                    "UICoreRos",
-                                    "PLACE POSE")) + " (" + str(it_id) + ")",
-                            self.ph.get_pose(
-                                block_id,
-                                it_id)[0][0],
-                            object_type,
-                            object_id,
-                            fixed=True,
-                            dashed=True)
-
-        elif msg.type == ProgIt.PLACE_TO_GRID:
-
-            object_type_name = self.ph.get_object(block_id, item_id)[0][0]
-            poses = self.ph.get_pose(block_id, item_id)[0]
-            polygons = self.ph.get_polygon(block_id, item_id)[0]
-
-            object_type = self.art.get_object_type(object_type_name)
-
-            self.notif(translate("UICoreRos", "Place grid"))
-            self.add_square(
-                translate(
-                    "UICoreRos",
-                    "PLACE SQUARE GRID"),
-                self.width / 2,
-                self.height / 2,
-                0.1,
-                0.075,
-                object_type,
-                poses,
-                grid_points=conversions.get_pick_polygon_points(polygons),
-                square_changed=self.square_changed,
-                fixed=read_only)
-
+        # TODO fix notified - how to get it from instruction?
         if read_only and not notified:
 
             if self.ph.item_has_nothing_to_set(block_id, item_id):
@@ -1128,24 +727,6 @@ class UICoreRos(UICore):
             else:
                 self.notif(
                     translate("UICoreRos", "Press 'Edit' to adjust selected instruction."))
-
-    def get_drill_caption(self):
-
-        return translate("UICoreRos", "Save gripper pose (%1/%2)").arg(self.drill_pose_idx +
-                                                                       1).arg(self.program_vis.get_poses_count())
-
-    def create_drill_dialog(self):
-
-        if not self.drill_dialog:
-
-            self.drill_pose_idx = 0
-            self.drill_dialog = DialogItem(
-                self.scene, self.width / 2, 0.1, self.get_drill_caption(), [
-                    translate(
-                        "UICoreRos", "Right arm"), translate(
-                        "UICoreRos", "Left arm"), translate(
-                        "UICoreRos", "Prev pose"), translate(
-                        "UICoreRos", "Next pose")], self.save_gripper_pose_drill_cb)
 
     def active_item_switched(self, block_id, item_id, read_only=True, blocks=False):
 
@@ -1379,14 +960,7 @@ class UICoreRos(UICore):
 
             self.notif(translate("UICoreRos", "Robot is getting into default state"))
 
-            if self.grasp_dialog:
-
-                self.scene.removeItem(self.grasp_dialog)
-                self.grasp_dialog = None
-
-            if self.drill_dialog:
-                self.scene.removeItem(self.drill_dialog)
-                self.drill_dialog = None
+            self.current_instruction.learning_done()
 
         elif req == LearningRequestGoal.EXECUTE_ITEM:
             self.notif(
@@ -1506,39 +1080,8 @@ class UICoreRos(UICore):
 
                     rospy.logerr("Failed to get object type (" + inst.object_type + ") for ID=" + str(inst.object_id))
 
-        if self.grasp_dialog or self.drill_dialog:
-
-            sel_obj_type = self.ph.get_object(self.program_vis.block_id, self.program_vis.get_current_item().id)[0][0]
-
-            if self.grasp_dialog:
-
-                for obj in msg.instances:
-
-                    if obj.object_type == sel_obj_type:
-                        self.grasp_dialog.set_enabled(True)
-                        break
-                else:
-                    self.grasp_dialog.set_enabled(False)
-
-            if self.drill_dialog:
-
-                polygon = self.ph.get_polygon(self.program_vis.block_id, self.program_vis.get_current_item().id)[0][0]
-                pp = []
-
-                for point in polygon.polygon.points:
-                    pp.append([point.x, point.y])
-                pp.append([0, 0])
-                pol = mplPath.Path(np.array(pp), closed=True)
-
-                for obj in msg.instances:
-
-                    if obj.object_type == sel_obj_type and pol.contains_point(
-                            [obj.pose.position.x, obj.pose.position.y]):
-                        self.drill_dialog.set_enabled(True)
-                        break
-
-                else:
-                    self.drill_dialog.set_enabled(False)
+        if self.current_instruction:
+            self.current_instruction.detected_objects(msg)
 
     def polygon_changed(self, pts):
 
@@ -1573,117 +1116,7 @@ class UICoreRos(UICore):
         rospy.logdebug("attempt to select object id: " + id)
         obj = self.get_object(id)
 
-        if msg.type in [ProgIt.PICK_FROM_FEEDER, ProgIt.PICK_FROM_POLYGON]:
-
-            # this type of object is already set
-            if len(msg.object) > 0 and obj.object_type.name == msg.object[0]:
-                rospy.logdebug("object type " +
-                               obj.object_type.name + " already selected")
-                return
-            else:
-                # TODO remove previously inserted polygon, do not insert new
-                # place
-                rospy.logdebug("selecting new object type: " +
-                               obj.object_type.name)
-                pass
-
-        if msg.type == ProgIt.PICK_FROM_FEEDER:
-
-            if obj.object_type.name != self.ph.get_object(self.program_vis.block_id, msg.id)[0][0]:
-
-                self.program_vis.clear_poses()
-
-            self.program_vis.set_object(obj.object_type.name)
-            self.select_object_type(obj.object_type.name)
-            self.create_grasp_dialog()
-
-        elif msg.type == ProgIt.PICK_OBJECT_ID:
-
-            self.program_vis.set_object(obj.object_id)
-            self.select_object(obj.object_id)
-
-        elif msg.type == ProgIt.DRILL_POINTS:
-
-            # polygon is not from some other instruction (through ref_id)
-            # and new object type was selected
-            if obj.object_type.name != self.ph.get_object(self.program_vis.block_id, msg.id)[0][0]:
-
-                if msg.polygon:
-
-                    self.remove_scene_items_by_type(PolygonItem)
-
-                    poly_points = []
-
-                    self.program_vis.set_object(obj.object_type.name)
-                    self.select_object_type(obj.object_type.name)
-
-                    # TODO avoid code duplication with PICK_FROM_POLYGON
-                    for ob in self.get_scene_items_by_type(ObjectItem):
-                        if ob.object_type.name != obj.object_type.name:
-                            continue
-
-                        # TODO refactor somehow (into ObjectItem?)
-                        if not ob.on_table or ob.position[0] < 0 or ob.position[0] > self.width or ob.position[1] < 0\
-                                or ob.position[1] > self.height:
-                            continue
-
-                        sbr = ob.sceneBoundingRect()
-
-                        w = ob.pix2m(sbr.width())
-                        h = ob.pix2m(sbr.height())
-
-                        # TODO limit to scene size?
-                        poly_points.append((ob.position[0] + w / 2.0, ob.position[1] + h / 2.0))
-                        poly_points.append((ob.position[0] - w / 2.0, ob.position[1] - h / 2.0))
-                        poly_points.append((ob.position[0] + w / 2.0, ob.position[1] - h / 2.0))
-                        poly_points.append((ob.position[0] - w / 2.0, ob.position[1] + h / 2.0))
-
-                    self.add_polygon(translate("UICoreRos", "OBJECTS TO BE DRILLED"),
-                                     poly_points, polygon_changed=self.polygon_changed)
-                    self.notif(
-                        translate(
-                            "UICoreRos",
-                            "Check and adjust area with objects to be drilled. Then use robot arm to set drill poses."))
-
-                self.program_vis.clear_poses()
-
-                self.create_drill_dialog()
-
-        elif msg.type == ProgIt.PICK_FROM_POLYGON:
-
-            if obj.object_type.name not in self.selected_object_types:
-
-                self.remove_scene_items_by_type(PolygonItem)
-
-                poly_points = []
-
-                self.program_vis.set_object(obj.object_type.name)
-                self.select_object_type(obj.object_type.name)
-
-                for ob in self.get_scene_items_by_type(ObjectItem):
-                    if ob.object_type.name != obj.object_type.name:
-                        continue
-
-                    # TODO refactor somehow (into ObjectItem?)
-                    if not ob.on_table or ob.position[0] < 0 or ob.position[0] > self.width or ob.position[1] < 0\
-                            or ob.position[1] > self.height:
-                        continue
-
-                    sbr = ob.sceneBoundingRect()
-
-                    w = ob.pix2m(sbr.width())
-                    h = ob.pix2m(sbr.height())
-
-                    # TODO limit to scene size?
-                    poly_points.append((ob.position[0] + w / 2.0, ob.position[1] + h / 2.0))
-                    poly_points.append((ob.position[0] - w / 2.0, ob.position[1] - h / 2.0))
-                    poly_points.append((ob.position[0] + w / 2.0, ob.position[1] - h / 2.0))
-                    poly_points.append((ob.position[0] - w / 2.0, ob.position[1] + h / 2.0))
-
-                self.add_polygon(translate("UICoreRos", "PICK POLYGON"),
-                                 poly_points, polygon_changed=self.polygon_changed)
-                self.notif(
-                    translate("UICoreRos", "Check and adjust pick polygon. You may also change object type."))
+        self.current_instruction.object_selected(obj, selected, msg)
 
         self.state_manager.update_program_item(self.ph.get_program_id(
         ), self.program_vis.block_id, self.program_vis.get_current_item())

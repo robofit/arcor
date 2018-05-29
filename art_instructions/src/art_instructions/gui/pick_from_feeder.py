@@ -43,18 +43,18 @@ class PickFromFeederLearn(PickFromFeeder):
 
         self.objects_by_sensor = {}
 
-        if self.ui.ph.is_object_set(block_id, item_id):
+        if self.ui.ph.is_object_set(self.block_id, self.instruction_id):
 
-            self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
+            self.select_object_type(self.ph.get_object(self.block_id, self.instruction_id)[0][0])
 
-            if state.edit_enabled:
+            if editable:
                 self.create_grasp_dialog()
 
         else:
 
             if self.editable:
                 self.notif(
-                    translate("UICoreRos", "Select object type to be picked up by tapping on its outline."))
+                    translate(self.CONTEXT, "Select object type to be picked up by tapping on its outline."))
 
     def create_grasp_dialog(self):
 
@@ -63,21 +63,21 @@ class PickFromFeederLearn(PickFromFeeder):
             if not self.ui.ph.is_pose_set(self.ui.program_vis.block_id, self.ui.program_vis.get_current_item().id):
 
                 self.ui.notif(
-                    translate("UICoreRos", "Use robot's arm and dialog to teach pose enabling part detection."))
+                    translate(self.CONTEXT, "Use robot's arm and dialog to teach pose enabling part detection."))
 
             else:
 
                 self.ui.notif(
                     translate(
-                        "UICoreRos",
+                        self.CONTEXT,
                         "Learned pose for part detection may be updated or different object type could be chosen."))
 
             self.grasp_dialog = DialogItem(
                 self.ui.scene, self.ui.width / 2, 0.1, translate(
-                    "UICoreRos", "Save gripper pose"), [
+                    self.CONTEXT, "Save gripper pose"), [
                     translate(
-                        "UICoreRos", "Right arm (%1)").arg(0), translate(
-                        "UICoreRos", "Left arm (%1)").arg(0)], self.save_gripper_pose_cb)
+                        self.CONTEXT, "Right arm (%1)").arg(0), translate(
+                        self.CONTEXT, "Left arm (%1)").arg(0)], self.save_gripper_pose_cb)
 
             for it in self.grasp_dialog.items:
                 it.set_enabled(False)
@@ -93,15 +93,16 @@ class PickFromFeederLearn(PickFromFeeder):
         except(rospy.ROSException) as e:
             rospy.logerr(str(e))
             self.notif(
-                translate("UICoreRos", "Failed to store gripper pose."), temp=True, message_type=NotifyUserRequest.WARN)
+                translate(self.CONTEXT, "Failed to store gripper pose."), temp=True,
+                message_type=NotifyUserRequest.WARN)
             return
 
-        self.notif(translate("UICoreRos", "Gripper pose stored."), temp=True)
+        self.notif(translate(self.CONTEXT, "Gripper pose stored."), temp=True)
         self.snd_info()
         self.program_vis.set_pose(ps)
 
         self.grasp_dialog.items[idx].set_enabled(False)
-        self.grasp_dialog.items[idx].set_caption(translate("UICoreRos", "Stored"))
+        self.grasp_dialog.items[idx].set_caption(translate(self.CONTEXT, "Stored"))
 
     def object_raw_cb_evt(self, msg):
 
@@ -121,6 +122,27 @@ class PickFromFeederLearn(PickFromFeeder):
 
         self.objects_by_sensor[msg.header.frame_id] = [cnt, msg.header.stamp]
 
+    def object_selected(self, obj, selected, msg):
+
+        # this type of object is already set
+        if len(msg.object) > 0 and obj.object_type.name == msg.object[0]:
+            rospy.logdebug("object type " +
+                           obj.object_type.name + " already selected")
+            return
+        else:
+            # TODO remove previously inserted polygon, do not insert new
+            # place
+            rospy.logdebug("selecting new object type: " +
+                           obj.object_type.name)
+            pass
+
+        if obj.object_type.name != self.ui.ph.get_object(self.ui.program_vis.block_id, msg.id)[0][0]:
+            self.ui.program_vis.clear_poses()
+
+        self.ui.program_vis.set_object(obj.object_type.name)
+        self.ui.select_object_type(obj.object_type.name)
+        self.create_grasp_dialog()
+
     def grasp_dialog_timer_tick(self):
 
         now = rospy.Time.now()
@@ -136,7 +158,7 @@ class PickFromFeederLearn(PickFromFeeder):
                 return
 
             frames = ["/r_forearm_cam_optical_frame", "/l_forearm_cam_optical_frame"]
-            names = [translate("UICoreRos", "Right arm (%1)"), translate("UICoreRos", "Left arm (%1)")]
+            names = [translate(self.CONTEXT, "Right arm (%1)"), translate("UICoreRos", "Left arm (%1)")]
 
             for i in range(len(frames)):
 
@@ -162,18 +184,40 @@ class PickFromFeederLearn(PickFromFeeder):
         self.ui.scene.removeItem(self.grasp_dialog)
         self.grasp_dialog = None
 
+    def learning_done(self):
+
+        if self.grasp_dialog:
+            self.ui.scene.removeItem(self.grasp_dialog)
+            self.grasp_dialog = None
+
+    def detected_objects(self, msg):
+
+        if self.grasp_dialog:
+
+            sel_obj_type = self.ui.ph.get_object(self.block_id, self.instruction_id)[0][0]
+
+            if self.grasp_dialog:
+
+                for obj in msg.instances:
+
+                    if obj.object_type == sel_obj_type:
+                        self.grasp_dialog.set_enabled(True)
+                        break
+                else:
+                    self.grasp_dialog.set_enabled(False)
+
 
 class PickFromFeederRun(PickFromFeeder):
 
-    def __init__(self, ui):
+    def __init__(self, ui, flags=None):
 
-        super(PickFromFeederRun, self).__init(ui)
+        super(PickFromFeederRun, self).__init(ui, flags)
 
-        ps = self.ui.ph.get_pose(state.block_id, state.program_current_item.id)[0][0]
+        ps = self.ui.ph.get_pose(self.block_id, self.instruction_id)[0][0]
 
         if ps.pose.position.x < 1.5 / 2.0:
             self.ui.notif(
-                translate("UICoreRos", "Picking object from feeder on my right."))
+                translate(self.CONTEXT, "Picking object from feeder on my right."))
         else:
             self.ui.notif(
-                translate("UICoreRos", "Picking object from feeder on my left."))
+                translate(self.CONTEXT, "Picking object from feeder on my left."))
