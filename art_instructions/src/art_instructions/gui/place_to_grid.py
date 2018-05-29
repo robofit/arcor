@@ -48,9 +48,9 @@ class PlaceToGridLearn(PlaceToGrid):
 
 class PlaceToGridRun(PlaceToGrid):
 
-    def __init__(self, ui, flags):
+    def __init__(self, *args, **kwargs):
 
-        super(PlaceToGridRun, self).__init__(ui)
+        super(PlaceToGridRun, self).__init__(*args, **kwargs)
 
         polygons = self.ui.ph.get_polygon(*self.cid)[0]
         poses = self.ui.ph.get_pose(*self.cid)[0]

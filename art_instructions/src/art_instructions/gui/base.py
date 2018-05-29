@@ -13,7 +13,7 @@ class GuiInstruction(QtCore.QObject):
 
     def cleanup(self):
 
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def object_selected(self, obj, selected, msg):
 
