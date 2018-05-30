@@ -21,7 +21,7 @@ from art_projected_gui.gui import SceneViewer
 
 class Padding(object):
 
-    def __init(self):
+    def __init__(self):
 
         self.top = rospy.get_param(
             '~padding/top', 0.0)
@@ -74,6 +74,10 @@ class Projector(SceneViewer):
 
         self.map_x = None
         self.map_y = None
+
+        self.dx = None
+        self.dy = None
+        self.scaled_checkerboard_width = None
 
         self.rpm = int(rospy.get_param(self.ns + 'rpm'))
 
@@ -283,18 +287,14 @@ class Projector(SceneViewer):
 
         self.corners_pub.publish(ppp)
 
-        dx = (self.pix_label.width() - self.pix_label.pixmap().width()) / 2.0 + self.padding.left
-        dy = (self.pix_label.height() - self.pix_label.pixmap().height()) / 2.0 + self.padding.right
-
-        # TODO this is probably not correct under all circumstances
-        box_size = (self.pix_label.pixmap().width() - self.padding.width) / 12.0
+        box_size = self.scaled_checkerboard_width / 12.0
 
         # TODO self.scene_origin ???
         # generate requested table coordinates
         for y in range(0, 6):
             for x in range(0, 9):
-                px = 2 * box_size + x * box_size + dx
-                py = 2 * box_size + y * box_size + dy
+                px = 2 * box_size + x * box_size + self.dx
+                py = 2 * box_size + y * box_size + self.dy
 
                 ppoints.append([px, py])
 
@@ -371,8 +371,23 @@ class Projector(SceneViewer):
 
         pix = QtGui.QPixmap(self.width(), self.height())
         painter = QtGui.QPainter(pix)
-        painter.drawImage(self.padding.left, self.padding.top, self.checkerboard_img.scaled(
-            self.width() - self.padding.width, self.height() - self.padding.height, QtCore.Qt.KeepAspectRatio))
+
+        scaled_img = self.checkerboard_img.scaled(
+            self.width() - self.padding.width,
+            self.height() - self.padding.height, QtCore.Qt.KeepAspectRatio).toImage()
+
+        rospy.logdebug("Checkerboard width: " + str(scaled_img.width()) + ", height: " + str(scaled_img.height()))
+
+        self.dx = self.padding.left + (self.width() - scaled_img.width() - self.padding.width) / 2.0
+        self.dy = self.padding.top + (self.height() - scaled_img.height() - self.padding.height) / 2.0
+
+        self.scaled_checkerboard_width = scaled_img.width()
+
+        rospy.logdebug("dx: " + str(self.dx) + ", dy: " + str(self.dy))
+
+        painter.fillRect(pix.rect(), QtGui.QBrush(QtCore.Qt.white))
+        painter.drawImage(self.dx, self.dy, scaled_img)
+        painter.end()
 
         self.pix_label.setPixmap(pix)
 
