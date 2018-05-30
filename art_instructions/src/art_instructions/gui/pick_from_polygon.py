@@ -25,7 +25,7 @@ class PickFromPolygonLearn(PickFromPolygon):
         if not self.ui.ph.is_object_set(*self.cid):
 
             if self.editable:
-                self.notif(
+                self.ui.notif(
                     translate(self.CONTEXT, "Select object type to be picked up by tapping on its outline."))
 
         else:
@@ -42,11 +42,11 @@ class PickFromPolygonLearn(PickFromPolygon):
                     self.CONTEXT,
                     "PICK AREA"),
                 poly_points=conversions.get_pick_polygon_points(polygons),
-                polygon_changed=self.polygon_changed,
+                polygon_changed=self.ui.polygon_changed,
                 fixed=not self.editable)
 
             if self.editable:
-                self.notif(
+                self.ui.notif(
                     translate(self.CONTEXT, "Adjust pick area or select another object type."))
 
     def object_selected(self, obj, selected, msg):
@@ -65,8 +65,8 @@ class PickFromPolygonLearn(PickFromPolygon):
                     continue
 
                 # TODO refactor somehow (into ObjectItem?)
-                if not ob.on_table or ob.position[0] < 0 or ob.position[0] > self.width or ob.position[1] < 0 \
-                        or ob.position[1] > self.height:
+                if not ob.on_table or ob.position[0] < 0 or ob.position[0] > self.ui.width or ob.position[1] < 0 \
+                        or ob.position[1] > self.ui.height:
                     continue
 
                 sbr = ob.sceneBoundingRect()

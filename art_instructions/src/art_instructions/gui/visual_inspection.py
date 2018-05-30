@@ -7,6 +7,7 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import Bool
 from PyQt4 import QtCore
 from geometry_msgs.msg import PoseStamped
+from art_utils import array_from_param
 
 translate = QtCore.QCoreApplication.translate
 
@@ -20,22 +21,57 @@ class VisualInspection(GuiInstruction):
         super(VisualInspection, self).__init__(*args, **kwargs)
 
         self.bridge = CvBridge()
-        # TODO read topic from some (setup) param
-        self.img_sub = rospy.Subscriber("/kinect2/sd/image_color_rect", Image, self.image_callback, queue_size=1)
+
+        try:
+            topic = rospy.get_param("/art/visual_inspection/topic")
+        except KeyError:
+            rospy.logerr("Topic for visual inspection not set!")
+            topic = ""
+
+        self.img_sub = rospy.Subscriber(topic, Image, self.image_callback, queue_size=1)
         self.result_sub = rospy.Subscriber("/art/visual_inspection/result", Bool, self.result_callback, queue_size=10)
 
-        # TODO take placement from setup params
-        self.img_item = ImageItem(self.ui.scene, 0, 0, 0.2, 0.05)
+        try:
+            img_origin = array_from_param("/art/visual_inspection/origin", float, 2)
+            img_size = array_from_param("/art/visual_inspection/size", float, 2)
+            fixed = True
+        except KeyError:
+            img_origin = (0.3, 0.3)
+            img_size = (0.2, 0.1)
+            fixed = False
+
+        self.img_item = ImageItem(self.ui.scene, img_origin[0], img_origin[1], img_size[0], img_size[1], fixed)
+
+        self.text_timer = QtCore.QTimer()
+        self.text_timer.timeout.connect(self.text_timer_tick)
+        self.text_timer.setSingleShot(True)
 
     def result_callback(self, msg):
 
-        # TODO temporal green/red border of image
-        pass
+        if not self.img_item:
+            return
+
+        if msg.data:
+            self.img_item.set_text("OK", QtCore.Qt.green)
+        else:
+            self.img_item.set_text("NOK", QtCore.Qt.red)
+
+        self.text_timer.start(1000)
+
+    def text_timer_tick(self):
+
+        if not self.img_item:
+            return
+
+        self.img_item.set_text()
 
     def image_callback(self, msg):
 
+        if not self.img_item:
+            return
+
         try:
-            cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            cv_image = self.bridge.imgmsg_to_cv2(msg, "rgb8")
         except CvBridgeError as e:
             print(e)
             return
@@ -44,9 +80,10 @@ class VisualInspection(GuiInstruction):
 
     def cleanup(self):
 
-        super(VisualInspection, self).cleanup()
-
+        self.img_sub.unregister()
+        self.result_sub.unregister()
         self.ui.scene.removeItem(self.img_item)
+        self.img_item = None
 
 
 class VisualInspectionLearn(VisualInspection):
@@ -55,26 +92,30 @@ class VisualInspectionLearn(VisualInspection):
 
         super(VisualInspectionLearn, self).__init__(*args, **kwargs)
 
-        self.ui.notif(
-            translate(
-                self.CONTEXT,
-                "Now you may adjust pose for visual inspection."))
+        self.dialog = None
 
-        # TODO how to know number of arms?
-        self.dialog = DialogItem(
-            self.ui.scene, self.ui.width / 2, 0.1, translate(
-                self.CONTEXT, "Save visual inspection pose"), [
+        if self.editable:
+
+            self.ui.notif(
                 translate(
-                    self.CONTEXT, "Right arm"), translate(
-                    self.CONTEXT, "Left arm")], self.save_pose_cb)
+                    self.CONTEXT,
+                    "Now you may adjust pose for visual inspection."))
 
-        self.dialog_timer = QtCore.QTimer()
-        self.dialog_timer.timeout.connect(self.dialog_timer_tick)
-        self.dialog_timer.setSingleShot(True)
+            # TODO do it in a portable way (get arms from robot helper)
+            self.dialog = DialogItem(
+                self.ui.scene, self.ui.width / 2, 0.1, translate(
+                    self.CONTEXT, "Save visual inspection pose"), [
+                    translate(
+                        self.CONTEXT, "Right arm"), translate(
+                        self.CONTEXT, "Left arm")], self.save_pose_cb)
+
+            self.dialog_timer = QtCore.QTimer()
+            self.dialog_timer.timeout.connect(self.dialog_timer_tick)
+            self.dialog_timer.setSingleShot(True)
 
     def save_pose_cb(self, idx):
 
-        # TODO where to get topics / poses?
+        # TODO get topics from robot helper
         topics = ['/art/robot/right_arm/gripper/pose',
                   '/art/robot/left_arm/gripper/pose']
 
@@ -94,11 +135,19 @@ class VisualInspectionLearn(VisualInspection):
         self.dialog.items[idx].set_caption(translate(self.CONTEXT, "Stored"))
         self.dialog_timer.start(1000)
 
+    def cleanup(self):
+
+        super(VisualInspectionLearn, self).cleanup()
+
+        if self.dialog:
+            self.ui.scene.removeItem(self.dialog)
+            self.dialog = None
+
     def dialog_timer_tick(self):
 
-        # TODO do it in a portable way
-        self.dialog.items[0] = translate(self.CONTEXT, "Right arm")
-        self.dialog.items[1] = translate(self.CONTEXT, "Left arm")
+        # TODO do it in a portable way (get arms from robot helper)
+        self.dialog.items[0].set_caption(translate(self.CONTEXT, "Right arm"))
+        self.dialog.items[1].set_caption(translate(self.CONTEXT, "Left arm"))
 
         for v in self.dialog.items:
             v.set_enabled(True)

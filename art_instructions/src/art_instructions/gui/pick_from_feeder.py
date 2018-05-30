@@ -37,9 +37,9 @@ class PickFromFeederLearn(PickFromFeeder):
 
         self.objects_by_sensor = {}
 
-        if self.ui.ph.is_object_set(self.block_id, self.instruction_id):
+        if self.ui.ph.is_object_set(*self.cid):
 
-            self.select_object_type(self.ph.get_object(self.block_id, self.instruction_id)[0][0])
+            self.ui.select_object_type(self.ui.ph.get_object(*self.cid)[0][0])
 
             if self.editable:
                 self.create_grasp_dialog()
@@ -47,7 +47,7 @@ class PickFromFeederLearn(PickFromFeeder):
         else:
 
             if self.editable:
-                self.notif(
+                self.ui.notif(
                     translate(self.CONTEXT, "Select object type to be picked up by tapping on its outline."))
 
     def create_grasp_dialog(self):
@@ -86,14 +86,14 @@ class PickFromFeederLearn(PickFromFeeder):
             ps = rospy.wait_for_message(topics[idx], PoseStamped, timeout=2)
         except rospy.ROSException as e:
             rospy.logerr(str(e))
-            self.notif(
+            self.ui.notif(
                 translate(self.CONTEXT, "Failed to store gripper pose."), temp=True,
                 message_type=NotifyUserRequest.WARN)
             return
 
-        self.notif(translate(self.CONTEXT, "Gripper pose stored."), temp=True)
-        self.snd_info()
-        self.program_vis.set_pose(ps)
+        self.ui.notif(translate(self.CONTEXT, "Gripper pose stored."), temp=True)
+        self.ui.snd_info()
+        self.ui.program_vis.set_pose(ps)
 
         self.grasp_dialog.items[idx].set_enabled(False)
         self.grasp_dialog.items[idx].set_caption(translate(self.CONTEXT, "Stored"))
@@ -172,8 +172,6 @@ class PickFromFeederLearn(PickFromFeeder):
 
     def cleanup(self):
 
-        super(PickFromFeederLearn, self).cleanup()
-
         self.ui.scene.removeItem(self.grasp_dialog)
         self.grasp_dialog = None
 
@@ -187,7 +185,7 @@ class PickFromFeederLearn(PickFromFeeder):
 
         if self.grasp_dialog:
 
-            sel_obj_type = self.ui.ph.get_object(self.block_id, self.instruction_id)[0][0]
+            sel_obj_type = self.ui.ph.get_object(*self.cid)[0][0]
 
             if self.grasp_dialog:
 
@@ -206,7 +204,7 @@ class PickFromFeederRun(PickFromFeeder):
 
         super(PickFromFeederRun, self).__init__(*args, **kwargs)
 
-        ps = self.ui.ph.get_pose(self.block_id, self.instruction_id)[0][0]
+        ps = self.ui.ph.get_pose(*self.cid)[0][0]
 
         if ps.pose.position.x < 1.5 / 2.0:
             self.ui.notif(

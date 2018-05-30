@@ -33,19 +33,19 @@ class DrillPointsLearn(DrillPoints):
         self.drill_pose_idx = 0
 
         # TODO check if object is to be set here or somewhere else!
-        if self.ui.ph.is_object_set(self.block_id, self.instruction_id):
+        if self.ui.ph.is_object_set(*self.cid):
 
-            self.ui.select_object_type(self.ui.ph.get_object(self.block_id, self.instruction_id)[0][0])
+            self.ui.select_object_type(self.ui.ph.get_object(*self.cid)[0][0])
 
             if self.editable:
                 self.create_drill_dialog()
 
-            if self.ui.ph.is_polygon_set(self.block_id, self.instruction_id):
-                polygons = self.ui.ph.get_polygon(self.block_id, self.instruction_id)[0]
+            if self.ui.ph.is_polygon_set(*self.cid):
+                polygons = self.ui.ph.get_polygon(*self.cid)[0]
 
                 self.ui.add_polygon(translate(self.CONTEXT, "OBJECTS TO BE DRILLED"),
                                     poly_points=conversions.get_pick_polygon_points(polygons),
-                                    polygon_changed=self.polygon_changed, fixed=not self.editable)
+                                    polygon_changed=self.ui.polygon_changed, fixed=not self.editable)
 
         else:
 
@@ -55,11 +55,16 @@ class DrillPointsLearn(DrillPoints):
                 self.ui.notif(
                     translate(self.CONTEXT, "Select object type to be drilled"))
 
+    def cleanup(self):
+
+        self.ui.scene.removeItem(self.drill_dialog)
+        self.drill_dialog = None
+
     def object_selected(self, obj, selected, msg):
 
         # polygon is not from some other instruction (through ref_id)
         # and new object type was selected
-        if obj.object_type.name != self.ph.get_object(self.block_id, self.instruction_id)[0][0]:
+        if obj.object_type.name != self.ui.ph.get_object(*self.cid)[0][0]:
 
             if msg.polygon:
 
@@ -76,8 +81,8 @@ class DrillPointsLearn(DrillPoints):
                         continue
 
                     # TODO refactor somehow (into ObjectItem?)
-                    if not ob.on_table or ob.position[0] < 0 or ob.position[0] > self.width or ob.position[1] < 0 \
-                            or ob.position[1] > self.height:
+                    if not ob.on_table or ob.position[0] < 0 or ob.position[0] > self.ui.width or ob.position[1] < 0 \
+                            or ob.position[1] > self.ui.height:
                         continue
 
                     sbr = ob.sceneBoundingRect()
@@ -107,9 +112,9 @@ class DrillPointsLearn(DrillPoints):
 
         if self.drill_dialog:
 
-            sel_obj_type = self.ui.ph.get_object(self.block_id, self.instruction_id)[0][0]
+            sel_obj_type = self.ui.ph.get_object(*self.cid)[0][0]
 
-            polygon = self.ui.ph.get_polygon(self.block_id, self.instruction_id)[0][0]
+            polygon = self.ui.ph.get_polygon(*self.cid)[0][0]
             pp = []
 
             for point in polygon.polygon.points:
@@ -187,8 +192,8 @@ class DrillPointsLearn(DrillPoints):
 
         assert ps.header.frame_id == "marker"
 
-        obj_type = self.ui.ph.get_object(self.block_id, self.instruction_id)[0][0]
-        polygon = self.ui.ph.get_polygon(self.block_id, self.instruction_id)[0][0]
+        obj_type = self.ui.ph.get_object(*self.cid)[0][0]
+        polygon = self.ui.ph.get_polygon(*self.cid)[0][0]
         pp = []
 
         for point in polygon.polygon.points:
@@ -269,12 +274,12 @@ class DrillPointsRun(DrillPoints):
 
         super(DrillPointsRun, self).__init__(*args, **kwargs)
 
-        polygons = self.ui.ph.get_polygon(self.block_id, self.instruction_id)[0]
-        poses = self.ui.ph.get_pose(self.block_id, self.instruction_id)[0]
+        polygons = self.ui.ph.get_polygon(*self.cid)[0]
+        poses = self.ui.ph.get_pose(*self.cid)[0]
 
         try:
-            self.select_object(self.flags["SELECTED_OBJECT_ID"])
-            self.notif(
+            self.ui.select_object(self.flags["SELECTED_OBJECT_ID"])
+            self.ui.notif(
                 translate(
                     "UICoreRos",
                     "Going to drill hole %1 out of %2 into object %3.").arg(
@@ -285,5 +290,5 @@ class DrillPointsRun(DrillPoints):
             rospy.logerr(
                 "DRILL_POINTS - flag not set: " + str(e))
 
-        self.add_polygon(translate("UICoreRos", "Objects to be drilled"),
-                         poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)
+        self.ui.add_polygon(translate("UICoreRos", "Objects to be drilled"),
+                            poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)

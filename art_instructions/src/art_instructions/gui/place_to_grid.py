@@ -22,7 +22,7 @@ class PlaceToGridLearn(PlaceToGrid):
 
         object_type_name = self.uiph.get_object(*self.cid)[0][0]
         poses = self.ui.ph.get_pose(*self.cid)[0]
-        polygons = self.ph.get_polygon(*self.cid)[0]
+        polygons = self.ui.ph.get_polygon(*self.cid)[0]
 
         object_type = self.ui.art.get_object_type(object_type_name)
 

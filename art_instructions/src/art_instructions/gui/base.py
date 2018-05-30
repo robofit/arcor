@@ -7,13 +7,15 @@ class GuiInstruction(QtCore.QObject):
 
     def __init__(self, ui, editable=False, flags=None):
 
+        super(GuiInstruction, self).__init__()
+
         self.ui = ui
         self.editable = editable
         self.flags = flags
 
     def cleanup(self):
 
-        raise NotImplementedError()
+        pass
 
     def object_selected(self, obj, selected, msg):
 
@@ -28,7 +30,7 @@ class GuiInstruction(QtCore.QObject):
     @property
     def instruction_id(self):
         # TODO raise exception if...
-        return self.program_vis.get_current_item().id
+        return self.ui.program_vis.get_current_item().id
 
     @property
     def cid(self):
@@ -43,5 +45,3 @@ class GuiInstruction(QtCore.QObject):
     def detected_objects(self, msg):
 
         return
-
-# TODO class/plugin for ProgramItem ??

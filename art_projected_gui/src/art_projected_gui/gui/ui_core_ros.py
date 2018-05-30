@@ -21,17 +21,6 @@ from art_utils import ArtRobotHelper, UnknownRobot, RobotParametersNotOnParamete
 import tf
 import importlib
 
-# TODO load instructions dynamically (param with list (import "paths") of instructions)
-from art_instructions.gui import DrillPointsLearn, DrillPointsRun,\
-    GetReadyRun, GetReadyLearn,\
-    PickFromFeederLearn, PickFromFeederRun,\
-    PickFromPolygonLearn, PickFromPolygonRun, \
-    PlaceToGridLearn, PlaceToGridRun, \
-    PlaceToPoseLearn, PlaceToPoseRun, \
-    VisualInspectionLearn, VisualInspectionRun, \
-    WaitForUserLearn, WaitForUserRun, \
-    WaitUntilUserFinishesLearn, WaitUntilUserFinishesRun
-
 translate = QtCore.QCoreApplication.translate
 
 
@@ -234,35 +223,50 @@ class UICoreRos(UICore):
                 rospy.loginfo("Waiting for /art/instructions param...")
                 rospy.sleep(0.5)
 
-        self.instructions_learn = {}
-        self.instructions_run = {}
+        pi = ProgIt()
+        if pi.type == "":
 
-        for k, v in instr["instructions"].iteritems():
+            self.instructions_learn = {}
+            self.instructions_run = {}
 
-            mod = importlib.import_module(v["gui"]["package"])
+            # dynamic loading of instructions based on their definition on parameter server
+            for k, v in instr["instructions"].iteritems():
+                mod = importlib.import_module(v["gui"]["package"])
+                self.instructions_learn[k] = getattr(mod, v["gui"]["learn"])
+                self.instructions_run[k] = getattr(mod, v["gui"]["run"])
 
-            self.instructions_learn[k] = getattr(mod, v["gui"]["learn"])
-            self.instructions_run[k] = getattr(mod, v["gui"]["run"])
+        else:
 
-        # self.instructions_learn = {ProgIt.DRILL_POINTS: DrillPointsLearn,
-        #                            ProgIt.GET_READY: GetReadyLearn,
-        #                            ProgIt.PICK_FROM_FEEDER: PickFromFeederLearn,
-        #                            ProgIt.PICK_FROM_POLYGON: PickFromPolygonLearn,
-        #                            ProgIt.PLACE_TO_GRID: PlaceToGridLearn,
-        #                            ProgIt.PLACE_TO_POSE: PlaceToPoseLearn,
-        #                            ProgIt.VISUAL_INSPECTION: VisualInspectionLearn,
-        #                            ProgIt.WAIT_FOR_USER: WaitForUserLearn,
-        #                            ProgIt.WAIT_UNTIL_USER_FINISHES: WaitUntilUserFinishesLearn}
-        #
-        # self.instructions_run = {ProgIt.DRILL_POINTS: DrillPointsRun,
-        #                          ProgIt.GET_READY: GetReadyRun,
-        #                          ProgIt.PICK_FROM_FEEDER: PickFromFeederRun,
-        #                          ProgIt.PICK_FROM_POLYGON: PickFromPolygonRun,
-        #                          ProgIt.PLACE_TO_GRID: PlaceToGridRun,
-        #                          ProgIt.PLACE_TO_POSE: PlaceToPoseRun,
-        #                          ProgIt.VISUAL_INSPECTION: VisualInspectionRun,
-        #                          ProgIt.WAIT_FOR_USER: WaitForUserRun,
-        #                          ProgIt.WAIT_UNTIL_USER_FINISHES: WaitUntilUserFinishesRun}
+            # TODO remove this - used only for compatibility with numeric instruction type (in ProgramItem)
+
+            from art_instructions.gui import DrillPointsLearn, DrillPointsRun, \
+                GetReadyRun, GetReadyLearn, \
+                PickFromFeederLearn, PickFromFeederRun, \
+                PickFromPolygonLearn, PickFromPolygonRun, \
+                PlaceToGridLearn, PlaceToGridRun, \
+                PlaceToPoseLearn, PlaceToPoseRun, \
+                VisualInspectionLearn, VisualInspectionRun, \
+                WaitForUserLearn, WaitForUserRun, \
+                WaitUntilUserFinishesLearn, WaitUntilUserFinishesRun
+
+            self.instructions_learn = {ProgIt.DRILL_POINTS: DrillPointsLearn,
+                                       ProgIt.GET_READY: GetReadyLearn,
+                                       ProgIt.PICK_FROM_FEEDER: PickFromFeederLearn,
+                                       ProgIt.PICK_FROM_POLYGON: PickFromPolygonLearn,
+                                       ProgIt.PLACE_TO_GRID: PlaceToGridLearn,
+                                       ProgIt.PLACE_TO_POSE: PlaceToPoseLearn,
+                                       ProgIt.VISUAL_INSPECTION: VisualInspectionLearn,
+                                       ProgIt.WAIT_FOR_USER: WaitForUserLearn,
+                                       ProgIt.WAIT_UNTIL_USER_FINISHES: WaitUntilUserFinishesLearn}
+            self.instructions_run = {ProgIt.DRILL_POINTS: DrillPointsRun,
+                                     ProgIt.GET_READY: GetReadyRun,
+                                     ProgIt.PICK_FROM_FEEDER: PickFromFeederRun,
+                                     ProgIt.PICK_FROM_POLYGON: PickFromPolygonRun,
+                                     ProgIt.PLACE_TO_GRID: PlaceToGridRun,
+                                     ProgIt.PLACE_TO_POSE: PlaceToPoseRun,
+                                     ProgIt.VISUAL_INSPECTION: VisualInspectionRun,
+                                     ProgIt.WAIT_FOR_USER: WaitForUserRun,
+                                     ProgIt.WAIT_UNTIL_USER_FINISHES: WaitUntilUserFinishesRun}
 
         self.current_instruction = None
 
@@ -486,12 +490,6 @@ class UICoreRos(UICore):
         # print state
         self.emit(QtCore.SIGNAL('interface_state'), old_state, state, flags)
 
-    def instruction_cleanup(self):
-
-        if self.current_instruction:
-            self.current_instruction.cleanup()
-            self.current_instruction = None
-
     def state_running(self, old_state, state, flags, system_state_changed):
 
         if system_state_changed:
@@ -519,8 +517,6 @@ class UICoreRos(UICore):
                 self.notif(
                     translate("UICoreRos", "Program resumed."), temp=True)
 
-            self.instruction_cleanup()
-
         # ignore not valid states
         if state.block_id == 0 or state.program_current_item.id == 0:
             rospy.logerr("Invalid state!")
@@ -535,7 +531,7 @@ class UICoreRos(UICore):
 
         if it.type in self.instructions_run:
 
-            self.current_instruction = self.instructions_run[it.type](self, flags)
+            self.current_instruction = self.instructions_run[it.type](self, flags=flags)
 
         else:
 
@@ -635,6 +631,10 @@ class UICoreRos(UICore):
     def clear_all(self, include_dialogs=False):
 
         rospy.logdebug("Clear all")
+
+        if self.current_instruction:
+            self.current_instruction.cleanup()
+            self.current_instruction = None
 
         super(UICoreRos, self).clear_all()
 
