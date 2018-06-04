@@ -40,7 +40,7 @@ class UICoreRos(UICore):
 
     """
 
-    def __init__(self):
+    def __init__(self, instructions):
 
         origin = array_from_param("scene_origin", float, 2)
         size = array_from_param("scene_size", float, 2)
@@ -215,14 +215,6 @@ class UICoreRos(UICore):
         self.projector_calib_srv = rospy.Service(
             '/art/interface/projected_gui/calibrate_projectors', Trigger, self.calibrate_projectors_cb)
 
-        while True:
-            try:
-                instr = rospy.get_param("/art/instructions")
-                break
-            except KeyError:
-                rospy.loginfo("Waiting for /art/instructions param...")
-                rospy.sleep(0.5)
-
         pi = ProgIt()
         if pi.type == "":
 
@@ -230,8 +222,8 @@ class UICoreRos(UICore):
             self.instructions_run = {}
 
             # dynamic loading of instructions based on their definition on parameter server
-            for k, v in instr["instructions"].iteritems():
-                mod = importlib.import_module(v["gui"]["package"])
+            for k, v in instructions["instructions"].iteritems():
+                mod = importlib.import_module(v["gui"]["package"] + ".gui")
                 self.instructions_learn[k] = getattr(mod, v["gui"]["learn"])
                 self.instructions_run[k] = getattr(mod, v["gui"]["run"])
 
@@ -551,6 +543,7 @@ class UICoreRos(UICore):
             self.last_prog_pos[0],
             self.last_prog_pos[1],
             self.ph,
+            self.current_instruction,
             done_cb=self.learning_done_cb,
             item_switched_cb=item_switched_cb,
             learning_request_cb=self.learning_request_cb,

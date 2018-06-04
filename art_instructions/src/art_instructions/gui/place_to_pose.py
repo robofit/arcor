@@ -8,11 +8,11 @@ translate = QtCore.QCoreApplication.translate
 
 class PlaceToPose(GuiInstruction):
 
-    CONTEXT = "PlaceToPose"
-
     def __init__(self, *args, **kwargs):
 
         super(PlaceToPose, self).__init__(*args, **kwargs)
+
+        self.name = translate("PlaceToPose", "Place to pose")
 
 
 class PlaceToPoseLearn(PlaceToPose):
@@ -26,7 +26,7 @@ class PlaceToPoseLearn(PlaceToPose):
             (obj_arr, ref_id) = self.ui.ph.get_object(*self.cid)
 
             self.ui.notif(translate(
-                self.CONTEXT, "Select object to be picked up in instruction %1").arg(ref_id))
+                "PlaceToPose", "Select object to be picked up in instruction %1").arg(ref_id))
             notified = True
 
         else:
@@ -48,7 +48,7 @@ class PlaceToPoseLearn(PlaceToPose):
                     if self.editable:
                         self.ui.notif(
                             translate(
-                                self.CONTEXT,
+                                "PlaceToPose",
                                 "Drag object outline to set place pose. Use blue point to set orientation."))
 
                     if self.ui.ph.is_pose_set(self.block_id, it_id):
@@ -57,7 +57,7 @@ class PlaceToPoseLearn(PlaceToPose):
                             self.ui.select_object_type(object_type.name)
                             self.ui.add_place(
                                 translate(
-                                    self.CONTEXT,
+                                    "PlaceToPose",
                                     "PLACE POSE"),
                                 self.ui.ph.get_pose(self.block_id, it_id)[0][0],
                                 object_type,
@@ -66,7 +66,7 @@ class PlaceToPoseLearn(PlaceToPose):
                                 fixed=not self.editable)
                     else:
 
-                        self.ui.add_place(translate(self.CONTEXT, "PLACE POSE"), self.ui.get_def_pose(
+                        self.ui.add_place(translate("PlaceToPose", "PLACE POSE"), self.ui.get_def_pose(
                         ), object_type, object_id, place_cb=self.ui.place_pose_changed, fixed=not self.editable)
 
                     continue
@@ -75,7 +75,7 @@ class PlaceToPoseLearn(PlaceToPose):
                     self.ui.add_place(
                         unicode(
                             translate(
-                                self.CONTEXT,
+                                "PlaceToPose",
                                 "PLACE POSE")) + " (" + str(it_id) + ")",
                         self.ui.ph.get_pose(self.block_id, it_id)[0][0],
                         object_type,
@@ -107,10 +107,10 @@ class PlaceToPoseRun(PlaceToPose):
 
             place_pose = self.ui.ph.get_pose(*self.cid)[0][0]
 
-            self.ui.add_place(translate(self.CONTEXT, "OBJECT PLACE POSE"),
+            self.ui.add_place(translate("PlaceToPose", "OBJECT PLACE POSE"),
                               place_pose, obj.object_type, obj_id, fixed=True)
 
-            self.ui.notif(translate(self.CONTEXT, "Placing object to pose."))
+            self.ui.notif(translate("PlaceToPose", "Placing object to pose."))
 
         else:
 

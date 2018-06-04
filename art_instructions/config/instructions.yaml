@@ -27,103 +27,79 @@ using_polygon:
 ref_to_pick:
   - VisualInspection
 
+# gui classes are expected in package.gui module
+# brain classes are expected in package.brain module
+
 instructions:
 
   DrillPoints:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: DrillPointsLearn
         run: DrillPointsRun
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Aplikuj lepidlo
-        en_US: Aplly glue
+        package: art_instructions
 
   GetReady:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: GetReadyLearn
         run: GetReadyRun
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Připravit
-        en_US: Get Ready
+        package: art_instructions
 
   PickFromFeeder:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: PickFromFeederLearn
         run: PickFromFeederRun
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Zvedni z podavače
-        en_US: Pick from feeder
+        package: art_instructions
 
   PickFromPolygon:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: PickFromPolygonLearn
         run: PickFromPolygonRun
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Zvedni z oblasti
-        en_US: Pick from polygon
+        package: art_instructions
 
   PlaceToGrid:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: PlaceToGridLearn
         run: PlaceToGridRun
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Polož do oblasti
-        en_US: Place to grid
+        package: art_instructions
 
   PlaceToPose:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: PlaceToPoseLearn
         run: PlaceToPoseRun
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Polož na místo
-        en_US: Place to pose
+        package: art_instructions
 
   VisualInspection:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: VisualInspectionLearn
         run: VisualInspectionRun
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Vizuální kontrola
-        en_US: Visual inspection
+        package: art_instructions
 
   WaitForUser:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: WaitForUserLearn
         run: WaitForUserRun
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Počkej na uživatele
-        en_US: Wait for user
+        package: art_instructions
 
   WaitUntilUserFinishes:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: WaitUntilUserFinishesLearn
         run: WaitUntilUserFinishesRun
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Počkej až uživatel skončí
-        en_US: Wait until user finishes
+        package: art_instructions

@@ -2,7 +2,7 @@
 
 from PyQt4 import QtGui, QtCore
 from item import Item
-from art_msgs.msg import ProgramItem as ProgIt, LearningRequestGoal
+from art_msgs.msg import LearningRequestGoal
 from geometry_msgs.msg import Point32, Pose
 from button_item import ButtonItem
 from art_projected_gui.helpers import conversions
@@ -21,6 +21,7 @@ class ProgramItem(Item):
             x,
             y,
             program_helper,
+            instruction,
             done_cb=None,
             item_switched_cb=None,
             learning_request_cb=None,
@@ -30,6 +31,8 @@ class ProgramItem(Item):
 
         self.w = 100
         self.h = 100
+
+        self.instruction = instruction
 
         self.done_cb = done_cb
         self.item_switched_cb = item_switched_cb
@@ -224,44 +227,7 @@ class ProgramItem(Item):
         text = str(item.id)
         text += " | "
 
-        # TODO use plugins from art_instructions to get following
-        if item.type == ProgIt.GET_READY:
-
-            text += translate("ProgramItem", "GET_READY").toUpper()
-
-        elif item.type == ProgIt.WAIT_FOR_USER:
-
-            text += translate("ProgramItem", "WAIT_FOR_USER").toUpper()
-
-        elif item.type == ProgIt.WAIT_UNTIL_USER_FINISHES:
-
-            text += translate("ProgramItem", "WAIT_UNTIL_USER_FINISHES").toUpper()
-
-        elif item.type == ProgIt.PICK_FROM_POLYGON:
-
-            text += translate("ProgramItem", "PICK_FROM_POLYGON").toUpper()
-
-        elif item.type == ProgIt.PICK_FROM_FEEDER:
-
-            text += translate("ProgramItem", "PICK_FROM_FEEDER").toUpper()
-
-        elif item.type == ProgIt.PLACE_TO_POSE:
-
-            text += translate("ProgramItem", "PLACE_TO_POSE").toUpper()
-
-            text += ' ' + translate("ProgramItem", "object from step %1").toUpper().arg(item.ref_id[0])
-
-        elif item.type == ProgIt.PLACE_TO_GRID:
-
-            text += translate("ProgramItem", "PLACE_TO_GRID").toUpper()
-
-        elif item.type == ProgIt.DRILL_POINTS:
-
-            text += translate("ProgramItem", "DRILL POINTS").toUpper()
-
-        elif item.type == ProgIt.VISUAL_INSPECTION:
-
-            text += translate("ProgramItem", "VISUAL INSPECTION").toUpper()
+        text += self.instruction.name
 
         if len(item.ref_id) > 0:
 
@@ -291,26 +257,8 @@ class ProgramItem(Item):
 
                 text += translate("ProgramItem", " (same as in %1)").arg(ref_id)
 
-        if item.type == ProgIt.DRILL_POINTS:
-
-            ps, ref_id = self.ph.get_pose(block_id, item_id)
-            ps_learned = 0.0
-
-            for i in range(len(ps)):
-
-                if self.ph.is_pose_set(block_id, item_id, i):
-                    ps_learned += 1
-
-            text += translate("ProgramItem", " learned poses: %1/%2").arg(ps_learned).arg(len(ps))
-
-        if item.type == ProgIt.PICK_FROM_FEEDER or item.type == ProgIt.VISUAL_INSPECTION:
-
-            text += "\n"
-
-            if self.ph.is_pose_set(block_id, item_id):
-                text += translate("ProgramItem", "     Pose stored.")
-            else:
-                text += translate("ProgramItem", "     Pose has to be set.")
+        # instruction-specific additional text
+        text += self.instruction.get_text()
 
         text += "\n"
         text += translate("ProgramItem", "     Success: %1, failure: %2").arg(item.on_success).arg(item.on_failure)

@@ -11,11 +11,22 @@ translate = QtCore.QCoreApplication.translate
 
 class PickFromFeeder(GuiInstruction):
 
-    CONTEXT = "PickFromFeeder"
-
     def __init__(self, *args, **kwargs):
 
         super(PickFromFeeder, self).__init__(*args, **kwargs)
+
+        self.name = translate("PickFromFeeder", "Pick from feeder")
+
+    def get_text(self):
+
+        text = "\n"
+
+        if self.ui.ph.is_pose_set(*self.cid):
+            text += translate("PickFromFeeder", "     Pose stored.")
+        else:
+            text += translate("PickFromFeeder", "     Pose has to be set.")
+
+        return text
 
 
 class PickFromFeederLearn(PickFromFeeder):
@@ -48,7 +59,7 @@ class PickFromFeederLearn(PickFromFeeder):
 
             if self.editable:
                 self.ui.notif(
-                    translate(self.CONTEXT, "Select object type to be picked up by tapping on its outline."))
+                    translate("PickFromFeeder", "Select object type to be picked up by tapping on its outline."))
 
     def create_grasp_dialog(self):
 
@@ -57,21 +68,21 @@ class PickFromFeederLearn(PickFromFeeder):
             if not self.ui.ph.is_pose_set(self.ui.program_vis.block_id, self.ui.program_vis.get_current_item().id):
 
                 self.ui.notif(
-                    translate(self.CONTEXT, "Use robot's arm and dialog to teach pose enabling part detection."))
+                    translate("PickFromFeeder", "Use robot's arm and dialog to teach pose enabling part detection."))
 
             else:
 
                 self.ui.notif(
                     translate(
-                        self.CONTEXT,
+                        "PickFromFeeder",
                         "Learned pose for part detection may be updated or different object type could be chosen."))
 
             self.grasp_dialog = DialogItem(
                 self.ui.scene, self.ui.width / 2, 0.1, translate(
-                    self.CONTEXT, "Save gripper pose"), [
+                    "PickFromFeeder", "Save gripper pose"), [
                     translate(
-                        self.CONTEXT, "Right arm (%1)").arg(0), translate(
-                        self.CONTEXT, "Left arm (%1)").arg(0)], self.save_gripper_pose_cb)
+                        "PickFromFeeder", "Right arm (%1)").arg(0), translate(
+                        "PickFromFeeder", "Left arm (%1)").arg(0)], self.save_gripper_pose_cb)
 
             for it in self.grasp_dialog.items:
                 it.set_enabled(False)
@@ -87,16 +98,16 @@ class PickFromFeederLearn(PickFromFeeder):
         except rospy.ROSException as e:
             rospy.logerr(str(e))
             self.ui.notif(
-                translate(self.CONTEXT, "Failed to store gripper pose."), temp=True,
+                translate("PickFromFeeder", "Failed to store gripper pose."), temp=True,
                 message_type=NotifyUserRequest.WARN)
             return
 
-        self.ui.notif(translate(self.CONTEXT, "Gripper pose stored."), temp=True)
+        self.ui.notif(translate("PickFromFeeder", "Gripper pose stored."), temp=True)
         self.ui.snd_info()
         self.ui.program_vis.set_pose(ps)
 
         self.grasp_dialog.items[idx].set_enabled(False)
-        self.grasp_dialog.items[idx].set_caption(translate(self.CONTEXT, "Stored"))
+        self.grasp_dialog.items[idx].set_caption(translate("PickFromFeeder", "Stored"))
 
     def object_raw_cb_evt(self, msg):
 
@@ -151,7 +162,7 @@ class PickFromFeederLearn(PickFromFeeder):
                 return
 
             frames = ["/r_forearm_cam_optical_frame", "/l_forearm_cam_optical_frame"]
-            names = [translate(self.CONTEXT, "Right arm (%1)"), translate("UICoreRos", "Left arm (%1)")]
+            names = [translate("PickFromFeeder", "Right arm (%1)"), translate("PickFromFeeder", "Left arm (%1)")]
 
             for i, frame in enumerate(frames):
 
@@ -208,7 +219,7 @@ class PickFromFeederRun(PickFromFeeder):
 
         if ps.pose.position.x < 1.5 / 2.0:
             self.ui.notif(
-                translate(self.CONTEXT, "Picking object from feeder on my right."))
+                translate("PickFromFeeder", "Picking object from feeder on my right."))
         else:
             self.ui.notif(
-                translate(self.CONTEXT, "Picking object from feeder on my left."))
+                translate("PickFromFeeder", "Picking object from feeder on my left."))
