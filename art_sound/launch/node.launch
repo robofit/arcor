@@ -1,4 +1,5 @@
 <launch>
-    <arg name="machine"/>
+    <machine name="localhost" address="localhost" default="true" />
+    <arg name="machine" default="localhost"/>
     <node pkg="art_sound" type="node" output="screen" name="art_sound_node" machine="$(arg machine)"  ns="/art/interface/sound"/>
 </launch>

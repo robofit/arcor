@@ -224,6 +224,7 @@ class ProgramItem(Item):
         text = str(item.id)
         text += " | "
 
+        # TODO use plugins from art_instructions to get following
         if item.type == ProgIt.GET_READY:
 
             text += translate("ProgramItem", "GET_READY").toUpper()
@@ -257,6 +258,10 @@ class ProgramItem(Item):
         elif item.type == ProgIt.DRILL_POINTS:
 
             text += translate("ProgramItem", "DRILL POINTS").toUpper()
+
+        elif item.type == ProgIt.VISUAL_INSPECTION:
+
+            text += translate("ProgramItem", "VISUAL INSPECTION").toUpper()
 
         if len(item.ref_id) > 0:
 
@@ -298,7 +303,7 @@ class ProgramItem(Item):
 
             text += translate("ProgramItem", " learned poses: %1/%2").arg(ps_learned).arg(len(ps))
 
-        if item.type == ProgIt.PICK_FROM_FEEDER:
+        if item.type == ProgIt.PICK_FROM_FEEDER or item.type == ProgIt.VISUAL_INSPECTION:
 
             text += "\n"
 

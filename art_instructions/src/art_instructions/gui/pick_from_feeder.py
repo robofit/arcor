@@ -1,0 +1,214 @@
+from art_instructions.gui import GuiInstruction
+from PyQt4 import QtCore
+import rospy
+from art_msgs.msg import InstancesArray
+from art_msgs.srv import NotifyUserRequest
+from geometry_msgs.msg import PoseStamped
+from art_projected_gui.items import DialogItem
+
+translate = QtCore.QCoreApplication.translate
+
+
+class PickFromFeeder(GuiInstruction):
+
+    CONTEXT = "PickFromFeeder"
+
+    def __init__(self, *args, **kwargs):
+
+        super(PickFromFeeder, self).__init__(*args, **kwargs)
+
+
+class PickFromFeederLearn(PickFromFeeder):
+
+    def __init__(self, *args, **kwargs):
+
+        super(PickFromFeederLearn, self).__init__(*args, **kwargs)
+
+        QtCore.QObject.connect(self, QtCore.SIGNAL(
+            'objects_raw'), self.object_raw_cb_evt)
+
+        self.grasp_dialog = None
+        self.grasp_dialog_timer = QtCore.QTimer()
+        self.grasp_dialog_timer.timeout.connect(self.grasp_dialog_timer_tick)
+        self.grasp_dialog_timer.start(1000)
+
+        self.obj_raw_sub = rospy.Subscriber(
+            '/art/object_detector/object', InstancesArray, self.object_raw_cb, queue_size=1)
+
+        self.objects_by_sensor = {}
+
+        if self.ui.ph.is_object_set(*self.cid):
+
+            self.ui.select_object_type(self.ui.ph.get_object(*self.cid)[0][0])
+
+            if self.editable:
+                self.create_grasp_dialog()
+
+        else:
+
+            if self.editable:
+                self.ui.notif(
+                    translate(self.CONTEXT, "Select object type to be picked up by tapping on its outline."))
+
+    def create_grasp_dialog(self):
+
+        if not self.grasp_dialog:
+
+            if not self.ui.ph.is_pose_set(self.ui.program_vis.block_id, self.ui.program_vis.get_current_item().id):
+
+                self.ui.notif(
+                    translate(self.CONTEXT, "Use robot's arm and dialog to teach pose enabling part detection."))
+
+            else:
+
+                self.ui.notif(
+                    translate(
+                        self.CONTEXT,
+                        "Learned pose for part detection may be updated or different object type could be chosen."))
+
+            self.grasp_dialog = DialogItem(
+                self.ui.scene, self.ui.width / 2, 0.1, translate(
+                    self.CONTEXT, "Save gripper pose"), [
+                    translate(
+                        self.CONTEXT, "Right arm (%1)").arg(0), translate(
+                        self.CONTEXT, "Left arm (%1)").arg(0)], self.save_gripper_pose_cb)
+
+            for it in self.grasp_dialog.items:
+                it.set_enabled(False)
+
+    def save_gripper_pose_cb(self, idx):
+
+        topics = ['/art/robot/right_arm/gripper/pose',
+                  '/art/robot/left_arm/gripper/pose']
+
+        # wait for message, set pose
+        try:
+            ps = rospy.wait_for_message(topics[idx], PoseStamped, timeout=2)
+        except rospy.ROSException as e:
+            rospy.logerr(str(e))
+            self.ui.notif(
+                translate(self.CONTEXT, "Failed to store gripper pose."), temp=True,
+                message_type=NotifyUserRequest.WARN)
+            return
+
+        self.ui.notif(translate(self.CONTEXT, "Gripper pose stored."), temp=True)
+        self.ui.snd_info()
+        self.ui.program_vis.set_pose(ps)
+
+        self.grasp_dialog.items[idx].set_enabled(False)
+        self.grasp_dialog.items[idx].set_caption(translate(self.CONTEXT, "Stored"))
+
+    def object_raw_cb_evt(self, msg):
+
+        cnt = 0
+
+        for obj in msg.instances:
+
+            if obj.object_type in self.ui.selected_object_types:
+
+                # this mainly serves for detection of objects in feeder so let's count only objects not on table
+                o = self.ui.get_object(obj.object_id)
+
+                if o and o.on_table:
+                    continue
+
+                cnt += 1
+
+        self.objects_by_sensor[msg.header.frame_id] = [cnt, msg.header.stamp]
+
+    def object_selected(self, obj, selected, msg):
+
+        # this type of object is already set
+        if msg.object and obj.object_type.name == msg.object[0]:
+            rospy.logdebug("object type " +
+                           obj.object_type.name + " already selected")
+            return
+        else:
+            # TODO remove previously inserted polygon, do not insert new
+            # place
+            rospy.logdebug("selecting new object type: " +
+                           obj.object_type.name)
+
+        if obj.object_type.name != self.ui.ph.get_object(self.ui.program_vis.block_id, msg.id)[0][0]:
+            self.ui.program_vis.clear_poses()
+
+        self.ui.program_vis.set_object(obj.object_type.name)
+        self.ui.select_object_type(obj.object_type.name)
+        self.create_grasp_dialog()
+
+    def grasp_dialog_timer_tick(self):
+
+        now = rospy.Time.now()
+
+        for k, v in self.objects_by_sensor.iteritems():
+
+            if now - v[1] > rospy.Duration(1.0):
+                v[0] = 0
+
+        if self.grasp_dialog:
+
+            if now - self.ui.program_vis.get_current_item().pose[0].header.stamp < rospy.Duration(3.0):
+                return
+
+            frames = ["/r_forearm_cam_optical_frame", "/l_forearm_cam_optical_frame"]
+            names = [translate(self.CONTEXT, "Right arm (%1)"), translate("UICoreRos", "Left arm (%1)")]
+
+            for i, frame in enumerate(frames):
+
+                if frame in self.objects_by_sensor:
+
+                    cnt = self.objects_by_sensor[frame][0]
+
+                else:
+
+                    cnt = 0
+
+                self.grasp_dialog.items[i].set_enabled(cnt == 1)
+                self.grasp_dialog.items[i].set_caption(names[i].arg(cnt))
+
+    def object_raw_cb(self, msg):
+
+        self.emit(QtCore.SIGNAL('objects_raw'), msg)
+
+    def cleanup(self):
+
+        self.ui.scene.removeItem(self.grasp_dialog)
+        self.grasp_dialog = None
+
+    def learning_done(self):
+
+        if self.grasp_dialog:
+            self.ui.scene.removeItem(self.grasp_dialog)
+            self.grasp_dialog = None
+
+    def detected_objects(self, msg):
+
+        if self.grasp_dialog:
+
+            sel_obj_type = self.ui.ph.get_object(*self.cid)[0][0]
+
+            if self.grasp_dialog:
+
+                for obj in msg.instances:
+
+                    if obj.object_type == sel_obj_type:
+                        self.grasp_dialog.set_enabled(True)
+                        break
+                else:
+                    self.grasp_dialog.set_enabled(False)
+
+
+class PickFromFeederRun(PickFromFeeder):
+
+    def __init__(self, *args, **kwargs):
+
+        super(PickFromFeederRun, self).__init__(*args, **kwargs)
+
+        ps = self.ui.ph.get_pose(*self.cid)[0][0]
+
+        if ps.pose.position.x < 1.5 / 2.0:
+            self.ui.notif(
+                translate(self.CONTEXT, "Picking object from feeder on my right."))
+        else:
+            self.ui.notif(
+                translate(self.CONTEXT, "Picking object from feeder on my left."))
