@@ -35,6 +35,8 @@ For each integrated robot, there are two repositories: one with custom packages 
 * DOBOT Magician
   * [https://github.com/robofit/artable-dobot](https://github.com/robofit/artable-dobot)
   * [https://github.com/robofit/artable-dobot-interface](https://github.com/robofit/artable-dobot-interface)
+* Empty Arm
+  * [https://github.com/robofit/artable-empty-arm](https://github.com/robofit/artable-empty-arm)
 
 Currently supported setups (see links for further information):
 
