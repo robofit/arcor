@@ -9,7 +9,6 @@ import ast
 from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
 import numpy as np
-from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 from geometry_msgs.msg import Transform, TransformStamped, Vector3, Quaternion
 import tf
 from std_msgs.msg import Header
