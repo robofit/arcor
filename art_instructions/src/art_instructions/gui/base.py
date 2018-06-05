@@ -22,6 +22,7 @@ class GuiInstruction(QtCore.QObject):
         return ""
 
     def cleanup(self):
+        """Removes all previously created scene items (such as dialogs)."""
 
         pass
 
@@ -47,6 +48,7 @@ class GuiInstruction(QtCore.QObject):
         return self.block_id, self.instruction_id
 
     def learning_done(self):
+        """Called when user presses 'Done' button."""
 
         return
 
