@@ -11,17 +11,18 @@ translate = QtCore.QCoreApplication.translate
 
 class PickFromFeeder(GuiInstruction):
 
+    NAME = translate("PickFromFeeder", "Pick from feeder")
+
     def __init__(self, *args, **kwargs):
 
         super(PickFromFeeder, self).__init__(*args, **kwargs)
 
-        self.name = translate("PickFromFeeder", "Pick from feeder")
-
-    def get_text(self):
+    @staticmethod
+    def get_text(ph, block_id, item_id):
 
         text = "\n"
 
-        if self.ui.ph.is_pose_set(*self.cid):
+        if ph.is_pose_set(block_id, item_id):
             text += translate("PickFromFeeder", "     Pose stored.")
         else:
             text += translate("PickFromFeeder", "     Pose has to be set.")

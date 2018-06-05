@@ -9,6 +9,8 @@ translate = QtCore.QCoreApplication.translate
 
 class PickFromPolygon(GuiInstruction):
 
+    NAME = translate("PickFromPolygon", "Pick from area")
+
     def __init__(self, *args, **kwargs):
 
         super(PickFromPolygon, self).__init__(*args, **kwargs)
@@ -19,8 +21,6 @@ class PickFromPolygonLearn(PickFromPolygon):
     def __init__(self, *args, **kwargs):
 
         super(PickFromPolygonLearn, self).__init__(*args, **kwargs)
-
-        self.name = translate("PickFromPolygon", "Pick from area")
 
         if not self.ui.ph.is_object_set(*self.cid):
 

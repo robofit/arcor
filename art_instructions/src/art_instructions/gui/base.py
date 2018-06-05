@@ -5,16 +5,20 @@ translate = QtCore.QCoreApplication.translate
 
 class GuiInstruction(QtCore.QObject):
 
-    def __init__(self, ui, editable=False, flags=None):
+    NAME = ""  # localized name of the instruction
+
+    def __init__(self, ui, block_id, item_id, editable=False, flags=None):
 
         super(GuiInstruction, self).__init__()
 
         self.ui = ui
+        self.block_id = block_id
+        self.instruction_id = item_id
         self.editable = editable
         self.flags = flags
-        self.name = ""  # localized name of the instruction
 
-    def get_text(self):
+    @staticmethod
+    def get_text(ph, block_id, item_id):
         """
         Returns additional (localized) text displayed below instruction name in program visualization
         """
@@ -29,17 +33,6 @@ class GuiInstruction(QtCore.QObject):
     def object_selected(self, obj, selected, msg):
 
         return
-
-    @property
-    def block_id(self):
-
-        # TODO raise exception if...
-        return self.ui.program_vis.block_id
-
-    @property
-    def instruction_id(self):
-        # TODO raise exception if...
-        return self.ui.program_vis.get_current_item().id
 
     @property
     def cid(self):

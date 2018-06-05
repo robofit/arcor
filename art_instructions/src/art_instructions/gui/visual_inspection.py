@@ -14,11 +14,11 @@ translate = QtCore.QCoreApplication.translate
 
 class VisualInspection(GuiInstruction):
 
+    NAME = translate("VisualInspection", "Visual inspection")
+
     def __init__(self, *args, **kwargs):
 
         super(VisualInspection, self).__init__(*args, **kwargs)
-
-        self.name = translate("VisualInspection", "Visual inspection")
 
         self.bridge = CvBridge()
 
@@ -46,11 +46,12 @@ class VisualInspection(GuiInstruction):
         self.text_timer.timeout.connect(self.text_timer_tick)
         self.text_timer.setSingleShot(True)
 
-    def get_text(self):
+    @staticmethod
+    def get_text(ph, block_id, item_id):
 
         text = "\n"
 
-        if self.ui.ph.is_pose_set(*self.cid):
+        if ph.is_pose_set(block_id, item_id):
             text += translate("VisualInspection", "     Pose stored.")
         else:
             text += translate("VisualInspection", "     Pose has to be set.")

@@ -8,11 +8,11 @@ translate = QtCore.QCoreApplication.translate
 
 class PlaceToPose(GuiInstruction):
 
+    NAME = translate("PlaceToPose", "Place to pose")
+
     def __init__(self, *args, **kwargs):
 
         super(PlaceToPose, self).__init__(*args, **kwargs)
-
-        self.name = translate("PlaceToPose", "Place to pose")
 
 
 class PlaceToPoseLearn(PlaceToPose):

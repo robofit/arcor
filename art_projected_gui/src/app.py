@@ -19,15 +19,18 @@ def main():
 
     rospy.init_node('projected_gui', anonymous=True, log_level=rospy.DEBUG)
 
-    signal.signal(signal.SIGINT, sigint_handler)
-
-    while True:
+    while not rospy.is_shutdown():
         try:
             instructions = rospy.get_param("/art/instructions")
             break
         except KeyError:
             rospy.loginfo("Waiting for /art/instructions param...")
-            rospy.sleep(0.5)
+            rospy.sleep(1.0)
+
+    if rospy.is_shutdown():
+        return
+
+    signal.signal(signal.SIGINT, sigint_handler)
 
     rospack = rospkg.RosPack()
 
@@ -74,6 +77,6 @@ def main():
 
 if __name__ == '__main__':
     try:
-        main(sys.argv)
+        main()
     except KeyboardInterrupt:
         print("Shutting down")

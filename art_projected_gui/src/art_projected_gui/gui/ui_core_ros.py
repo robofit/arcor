@@ -537,13 +537,16 @@ class UICoreRos(UICore):
         # TODO if the item id is same - do rather update then clear + add everything?
         self.clear_all()
 
-        self.program_vis.set_active(
-            state.block_id, state.program_current_item.id)
         it = state.program_current_item
 
         if it.type in self.instructions_run:
 
-            self.current_instruction = self.instructions_run[it.type](self, flags=flags)
+            self.current_instruction = self.instructions_run[it.type](self, state.block_id,
+                                                                      state.program_current_item.id, flags=flags)
+
+            self.program_vis.instruction = self.current_instruction  # TODO how to avoid this?
+            self.program_vis.set_active(
+                state.block_id, state.program_current_item.id)
 
         else:
 
@@ -567,6 +570,7 @@ class UICoreRos(UICore):
             self.last_prog_pos[1],
             self.ph,
             self.current_instruction,
+            self.instructions_learn,
             done_cb=self.learning_done_cb,
             item_switched_cb=item_switched_cb,
             learning_request_cb=self.learning_request_cb,
@@ -715,6 +719,13 @@ class UICoreRos(UICore):
 
         # if visualize button in block view was hit
         if self.visualizing:
+
+            # TODO how to avoid this?
+            for ins in self.vis_instructions:
+                if ins.block_id == state.block_id and ins.instruction_id == state.program_current_item.id:
+                    self.program_vis.instruction = ins
+                    break
+
             # select currently visualized instruction
             self.program_vis.set_active(
                 state.block_id, state.program_current_item.id)
@@ -770,7 +781,7 @@ class UICoreRos(UICore):
         it = self.ph.get_item_msg(block_id, item_id)
 
         if it.type in self.instructions_vis:
-            self.vis_instructions.append(self.instructions_vis[it.type](self))
+            self.vis_instructions.append(self.instructions_vis[it.type](self, block_id, item_id))
 
     def v_back_cb(self):
         """Callback for BACK button in visualization mode.
@@ -905,23 +916,21 @@ class UICoreRos(UICore):
 
         self.program_vis.editing_item = not read_only
 
-        # TODO Edit/Done button not visible when there is work in progress!
-        if block_id != self.program_vis.block_id or item_id != self.program_vis.item_id:
-            self.program_vis.set_active(block_id, item_id)
-
         msg = self.ph.get_item_msg(block_id, item_id)
 
-        notified = False
-
         if msg.type in self.instructions_learn:
-
-            # TODO create plugins for all instructions
-            self.current_instruction = self.instructions_learn[msg.type](self, editable=state.edit_enabled)
-
+            self.current_instruction = self.instructions_learn[msg.type](self, block_id, item_id,
+                                                                         editable=state.edit_enabled)
         else:
-
             # TODO big error!
             rospy.logfatal("Unsupported instruction!")
+
+        # TODO Edit/Done button not visible when there is work in progress!
+        if block_id != self.program_vis.block_id or item_id != self.program_vis.item_id:
+            self.program_vis.instruction = self.current_instruction  # TODO how to avoid this?
+            self.program_vis.set_active(block_id, item_id)
+
+        notified = False
 
         # TODO fix notified - how to get it from instruction?
         if read_only and not notified:
@@ -960,11 +969,11 @@ class UICoreRos(UICore):
             else:
                 # get first program item from clicked block .. [1] because function
                 # returns tuple - (block_id, item_id)
-                _item_id = self.ph.get_first_item_id(block_id=block_id)[1]
+                # _item_id = self.ph.get_first_item_id(block_id=block_id)[1]
                 # actualize InterfaceState msg with currently clicked block
-                if None not in (block_id, _item_id):
-                    self.state_manager.update_program_item(
-                        self.ph.get_program_id(), block_id, self.ph.get_item_msg(block_id, _item_id))
+                # if None not in (block_id, _item_id):
+                #    self.state_manager.update_program_item(
+                #        self.ph.get_program_id(), block_id, self.ph.get_item_msg(block_id, _item_id))
 
                 if self.ph.block_learned(block_id):
                     self.notif(

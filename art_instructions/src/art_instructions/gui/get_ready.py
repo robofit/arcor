@@ -6,11 +6,11 @@ translate = QtCore.QCoreApplication.translate
 
 class GetReady(GuiInstruction):
 
+    NAME = translate("GetReady", "Get ready")
+
     def __init__(self, *args, **kwargs):
 
         super(GetReady, self).__init__(*args, **kwargs)
-
-        self.name = translate("GetReady", "Get ready")
 
 
 class GetReadyLearn(GetReady):

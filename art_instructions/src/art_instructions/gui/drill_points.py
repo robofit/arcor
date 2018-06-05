@@ -16,20 +16,21 @@ translate = QtCore.QCoreApplication.translate
 
 class DrillPoints(GuiInstruction):
 
+    NAME = translate("DrillPoints", "Glue application")
+
     def __init__(self, *args, **kwargs):
 
         super(DrillPoints, self).__init__(*args, **kwargs)
 
-        self.name = translate("DrillPoints", "Glue application")
+    @staticmethod
+    def get_text(ph, block_id, item_id):
 
-    def get_text(self):
-
-        ps, ref_id = self.ui.ph.get_pose(*self.cid)
+        ps, ref_id = ph.get_pose(block_id, item_id)
         ps_learned = 0.0
 
         for i in range(len(ps)):
 
-            if self.ui.ph.is_pose_set(self.block_id, self.instruction_id, i):
+            if ph.is_pose_set(block_id, item_id, i):
                 ps_learned += 1
 
         return translate("DrillPoints", " learned poses: %1/%2").arg(ps_learned).arg(len(ps))

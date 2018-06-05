@@ -9,6 +9,7 @@ from art_projected_gui.helpers import conversions
 from list_item import ListItem
 from art_projected_gui.helpers.items import group_enable, group_visible
 from geometry_msgs.msg import PoseStamped
+import rospy
 
 translate = QtCore.QCoreApplication.translate
 
@@ -22,6 +23,7 @@ class ProgramItem(Item):
             y,
             program_helper,
             instruction,
+            instructions,
             done_cb=None,
             item_switched_cb=None,
             learning_request_cb=None,
@@ -40,6 +42,7 @@ class ProgramItem(Item):
         self.h = 100
 
         self.instruction = instruction
+        self.instructions = instructions
 
         self.done_cb = done_cb
         self.item_switched_cb = item_switched_cb
@@ -342,7 +345,7 @@ class ProgramItem(Item):
         if item.name:
             text += item.name
         else:
-            text += self.instruction.name
+            text += self.instructions[item.type].NAME
 
         if len(item.ref_id) > 0:
 
@@ -373,7 +376,8 @@ class ProgramItem(Item):
                 text += translate("ProgramItem", " (same as in %1)").arg(ref_id)
 
         # instruction-specific additional text
-        text += self.instruction.get_text()
+        # TODO it should use different class when running?
+        text += self.instructions[item.type].get_text(self.ph, block_id, item_id)
 
         text += "\n"
         text += translate("ProgramItem", "     Success: %1, failure: %2").arg(item.on_success).arg(item.on_failure)

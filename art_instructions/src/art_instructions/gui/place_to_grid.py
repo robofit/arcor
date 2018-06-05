@@ -7,6 +7,8 @@ translate = QtCore.QCoreApplication.translate
 
 class PlaceToGrid(GuiInstruction):
 
+    NAME = translate("PlaceToGrid", "Place to grid")
+
     def __init__(self, *args, **kwargs):
 
         super(PlaceToGrid, self).__init__(*args, **kwargs)
@@ -17,8 +19,6 @@ class PlaceToGridLearn(PlaceToGrid):
     def __init__(self, *args, **kwargs):
 
         super(PlaceToGridLearn, self).__init__(*args, **kwargs)
-
-        self.name = translate("PlaceToGrid", "Place to grid")
 
         object_type_name = self.uiph.get_object(*self.cid)[0][0]
         poses = self.ui.ph.get_pose(*self.cid)[0]

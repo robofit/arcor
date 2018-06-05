@@ -3,57 +3,57 @@
 <context>
     <name>ErrorStrings</name>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="56"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="57"/>
         <source>Robot&apos;s motors halted.</source>
         <translation>Robot je zastavený.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="57"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="58"/>
         <source>Unknown error.</source>
         <translation>Neznámá chyba.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="58"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="59"/>
         <source>Cannot find object.</source>
         <translation>Nepodařilo se najít objekt.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="59"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="60"/>
         <source>There is no object left in the polygon.</source>
         <translation>V oblasti není žádný objekt.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="61"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="62"/>
         <source>No gripper available.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="62"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="63"/>
         <source>Robot already holds object and cannot grasp another.</source>
         <translation>Robot už drží objekt a nemůže chytit další.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="64"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="65"/>
         <source>Robot should hold object but it doesn&apos;t.</source>
         <translation>Robot by měl držet objekt, ale nedrží.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="66"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="67"/>
         <source>Robot failed to pick the object.</source>
         <translation>Zvednutí objektu se nepodařilo.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="67"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="68"/>
         <source>Robot failed to place the object.</source>
         <translation>Položení objektu se nepodařilo.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="69"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="70"/>
         <source>Robot is not holding object.</source>
         <translation>Robot nedrží objekt.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="68"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="69"/>
         <source>Robot failed to apply a glue to the object.</source>
         <translation>Aplikace lepidla se nezdařila.</translation>
     </message>
@@ -61,12 +61,12 @@
 <context>
     <name>ObjectItem</name>
     <message>
-        <location filename="../src/art_projected_gui/items/object_item.py" line="164"/>
+        <location filename="src/art_projected_gui/items/object_item.py" line="164"/>
         <source>TYPE: </source>
         <translation>TYP:</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/place_item.py" line="209"/>
+        <location filename="src/art_projected_gui/items/place_item.py" line="209"/>
         <source>ID: </source>
         <translation>ID: </translation>
     </message>
@@ -129,12 +129,12 @@
         <translation type="obsolete">Start</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="117"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="246"/>
         <source>Pause</source>
         <translation>Pozastavit</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="121"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="236"/>
         <source>Resume</source>
         <translation>Obnovit</translation>
     </message>
@@ -144,102 +144,102 @@
         <translation type="obsolete">Program</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="562"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="685"/>
         <source>Done</source>
         <translation>Hotovo</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_list_item.py" line="61"/>
+        <location filename="src/art_projected_gui/items/program_list_item.py" line="61"/>
         <source>Edit</source>
         <translation>Upravit</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="62"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="86"/>
         <source>On fail</source>
         <translation>Chyba</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_list_item.py" line="60"/>
+        <location filename="src/art_projected_gui/items/program_list_item.py" line="60"/>
         <source>Run</source>
         <translation>Spustit</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="103"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="147"/>
         <source>On S</source>
         <translation>Úspěch</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="105"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="149"/>
         <source>On F</source>
         <translation>Chyba</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="108"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="183"/>
         <source>Back to blocks</source>
         <translation>Zpět na bloky</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="123"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="179"/>
         <source>Stop</source>
         <translation>Stop</translation>
     </message>
     <message>
         <location filename="../src/art_projected_gui/items/program_item.py" line="230"/>
         <source>GET_READY</source>
-        <translation>PŘIPRAVIT</translation>
+        <translation type="obsolete">PŘIPRAVIT</translation>
     </message>
     <message>
         <location filename="../src/art_projected_gui/items/program_item.py" line="234"/>
         <source>WAIT_FOR_USER</source>
-        <translation>POČKEJ NA UŽIVATELE</translation>
+        <translation type="obsolete">POČKEJ NA UŽIVATELE</translation>
     </message>
     <message>
         <location filename="../src/art_projected_gui/items/program_item.py" line="238"/>
         <source>WAIT_UNTIL_USER_FINISHES</source>
-        <translation>POČKEJ AŽ UŽIVATEL SKONČÍ</translation>
+        <translation type="obsolete">POČKEJ AŽ UŽIVATEL SKONČÍ</translation>
     </message>
     <message>
         <location filename="../src/art_projected_gui/items/program_item.py" line="242"/>
         <source>PICK_FROM_POLYGON</source>
-        <translation>ZVEDNI Z OBLASTI</translation>
+        <translation type="obsolete">ZVEDNI Z OBLASTI</translation>
     </message>
     <message>
         <location filename="../src/art_projected_gui/items/program_item.py" line="246"/>
         <source>PICK_FROM_FEEDER</source>
-        <translation>ZVEDNI Z PODAVAČE</translation>
+        <translation type="obsolete">ZVEDNI Z PODAVAČE</translation>
     </message>
     <message>
         <location filename="../src/art_projected_gui/items/program_item.py" line="250"/>
         <source>PLACE_TO_POSE</source>
-        <translation>POLOŽ NA MÍSTO</translation>
+        <translation type="obsolete">POLOŽ NA MÍSTO</translation>
     </message>
     <message>
         <location filename="../src/art_projected_gui/items/program_item.py" line="256"/>
         <source>PLACE_TO_GRID</source>
-        <translation>POLOŽ DO OBLASTI</translation>
+        <translation type="obsolete">POLOŽ DO OBLASTI</translation>
     </message>
     <message>
         <location filename="../src/art_projected_gui/items/program_item.py" line="260"/>
         <source>DRILL POINTS</source>
-        <translation>APLIKUJ LEPIDLO</translation>
+        <translation type="obsolete">APLIKUJ LEPIDLO</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_list_item.py" line="62"/>
+        <location filename="src/art_projected_gui/items/program_list_item.py" line="62"/>
         <source>Template</source>
         <translation>Šablona</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/list_item.py" line="40"/>
+        <location filename="src/art_projected_gui/items/list_item.py" line="40"/>
         <source>Up</source>
         <translation>Nahoru</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/list_item.py" line="42"/>
+        <location filename="src/art_projected_gui/items/list_item.py" line="42"/>
         <source>Down</source>
         <translation>Dolů</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="74"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="104"/>
         <source>Block %1
 %2</source>
         <translation>Blok %1
@@ -261,65 +261,75 @@
         <translation type="obsolete">Blok %1</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="771"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="894"/>
         <source>Program %1</source>
         <translation>Program %1</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="270"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="355"/>
         <source> (copy of %1)</source>
         <translation> (kopie %1)</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="288"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="373"/>
         <source>     Object type: %1</source>
         <translation>     Objekt: %1</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="292"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="377"/>
         <source> (same as in %1)</source>
         <translation> (stejný jako v %1)</translation>
     </message>
     <message>
         <location filename="../src/art_projected_gui/items/program_item.py" line="304"/>
         <source> learned poses: %1/%2</source>
-        <translation>, pozice: %1/%2</translation>
+        <translation type="obsolete">, pozice: %1/%2</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="316"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="384"/>
         <source>     Success: %1, failure: %2</source>
         <translation>     Úspěch: %1, chyba: %2</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="756"/>
+        <location filename="src/art_projected_gui/items/program_item.py" line="879"/>
         <source>Program %1, block %2</source>
         <translation>Program %1, blok %2</translation>
     </message>
     <message>
         <location filename="../src/art_projected_gui/items/program_item.py" line="252"/>
         <source>object from step %1</source>
-        <translation>objekt z kroku %1</translation>
+        <translation type="obsolete">objekt z kroku %1</translation>
     </message>
     <message>
         <location filename="../src/art_projected_gui/items/program_item.py" line="311"/>
         <source>     Pose stored.</source>
-        <translation>     Pozice uložena.</translation>
+        <translation type="obsolete">     Pozice uložena.</translation>
     </message>
     <message>
         <location filename="../src/art_projected_gui/items/program_item.py" line="313"/>
         <source>     Pose has to be set.</source>
-        <translation>     Pozice není nastavena.</translation>
+        <translation type="obsolete">     Pozice není nastavena.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/items/program_item.py" line="264"/>
-        <source>VISUAL INSPECTION</source>
+        <location filename="src/art_projected_gui/items/program_list_item.py" line="63"/>
+        <source>Visualize</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/items/program_item.py" line="92"/>
+        <source>Back</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/items/program_item.py" line="181"/>
+        <source>Replay</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>ProgramListItem</name>
     <message>
-        <location filename="../src/art_projected_gui/items/program_list_item.py" line="155"/>
+        <location filename="src/art_projected_gui/items/program_list_item.py" line="164"/>
         <source>Program list</source>
         <translation>Seznam programů</translation>
     </message>
@@ -339,15 +349,15 @@
     <message>
         <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="1153"/>
         <source>Waiting for user...</source>
-        <translation>Čekám na uživatele...</translation>
+        <translation type="obsolete">Čekám na uživatele...</translation>
     </message>
     <message>
         <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="1145"/>
         <source>Please do a calibration pose</source>
-        <translation>Prosím zaujměte kalibrační pózu</translation>
+        <translation type="obsolete">Prosím zaujměte kalibrační pózu</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="999"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1280"/>
         <source>Please select a program</source>
         <translation>Prosím vyberte program</translation>
     </message>
@@ -417,7 +427,7 @@
         <translation type="obsolete">Nouzové zastavení</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="871"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1115"/>
         <source>Failed to store program</source>
         <translation>Uložení programu selhalo</translation>
     </message>
@@ -432,7 +442,7 @@
         <translation type="obsolete">OBJEKT Z KROKU</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="287"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="305"/>
         <source>Touch table calibration started. Please press the white point.</source>
         <translation>Kalibrace dotykového stolu. Prosím, stiskněte bílý bod.</translation>
     </message>
@@ -462,17 +472,17 @@
         <translation type="obsolete">Nepodařilo se najít objekt poblíž ramene.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="322"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="340"/>
         <source>Touch table calibration finished.</source>
         <translation>Kalibrace dotykového stolu dokončena.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="370"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="386"/>
         <source>Robot is halted.</source>
         <translation>Robot je zastavený.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="374"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="390"/>
         <source>Robot is up again.</source>
         <translation>Robot je opět spuštěný.</translation>
     </message>
@@ -487,7 +497,7 @@
         <translation type="obsolete">Nepodařilo se vypnout/spustit robota.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="388"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="404"/>
         <source>System failure: failed to resolve error.</source>
         <translation>Systémová chyba: nepodařilo se vyřešit chybu.</translation>
     </message>
@@ -497,47 +507,47 @@
         <translation type="obsolete">Vyřešte chybu: </translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="437"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="453"/>
         <source>Try again</source>
         <translation>Zkusit znovu</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="437"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="453"/>
         <source>Skip instruction</source>
         <translation>Přeskočit</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="437"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="453"/>
         <source>Fail instruction</source>
         <translation>Chyba</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="437"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="453"/>
         <source>End program</source>
         <translation>Ukončit program</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="454"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="470"/>
         <source>Please resolve error using dialog.</source>
         <translation>Prosím vyřešte chybu pomocí dialogu.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="463"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="479"/>
         <source>The program is done.</source>
         <translation>Program je hotový.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="912"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1193"/>
         <source>Failed to load program from database.</source>
         <translation>Nepodařilo se načíst program z databáze.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="580"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="615"/>
         <source>Program paused.</source>
         <translation>Program pozastaven.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="509"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="529"/>
         <source>Program resumed.</source>
         <translation>Program obnoven.</translation>
     </message>
@@ -602,27 +612,27 @@
         <translation type="obsolete">Objekty k aplikaci lepidla</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="568"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="603"/>
         <source>Failed to resume program.</source>
         <translation>Obnovení programu selhalo.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="586"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="621"/>
         <source>Failed to pause program.</source>
         <translation>Pozastavení programu selhalo.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="608"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="643"/>
         <source>Program stopped.</source>
         <translation>Program zastaven.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="614"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="649"/>
         <source>Failed to stop program.</source>
         <translation>Zastavení programu selhalo.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="703"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="914"/>
         <source>Item has no parameters.</source>
         <translation>Instrukce nevyžaduje žádné nastavení.</translation>
     </message>
@@ -662,17 +672,17 @@
         <translation type="obsolete">Oblast pro pokládání</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="731"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="940"/>
         <source>Instruction has nothing to set (uses reference).</source>
         <translation>Instrukce nemá žádné parametry (používá referenci).</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="735"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="944"/>
         <source>Press &apos;Edit&apos; to adjust selected instruction or &apos;Run&apos; to test it out.</source>
         <translation>Stiskněte &apos;Upravit&apos; pro úpravu vybrané instrukce, nebo &apos;Spustit&apos; pro její vykonání.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="738"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="947"/>
         <source>Press &apos;Edit&apos; to adjust selected instruction.</source>
         <translation>Stiskněte &apos;Upravit&apos; pro úpravu zvolené instrukce.</translation>
     </message>
@@ -687,72 +697,72 @@
         <translation type="obsolete">Nyní můžete upravit pozici pro detekci objektu nebo vybrat jiný typ objektu.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="751"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="960"/>
         <source>All blocks are learned. Program may be saved using &apos;Done&apos;</source>
         <translation>Všechny bloky jsou nastavené. Program uložíte stiskem &apos;Hotovo&apos;.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="756"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="965"/>
         <source>Select program block and edit it. Press &apos;Done&apos; to save changes and return to program list.</source>
         <translation>Vyberte blok a nastavte jeho instrukce. Stisk &apos;Hotovo&apos; změny uloží a zobrazí seznam programů.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="776"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="992"/>
         <source>Select instruction or return to blocks.</source>
         <translation>Vyberte instrukci nebo se vraťte do seznamu bloků.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="875"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1119"/>
         <source>Program stored with ID=</source>
         <translation>Program uložen s ID </translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="900"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1147"/>
         <source>Failed to start program.</source>
         <translation>Nepodařilo se spustit program.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="956"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1237"/>
         <source>Failed to start edit mode.</source>
         <translation>Nepodařilo se upravit instrukci.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="966"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1247"/>
         <source>Robot is getting ready for learning</source>
         <translation>Robot se připravuje k nastavování instrukce.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="971"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1252"/>
         <source>Robot is getting into default state</source>
         <translation>Robot se vrací do výchozího stavu.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="976"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1257"/>
         <source>Robot is executing current program instruction</source>
         <translation>Robot vykonává aktuální instrukci.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="1034"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1315"/>
         <source>Program is read-only and not leaned - it can be templated.</source>
         <translation>Program je pouze ke čtení - lze jej použít jako šablonu.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="1036"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1317"/>
         <source>Program is read-only and leaned - it can be templated or started.</source>
         <translation>Program je pouze ke čtení a nastavený - může být použit jako šablona, nebo spuštěn.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="1044"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1325"/>
         <source>Program needs to be learned. Use &apos;Edit&apos; or &apos;Template&apos;.</source>
         <translation>Program musí být nastaven. Použijte &apos;Upravit&apos; nebo &apos;Šablona&apos;.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="1046"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1327"/>
         <source>Program learned - it is ready to be started.</source>
         <translation>Program nastaven - připraven ke spuštění.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="1050"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1331"/>
         <source>Please select a program. Use arrows to scroll the list. Tap program to select it.</source>
         <translation>Prosím vyberte program. Použijte šipky pro procházení seznamu. Program vyberte dotykem.</translation>
     </message>
@@ -779,7 +789,7 @@
     <message>
         <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="1149"/>
         <source>Successfully calibrated</source>
-        <translation>Zkalibrováno</translation>
+        <translation type="obsolete">Zkalibrováno</translation>
     </message>
     <message>
         <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="358"/>
@@ -822,12 +832,12 @@
         <translation type="obsolete">Uložit pozici ramene</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="763"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="979"/>
         <source>Block %1 is done. It can still be edited.</source>
         <translation>Blok %1 je hotový. Stále může být upraven.</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="769"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="985"/>
         <source>Block %1 needs to be edited.</source>
         <translation>Blok %1 potřebuje nastavit.</translation>
     </message>
@@ -852,9 +862,44 @@
         <translation type="obsolete">Levé rameno (%1)</translation>
     </message>
     <message>
-        <location filename="../src/art_projected_gui/gui/ui_core_ros.py" line="904"/>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1151"/>
         <source>Starting program %1...</source>
         <translation>Spouštím program %1...</translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="801"/>
+        <source>Program visualization stopped.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="806"/>
+        <source>Failed to stop program visualization.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1013"/>
+        <source>Select program block and visualize it. Press &apos;Back&apos; to return to program list.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1019"/>
+        <source>Press &apos;Visualize&apos; for visualizing instructions of block %1.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1168"/>
+        <source>HoloLens device successfully contacted.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1182"/>
+        <source>Failed to start visualize mode.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/art_projected_gui/gui/ui_core_ros.py" line="1185"/>
+        <source>Failed to contact HoloLens device.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

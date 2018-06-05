@@ -6,11 +6,11 @@ translate = QtCore.QCoreApplication.translate
 
 class WaitForUser(GuiInstruction):
 
+    NAME = translate("WaitForUser", "Wait for user")
+
     def __init__(self, *args, **kwargs):
 
         super(WaitForUser, self).__init__(*args, **kwargs)
-
-        self.name = translate("WaitForUser", "Wait for user")
 
 
 class WaitForUserLearn(WaitForUser):
