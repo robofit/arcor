@@ -29,22 +29,34 @@ def main():
             rospy.loginfo("Waiting for /art/instructions param...")
             rospy.sleep(0.5)
 
-    app = QtGui.QApplication(sys.argv)
-
     rospack = rospkg.RosPack()
 
     packages = ['art_projected_gui']
 
-    for k, v in instructions["instructions"].iteritems():
+    try:
 
-        packages.append(v["gui"]["package"])
+        for k, v in instructions["instructions"].iteritems():
+
+            packages.append(v["gui"]["package"])
+
+    except KeyError as e:
+
+        rospy.logerr("Param /art/instructions is invalid: " + str(e))
+        return
+
+    app = QtGui.QApplication(sys.argv)
 
     loc = rospy.get_param('~locale', 'cs_CZ')
 
     for package in packages:
 
         translator = QtCore.QTranslator()
-        translator.load(loc + '.qm', rospack.get_path(package) + '/lang')
+        try:
+            translator.load(loc + '.qm', rospack.get_path(package) + '/lang')
+        except rospkg.ResourceNotFound:
+            rospy.logerr("Could not find package: " + package)
+            continue
+
         app.installTranslator(translator)
 
     ui = UICoreRos(instructions)

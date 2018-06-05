@@ -238,9 +238,16 @@ class UICoreRos(UICore):
 
             # dynamic loading of instructions based on their definition on parameter server
             for k, v in instructions["instructions"].iteritems():
-                mod = importlib.import_module(v["gui"]["package"] + ".gui")
-                self.instructions_learn[k] = getattr(mod, v["gui"]["learn"])
-                self.instructions_run[k] = getattr(mod, v["gui"]["run"])
+
+                try:
+
+                    mod = importlib.import_module(v["gui"]["package"] + ".gui")
+                    self.instructions_learn[k] = getattr(mod, v["gui"]["learn"])
+                    self.instructions_run[k] = getattr(mod, v["gui"]["run"])
+
+                except Exception as e:
+
+                    rospy.logerr("Failed to import instruction: " + str(e))
 
         else:
 
