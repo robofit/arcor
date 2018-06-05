@@ -1,0 +1,7 @@
+<launch>
+
+    <!-- ns="/art/collision_env/" -->
+    <node pkg="art_collision_env" type="node.py" name="collision_env_node" output="screen">
+    </node>
+
+</launch>

@@ -1,15 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(art_projected_gui)
+project(art_collision_env)
 
 find_package(catkin REQUIRED COMPONENTS
   roslint
-  art_msgs
-  geometry_msgs
   rospy
-  std_msgs
+  std_srvs
   roslaunch
-  rostest
-  art_utils
 )
 
 catkin_python_setup()
@@ -19,22 +15,15 @@ roslint_python()
 roslint_add_test()
 
 catkin_package(
-  CATKIN_DEPENDS geometry_msgs art_msgs std_msgs
-)
-
-include_directories(
-  ${catkin_INCLUDE_DIRS}
+  CATKIN_DEPENDS rospy std_srvs
 )
 
 if (CATKIN_ENABLE_TESTING)
   roslaunch_add_file_check(launch)
-  # catkin_add_nosetests(tests/test_ui_core.py)
-  add_rostest(tests/ui_core.test)
-  # add_rostest(tests/ui_core_ros.test)
 endif()
 
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
 
-catkin_install_python(PROGRAMS src/app.py
+catkin_install_python(PROGRAMS src/node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

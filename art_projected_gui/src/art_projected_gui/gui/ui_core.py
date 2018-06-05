@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from PyQt4 import QtGui, QtCore, QtNetwork
-from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem, SquareItem, DialogItem
+from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, PolygonItem, SquareItem
 import rospy
 from art_projected_gui.helpers import conversions
 from art_msgs.srv import NotifyUserRequest
@@ -39,7 +39,6 @@ class UICore(QtCore.QObject):
         rpm (int): Resolution per meter (pixels per meter of width/height).
         scene (QGraphicsScene): Holds all Item(s), manages (re)painting etc.
         bottom_label (LabelItem): Label for displaying messages to user.
-        program_vis (ProgramItem): Item to display robot's program.
         scene_items (list): Array to hold all displayed items.
         view (QGraphicsView): To show content of the scene in debug window.
     """

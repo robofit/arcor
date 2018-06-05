@@ -6,7 +6,7 @@ from art_msgs.msg import Program, ProgramBlock, ProgramItem
 from copy import deepcopy
 from art_utils import ArtApiHelper
 from art_utils.art_msgs_functions import obj_type, wait_item, feeder_item, grid_item, drill_item, place_item,\
-    item, polygon_item
+    item, polygon_item, visual_inspection_item
 
 
 def main(args):
@@ -96,6 +96,31 @@ def main(args):
     art.program_set_ro(prog.header.id)
 
     # -------------------------------------------------------------------------------------------
+    # Training program 4
+    # -------------------------------------------------------------------------------------------
+
+    prog = Program()
+    prog.header.id = 4
+    prog.header.name = "Trenink - inspekce"
+
+    pb = ProgramBlock()
+    pb.id = 1
+    pb.name = "Vizualni inspekce"
+    pb.on_success = 0
+    pb.on_failure = 0
+    prog.blocks.append(pb)
+
+    pb.items.append(polygon_item(1))
+    pb.items.append(visual_inspection_item(2, ref_id=[1], on_success=3, on_failure=4))
+    pb.items.append(place_item(3, ref_id=[1], on_success=3, on_failure=0))
+    pb.items.append(place_item(4, ref_id=[1], on_success=3, on_failure=0))
+    pb.items.append(item(5, ProgramItem.GET_READY, on_success=6, on_failure=0))
+    pb.items.append(wait_item(6, ref_id=[2], on_success=1, on_failure=0))
+
+    art.store_program(prog)
+    art.program_set_ro(prog.header.id)
+
+    # -------------------------------------------------------------------------------------------
     # Simplified trolley assembly: object types
     # -------------------------------------------------------------------------------------------
 
@@ -108,7 +133,7 @@ def main(args):
     # -------------------------------------------------------------------------------------------
 
     prog = Program()
-    prog.header.id = 4
+    prog.header.id = 5
     prog.header.name = "Montaz stolicky"
 
     # --- left side of the trolley ------------------------------------------------------

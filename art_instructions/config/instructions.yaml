@@ -1,0 +1,105 @@
+pick:
+  - PickFromFeeder
+  - PickFromPolygon
+place:
+  - PlaceToGrid
+  - PlaceToPose
+
+using_object:
+  - PickFromFeeder
+  - PickFromPolygon
+  - DrillPoints
+  - PlaceToGrid
+  - PlaceToPose
+
+using_pose:
+  - PickFromFeeder
+  - PlaceToPose
+  - DrillPoints
+  - PlaceToGrid
+  - VisualInspection
+
+using_polygon:
+  - DrillPoints
+  - PickFromPolygon
+  - PlaceToGrid
+
+ref_to_pick:
+  - VisualInspection
+
+# gui classes are expected in package.gui module
+# brain classes are expected in package.brain module
+
+instructions:
+
+  DrillPoints:
+      gui:
+        package: art_instructions
+        learn: DrillPointsLearn
+        run: DrillPointsRun
+      brain:
+        package: art_instructions
+
+  GetReady:
+      gui:
+        package: art_instructions
+        learn: GetReadyLearn
+        run: GetReadyRun
+      brain:
+        package: art_instructions
+
+  PickFromFeeder:
+      gui:
+        package: art_instructions
+        learn: PickFromFeederLearn
+        run: PickFromFeederRun
+      brain:
+        package: art_instructions
+
+  PickFromPolygon:
+      gui:
+        package: art_instructions
+        learn: PickFromPolygonLearn
+        run: PickFromPolygonRun
+      brain:
+        package: art_instructions
+
+  PlaceToGrid:
+      gui:
+        package: art_instructions
+        learn: PlaceToGridLearn
+        run: PlaceToGridRun
+      brain:
+        package: art_instructions
+
+  PlaceToPose:
+      gui:
+        package: art_instructions
+        learn: PlaceToPoseLearn
+        run: PlaceToPoseRun
+      brain:
+        package: art_instructions
+
+  VisualInspection:
+      gui:
+        package: art_instructions
+        learn: VisualInspectionLearn
+        run: VisualInspectionRun
+      brain:
+        package: art_instructions
+
+  WaitForUser:
+      gui:
+        package: art_instructions
+        learn: WaitForUserLearn
+        run: WaitForUserRun
+      brain:
+        package: art_instructions
+
+  WaitUntilUserFinishes:
+      gui:
+        package: art_instructions
+        learn: WaitUntilUserFinishesLearn
+        run: WaitUntilUserFinishesRun
+      brain:
+        package: art_instructions
