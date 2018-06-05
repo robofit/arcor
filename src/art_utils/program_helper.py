@@ -35,6 +35,7 @@ class ProgramHelper(object):
         self.PICK_ITEMS = frozenset(d["pick"])
         self.PLACE_ITEMS = frozenset(d["place"])
         self.REF_TO_PICK = frozenset(d["ref_to_pick"])
+        self.RUNNABLE_DURING_LEARNING = frozenset(d["runnable_during_learning"])
 
     def load(self, prog, template=False):
 
