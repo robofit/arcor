@@ -27,6 +27,16 @@ using_polygon:
 ref_to_pick:
   - VisualInspection
 
+runnable_during_learning:
+  - DrillPoints
+  - GetReady
+  - PickFromFeeder
+  - PickFromPolygon
+  - PlaceToGrid
+  - PlaceToPose
+  - VisualInspection
+
+
 # gui classes are expected in package.gui module
 # brain classes are expected in package.brain module
 
