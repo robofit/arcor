@@ -278,6 +278,7 @@ class UICoreRos(UICore):
                                      ProgIt.PLACE_TO_POSE: PlaceToPoseVis}
 
         self.current_instruction = None
+        self.vis_instructions = []
 
         self.state_manager = InterfaceStateManager(
             "PROJECTED UI", cb=self.interface_state_cb)
@@ -658,6 +659,11 @@ class UICoreRos(UICore):
             self.current_instruction.cleanup()
             self.current_instruction = None
 
+        for vi in self.vis_instructions:
+            vi.cleanup()
+
+        self.vis_instructions = []
+
         super(UICoreRos, self).clear_all()
 
         if include_dialogs:
@@ -764,7 +770,7 @@ class UICoreRos(UICore):
         it = self.ph.get_item_msg(block_id, item_id)
 
         if it.type in self.instructions_vis:
-            self.current_instruction = self.instructions_vis[it.type](self)
+            self.vis_instructions.append(self.instructions_vis[it.type](self))
 
     def v_back_cb(self):
         """Callback for BACK button in visualization mode.
