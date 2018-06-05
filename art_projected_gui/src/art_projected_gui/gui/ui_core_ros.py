@@ -3,7 +3,7 @@
 from art_projected_gui.gui import UICore
 from PyQt4 import QtCore
 import rospy
-from art_msgs.msg import InstancesArray, UserStatus, InterfaceState, ProgramItem as ProgIt, LearningRequestAction,\
+from art_msgs.msg import InstancesArray, InterfaceState, ProgramItem as ProgIt, LearningRequestAction,\
     LearningRequestGoal
 from art_msgs.msg import HololensState
 from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, TouchPointsItem, LabelItem,\
@@ -31,7 +31,6 @@ class UICoreRos(UICore):
     """The class builds on top of UICore and adds ROS-related stuff and application logic.
 
     Attributes:
-        user_status (UserStatus): current user tracking status
         fsm (FSM): state machine maintaining current state of the interface and proper transitions between states
         state_manager (interface_state_manager): synchronization of interfaces within the ARTable system
         scene_pub (rospy.Publisher): publisher for scene images
@@ -76,8 +75,6 @@ class UICoreRos(UICore):
             'objects'), self.object_cb_evt)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL(
-            'user_status'), self.user_status_cb_evt)
-        QtCore.QObject.connect(self, QtCore.SIGNAL(
             'interface_state'), self.interface_state_evt)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL(
@@ -88,8 +85,6 @@ class UICoreRos(UICore):
             'notify_user_evt'), self.notify_user_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL(
             'learning_request_done_evt'), self.learning_request_done_evt)
-
-        self.user_state = None
 
         self.program_list = None
         self.program_vis = None
@@ -131,17 +126,6 @@ class UICoreRos(UICore):
             '/art/brain/learning_request', LearningRequestAction)
         self.learning_action_cl.wait_for_server()
 
-        self.art = ArtApiHelper()
-
-        self.projectors_calibrated_pub = rospy.Publisher(
-            "~projectors_calibrated", Bool, queue_size=1, latch=True)
-        self.projectors_calibrated_pub.publish(False)
-
-        self.start_learning_srv = rospy.ServiceProxy(
-            '/art/brain/learning/start', ProgramIdTrigger)  # TODO wait for service? where?
-        self.stop_learning_srv = rospy.ServiceProxy(
-            '/art/brain/learning/stop', Trigger)  # TODO wait for service? where?
-
         # HoloLens visualization
         self.start_visualizing_srv = rospy.ServiceProxy(
             '/art/brain/visualize/start', ProgramIdTrigger)  # TODO wait for service? where?
@@ -153,6 +137,18 @@ class UICoreRos(UICore):
         self.hololens_connected = False
         self.hololens_state_pub = rospy.Publisher(
             '/art/interface/hololens/state', HololensState)
+
+        self.art = ArtApiHelper()
+
+        self.projectors_calibrated_pub = rospy.Publisher(
+            "~projectors_calibrated", Bool, queue_size=1, latch=True)
+        self.projectors_calibrated_pub.publish(False)
+
+        self.start_learning_srv = rospy.ServiceProxy(
+            '/art/brain/learning/start', ProgramIdTrigger)  # TODO wait for service? where?
+        self.stop_learning_srv = rospy.ServiceProxy(
+            '/art/brain/learning/stop', Trigger)  # TODO wait for service? where?
+
         self.visualizing = False
 
         self.program_pause_srv = rospy.ServiceProxy(
@@ -163,12 +159,6 @@ class UICoreRos(UICore):
 
         self.program_stop_srv = rospy.ServiceProxy(
             '/art/brain/program/stop', Trigger)
-
-        self.emergency_stop_srv = rospy.ServiceProxy(
-            '/pr2_ethercat/halt_motors', EmptyService)  # TODO wait for service? where?
-
-        self.emergency_stop_reset_srv = rospy.ServiceProxy(
-            '/pr2_ethercat/reset_motors', EmptyService)  # TODO wait for service? where?
 
         self.robot_halted = None
         # TODO read status of robot from InterfaceState
@@ -182,17 +172,12 @@ class UICoreRos(UICore):
             '/art/brain/program/error_response', ProgramErrorResolve)  # TODO wait for service? where?
         self.program_error_dialog = None
 
-        self.emergency_stopped = False
-
         rospy.loginfo("Waiting for ART services...")
         self.art.wait_for_api()
 
         # TODO move this to ArtApiHelper ??
         self.obj_sub = rospy.Subscriber(
             '/art/object_detector/object_filtered', InstancesArray, self.object_cb, queue_size=1)
-
-        self.user_status_sub = rospy.Subscriber(
-            '/art/user/status', UserStatus, self.user_status_cb, queue_size=1)
 
         self.touch_points = None
         self.touch_calib_srv = rospy.Service(
@@ -245,6 +230,10 @@ class UICoreRos(UICore):
                     self.instructions_learn[k] = getattr(mod, v["gui"]["learn"])
                     self.instructions_run[k] = getattr(mod, v["gui"]["run"])
 
+                    # visualization class is not mandatory
+                    if "vis" in v["gui"]:
+                        self.instructions_vis[k] = getattr(mod, v["gui"]["vis"])
+
                 except Exception as e:
 
                     rospy.logerr("Failed to import instruction: " + str(e))
@@ -253,12 +242,12 @@ class UICoreRos(UICore):
 
             # TODO remove this - used only for compatibility with numeric instruction type (in ProgramItem)
 
-            from art_instructions.gui import DrillPointsLearn, DrillPointsRun, \
+            from art_instructions.gui import DrillPointsLearn, DrillPointsRun, DrillPointsVis, \
                 GetReadyRun, GetReadyLearn, \
-                PickFromFeederLearn, PickFromFeederRun, \
-                PickFromPolygonLearn, PickFromPolygonRun, \
-                PlaceToGridLearn, PlaceToGridRun, \
-                PlaceToPoseLearn, PlaceToPoseRun, \
+                PickFromFeederLearn, PickFromFeederRun, PickFromFeederVis, \
+                PickFromPolygonLearn, PickFromPolygonRun, PickFromPolygonVis, \
+                PlaceToGridLearn, PlaceToGridRun, PlaceToGridVis, \
+                PlaceToPoseLearn, PlaceToPoseRun, PlaceToPoseVis, \
                 VisualInspectionLearn, VisualInspectionRun, \
                 WaitForUserLearn, WaitForUserRun, \
                 WaitUntilUserFinishesLearn, WaitUntilUserFinishesRun
@@ -281,6 +270,12 @@ class UICoreRos(UICore):
                                      ProgIt.VISUAL_INSPECTION: VisualInspectionRun,
                                      ProgIt.WAIT_FOR_USER: WaitForUserRun,
                                      ProgIt.WAIT_UNTIL_USER_FINISHES: WaitUntilUserFinishesRun}
+
+            self.instructions_vis = {ProgIt.DRILL_POINTS: DrillPointsVis,
+                                     ProgIt.PICK_FROM_FEEDER: PickFromFeederVis,
+                                     ProgIt.PICK_FROM_POLYGON: PickFromPolygonVis,
+                                     ProgIt.PLACE_TO_GRID: PlaceToGridVis,
+                                     ProgIt.PLACE_TO_POSE: PlaceToPoseVis}
 
         self.current_instruction = None
 
@@ -385,15 +380,13 @@ class UICoreRos(UICore):
 
     def motors_halted_evt(self, halted):
 
-        if not self.emergency_stopped:
+        if halted:
 
-            if halted:
+            self.notif(translate("UICoreRos", "Robot is halted."))
 
-                self.notif(translate("UICoreRos", "Robot is halted."))
+        else:
 
-            else:
-
-                self.notif(translate("UICoreRos", "Robot is up again."), temp=True)
+            self.notif(translate("UICoreRos", "Robot is up again."), temp=True)
 
     def program_error_dialog_cb(self, idx):
 
@@ -732,6 +725,7 @@ class UICoreRos(UICore):
                     self.program_vis.vis_pause_btn_cb(None)
 
     def create_hololens_state_msg(self, hololens_state, visualization_state=None):
+
         msg = HololensState()
         msg.hololens_state = hololens_state
 
@@ -769,81 +763,8 @@ class UICoreRos(UICore):
         """Draws program visualization element based on block id and item id."""
         it = self.ph.get_item_msg(block_id, item_id)
 
-        if it.type == ProgIt.GET_READY:
-
-            pass
-
-        elif it.type == ProgIt.WAIT_FOR_USER:
-
-            pass
-
-        elif it.type == ProgIt.WAIT_UNTIL_USER_FINISHES:
-
-            pass
-
-        elif it.type == ProgIt.PICK_FROM_POLYGON:
-
-            self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
-
-            self.add_polygon(
-                translate(
-                    "UICoreRos",
-                    "PICK POLYGON"),
-                poly_points=conversions.get_pick_polygon_points(
-                    self.ph.get_polygon(
-                        block_id,
-                        it.id)[0]),
-                fixed=True)
-
-        elif it.type == ProgIt.PICK_FROM_FEEDER:
-
-            self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
-
-        elif it.type == ProgIt.PICK_OBJECT_ID:
-            if self.ph.is_object_set(block_id, item_id):
-                self.select_object(self.ph.get_object(block_id, item_id)[0][0])
-
-        elif it.type == ProgIt.PLACE_TO_POSE:
-
-            object_type = None
-            object_id = None
-
-            self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
-
-            if self.ph.is_object_set(block_id, it.id):
-                object_type = self.art.get_object_type(self.ph.get_object(block_id, it.id)[0][0])
-
-            if object_type is not None:
-
-                place_pose = self.ph.get_pose(block_id, it.id)[0][0]
-
-                self.add_place(translate("UICoreRos", "OBJECT PLACE POSE"),
-                               place_pose, object_type, object_id, fixed=True)
-
-        elif it.type == ProgIt.PLACE_TO_GRID:
-
-            self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
-
-            polygons = self.ph.get_polygon(block_id, it.id)[0]
-            poses = self.ph.get_pose(block_id, it.id)[0]
-            object_type_name = self.ph.get_object(block_id, it.id)[0][0]
-
-            object_type = self.art.get_object_type(object_type_name)
-
-            self.notif(translate("UICoreRos", "Going to place objects into grid"))
-            self.add_square(translate("UICoreRos", "PLACE SQUARE GRID"), self.width / 2, self.height / 2, 0.1,
-                            0.075, object_type, poses, grid_points=conversions.get_pick_polygon_points(polygons),
-                            square_changed=self.square_changed, fixed=True)
-
-        elif it.type == ProgIt.DRILL_POINTS:
-
-            self.select_object_type(self.ph.get_object(block_id, item_id)[0][0])
-
-            polygons = self.ph.get_polygon(block_id, it.id)[0]
-            poses = self.ph.get_pose(block_id, it.id)[0]
-
-            self.add_polygon(translate("UICoreRos", "Objects to be drilled"),
-                             poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)
+        if it.type in self.instructions_vis:
+            self.current_instruction = self.instructions_vis[it.type](self)
 
     def v_back_cb(self):
         """Callback for BACK button in visualization mode.
@@ -1476,25 +1397,3 @@ class UICoreRos(UICore):
         self.state_manager.update_program_item(self.ph.get_program_id(
         ), self.program_vis.block_id, self.program_vis.get_current_item())
         return True
-
-    def user_status_cb(self, msg):
-
-        self.emit(QtCore.SIGNAL('user_status'), msg)
-
-    def user_status_cb_evt(self, msg):
-
-        if msg.user_state != self.user_state:
-
-            if msg.user_state == UserStatus.USER_NOT_CALIBRATED:
-
-                self.notif(translate("UICoreRos", "Please do a calibration pose"))
-
-            elif msg.user_state == UserStatus.USER_CALIBRATED:
-
-                self.notif(translate("UICoreRos", "Successfully calibrated"))
-
-            elif msg.user_state == UserStatus.NO_USER:
-
-                self.notif(translate("UICoreRos", "Waiting for user..."))
-
-        self.user_state = msg

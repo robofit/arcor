@@ -304,3 +304,17 @@ class DrillPointsRun(DrillPoints):
 
         self.ui.add_polygon(translate("DrillPoints", "Objects to be drilled"),
                             poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)
+
+
+class DrillPointsVis(DrillPoints):
+
+    def __init__(self, *args, **kwargs):
+
+        super(DrillPointsVis, self).__init__(*args, **kwargs)
+
+        self.ui.select_object_type(self.ph.get_object(*self.cid)[0][0])
+
+        polygons = self.ui.ph.get_polygon(*self.cid)[0]
+
+        self.ui.add_polygon(translate("DrillPoints", "Objects to be drilled"),
+                            poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)

@@ -115,3 +115,24 @@ class PlaceToPoseRun(PlaceToPose):
         else:
 
             rospy.logerr("Selected object_id not found: " + obj_id)
+
+
+class PlaceToPoseVis(PlaceToPose):
+
+    def __init__(self, *args, **kwargs):
+
+        super(PlaceToPoseVis, self).__init__(*args, **kwargs)
+
+        object_type = None
+        object_id = None
+
+        self.ui.select_object_type(self.ui.ph.get_object(*self.cid)[0][0])
+
+        if self.ui.ph.is_object_set(*self.cid):
+            object_type = self.ui.art.get_object_type(self.ui.ph.get_object(*self.cid)[0][0])
+
+        if object_type is not None:
+            place_pose = self.ui.ph.get_pose(*self.cid)[0][0]
+
+            self.ui.add_place(translate("PlaceToPose", "OBJECT PLACE POSE"),
+                              place_pose, object_type, object_id, fixed=True)

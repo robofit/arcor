@@ -223,3 +223,12 @@ class PickFromFeederRun(PickFromFeeder):
         else:
             self.ui.notif(
                 translate("PickFromFeeder", "Picking object from feeder on my left."))
+
+
+class PickFromFeederVis(PickFromFeeder):
+
+    def __init__(self, *args, **kwargs):
+
+        super(PickFromFeederRun, self).__init__(*args, **kwargs)
+
+        self.ui.select_object_type(self.ui.ph.get_object(*self.cid)[0][0])

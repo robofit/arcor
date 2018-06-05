@@ -47,6 +47,7 @@ instructions:
         package: art_instructions
         learn: DrillPointsLearn
         run: DrillPointsRun
+        vis: DrillPointsVis
       brain:
         package: art_instructions
 
@@ -63,6 +64,7 @@ instructions:
         package: art_instructions
         learn: PickFromFeederLearn
         run: PickFromFeederRun
+        vis: PickFromFeederVis
       brain:
         package: art_instructions
 
@@ -71,6 +73,7 @@ instructions:
         package: art_instructions
         learn: PickFromPolygonLearn
         run: PickFromPolygonRun
+        vis: PickFromPolygonVis
       brain:
         package: art_instructions
 
@@ -79,6 +82,7 @@ instructions:
         package: art_instructions
         learn: PlaceToGridLearn
         run: PlaceToGridRun
+        vis: PlaceToGridVis
       brain:
         package: art_instructions
 
@@ -87,6 +91,7 @@ instructions:
         package: art_instructions
         learn: PlaceToPoseLearn
         run: PlaceToPoseRun
+        vis: PlaceToPoseVis
       brain:
         package: art_instructions
 
@@ -95,6 +100,7 @@ instructions:
         package: art_instructions
         learn: VisualInspectionLearn
         run: VisualInspectionRun
+        vis: VisualInspectionVis
       brain:
         package: art_instructions
 
