@@ -338,7 +338,11 @@ class ProgramItem(Item):
         text = str(item.id)
         text += " | "
 
-        text += self.instruction.name
+        # TODO deal with long strings
+        if item.name:
+            text += item.name
+        else:
+            text += self.instruction.name
 
         if len(item.ref_id) > 0:
 
