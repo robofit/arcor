@@ -16,12 +16,22 @@ class GuiInstruction(object):
         self.run = None
         self.vis = None
 
+    @property
+    def mandatory(self):
+
+        return ("learn", "run")
+
 
 class BrainInstruction(object):
 
     def __init__(self):
 
-        pass
+        self.fsm = None
+
+    @property
+    def mandatory(self):
+
+        return "fsm",
 
 
 class Instruction(object):
@@ -89,33 +99,13 @@ class InstructionsHelper(object):
 
         self.packages = frozenset(packages)
 
-        for k, v in instructions["instructions"].iteritems():
+        for k, ins_conf in instructions["instructions"].iteritems():
 
             ins = Instruction()
 
-            try:
+            for art_module in ins.__dict__.keys():
 
-                mod = importlib.import_module(v["gui"]["package"] + ".gui")
-
-                try:
-                    ins.gui.learn = getattr(mod, v["gui"]["learn"])
-                    ins.gui.run = getattr(mod, v["gui"]["run"])
-                except KeyError as e:
-
-                    rospy.logerr(str(e))
-                    raise InstructionsHelperException("Invalid instruction.")
-
-                # visualization class is not mandatory
-                if "vis" in v["gui"]:
-                    ins.gui.vis = getattr(mod, v["gui"]["vis"])
-
-            except Exception as e:
-
-                rospy.logerr("Failed to import gui instruction: " + str(e))
-                raise InstructionsHelperException("Failed to import gui instruction: " + k)
-
-            # TODO brain instructions
-            # ins.brain.xyz = getattr(mod, v["brain"]["xyz"])
+                self._import_instruction(k, ins_conf, ins.__dict__[art_module], art_module)
 
             self._instructions[k] = ins
 
@@ -125,6 +115,38 @@ class InstructionsHelper(object):
                 self.properties.__dict__[prop] = frozenset(instructions[prop])
             except KeyError:
                 rospy.logwarn("Key " + prop + " not defined.")
+
+    @staticmethod
+    def _import_instruction(ins_name, ins_conf, ins_cls, art_module):
+
+        try:
+            pkg = ins_conf[art_module]["package"]
+        except KeyError:
+            raise InstructionsHelperException("Package not defined for: " + ins_name)
+
+        try:
+            mod = importlib.import_module(pkg + "." + art_module)
+        except Exception:
+            raise InstructionsHelperException("Could not import module: " + pkg + "." + art_module)
+
+        for t in ins_cls.__dict__.keys():  # learn/run/vis/fsm
+
+            try:
+                cls = ins_conf[art_module][t]
+            except KeyError as e:
+
+                if t in ins_cls.mandatory:
+                    rospy.logerr(str(e))
+                    raise InstructionsHelperException("Invalid instruction, key " + t + " is mandatory!")
+
+                continue
+
+            try:
+                ins_cls.__dict__[t] = getattr(mod, cls)
+            except AttributeError as e:
+
+                rospy.logerr(str(e))
+                raise InstructionsHelperException("Invalid instruction, class " + cls + " does not exist.")
 
     def known_instructions(self):
 
