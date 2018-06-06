@@ -1,7 +1,6 @@
 from art_instructions.gui import GuiInstruction
 from PyQt4 import QtCore
 import rospy
-from art_msgs.msg import ProgramItem as ProgIt
 
 translate = QtCore.QCoreApplication.translate
 
@@ -33,8 +32,7 @@ class PlaceToPoseLearn(PlaceToPose):
 
             for it_id in self.ui.ph.get_items_ids(self.block_id):
 
-                if self.ui.ph.get_item_msg(self.block_id,
-                                           it_id).type != ProgIt.PLACE_TO_POSE:  # TODO get rid of PLACE_TO_POSE
+                if self.ui.ph.get_item_msg(self.block_id, it_id).type != "PlaceToPose":
                     continue
 
                 object_type = None
