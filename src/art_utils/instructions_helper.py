@@ -50,10 +50,14 @@ class InstructionsHelper(object):
     def __init__(self):
 
         self.packages = frozenset()
-        self.instructions = {}
+        self._instructions = {}
         self.properties = InstructionsProperties()
 
         self._load()
+
+    def __getitem__(self, key):
+
+        return self._instructions[key]
 
     def _load(self):
 
@@ -110,7 +114,7 @@ class InstructionsHelper(object):
             # TODO brain instructions
             # ins.brain.xyz = getattr(mod, v["brain"]["xyz"])
 
-            self.instructions[k] = ins
+            self._instructions[k] = ins
 
         for prop in self.properties.__dict__.keys():
 
@@ -121,7 +125,7 @@ class InstructionsHelper(object):
 
     def known_instructions(self):
 
-        return self.instructions.keys()
+        return self._instructions.keys()
 
     def requires_learning(self, ins):
 
