@@ -6,11 +6,11 @@ translate = QtCore.QCoreApplication.translate
 
 class WaitForUser(GuiInstruction):
 
-    CONTEXT = "WaitForUser"
-
     def __init__(self, *args, **kwargs):
 
         super(WaitForUser, self).__init__(*args, **kwargs)
+
+        self.name = translate("WaitForUser", "Wait for user")
 
 
 class WaitForUserLearn(WaitForUser):
@@ -26,4 +26,4 @@ class WaitForUserRun(WaitForUser):
 
         super(WaitForUserRun, self).__init__(*args, **kwargs)
 
-        self.ui.notif(translate(self.CONTEXT, "Waiting for user to finish"))
+        self.ui.notif(translate("WaitForUser", "Waiting for user to finish"))

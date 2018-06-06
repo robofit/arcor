@@ -14,11 +14,11 @@ translate = QtCore.QCoreApplication.translate
 
 class VisualInspection(GuiInstruction):
 
-    CONTEXT = "VisualInspection"
-
     def __init__(self, *args, **kwargs):
 
         super(VisualInspection, self).__init__(*args, **kwargs)
+
+        self.name = translate("VisualInspection", "Visual inspection")
 
         self.bridge = CvBridge()
 
@@ -45,6 +45,17 @@ class VisualInspection(GuiInstruction):
         self.text_timer = QtCore.QTimer()
         self.text_timer.timeout.connect(self.text_timer_tick)
         self.text_timer.setSingleShot(True)
+
+    def get_text(self):
+
+        text = "\n"
+
+        if self.ui.ph.is_pose_set(*self.cid):
+            text += translate("VisualInspection", "     Pose stored.")
+        else:
+            text += translate("VisualInspection", "     Pose has to be set.")
+
+        return text
 
     def result_callback(self, msg):
 
@@ -98,16 +109,16 @@ class VisualInspectionLearn(VisualInspection):
 
             self.ui.notif(
                 translate(
-                    self.CONTEXT,
+                    "VisualInspection",
                     "Now you may adjust pose for visual inspection."))
 
             # TODO do it in a portable way (get arms from robot helper)
             self.dialog = DialogItem(
                 self.ui.scene, self.ui.width / 2, 0.1, translate(
-                    self.CONTEXT, "Save visual inspection pose"), [
+                    "VisualInspection", "Save visual inspection pose"), [
                     translate(
-                        self.CONTEXT, "Right arm"), translate(
-                        self.CONTEXT, "Left arm")], self.save_pose_cb)
+                        "VisualInspection", "Right arm"), translate(
+                        "VisualInspection", "Left arm")], self.save_pose_cb)
 
             self.dialog_timer = QtCore.QTimer()
             self.dialog_timer.timeout.connect(self.dialog_timer_tick)
@@ -127,12 +138,12 @@ class VisualInspectionLearn(VisualInspection):
             # TODO what to do?
             return
 
-        self.ui.notif(translate(self.CONTEXT, "Pose was stored."), temp=True)
+        self.ui.notif(translate("VisualInspection", "Pose was stored."), temp=True)
         self.ui.snd_info()
         self.ui.program_vis.set_pose(ps)
 
         self.dialog.items[idx].set_enabled(False)
-        self.dialog.items[idx].set_caption(translate(self.CONTEXT, "Stored"))
+        self.dialog.items[idx].set_caption(translate("VisualInspection", "Stored"))
         self.dialog_timer.start(1000)
 
     def cleanup(self):
@@ -146,8 +157,8 @@ class VisualInspectionLearn(VisualInspection):
     def dialog_timer_tick(self):
 
         # TODO do it in a portable way (get arms from robot helper)
-        self.dialog.items[0].set_caption(translate(self.CONTEXT, "Right arm"))
-        self.dialog.items[1].set_caption(translate(self.CONTEXT, "Left arm"))
+        self.dialog.items[0].set_caption(translate("VisualInspection", "Right arm"))
+        self.dialog.items[1].set_caption(translate("VisualInspection", "Left arm"))
 
         for v in self.dialog.items:
             v.set_enabled(True)
@@ -161,5 +172,5 @@ class VisualInspectionRun(VisualInspection):
 
         self.ui.notif(
             translate(
-                self.CONTEXT,
+                "VisualInspection",
                 "Visual inspection in progress..."))

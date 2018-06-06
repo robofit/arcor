@@ -6,11 +6,11 @@ translate = QtCore.QCoreApplication.translate
 
 class GetReady(GuiInstruction):
 
-    CONTEXT = "GetReady"
-
     def __init__(self, *args, **kwargs):
 
         super(GetReady, self).__init__(*args, **kwargs)
+
+        self.name = translate("GetReady", "Get ready")
 
 
 class GetReadyLearn(GetReady):
@@ -26,4 +26,4 @@ class GetReadyRun(GetReady):
 
         super(GetReadyRun, self).__init__(*args, **kwargs)
 
-        self.ui.notif(translate(self.CONTEXT, "Robot is getting ready"))
+        self.ui.notif(translate("GetReady", "Robot is getting ready"))

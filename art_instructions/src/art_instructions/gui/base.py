@@ -1,6 +1,6 @@
 from PyQt4 import QtCore
 
-# TODO method to get string for program_vis
+translate = QtCore.QCoreApplication.translate
 
 
 class GuiInstruction(QtCore.QObject):
@@ -12,6 +12,14 @@ class GuiInstruction(QtCore.QObject):
         self.ui = ui
         self.editable = editable
         self.flags = flags
+        self.name = ""  # localized name of the instruction
+
+    def get_text(self):
+        """
+        Returns additional (localized) text displayed below instruction name in program visualization
+        """
+
+        return ""
 
     def cleanup(self):
 

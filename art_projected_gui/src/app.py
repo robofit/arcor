@@ -15,21 +15,39 @@ def sigint_handler(*args):
     QtGui.QApplication.quit()
 
 
-def main(args):
+def main():
 
     rospy.init_node('projected_gui', anonymous=True, log_level=rospy.DEBUG)
 
     signal.signal(signal.SIGINT, sigint_handler)
 
+    while True:
+        try:
+            instructions = rospy.get_param("/art/instructions")
+            break
+        except KeyError:
+            rospy.loginfo("Waiting for /art/instructions param...")
+            rospy.sleep(0.5)
+
     app = QtGui.QApplication(sys.argv)
 
     rospack = rospkg.RosPack()
 
-    translator = QtCore.QTranslator()
-    translator.load(rospy.get_param('~locale', 'cs_CZ') + '.qm', rospack.get_path('art_projected_gui') + '/lang')
-    app.installTranslator(translator)
+    packages = ['art_projected_gui']
 
-    ui = UICoreRos()
+    for k, v in instructions["instructions"].iteritems():
+
+        packages.append(v["gui"]["package"])
+
+    loc = rospy.get_param('~locale', 'cs_CZ')
+
+    for package in packages:
+
+        translator = QtCore.QTranslator()
+        translator.load(loc + '.qm', rospack.get_path(package) + '/lang')
+        app.installTranslator(translator)
+
+    ui = UICoreRos(instructions)
 
     dbg = rospy.get_param('~show_scene', False)
     if dbg:
@@ -44,6 +62,6 @@ def main(args):
 
 if __name__ == '__main__':
     try:
-        main(sys.argv)
+        main()
     except KeyboardInterrupt:
         print("Shutting down")

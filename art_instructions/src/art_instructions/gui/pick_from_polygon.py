@@ -9,8 +9,6 @@ translate = QtCore.QCoreApplication.translate
 
 class PickFromPolygon(GuiInstruction):
 
-    CONTEXT = "PickFromPolygon"
-
     def __init__(self, *args, **kwargs):
 
         super(PickFromPolygon, self).__init__(*args, **kwargs)
@@ -22,11 +20,13 @@ class PickFromPolygonLearn(PickFromPolygon):
 
         super(PickFromPolygonLearn, self).__init__(*args, **kwargs)
 
+        self.name = translate("PickFromPolygon", "Pick from area")
+
         if not self.ui.ph.is_object_set(*self.cid):
 
             if self.editable:
                 self.ui.notif(
-                    translate(self.CONTEXT, "Select object type to be picked up by tapping on its outline."))
+                    translate("PickFromPolygon", "Select object type to be picked up by tapping on its outline."))
 
         else:
 
@@ -39,7 +39,7 @@ class PickFromPolygonLearn(PickFromPolygon):
 
             self.ui.add_polygon(
                 translate(
-                    self.CONTEXT,
+                    "PickFromPolygon",
                     "PICK AREA"),
                 poly_points=conversions.get_pick_polygon_points(polygons),
                 polygon_changed=self.ui.polygon_changed,
@@ -47,7 +47,7 @@ class PickFromPolygonLearn(PickFromPolygon):
 
             if self.editable:
                 self.ui.notif(
-                    translate(self.CONTEXT, "Adjust pick area or select another object type."))
+                    translate("PickFromPolygon", "Adjust pick area or select another object type."))
 
     def object_selected(self, obj, selected, msg):
 
@@ -80,10 +80,10 @@ class PickFromPolygonLearn(PickFromPolygon):
                 poly_points.append((ob.position[0] + w / 2.0, ob.position[1] - h / 2.0))
                 poly_points.append((ob.position[0] - w / 2.0, ob.position[1] + h / 2.0))
 
-            self.ui.add_polygon(translate(self.CONTEXT, "PICK POLYGON"),
+            self.ui.add_polygon(translate("PickFromPolygon", "PICK POLYGON"),
                                 poly_points, polygon_changed=self.ui.polygon_changed)
             self.ui.notif(
-                translate(self.CONTEXT, "Check and adjust pick polygon. You may also change object type."))
+                translate("PickFromPolygon", "Check and adjust pick polygon. You may also change object type."))
 
 
 class PickFromPolygonRun(PickFromPolygon):
@@ -106,20 +106,20 @@ class PickFromPolygonRun(PickFromPolygon):
             if obj is not None:
                 self.ui.notif(
                     translate(
-                        self.CONTEXT,
+                        "PickFromPolygon",
                         "Going to pick object ID ") +
                     obj_id +
                     translate(
-                        self.CONTEXT,
+                        "PickFromPolygon",
                         " of type ") +
                     obj.object_type.name +
                     translate(
-                        self.CONTEXT,
+                        "PickFromPolygon",
                         " from polygon."))
 
         self.ui.add_polygon(
             translate(
-                self.CONTEXT,
+                "PickFromPolygon",
                 "PICK POLYGON"),
             poly_points=conversions.get_pick_polygon_points(
                 self.ui.ph.get_polygon(

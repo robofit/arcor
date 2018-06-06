@@ -16,11 +16,23 @@ translate = QtCore.QCoreApplication.translate
 
 class DrillPoints(GuiInstruction):
 
-    CONTEXT = "DrillPoints"
-
     def __init__(self, *args, **kwargs):
 
         super(DrillPoints, self).__init__(*args, **kwargs)
+
+        self.name = translate("DrillPoints", "Glue application")
+
+    def get_text(self):
+
+        ps, ref_id = self.ui.ph.get_pose(*self.cid)
+        ps_learned = 0.0
+
+        for i in range(len(ps)):
+
+            if self.ui.ph.is_pose_set(self.block_id, self.instruction_id, i):
+                ps_learned += 1
+
+        return translate("DrillPoints", " learned poses: %1/%2").arg(ps_learned).arg(len(ps))
 
 
 class DrillPointsLearn(DrillPoints):
@@ -43,7 +55,7 @@ class DrillPointsLearn(DrillPoints):
             if self.ui.ph.is_polygon_set(*self.cid):
                 polygons = self.ui.ph.get_polygon(*self.cid)[0]
 
-                self.ui.add_polygon(translate(self.CONTEXT, "OBJECTS TO BE DRILLED"),
+                self.ui.add_polygon(translate("DrillPoints", "OBJECTS TO BE DRILLED"),
                                     poly_points=conversions.get_pick_polygon_points(polygons),
                                     polygon_changed=self.ui.polygon_changed, fixed=not self.editable)
 
@@ -53,7 +65,7 @@ class DrillPointsLearn(DrillPoints):
             # TODO pokud tam neni vybrany, ani nedovolit editaci - neni co editovat
             if self.editable:
                 self.ui.notif(
-                    translate(self.CONTEXT, "Select object type to be drilled"))
+                    translate("DrillPoints", "Select object type to be drilled"))
 
     def cleanup(self):
 
@@ -97,11 +109,11 @@ class DrillPointsLearn(DrillPoints):
                     poly_points.append((ob.position[0] - w / 2.0, ob.position[1] + h / 2.0))
 
                 # TODO polygon_changed should be now set for add_polygon?
-                self.ui.add_polygon(translate(self.CONTEXT, "OBJECTS TO BE DRILLED"),
+                self.ui.add_polygon(translate("DrillPoints", "OBJECTS TO BE DRILLED"),
                                     poly_points, polygon_changed=self.ui.polygon_changed)
                 self.ui.notif(
                     translate(
-                        self.CONTEXT,
+                        "DrillPoints",
                         "Check and adjust area with objects to be drilled. Then use robot arm to set drill poses."))
 
             self.ui.program_vis.clear_poses()
@@ -140,8 +152,8 @@ class DrillPointsLearn(DrillPoints):
 
     def get_drill_caption(self):
 
-        return translate(self.CONTEXT, "Save gripper pose (%1/%2)").arg(self.drill_pose_idx +
-                                                                        1).arg(self.ui.program_vis.get_poses_count())
+        return translate("DrillPoints", "Save gripper pose (%1/%2)").arg(self.drill_pose_idx +
+                                                                         1).arg(self.ui.program_vis.get_poses_count())
 
     def create_drill_dialog(self):
 
@@ -151,10 +163,10 @@ class DrillPointsLearn(DrillPoints):
             self.drill_dialog = DialogItem(
                 self.ui.scene, self.ui.width / 2, 0.1, self.get_drill_caption(), [
                     translate(
-                        self.CONTEXT, "Right arm"), translate(
-                        self.CONTEXT, "Left arm"), translate(
-                        self.CONTEXT, "Prev pose"), translate(
-                        self.CONTEXT, "Next pose")], self.save_gripper_pose_drill_cb)
+                        "DrillPoints", "Right arm"), translate(
+                        "DrillPoints", "Left arm"), translate(
+                        "DrillPoints", "Prev pose"), translate(
+                        "DrillPoints", "Next pose")], self.save_gripper_pose_drill_cb)
 
     def save_gripper_pose_drill_cb(self, idx):
 
@@ -187,7 +199,7 @@ class DrillPointsLearn(DrillPoints):
         except rospy.ROSException as e:
             rospy.logerr(str(e))
             self.ui.notif(
-                translate(self.CONTEXT, "Failed to get gripper pose."), temp=True, message_type=NotifyUserRequest.WARN)
+                translate("DrillPoints", "Failed to get gripper pose."), temp=True, message_type=NotifyUserRequest.WARN)
             return
 
         assert ps.header.frame_id == "marker"
@@ -244,7 +256,7 @@ class DrillPointsLearn(DrillPoints):
 
             self.ui.notif(
                 translate(
-                    "UICoreRos",
+                    "DrillPoints",
                     "Gripper pose relative to object %1 stored").arg(
                     c_obj.object_id),
                 temp=True)
@@ -261,7 +273,7 @@ class DrillPointsLearn(DrillPoints):
 
             self.ui.notif(
                 translate(
-                    "UICoreRos",
+                    "DrillPoints",
                     "Failed to find object near gripper."),
                 temp=True,
                 message_type=NotifyUserRequest.WARN)
@@ -281,7 +293,7 @@ class DrillPointsRun(DrillPoints):
             self.ui.select_object(self.flags["SELECTED_OBJECT_ID"])
             self.ui.notif(
                 translate(
-                    "UICoreRos",
+                    "DrillPoints",
                     "Going to drill hole %1 out of %2 into object %3.").arg(
                     self.flags["DRILLED_HOLE_NUMBER"]).arg(
                     len(poses)).arg(
@@ -290,5 +302,5 @@ class DrillPointsRun(DrillPoints):
             rospy.logerr(
                 "DRILL_POINTS - flag not set: " + str(e))
 
-        self.ui.add_polygon(translate("UICoreRos", "Objects to be drilled"),
+        self.ui.add_polygon(translate("DrillPoints", "Objects to be drilled"),
                             poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)
