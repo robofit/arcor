@@ -135,5 +135,5 @@ script:
 
 after_failure:
   - cd ~/catkin_ws
-  - find build_isolated/ -iwholename "*/test_results/*.xml" -exec cat {} \;
-  - find build_isolated/ -iwholename "*/Testing/Temporary/LastTest.log" -exec cat {} \;
+  - find build/ -iwholename "*/test_results/*.xml" -exec cat {} \;
+  - find build/ -iwholename "*/Testing/Temporary/LastTest.log" -exec cat {} \;
