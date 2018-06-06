@@ -1,3 +1,4 @@
+from art_utils.instructions_helper import InstructionsHelper, InstructionsHelperException
 from art_utils.program_helper import ProgramHelper
 from art_utils.art_api_helper import ArtApiHelper
 from art_utils.art_robot_helper import ArtRobotArmHelper, ArtRobotHelper, UnknownRobot,\
