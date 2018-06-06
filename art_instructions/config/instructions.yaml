@@ -36,6 +36,7 @@ instructions:
         run: DrillPointsRun
       brain:
         package: art_instructions.brain
+        fsm: DrillPointsFSM
       localised_name:
         cs_CZ: Aplikuj lepidlo
         en_US: Aplly glue
@@ -47,6 +48,7 @@ instructions:
         run: GetReadyRun
       brain:
         package: art_instructions.brain
+        fsm: GetReadyFSM
       localised_name:
         cs_CZ: Připravit
         en_US: Get Ready
@@ -58,6 +60,7 @@ instructions:
         run: PickFromFeederRun
       brain:
         package: art_instructions.brain
+        fsm: PickFromFeederFSM
       localised_name:
         cs_CZ: Zvedni z podavače
         en_US: Pick from feeder
@@ -69,6 +72,7 @@ instructions:
         run: PickFromPolygonRun
       brain:
         package: art_instructions.brain
+        fsm: PickFromPolygonFSM
       localised_name:
         cs_CZ: Zvedni z oblasti
         en_US: Pick from polygon
@@ -80,6 +84,7 @@ instructions:
         run: PlaceToGridRun
       brain:
         package: art_instructions.brain
+        fsm: PlaceToGridFSM
       localised_name:
         cs_CZ: Polož do oblasti
         en_US: Place to grid
@@ -91,6 +96,7 @@ instructions:
         run: PlaceToPoseRun
       brain:
         package: art_instructions.brain
+        fsm: PlaceToPoseFSM
       localised_name:
         cs_CZ: Polož na místo
         en_US: Place to pose
@@ -102,6 +108,7 @@ instructions:
         run: VisualInspectionRun
       brain:
         package: art_instructions.brain
+        fsm: VisualInspectionFSM
       localised_name:
         cs_CZ: Vizuální kontrola
         en_US: Visual inspection
@@ -113,6 +120,7 @@ instructions:
         run: WaitForUserRun
       brain:
         package: art_instructions.brain
+        fsm: WaitForUserFSM
       localised_name:
         cs_CZ: Počkej na uživatele
         en_US: Wait for user
@@ -124,6 +132,7 @@ instructions:
         run: WaitUntilUserFinishesRun
       brain:
         package: art_instructions.brain
+        fsm: WaitUntilUserFinishesFSM
       localised_name:
         cs_CZ: Počkej až uživatel skončí
         en_US: Wait until user finishes
