@@ -14,7 +14,7 @@ def get_node_name(block_id, item_id):
 
 def get_type_string(item):
 
-    if item.type == ProgramItem.GET_READY:
+    if item.type == "GetReady":
 
         return "GET_READY"
 
@@ -22,11 +22,11 @@ def get_type_string(item):
 
         return "NOP"
 
-    elif item.type == ProgramItem.PICK_FROM_FEEDER:
+    elif item.type == "PickFromFeeder":
 
         return "PICK_FROM_FEEDER\nobject type: " + item.object[0]
 
-    elif item.type == ProgramItem.PICK_FROM_POLYGON:
+    elif item.type == "PickFromPolygon":
 
         return "PICK_FROM_POLYGON\nobject type: " + item.object[0]
 
@@ -34,18 +34,18 @@ def get_type_string(item):
 
         return "PICK_OBJECT_ID\nobject ID: " + item.object[0]
 
-    elif item.type == ProgramItem.PLACE_TO_POSE:
+    elif item.type == "PlaceToPose":
 
         return "PLACE_TO_POSE\nobject from ID: " + ", ".join(map(str, item.ref_id))
 
-    elif item.type == ProgramItem.WAIT_FOR_USER:
+    elif item.type == "WaitForUser":
 
         return "Wait for user"
 
-    elif item.type == ProgramItem.WAIT_UNTIL_USER_FINISHES:
+    elif item.type == "WaitUntilUserFinishes":
         return "Wait until user finishes"
 
-    elif item.type == ProgramItem.DRILL_POINTS:
+    elif item.type == "DrillPoints":
         return "DRILL_POINTS\n" + str(len(item.pose)) + " holes"
 
     elif item.type == ProgramItem.PLACE_TO_GRID:
