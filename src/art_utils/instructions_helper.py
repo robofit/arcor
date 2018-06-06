@@ -112,9 +112,21 @@ class InstructionsHelper(object):
         for prop in self.properties.__dict__.keys():
 
             try:
-                self.properties.__dict__[prop] = frozenset(instructions[prop])
+                conf_prop = instructions[prop]
             except KeyError:
-                rospy.logwarn("Key " + prop + " not defined.")
+                rospy.logwarn("Property " + prop + " not defined.")
+                continue
+
+            ins_ok = []
+            for ins in conf_prop:
+
+                if ins not in self.known_instructions():
+                    rospy.logwarn("Property " + prop + " contains unknown instruction: " + ins)
+                    continue
+
+                ins_ok.append(ins)
+
+            self.properties.__dict__[prop] = frozenset(ins_ok)
 
     @staticmethod
     def _import_instruction(ins_name, ins_conf, ins_cls, art_module):
