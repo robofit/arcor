@@ -57,7 +57,10 @@ class InstructionsHelper(object):
 
     def __getitem__(self, key):
 
-        return self._instructions[key]
+        try:
+            return self._instructions[key]
+        except KeyError:
+            raise InstructionsHelperException("Unknown instruction")
 
     def _load(self):
 
