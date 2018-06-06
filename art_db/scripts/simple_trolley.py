@@ -2,7 +2,7 @@
 
 import sys
 import rospy
-from art_msgs.msg import Program, ProgramBlock, ProgramItem
+from art_msgs.msg import Program, ProgramBlock
 from copy import deepcopy
 from art_utils import ArtApiHelper
 from art_utils.art_msgs_functions import obj_type, wait_item, feeder_item, grid_item, drill_item, place_item,\
@@ -41,7 +41,7 @@ def main(args):
 
     pb.items.append(polygon_item(1))
     pb.items.append(place_item(2, ref_id=[1], on_success=3, on_failure=0))
-    pb.items.append(item(3, ProgramItem.GET_READY, on_success=4, on_failure=0))
+    pb.items.append(item(3, "GetReady", on_success=4, on_failure=0))
     pb.items.append(wait_item(4, ref_id=[2], on_success=1, on_failure=0))
 
     art.store_program(prog)
@@ -66,7 +66,7 @@ def main(args):
     pb.items.append(place_item(2, ref_id=[1], on_success=3, on_failure=0))
     pb.items.append(feeder_item(3, ref_id=[1]))
     pb.items.append(place_item(4, ref_id=[3], on_success=5, on_failure=0))
-    pb.items.append(item(5, ProgramItem.GET_READY, on_success=6, on_failure=0))
+    pb.items.append(item(5, "GetReady", on_success=6, on_failure=0))
     pb.items.append(wait_item(6, ref_id=[4], on_success=1, on_failure=0))
 
     art.store_program(prog)
@@ -88,9 +88,9 @@ def main(args):
     prog.blocks.append(pb)
 
     pb.items.append(drill_item(1, on_success=1, on_failure=2, obj_type=[""]))
-    pb.items.append(item(2, ProgramItem.GET_READY, on_success=3, on_failure=0))
+    pb.items.append(item(2, "GetReady", on_success=3, on_failure=0))
     pb.items.append(drill_item(3, on_success=3, on_failure=4, obj_type=[""]))
-    pb.items.append(item(4, ProgramItem.GET_READY, on_success=0, on_failure=0))
+    pb.items.append(item(4, "GetReady", on_success=0, on_failure=0))
 
     art.store_program(prog)
     art.program_set_ro(prog.header.id)
@@ -114,7 +114,7 @@ def main(args):
     pb.items.append(visual_inspection_item(2, ref_id=[1], on_success=3, on_failure=4))
     pb.items.append(place_item(3, ref_id=[1], on_success=3, on_failure=0))
     pb.items.append(place_item(4, ref_id=[1], on_success=3, on_failure=0))
-    pb.items.append(item(5, ProgramItem.GET_READY, on_success=6, on_failure=0))
+    pb.items.append(item(5, "GetReady", on_success=6, on_failure=0))
     pb.items.append(wait_item(6, ref_id=[2], on_success=1, on_failure=0))
 
     art.store_program(prog)
@@ -162,7 +162,7 @@ def main(args):
     # after p&p, let's drill holes
     pb.items.append(drill_item(11, on_success=11, on_failure=13, obj_type=[""]))
 
-    pb.items.append(item(13, ProgramItem.GET_READY, on_success=0, on_failure=13))
+    pb.items.append(item(13, "GetReady", on_success=0, on_failure=13))
 
     # --- right side of the trolley ------------------------------------------------------
     pb = deepcopy(pb)
@@ -194,7 +194,7 @@ def main(args):
     pb.items.append(feeder_item(16, ref_id=[10]))
     pb.items.append(place_item(17, ref_id=[16], on_failure=17))
 
-    pb.items.append(item(18, ProgramItem.GET_READY, on_success=0, on_failure=18))
+    pb.items.append(item(18, "GetReady", on_success=0, on_failure=18))
 
     art.store_program(prog)
     art.program_set_ro(prog.header.id)

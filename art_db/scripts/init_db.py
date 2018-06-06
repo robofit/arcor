@@ -62,21 +62,21 @@ def main(args):
     p.id = 1
     p.on_success = 2
     p.on_failure = 0
-    p.type = ProgramItem.GET_READY
+    p.type = "GetReady"
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 2
     p.on_success = 3
     p.on_failure = 0
-    p.type = ProgramItem.WAIT_FOR_USER
+    p.type = "WaitForUser"
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 3
     p.on_success = 4
     p.on_failure = 0
-    p.type = ProgramItem.PICK_FROM_FEEDER
+    p.type = "PickFromFeeder"
     p.object.append("")
     pf = PoseStamped()
     p.pose.append(pf)
@@ -86,7 +86,7 @@ def main(args):
     p.id = 4
     p.on_success = 6
     p.on_failure = 0
-    p.type = ProgramItem.PLACE_TO_POSE
+    p.type = "PlaceToPose"
     p.ref_id.append(3)
     pp = PoseStamped()
     pp.header.frame_id = "marker"
@@ -97,21 +97,21 @@ def main(args):
     p.id = 6
     p.on_success = 7
     p.on_failure = 0
-    p.type = ProgramItem.GET_READY
+    p.type = "GetReady"
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 7
     p.on_success = 8
     p.on_failure = 0
-    p.type = ProgramItem.WAIT_UNTIL_USER_FINISHES
+    p.type = "WaitUntilUserFinishes"
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 8
     p.on_success = 9
     p.on_failure = 0
-    p.type = ProgramItem.PICK_FROM_FEEDER
+    p.type = "PickFromFeeder"
     p.object.append("")
     pp.header.frame_id = "marker"
     pf = PoseStamped()
@@ -122,59 +122,9 @@ def main(args):
     p.id = 9
     p.on_success = 1
     p.on_failure = 0
-    p.type = ProgramItem.PLACE_TO_POSE
+    p.type = "PlaceToPose"
     p.ref_id.append(8)
     pp = PoseStamped()
-    p.pose.append(pp)
-    pb.items.append(deepcopy(p))
-
-    store_program(prog)
-
-    # -------------------------------------------------------------------------------------------
-    prog = Program()
-    prog.header.id = 3
-    prog.header.name = "Basic pick&place"
-
-    pb = ProgramBlock()
-    pb.id = 1  # can't be zero
-    pb.name = "First block"
-    pb.on_success = 1
-    pb.on_failure = 0
-    prog.blocks.append(pb)
-
-    p = ProgramItem()
-    p.id = 1
-    p.on_success = 2
-    p.on_failure = 0
-    p.type = ProgramItem.GET_READY
-    pb.items.append(deepcopy(p))
-
-    p = ProgramItem()
-    p.id = 2
-    p.on_success = 3
-    p.on_failure = 0
-    p.type = ProgramItem.WAIT_FOR_USER
-    pb.items.append(deepcopy(p))
-
-    p = ProgramItem()
-    p.id = 3
-    p.on_success = 4
-    p.on_failure = 0
-    p.type = ProgramItem.PICK_OBJECT_ID
-    p.object.append("")
-    pf = PoseStamped()
-    pf.header.frame_id = "marker"
-    p.pose.append(pf)
-    pb.items.append(deepcopy(p))
-
-    p = ProgramItem()
-    p.id = 4
-    p.on_success = 3
-    p.on_failure = 0
-    p.type = ProgramItem.PLACE_TO_POSE
-    p.ref_id.append(3)
-    pp = PoseStamped()
-    pp.header.frame_id = "marker"
     p.pose.append(pp)
     pb.items.append(deepcopy(p))
 
@@ -196,21 +146,21 @@ def main(args):
     p.id = 1
     p.on_success = 2
     p.on_failure = 0
-    p.type = ProgramItem.GET_READY
+    p.type = "GetReady"
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 2
     p.on_success = 3
     p.on_failure = 0
-    p.type = ProgramItem.WAIT_FOR_USER
+    p.type = "WaitForUser"
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 3
     p.on_success = 4
     p.on_failure = 0
-    p.type = ProgramItem.PICK_FROM_POLYGON
+    p.type = "PickFromPolygon"
     p.object.append("")
     pp = PolygonStamped()
     pp.header.frame_id = "marker"
@@ -221,7 +171,7 @@ def main(args):
     p.id = 4
     p.on_success = 5
     p.on_failure = 0
-    p.type = ProgramItem.PLACE_TO_POSE
+    p.type = "PlaceToPose"
     p.ref_id.append(3)
     pp = PoseStamped()
     pp.header.frame_id = "marker"
@@ -232,21 +182,21 @@ def main(args):
     p.id = 5
     p.on_success = 6
     p.on_failure = 0
-    p.type = ProgramItem.GET_READY
+    p.type = "GetReady"
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 6
     p.on_success = 7
     p.on_failure = 0
-    p.type = ProgramItem.WAIT_UNTIL_USER_FINISHES
+    p.type = "WaitUntilUserFinishes"
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 7
     p.on_success = 8
     p.on_failure = 0
-    p.type = ProgramItem.PICK_FROM_POLYGON
+    p.type = "PickFromPolygon"
     p.object.append("")
     p.object.append("profile_20_60")
     pp = PolygonStamped()
@@ -258,7 +208,7 @@ def main(args):
     p.id = 8
     p.on_success = 1
     p.on_failure = 0
-    p.type = ProgramItem.PLACE_TO_POSE
+    p.type = "PlaceToPose"
     p.ref_id.append(7)
     pp = PoseStamped()
     pp.header.frame_id = "marker"
@@ -283,14 +233,14 @@ def main(args):
     p.id = 1
     p.on_success = 2
     p.on_failure = 0
-    p.type = ProgramItem.GET_READY
+    p.type = "GetReady"
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 2
     p.on_success = 2
     p.on_failure = 0
-    p.type = ProgramItem.WELDING_SEAM
+    p.type = "WeldingSeam"
     p.object.append("")
     pf = PoseStamped()
     pf.header.frame_id = "marker"
@@ -328,14 +278,14 @@ def main(args):
     p.id = 1
     p.on_success = 2
     p.on_failure = 0
-    p.type = ProgramItem.GET_READY
+    p.type = "GetReady"
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 2
     p.on_success = 2
     p.on_failure = 0
-    p.type = ProgramItem.WELDING_POINTS
+    p.type = "WeldingPoints"
     p.object.append("")
     pf = PoseStamped()
     pf.header.frame_id = "marker"
@@ -373,7 +323,7 @@ def main(args):
     p.id = 1
     p.on_success = 2
     p.on_failure = 0
-    p.type = ProgramItem.GET_READY
+    p.type = "GetReady"
     p.flags = [KeyValue]
     p.flags[0].key = "CLEAR_OBJECT_FLAGS"
     p.flags[0].value = "true"
@@ -383,7 +333,7 @@ def main(args):
     p.id = 2
     p.on_success = 2
     p.on_failure = 3
-    p.type = ProgramItem.DRILL_POINTS
+    p.type = "DrillPoints"
     p.object.append("profile_20_60")
     pf = PoseStamped()
     pf.header.frame_id = "object_id_profile_20_60"
@@ -412,7 +362,7 @@ def main(args):
     p.id = 3
     p.on_success = 3
     p.on_failure = 0
-    p.type = ProgramItem.DRILL_POINTS
+    p.type = "DrillPoints"
     p.object.append("profile_20_60")
     pf = PoseStamped()
     pf.header.frame_id = "object_id_profile_20_60"
@@ -455,21 +405,21 @@ def main(args):
     p.id = 1
     p.on_success = 2
     p.on_failure = 0
-    p.type = ProgramItem.GET_READY
+    p.type = "GetReady"
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 2
     p.on_success = 3
     p.on_failure = 0
-    p.type = ProgramItem.WAIT_FOR_USER
+    p.type = "WaitForUser"
     pb.items.append(deepcopy(p))
 
     p = ProgramItem()
     p.id = 3
     p.on_success = 4
     p.on_failure = 0
-    p.type = ProgramItem.PICK_FROM_POLYGON
+    p.type = "PickFromPolygon"
     p.object.append("")
     p.object.append("profile_20_60")
     pp = PolygonStamped()
