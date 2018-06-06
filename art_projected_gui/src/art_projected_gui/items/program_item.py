@@ -23,7 +23,7 @@ class ProgramItem(Item):
             y,
             program_helper,
             instruction,
-            instructions,
+            ih,
             done_cb=None,
             item_switched_cb=None,
             learning_request_cb=None,
@@ -42,7 +42,7 @@ class ProgramItem(Item):
         self.h = 100
 
         self.instruction = instruction
-        self.instructions = instructions
+        self.ih = ih
 
         self.done_cb = done_cb
         self.item_switched_cb = item_switched_cb
@@ -345,7 +345,7 @@ class ProgramItem(Item):
         if item.name:
             text += item.name
         else:
-            text += self.instructions[item.type].NAME
+            text += self.ih[item.type].gui.learn.NAME
 
         if len(item.ref_id) > 0:
 
@@ -355,7 +355,7 @@ class ProgramItem(Item):
             # else:
             #    text += translate("ProgramItem", " (refers to %1)").arg(', '.join(str(x) for x in item.ref_id))
 
-        if item.type in self.ph.ITEMS_USING_OBJECT:
+        if item.type in self.ih.properties.using_object:
 
             (obj, ref_id) = self.ph.get_object(block_id, item_id)
 
@@ -377,7 +377,7 @@ class ProgramItem(Item):
 
         # instruction-specific additional text
         # TODO it should use different class when running?
-        text += self.instructions[item.type].get_text(self.ph, block_id, item_id)
+                text += self.ih[item.type].gui.learn.get_text(self.ph, block_id, item_id)
 
         text += "\n"
         text += translate("ProgramItem", "     Success: %1, failure: %2").arg(item.on_success).arg(item.on_failure)

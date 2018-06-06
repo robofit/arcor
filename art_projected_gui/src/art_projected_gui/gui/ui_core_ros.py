@@ -41,7 +41,9 @@ class UICoreRos(UICore):
 
     """
 
-    def __init__(self, instructions):
+    def __init__(self, instructions_helper):
+
+        self.ih = instructions_helper
 
         origin = array_from_param("scene_origin", float, 2)
         size = array_from_param("scene_size", float, 2)
@@ -214,68 +216,6 @@ class UICoreRos(UICore):
 
         self.projector_calib_srv = rospy.Service(
             '/art/interface/projected_gui/calibrate_projectors', Trigger, self.calibrate_projectors_cb)
-
-        pi = ProgIt()
-        if pi.type == "":
-
-            self.instructions_learn = {}
-            self.instructions_run = {}
-
-            # dynamic loading of instructions based on their definition on parameter server
-            for k, v in instructions["instructions"].iteritems():
-
-                try:
-
-                    mod = importlib.import_module(v["gui"]["package"] + ".gui")
-                    self.instructions_learn[k] = getattr(mod, v["gui"]["learn"])
-                    self.instructions_run[k] = getattr(mod, v["gui"]["run"])
-
-                    # visualization class is not mandatory
-                    if "vis" in v["gui"]:
-                        self.instructions_vis[k] = getattr(mod, v["gui"]["vis"])
-
-                except Exception as e:
-
-                    rospy.logerr("Failed to import instruction: " + str(e))
-
-        else:
-
-            # TODO remove this - used only for compatibility with numeric instruction type (in ProgramItem)
-
-            from art_instructions.gui import DrillPointsLearn, DrillPointsRun, DrillPointsVis, \
-                GetReadyRun, GetReadyLearn, \
-                PickFromFeederLearn, PickFromFeederRun, PickFromFeederVis, \
-                PickFromPolygonLearn, PickFromPolygonRun, PickFromPolygonVis, \
-                PlaceToGridLearn, PlaceToGridRun, PlaceToGridVis, \
-                PlaceToPoseLearn, PlaceToPoseRun, PlaceToPoseVis, \
-                VisualInspectionLearn, VisualInspectionRun, \
-                WaitForUserLearn, WaitForUserRun, \
-                WaitUntilUserFinishesLearn, WaitUntilUserFinishesRun
-
-            self.instructions_learn = {ProgIt.DRILL_POINTS: DrillPointsLearn,
-                                       ProgIt.GET_READY: GetReadyLearn,
-                                       ProgIt.PICK_FROM_FEEDER: PickFromFeederLearn,
-                                       ProgIt.PICK_FROM_POLYGON: PickFromPolygonLearn,
-                                       ProgIt.PLACE_TO_GRID: PlaceToGridLearn,
-                                       ProgIt.PLACE_TO_POSE: PlaceToPoseLearn,
-                                       ProgIt.VISUAL_INSPECTION: VisualInspectionLearn,
-                                       ProgIt.WAIT_FOR_USER: WaitForUserLearn,
-                                       ProgIt.WAIT_UNTIL_USER_FINISHES: WaitUntilUserFinishesLearn}
-            self.instructions_run = {ProgIt.DRILL_POINTS: DrillPointsRun,
-                                     ProgIt.GET_READY: GetReadyRun,
-                                     ProgIt.PICK_FROM_FEEDER: PickFromFeederRun,
-                                     ProgIt.PICK_FROM_POLYGON: PickFromPolygonRun,
-                                     ProgIt.PLACE_TO_GRID: PlaceToGridRun,
-                                     ProgIt.PLACE_TO_POSE: PlaceToPoseRun,
-                                     ProgIt.VISUAL_INSPECTION: VisualInspectionRun,
-                                     ProgIt.WAIT_FOR_USER: WaitForUserRun,
-                                     ProgIt.WAIT_UNTIL_USER_FINISHES: WaitUntilUserFinishesRun}
-
-            self.instructions_vis = {ProgIt.DRILL_POINTS: DrillPointsVis,
-                                     ProgIt.PICK_FROM_FEEDER: PickFromFeederVis,
-                                     ProgIt.PICK_FROM_POLYGON: PickFromPolygonVis,
-                                     ProgIt.PLACE_TO_GRID: PlaceToGridVis,
-                                     ProgIt.PLACE_TO_POSE: PlaceToPoseVis}
 
         self.current_instruction = None
         self.vis_instructions = []
@@ -539,10 +479,10 @@ class UICoreRos(UICore):
 
         it = state.program_current_item
 
-        if it.type in self.instructions_run:
+        if it.type in self.ih.known_instructions():
 
-            self.current_instruction = self.instructions_run[it.type](self, state.block_id,
-                                                                      state.program_current_item.id, flags=flags)
+            self.current_instruction = self.ih[it.type].gui.run(self, state.block_id,
+                                                                state.program_current_item.id, flags=flags)
 
             self.program_vis.instruction = self.current_instruction  # TODO how to avoid this?
             self.program_vis.set_active(
@@ -570,7 +510,7 @@ class UICoreRos(UICore):
             self.last_prog_pos[1],
             self.ph,
             self.current_instruction,
-            self.instructions_learn,
+            self.ih,
             done_cb=self.learning_done_cb,
             item_switched_cb=item_switched_cb,
             learning_request_cb=self.learning_request_cb,
@@ -780,8 +720,8 @@ class UICoreRos(UICore):
         """Draws program visualization element based on block id and item id."""
         it = self.ph.get_item_msg(block_id, item_id)
 
-        if it.type in self.instructions_vis:
-            self.vis_instructions.append(self.instructions_vis[it.type](self, block_id, item_id))
+        if self.ih[it.type].gui.vis:
+            self.vis_instructions.append(self.ih[it.type].gui.vis(self, block_id, item_id))
 
     def v_back_cb(self):
         """Callback for BACK button in visualization mode.
@@ -918,9 +858,9 @@ class UICoreRos(UICore):
 
         msg = self.ph.get_item_msg(block_id, item_id)
 
-        if msg.type in self.instructions_learn:
-            self.current_instruction = self.instructions_learn[msg.type](self, block_id, item_id,
-                                                                         editable=state.edit_enabled)
+        if msg.type in self.ih.known_instructions():
+            self.current_instruction = self.ih[msg.type].gui.learn(self, block_id, item_id,
+                                                                   editable=state.edit_enabled)
         else:
             # TODO big error!
             rospy.logfatal("Unsupported instruction!")
