@@ -275,7 +275,7 @@ class ProgramItem(Item):
 
         if self.item_switched_cb is not None:
 
-            self.item_switched_cb(self.block_id, self.item_id)
+            self.item_switched_cb(*self.cid)
 
         self.update()
 
@@ -409,7 +409,7 @@ class ProgramItem(Item):
 
         for k, v in self.items_map.iteritems():
 
-            if self.ph.item_requires_learning(self.block_id, v):
+            if self.ph.get_item_msg(self.block_id, v).type in self.ih.properties.runnable_during_learning:
                 self._update_item(self.block_id, v)
             else:
                 self.items_list.items[k].set_enabled(False)
@@ -544,34 +544,33 @@ class ProgramItem(Item):
         if self.item_switched_cb is not None:
             self.item_switched_cb(self.block_id, None, blocks=True)
 
+    @property
+    def cid(self):
+        """Shortcut for accessing program item"""
+
+        return self.block_id, self.item_id
+
     def _handle_item_btns(self):
 
         # print ("_handle_item_btns, self.editing_item: " + str(self.editing_item))
 
         if not self.editing_item:
 
-            of = self.ph.get_id_on_failure(self.block_id, self.item_id)
-            os = self.ph.get_id_on_success(self.block_id, self.item_id)
+            of = self.ph.get_id_on_failure(*self.cid)
+            os = self.ph.get_id_on_success(*self.cid)
 
             self.item_on_failure_btn.set_enabled(of[0] != 0 and not (of[0] == self.block_id and of[1] == self.item_id))
             self.item_on_success_btn.set_enabled(os[0] != 0 and not (os[0] == self.block_id and os[1] == self.item_id))
 
-            if self.ph.item_requires_learning(
-                    self.block_id,
-                    self.item_id) and self.ph.item_learned(
-                    self.block_id,
-                    self.item_id):
+            if (self.ph.item_requires_learning(*self.cid) and self.ph.item_learned(*self.cid)) or \
+                    self.ph.get_item_msg(*self.cid).type in self.ih.properties.runnable_during_learning:
                 self.item_run_btn.set_enabled(True)
             else:
                 self.item_run_btn.set_enabled(False)
 
             # TODO place pose with object through ref_id - disable Edit when object is not set
             self.item_edit_btn.set_enabled(
-                self.ph.item_requires_learning(
-                    self.block_id,
-                    self.item_id) and not self.ph.item_has_nothing_to_set(
-                    self.block_id,
-                    self.item_id))
+                self.ph.item_requires_learning(*self.cid) and not self.ph.item_has_nothing_to_set(*self.cid))
 
         else:
 
@@ -600,11 +599,11 @@ class ProgramItem(Item):
                 (self.item_run_btn, self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
 
         if self.item_switched_cb is not None:
-            self.item_switched_cb(self.block_id, self.item_id)
+            self.item_switched_cb(*self.cid)
 
     def block_on_failure_btn(self, btn):
 
-        self.set_active(*self.ph.get_id_on_failure(self.block_id, self.item_id))
+        self.set_active(*self.ph.get_id_on_failure(*self.cid))
 
     def block_finished_btn_cb(self, btn):
 
@@ -629,20 +628,20 @@ class ProgramItem(Item):
 
         if self.item_switched_cb is not None:
 
-            self.item_switched_cb(self.block_id, self.item_id)
+            self.item_switched_cb(*self.cid)
 
         self.update()
 
     def item_on_failure_btn_cb(self, btn):
 
-        of = self.ph.get_id_on_failure(self.block_id, self.item_id)
+        of = self.ph.get_id_on_failure(*self.cid)
         self.set_active(*of)
         if self.item_switched_cb is not None:
             self.item_switched_cb(*of)
 
     def item_on_success_btn_cb(self, btn):
 
-        of = self.ph.get_id_on_success(self.block_id, self.item_id)
+        of = self.ph.get_id_on_success(*self.cid)
         self.set_active(*of)
         if self.item_switched_cb is not None:
             self.item_switched_cb(*of)
@@ -834,7 +833,9 @@ class ProgramItem(Item):
         # need to update all items in block as there might be various dependencies (ref_id)
         for idx, item_id in self.items_map.iteritems():
 
-            if self.ph.item_learned(block_id, item_id):
+            if self.ph.item_learned(block_id, item_id) or \
+                    (self.ph.get_item_msg(block_id, item_id).type in self.ih.properties.runnable_during_learning and
+                     not self.ih.requires_learning(self.ph.get_item_msg(block_id, item_id).type)):
                 self.items_list.items[idx].set_background_color()
             else:
                 self.items_list.items[idx].set_background_color(QtCore.Qt.red)
@@ -848,7 +849,7 @@ class ProgramItem(Item):
 
         if self.block_id is not None and self.item_id is not None:
 
-            return self.ph.get_item_msg(self.block_id, self.item_id)
+            return self.ph.get_item_msg(*self.cid)
 
         return None
 
