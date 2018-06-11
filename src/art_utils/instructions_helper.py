@@ -138,7 +138,8 @@ class InstructionsHelper(object):
 
         try:
             mod = importlib.import_module(pkg + "." + art_module)
-        except Exception:
+        except Exception as e:
+            rospy.logerr(str(e))
             raise InstructionsHelperException("Could not import module: " + pkg + "." + art_module)
 
         for t in ins_cls.__dict__.keys():  # learn/run/vis/fsm
