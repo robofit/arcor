@@ -48,7 +48,7 @@ def main():
 
         app.installTranslator(translator)
 
-    ui = UICoreRos(ih)
+    ui = UICoreRos(ih, loc)
 
     dbg = rospy.get_param('~show_scene', False)
     if dbg:

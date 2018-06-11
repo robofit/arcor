@@ -41,9 +41,10 @@ class UICoreRos(UICore):
 
     """
 
-    def __init__(self, instructions_helper):
+    def __init__(self, instructions_helper, loc):
 
         self.ih = instructions_helper
+        self.loc = loc
 
         origin = array_from_param("scene_origin", float, 2)
         size = array_from_param("scene_size", float, 2)

@@ -160,14 +160,13 @@ class DrillPointsLearn(DrillPoints):
 
         if not self.drill_dialog:
 
+            arr = [arm.name(self.ui.loc) for arm in self.ui.rh.get_robot_arms()]
+            arr.append(translate("DrillPoints", "Prev pose"))
+            arr.append(translate("DrillPoints", "Next pose"))
+
             self.drill_pose_idx = 0
             self.drill_dialog = DialogItem(
-                self.ui.scene, self.ui.width / 2, 0.1, self.get_drill_caption(), [
-                    translate(
-                        "DrillPoints", "Right arm"), translate(
-                        "DrillPoints", "Left arm"), translate(
-                        "DrillPoints", "Prev pose"), translate(
-                        "DrillPoints", "Next pose")], self.save_gripper_pose_drill_cb)
+                self.ui.scene, self.ui.width / 2, 0.1, self.get_drill_caption(), arr, self.save_gripper_pose_drill_cb)
 
     def save_gripper_pose_drill_cb(self, idx):
 
@@ -189,16 +188,9 @@ class DrillPointsLearn(DrillPoints):
 
             return
 
-        topics = ['/art/robot/right_arm/gripper/pose',
-                  '/art/robot/left_arm/gripper/pose']
+        ps = self.ui.rh.get_robot_arms()[idx].get_pose()
 
-        rospy.logdebug("Getting pose from topic: " + topics[idx])
-
-        # wait for message, set pose
-        try:
-            ps = rospy.wait_for_message(topics[idx], PoseStamped, timeout=2)
-        except rospy.ROSException as e:
-            rospy.logerr(str(e))
+        if not ps:
             self.ui.notif(
                 translate("DrillPoints", "Failed to get gripper pose."), temp=True, message_type=NotifyUserRequest.WARN)
             return
