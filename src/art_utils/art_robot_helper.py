@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+from geometry_msgs.msg import PoseStamped
 
 
 class UnknownRobot(Exception):
@@ -21,10 +22,12 @@ class ArtRobotHelper(object):
             raise RobotParametersNotOnParameterServer
 
         self.robot_type = rospy.get_param(self.robot_ns + "/robot_id", "")
-        if self.robot_type not in ["pr2", "dobot"]:
-            raise UnknownRobot
+
         for arm_id, parameters in self.robot_parameters.get("arms", []).iteritems():
             self.arms.append(ArtRobotArmHelper(robot_ns=robot_ns, arm_id=arm_id, parameters=parameters))
+
+        # this is mainly due to gui, to make it able to display arms in the right order
+        self.arms.sort(key=lambda x: x.idx)
 
     def get_robot_type(self):
         return self.robot_type
@@ -57,8 +60,34 @@ class ArtRobotArmHelper(object):
         self.robot_ns = robot_ns
         self.capabilities = []
         self.gripper_link = parameters.get("gripper_link", None)
+        self.camera_link = parameters.get("camera_link", None)  # TODO make it mandatory for pick from feeder capability
+        self.idx = parameters.get("idx", None)
+        self._name = parameters.get("name", {})
+
+        if not self._name:
+            rospy.logwarn("Arm " + self.arm_id + " has not readable name!")
+
         for cap in parameters.get("capabilities", {}):
             self.capabilities.append(cap)
+
+        if not self.capabilities:
+            rospy.logwarn("Arm " + self.arm_id + " has no capabilities.")
+
+    def name(self, loc):
+
+        try:
+            return self._name[loc]
+        except KeyError:
+            return self.arm_id
+
+    def get_pose(self):
+
+        try:
+            return rospy.wait_for_message('/art/robot/' + self.arm_id + '/gripper/pose', PoseStamped, timeout=1)
+        except rospy.ROSException as e:
+            rospy.logerr(str(e))
+
+        return None
 
     def pick_place_enabled(self):
         return "pick_place" in self.capabilities
