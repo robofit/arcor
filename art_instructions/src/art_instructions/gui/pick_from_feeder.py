@@ -126,14 +126,14 @@ class PickFromFeederLearn(PickFromFeeder):
 
         # this type of object is already set
         if msg.object and obj.object_type.name == msg.object[0]:
-            rospy.logdebug("object type " +
-                           obj.object_type.name + " already selected")
+            self.logdebug("object type " +
+                          obj.object_type.name + " already selected")
             return
         else:
             # TODO remove previously inserted polygon, do not insert new
             # place
-            rospy.logdebug("selecting new object type: " +
-                           obj.object_type.name)
+            self.logdebug("selecting new object type: " +
+                          obj.object_type.name)
 
         if obj.object_type.name != self.ui.ph.get_object(self.ui.program_vis.block_id, msg.id)[0][0]:
             self.ui.program_vis.clear_poses()

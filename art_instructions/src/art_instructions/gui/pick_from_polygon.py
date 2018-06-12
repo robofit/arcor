@@ -96,8 +96,7 @@ class PickFromPolygonRun(PickFromPolygon):
         try:
             obj_id = self.flags["SELECTED_OBJECT_ID"]
         except KeyError:
-            rospy.logerr(
-                "PICK_FROM_POLYGON: SELECTED_OBJECT_ID flag not set")
+            self.logerr("SELECTED_OBJECT_ID flag not set")
 
         if obj_id is not None:
             self.ui.select_object(obj_id)

@@ -4,6 +4,7 @@ pick:
 place:
   - PlaceToGrid
   - PlaceToPose
+  - PlaceToContainer
 
 using_object:
   - PickFromFeeder
@@ -11,6 +12,7 @@ using_object:
   - DrillPoints
   - PlaceToGrid
   - PlaceToPose
+  - PlaceToContainer
 
 using_pose:
   - PickFromFeeder
@@ -23,6 +25,7 @@ using_polygon:
   - DrillPoints
   - PickFromPolygon
   - PlaceToGrid
+  - PlaceToContainer
 
 ref_to_pick:
   - VisualInspection
@@ -35,6 +38,7 @@ runnable_during_learning:
   - PlaceToGrid
   - PlaceToPose
   - VisualInspection
+  - PlaceToContainer
 
 
 # gui classes are expected in package.gui module
@@ -50,6 +54,7 @@ instructions:
         vis: DrillPointsVis
       brain:
         package: art_instructions
+        fsm: Empty  # placeholder - to be removed
 
   GetReady:
       gui:
@@ -58,6 +63,7 @@ instructions:
         run: GetReadyRun
       brain:
         package: art_instructions
+        fsm: Empty
 
   PickFromFeeder:
       gui:
@@ -67,6 +73,7 @@ instructions:
         vis: PickFromFeederVis
       brain:
         package: art_instructions
+        fsm: Empty
 
   PickFromPolygon:
       gui:
@@ -76,6 +83,7 @@ instructions:
         vis: PickFromPolygonVis
       brain:
         package: art_instructions
+        fsm: Empty
 
   PlaceToGrid:
       gui:
@@ -85,6 +93,7 @@ instructions:
         vis: PlaceToGridVis
       brain:
         package: art_instructions
+        fsm: Empty
 
   PlaceToPose:
       gui:
@@ -94,15 +103,16 @@ instructions:
         vis: PlaceToPoseVis
       brain:
         package: art_instructions
+        fsm: Empty
 
   VisualInspection:
       gui:
         package: art_instructions
         learn: VisualInspectionLearn
         run: VisualInspectionRun
-        vis: VisualInspectionVis
       brain:
         package: art_instructions
+        fsm: Empty
 
   WaitForUser:
       gui:
@@ -111,6 +121,7 @@ instructions:
         run: WaitForUserRun
       brain:
         package: art_instructions
+        fsm: Empty
 
   WaitUntilUserFinishes:
       gui:
@@ -119,3 +130,13 @@ instructions:
         run: WaitUntilUserFinishesRun
       brain:
         package: art_instructions
+        fsm: Empty
+
+  PlaceToContainer:
+      gui:
+          package: art_instructions
+          learn: PlaceToContainerLearn
+          run: PlaceToContainerRun
+      brain:
+          package: art_instructions
+          fsm: Empty

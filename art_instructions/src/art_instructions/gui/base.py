@@ -1,4 +1,5 @@
 from PyQt4 import QtCore
+import rospy
 
 translate = QtCore.QCoreApplication.translate
 
@@ -16,6 +17,18 @@ class GuiInstruction(QtCore.QObject):
         self.instruction_id = item_id
         self.editable = editable
         self.flags = flags
+
+    def logerr(self, msg):
+
+        rospy.logerr(self.NAME + ": " + msg)
+
+    def logwarn(self, msg):
+
+        rospy.logwarn(self.NAME + ": " + msg)
+
+    def logdebug(self, msg):
+
+        rospy.logdebug(self.NAME + ": " + msg)
 
     @staticmethod
     def get_text(ph, block_id, item_id):

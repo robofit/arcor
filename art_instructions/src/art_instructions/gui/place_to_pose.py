@@ -1,6 +1,5 @@
 from art_instructions.gui import GuiInstruction
 from PyQt4 import QtCore
-import rospy
 
 translate = QtCore.QCoreApplication.translate
 
@@ -95,7 +94,7 @@ class PlaceToPoseRun(PlaceToPose):
         try:
             obj_id = self.flags["SELECTED_OBJECT_ID"]
         except KeyError:
-            rospy.logerr(
+            self.logerr(
                 "PLACE_TO_POSE: SELECTED_OBJECT_ID flag not set")
             return
 
@@ -112,7 +111,7 @@ class PlaceToPoseRun(PlaceToPose):
 
         else:
 
-            rospy.logerr("Selected object_id not found: " + obj_id)
+            self.logerr("Selected object_id not found: " + obj_id)
 
 
 class PlaceToPoseVis(PlaceToPose):

@@ -1,7 +1,6 @@
 from art_instructions.gui import GuiInstruction
-import rospy
 from PyQt4 import QtCore
-from geometry_msgs.msg import PoseStamped
+import rospy
 from art_msgs.srv import NotifyUserRequest
 import numpy as np
 from art_projected_gui.items import ObjectItem, DialogItem, PolygonItem
@@ -225,11 +224,11 @@ class DrillPointsLearn(DrillPoints):
 
         if c_obj:
 
-            rospy.logdebug("Closest object is: " + c_obj.object_id + " (dist: " + str(dist) + ")")
+            self.logdebug("Closest object is: " + c_obj.object_id + " (dist: " + str(dist) + ")")
 
         else:
 
-            rospy.logdebug("No object of type " + obj_type + " found.")
+            self.logdebug("No object of type " + obj_type + " found.")
 
         if c_obj and dist < 0.4:
 
@@ -240,7 +239,7 @@ class DrillPointsLearn(DrillPoints):
                 ps = self.ui.tfl.transformPose(frame_id, ps)
             except tf.Exception:
 
-                rospy.logerr(
+                self.logerr(
                     "Failed to transform gripper pose (" +
                     ps.header.frame_id +
                     ") to object frame_id: " +
@@ -292,8 +291,8 @@ class DrillPointsRun(DrillPoints):
                     len(poses)).arg(
                     self.flags["SELECTED_OBJECT_ID"]))
         except KeyError as e:
-            rospy.logerr(
-                "DRILL_POINTS - flag not set: " + str(e))
+            self.logerr(
+                "flag not set: " + str(e))
 
         self.ui.add_polygon(translate("DrillPoints", "Objects to be drilled"),
                             poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)

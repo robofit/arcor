@@ -8,3 +8,4 @@ from place_to_pose import PlaceToPoseLearn, PlaceToPoseRun, PlaceToPoseVis
 from visual_inspection import VisualInspectionLearn, VisualInspectionRun
 from wait_for_user import WaitForUserLearn, WaitForUserRun
 from wait_until_user_finishes import WaitUntilUserFinishesLearn, WaitUntilUserFinishesRun
+from place_to_container import PlaceToContainerLearn, PlaceToContainerRun

@@ -6,7 +6,6 @@ import rospy
 from sensor_msgs.msg import Image
 from std_msgs.msg import Bool
 from PyQt4 import QtCore
-from geometry_msgs.msg import PoseStamped
 from art_utils import array_from_param
 
 translate = QtCore.QCoreApplication.translate
@@ -25,8 +24,8 @@ class VisualInspection(GuiInstruction):
         try:
             topic = rospy.get_param("/art/visual_inspection/topic")
         except KeyError:
-            rospy.logerr("Topic for visual inspection not set!")
-            topic = ""
+            self.logerr("Topic for visual inspection not set!")
+            topic = "image_color"
 
         self.img_sub = rospy.Subscriber(topic, Image, self.image_callback, queue_size=1)
         self.result_sub = rospy.Subscriber("/art/visual_inspection/result", Bool, self.result_callback, queue_size=10)
