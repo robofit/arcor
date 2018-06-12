@@ -153,6 +153,10 @@ class ArtDB:
                 resp.error = str(e)
                 return resp
 
+            if not prog:
+                resp.error = "Program does not exist"
+                return resp
+
             prog.header.readonly = ro
 
             try:
