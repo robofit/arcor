@@ -6,7 +6,6 @@ import rospy
 from sensor_msgs.msg import Image
 from std_msgs.msg import Bool
 from PyQt4 import QtCore
-from geometry_msgs.msg import PoseStamped
 from art_utils import array_from_param
 
 translate = QtCore.QCoreApplication.translate
@@ -14,19 +13,19 @@ translate = QtCore.QCoreApplication.translate
 
 class VisualInspection(GuiInstruction):
 
+    NAME = translate("VisualInspection", "Visual inspection")
+
     def __init__(self, *args, **kwargs):
 
         super(VisualInspection, self).__init__(*args, **kwargs)
-
-        self.name = translate("VisualInspection", "Visual inspection")
 
         self.bridge = CvBridge()
 
         try:
             topic = rospy.get_param("/art/visual_inspection/topic")
         except KeyError:
-            rospy.logerr("Topic for visual inspection not set!")
-            topic = ""
+            self.logerr("Topic for visual inspection not set!")
+            topic = "image_color"
 
         self.img_sub = rospy.Subscriber(topic, Image, self.image_callback, queue_size=1)
         self.result_sub = rospy.Subscriber("/art/visual_inspection/result", Bool, self.result_callback, queue_size=10)
@@ -46,11 +45,12 @@ class VisualInspection(GuiInstruction):
         self.text_timer.timeout.connect(self.text_timer_tick)
         self.text_timer.setSingleShot(True)
 
-    def get_text(self):
+    @staticmethod
+    def get_text(ph, block_id, item_id):
 
         text = "\n"
 
-        if self.ui.ph.is_pose_set(*self.cid):
+        if ph.is_pose_set(block_id, item_id):
             text += translate("VisualInspection", "     Pose stored.")
         else:
             text += translate("VisualInspection", "     Pose has to be set.")
@@ -112,13 +112,10 @@ class VisualInspectionLearn(VisualInspection):
                     "VisualInspection",
                     "Now you may adjust pose for visual inspection."))
 
-            # TODO do it in a portable way (get arms from robot helper)
             self.dialog = DialogItem(
                 self.ui.scene, self.ui.width / 2, 0.1, translate(
-                    "VisualInspection", "Save visual inspection pose"), [
-                    translate(
-                        "VisualInspection", "Right arm"), translate(
-                        "VisualInspection", "Left arm")], self.save_pose_cb)
+                    "VisualInspection", "Save visual inspection pose"),
+                [arm.name(self.ui.loc) for arm in self.ui.rh.get_robot_arms()], self.save_pose_cb)
 
             self.dialog_timer = QtCore.QTimer()
             self.dialog_timer.timeout.connect(self.dialog_timer_tick)
@@ -126,24 +123,22 @@ class VisualInspectionLearn(VisualInspection):
 
     def save_pose_cb(self, idx):
 
-        # TODO get topics from robot helper
-        topics = ['/art/robot/right_arm/gripper/pose',
-                  '/art/robot/left_arm/gripper/pose']
+        ps = self.ui.rh.get_robot_arms()[idx].get_pose()
 
-        # wait for message, set pose
-        try:
-            ps = rospy.wait_for_message(topics[idx], PoseStamped, timeout=2)
-        except rospy.ROSException as e:
-            rospy.logerr(str(e))
-            # TODO what to do?
-            return
+        if ps:
 
-        self.ui.notif(translate("VisualInspection", "Pose was stored."), temp=True)
-        self.ui.snd_info()
-        self.ui.program_vis.set_pose(ps)
+            self.ui.notif(translate("VisualInspection", "Pose was stored."), temp=True)
+            self.ui.snd_info()
+            self.ui.program_vis.set_pose(ps)
+            self.dialog.items[idx].set_caption(translate("VisualInspection", "Stored"))
+
+        else:
+
+            self.ui.notif(translate("VisualInspection", "Failed to get pose."), temp=True)
+            self.ui.snd_warn()
+            self.dialog.items[idx].set_caption(translate("VisualInspection", "Failed"))
 
         self.dialog.items[idx].set_enabled(False)
-        self.dialog.items[idx].set_caption(translate("VisualInspection", "Stored"))
         self.dialog_timer.start(1000)
 
     def cleanup(self):
@@ -156,9 +151,8 @@ class VisualInspectionLearn(VisualInspection):
 
     def dialog_timer_tick(self):
 
-        # TODO do it in a portable way (get arms from robot helper)
-        self.dialog.items[0].set_caption(translate("VisualInspection", "Right arm"))
-        self.dialog.items[1].set_caption(translate("VisualInspection", "Left arm"))
+        for idx, arm in enumerate(self.ui.rh.get_robot_arms()):
+            self.dialog.items[idx].set_caption(arm.name(self.ui.loc))
 
         for v in self.dialog.items:
             v.set_enabled(True)

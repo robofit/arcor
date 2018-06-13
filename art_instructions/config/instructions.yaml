@@ -4,6 +4,7 @@ pick:
 place:
   - PlaceToGrid
   - PlaceToPose
+  - PlaceToContainer
 
 using_object:
   - PickFromFeeder
@@ -11,6 +12,7 @@ using_object:
   - DrillPoints
   - PlaceToGrid
   - PlaceToPose
+  - PlaceToContainer
 
 using_pose:
   - PickFromFeeder
@@ -23,9 +25,21 @@ using_polygon:
   - DrillPoints
   - PickFromPolygon
   - PlaceToGrid
+  - PlaceToContainer
 
 ref_to_pick:
   - VisualInspection
+
+runnable_during_learning:
+  - DrillPoints
+  - GetReady
+  - PickFromFeeder
+  - PickFromPolygon
+  - PlaceToGrid
+  - PlaceToPose
+  - VisualInspection
+  - PlaceToContainer
+
 
 # gui classes are expected in package.gui module
 # brain classes are expected in package.brain module
@@ -37,6 +51,7 @@ instructions:
         package: art_instructions
         learn: DrillPointsLearn
         run: DrillPointsRun
+        vis: DrillPointsVis
       brain:
         package: art_instructions
         fsm: DrillPointsFSM
@@ -55,6 +70,7 @@ instructions:
         package: art_instructions
         learn: PickFromFeederLearn
         run: PickFromFeederRun
+        vis: PickFromFeederVis
       brain:
         package: art_instructions
         fsm: PickFromFeederFSM
@@ -64,6 +80,7 @@ instructions:
         package: art_instructions
         learn: PickFromPolygonLearn
         run: PickFromPolygonRun
+        vis: PickFromPolygonVis
       brain:
         package: art_instructions
         fsm: PickFromPolygonFSM
@@ -73,6 +90,7 @@ instructions:
         package: art_instructions
         learn: PlaceToGridLearn
         run: PlaceToGridRun
+        vis: PlaceToGridVis
       brain:
         package: art_instructions
         fsm: PlaceToGridFSM
@@ -82,6 +100,7 @@ instructions:
         package: art_instructions
         learn: PlaceToPoseLearn
         run: PlaceToPoseRun
+        vis: PlaceToPoseVis
       brain:
         package: art_instructions
         fsm: PlaceToPoseFSM

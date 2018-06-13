@@ -1,7 +1,6 @@
 from art_instructions.gui import GuiInstruction
-import rospy
 from PyQt4 import QtCore
-from geometry_msgs.msg import PoseStamped
+import rospy
 from art_msgs.srv import NotifyUserRequest
 import numpy as np
 from art_projected_gui.items import ObjectItem, DialogItem, PolygonItem
@@ -16,20 +15,21 @@ translate = QtCore.QCoreApplication.translate
 
 class DrillPoints(GuiInstruction):
 
+    NAME = translate("DrillPoints", "Glue application")
+
     def __init__(self, *args, **kwargs):
 
         super(DrillPoints, self).__init__(*args, **kwargs)
 
-        self.name = translate("DrillPoints", "Glue application")
+    @staticmethod
+    def get_text(ph, block_id, item_id):
 
-    def get_text(self):
-
-        ps, ref_id = self.ui.ph.get_pose(*self.cid)
+        ps, ref_id = ph.get_pose(block_id, item_id)
         ps_learned = 0.0
 
         for i in range(len(ps)):
 
-            if self.ui.ph.is_pose_set(self.block_id, self.instruction_id, i):
+            if ph.is_pose_set(block_id, item_id, i):
                 ps_learned += 1
 
         return translate("DrillPoints", " learned poses: %1/%2").arg(ps_learned).arg(len(ps))
@@ -159,14 +159,13 @@ class DrillPointsLearn(DrillPoints):
 
         if not self.drill_dialog:
 
+            arr = [arm.name(self.ui.loc) for arm in self.ui.rh.get_robot_arms()]
+            arr.append(translate("DrillPoints", "Prev pose"))
+            arr.append(translate("DrillPoints", "Next pose"))
+
             self.drill_pose_idx = 0
             self.drill_dialog = DialogItem(
-                self.ui.scene, self.ui.width / 2, 0.1, self.get_drill_caption(), [
-                    translate(
-                        "DrillPoints", "Right arm"), translate(
-                        "DrillPoints", "Left arm"), translate(
-                        "DrillPoints", "Prev pose"), translate(
-                        "DrillPoints", "Next pose")], self.save_gripper_pose_drill_cb)
+                self.ui.scene, self.ui.width / 2, 0.1, self.get_drill_caption(), arr, self.save_gripper_pose_drill_cb)
 
     def save_gripper_pose_drill_cb(self, idx):
 
@@ -188,16 +187,9 @@ class DrillPointsLearn(DrillPoints):
 
             return
 
-        topics = ['/art/robot/right_arm/gripper/pose',
-                  '/art/robot/left_arm/gripper/pose']
+        ps = self.ui.rh.get_robot_arms()[idx].get_pose()
 
-        rospy.logdebug("Getting pose from topic: " + topics[idx])
-
-        # wait for message, set pose
-        try:
-            ps = rospy.wait_for_message(topics[idx], PoseStamped, timeout=2)
-        except rospy.ROSException as e:
-            rospy.logerr(str(e))
+        if not ps:
             self.ui.notif(
                 translate("DrillPoints", "Failed to get gripper pose."), temp=True, message_type=NotifyUserRequest.WARN)
             return
@@ -232,11 +224,11 @@ class DrillPointsLearn(DrillPoints):
 
         if c_obj:
 
-            rospy.logdebug("Closest object is: " + c_obj.object_id + " (dist: " + str(dist) + ")")
+            self.logdebug("Closest object is: " + c_obj.object_id + " (dist: " + str(dist) + ")")
 
         else:
 
-            rospy.logdebug("No object of type " + obj_type + " found.")
+            self.logdebug("No object of type " + obj_type + " found.")
 
         if c_obj and dist < 0.4:
 
@@ -247,7 +239,7 @@ class DrillPointsLearn(DrillPoints):
                 ps = self.ui.tfl.transformPose(frame_id, ps)
             except tf.Exception:
 
-                rospy.logerr(
+                self.logerr(
                     "Failed to transform gripper pose (" +
                     ps.header.frame_id +
                     ") to object frame_id: " +
@@ -299,8 +291,22 @@ class DrillPointsRun(DrillPoints):
                     len(poses)).arg(
                     self.flags["SELECTED_OBJECT_ID"]))
         except KeyError as e:
-            rospy.logerr(
-                "DRILL_POINTS - flag not set: " + str(e))
+            self.logerr(
+                "flag not set: " + str(e))
+
+        self.ui.add_polygon(translate("DrillPoints", "Objects to be drilled"),
+                            poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)
+
+
+class DrillPointsVis(DrillPoints):
+
+    def __init__(self, *args, **kwargs):
+
+        super(DrillPointsVis, self).__init__(*args, **kwargs)
+
+        self.ui.select_object_type(self.ph.get_object(*self.cid)[0][0])
+
+        polygons = self.ui.ph.get_polygon(*self.cid)[0]
 
         self.ui.add_polygon(translate("DrillPoints", "Objects to be drilled"),
                             poly_points=conversions.get_pick_polygon_points(polygons), fixed=True)

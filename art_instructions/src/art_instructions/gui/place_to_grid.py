@@ -7,6 +7,8 @@ translate = QtCore.QCoreApplication.translate
 
 class PlaceToGrid(GuiInstruction):
 
+    NAME = translate("PlaceToGrid", "Place to grid")
+
     def __init__(self, *args, **kwargs):
 
         super(PlaceToGrid, self).__init__(*args, **kwargs)
@@ -17,8 +19,6 @@ class PlaceToGridLearn(PlaceToGrid):
     def __init__(self, *args, **kwargs):
 
         super(PlaceToGridLearn, self).__init__(*args, **kwargs)
-
-        self.name = translate("PlaceToGrid", "Place to grid")
 
         object_type_name = self.uiph.get_object(*self.cid)[0][0]
         poses = self.ui.ph.get_pose(*self.cid)[0]
@@ -62,4 +62,24 @@ class PlaceToGridRun(PlaceToGrid):
         self.ui.add_square(translate("PlaceToGrid", "PLACE SQUARE GRID"),
                            self.ui.width / 2, self.ui.height / 2, 0.1, 0.075,
                            object_type, poses, grid_points=conversions.get_pick_polygon_points(polygons),
+                           square_changed=self.ui.square_changed, fixed=True)
+
+
+class PlaceToGridVis(PlaceToGrid):
+
+    def __init__(self, *args, **kwargs):
+
+        super(PlaceToGridVis, self).__init__(*args, **kwargs)
+
+        self.ui.select_object_type(self.ph.get_object(*self.cid)[0][0])
+
+        polygons = self.ui.ph.get_polygon(*self.cid)[0]
+        poses = self.ui.ph.get_pose(*self.cid)[0]
+        object_type_name = self.ui.ph.get_object(*self.cid)[0][0]
+
+        object_type = self.ui.art.get_object_type(object_type_name)
+
+        self.ui.notif(translate("PlaceToGrid", "Going to place objects into grid"))
+        self.ui.add_square(translate("PlaceToGrid", "PLACE SQUARE GRID"), self.ui.width / 2, self.ui.height / 2, 0.1,
+                           0.075, object_type, poses, grid_points=conversions.get_pick_polygon_points(polygons),
                            square_changed=self.ui.square_changed, fixed=True)

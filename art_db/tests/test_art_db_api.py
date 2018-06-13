@@ -6,8 +6,8 @@ import rospy
 import rostest
 from copy import deepcopy
 
-from art_msgs.msg import Program,  ProgramBlock, ProgramItem,  ObjectType
-from art_msgs.srv import getProgram,  getProgramHeaders,  storeProgram,   getObjectType,  storeObjectType
+from art_msgs.msg import Program, ProgramBlock, ProgramItem, ObjectType
+from art_msgs.srv import getProgram, getProgramHeaders, storeProgram, getObjectType, storeObjectType
 from shape_msgs.msg import SolidPrimitive
 from geometry_msgs.msg import PoseStamped, PolygonStamped, Point32
 
@@ -78,21 +78,21 @@ class TestArtDb(unittest.TestCase):
         p.id = 1
         p.on_success = 2
         p.on_failure = 0
-        p.type = ProgramItem.GET_READY
+        p.type = "GetReady"
         pb.items.append(deepcopy(p))
 
         p = ProgramItem()
         p.id = 2
         p.on_success = 3
         p.on_failure = 0
-        p.type = ProgramItem.WAIT_FOR_USER
+        p.type = "WaitForUser"
         pb.items.append(deepcopy(p))
 
         p = ProgramItem()
         p.id = 3
         p.on_success = 4
         p.on_failure = 0
-        p.type = ProgramItem.PICK_FROM_FEEDER
+        p.type = "PickFromFeeder"
         p.object.append("profile_20_60")
         pf = PoseStamped()
         pf.header.frame_id = "marker"
@@ -105,7 +105,7 @@ class TestArtDb(unittest.TestCase):
         p.id = 4
         p.on_success = 5
         p.on_failure = 0
-        p.type = ProgramItem.PLACE_TO_POSE
+        p.type = "PlaceToPose"
         p.ref_id.append(3)
         p.ref_id.append(5)
         pp = PoseStamped()
@@ -119,7 +119,7 @@ class TestArtDb(unittest.TestCase):
         p.id = 5
         p.on_success = 6
         p.on_failure = 0
-        p.type = ProgramItem.PICK_FROM_FEEDER
+        p.type = "PickFromFeeder"
         p.object.append("profile_20_60")
         pf = PoseStamped()
         pf.header.frame_id = "marker"
@@ -132,21 +132,21 @@ class TestArtDb(unittest.TestCase):
         p.id = 6
         p.on_success = 7
         p.on_failure = 0
-        p.type = ProgramItem.GET_READY
+        p.type = "GetReady"
         pb.items.append(deepcopy(p))
 
         p = ProgramItem()
         p.id = 7
         p.on_success = 8
         p.on_failure = 0
-        p.type = ProgramItem.WAIT_UNTIL_USER_FINISHES
+        p.type = "WaitUntilUserFinishes"
         pb.items.append(deepcopy(p))
 
         p = ProgramItem()
         p.id = 8
         p.on_success = 9
         p.on_failure = 0
-        p.type = ProgramItem.PICK_FROM_POLYGON
+        p.type = "PickFromPolygon"
         p.object.append("profile_20_60")
         pp = PolygonStamped()
         pp.header.frame_id = "marker"
@@ -161,7 +161,7 @@ class TestArtDb(unittest.TestCase):
         p.id = 9
         p.on_success = 4
         p.on_failure = 0
-        p.type = ProgramItem.PLACE_TO_POSE
+        p.type = "PlaceToPose"
         p.ref_id.append(8)
         pp = PoseStamped()
         pp.header.frame_id = "marker"

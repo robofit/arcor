@@ -9,6 +9,8 @@ translate = QtCore.QCoreApplication.translate
 
 class PickFromPolygon(GuiInstruction):
 
+    NAME = translate("PickFromPolygon", "Pick from area")
+
     def __init__(self, *args, **kwargs):
 
         super(PickFromPolygon, self).__init__(*args, **kwargs)
@@ -19,8 +21,6 @@ class PickFromPolygonLearn(PickFromPolygon):
     def __init__(self, *args, **kwargs):
 
         super(PickFromPolygonLearn, self).__init__(*args, **kwargs)
-
-        self.name = translate("PickFromPolygon", "Pick from area")
 
         if not self.ui.ph.is_object_set(*self.cid):
 
@@ -96,8 +96,7 @@ class PickFromPolygonRun(PickFromPolygon):
         try:
             obj_id = self.flags["SELECTED_OBJECT_ID"]
         except KeyError:
-            rospy.logerr(
-                "PICK_FROM_POLYGON: SELECTED_OBJECT_ID flag not set")
+            self.logerr("SELECTED_OBJECT_ID flag not set")
 
         if obj_id is not None:
             self.ui.select_object(obj_id)
@@ -126,3 +125,18 @@ class PickFromPolygonRun(PickFromPolygon):
                     self.block_id,
                     self.instruction_id)[0]),
             fixed=True)
+
+
+class PickFromPolygonVis(PickFromPolygon):
+
+    def __init__(self, *args, **kwargs):
+
+        super(PickFromPolygonVis, self).__init__(*args, **kwargs)
+
+        self.select_object_type(self.ph.get_object(*self.cid)[0][0])
+
+        self.add_polygon(
+            translate(
+                "PickFromPolygon",
+                "PICK POLYGON"),
+            poly_points=conversions.get_pick_polygon_points(self.ph.get_polygon(*self.cid)[0]), fixed=True)

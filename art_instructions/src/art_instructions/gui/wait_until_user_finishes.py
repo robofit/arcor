@@ -6,11 +6,11 @@ translate = QtCore.QCoreApplication.translate
 
 class WaitUntilUserFinishes(GuiInstruction):
 
+    NAME = translate("WaitUntilUserFinishes", "Wait until user finishes")
+
     def __init__(self, *args, **kwargs):
 
         super(WaitUntilUserFinishes, self).__init__(*args, **kwargs)
-
-        self.name = translate("WaitUntilUserFinishes", "Wait until user finishes")
 
 
 class WaitUntilUserFinishesLearn(WaitUntilUserFinishes):

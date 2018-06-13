@@ -43,7 +43,7 @@ class UICore(QtCore.QObject):
         view (QGraphicsView): To show content of the scene in debug window.
     """
 
-    def __init__(self, x, y, width, height, rpm, scene_server_port):
+    def __init__(self, x, y, width, height, rpm, scene_server_port, notif_origin=(0, 0)):
         """
         Args:
             x (float): x coordinate of the scene's origin (in world coordinate system, meters).
@@ -71,7 +71,7 @@ class UICore(QtCore.QObject):
         # be good for dynamic scenes
 
         self.bottom_label = LabelItem(
-            self.scene, 0.30, 0.07, self.width - 0.2, 0.03)
+            self.scene, notif_origin[0], notif_origin[1], self.width - notif_origin[0], 0.03)
 
         self.selected_object_ids = []
         self.selected_object_types = []

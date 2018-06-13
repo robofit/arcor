@@ -50,6 +50,7 @@ from art_utils import InstructionsHelper
 class ArtBrain(object):
 
     def __init__(self):
+        self.fsm = ArtBrainMachine()
 
         '''
         # load instructions
@@ -215,6 +216,11 @@ class ArtBrain(object):
             'learning/start', ProgramIdTrigger, self.learning_start_cb)
         self.srv_learning_stop = rospy.Service(
             'learning/stop', Trigger, self.learning_stop_cb)
+
+        self.srv_learning_start = rospy.Service(
+            '/art/brain/visualize/start', ProgramIdTrigger, self.visualize_start_cb)
+        self.srv_learning_stop = rospy.Service(
+            '/art/brain/visualize/stop', Trigger, self.visualize_stop_cb)
 
         self.srv_program_error_response = rospy.Service(
             'program/error_response',
@@ -477,6 +483,7 @@ class ArtBrain(object):
             return
         instruction_transition()
 
+        
 
     def state_program_load_instruction(self, event):
         rospy.logdebug('Current state: state_program_load_instruction')
@@ -590,6 +597,7 @@ class ArtBrain(object):
     def state_learning_run(self, event):
         rospy.logdebug('Current state: state_learning_run')
 
+    
 
     def state_learning_step_error(self, event):
         rospy.logdebug('Current state: state_learning_step_error')
@@ -635,6 +643,8 @@ class ArtBrain(object):
     # ***************************************************************************************
     #                                     MANIPULATION
     # ***************************************************************************************
+
+    
 
     def try_robot_arms_get_ready(self, arm_ids=[], max_attempts=3):
         assert isinstance(arm_ids, list)
@@ -911,6 +921,39 @@ class ArtBrain(object):
         self.fsm.learning_start()
         return resp
 
+    def visualize_start_cb(self, req):
+        resp = ProgramIdTriggerResponse()
+        resp.success = False
+
+        if not self.is_everything_calibrated():
+
+            resp.error = 'Something is not calibrated'
+            rospy.logwarn('Something is not calibrated')
+            return resp
+
+        if not self.fsm.is_waiting_for_action():
+
+            resp.error = 'Not ready for visualize start!'
+            rospy.logwarn('Not ready for visualize start!')
+            return resp
+
+        program = self.art.load_program(req.program_id)
+
+        if not self.ph.load(program):
+            resp.success = False
+            resp.error = 'Cannot get program.'
+            return resp
+
+        rospy.logdebug('Starting visualize')
+        (self.block_id, item_id) = self.ph.get_first_item_id()
+        self.state_manager.update_program_item(
+            req.program_id, self.block_id, self.ph.get_item_msg(
+                self.block_id, item_id), auto_send=False)
+        self.state_manager.set_system_state(InterfaceState.STATE_VISUALIZE)
+        resp.success = True
+        self.fsm.visualize_start()
+        return resp
+
     def learning_stop_cb(self, req):
         resp = TriggerResponse()
         if not self.fsm.is_learning_run:
@@ -920,6 +963,15 @@ class ArtBrain(object):
         rospy.set_param("learning_program", False)
         resp.success = True
         self.fsm.learning_done()
+        return resp
+
+    def visualize_stop_cb(self, req):
+        resp = TriggerResponse()
+        if not self.fsm.is_visualize_run:
+            resp.success = False
+        rospy.logdebug('Stopping visualize')
+        resp.success = True
+        self.fsm.visualize_done()
         return resp
 
     def interface_state_manager_cb(self,
@@ -1012,6 +1064,10 @@ class ArtBrain(object):
             self.ph.set_item_msg(
                 self.state_manager.state.block_id, instruction)
 
+            # TODO let ui(s) know that item is being executed
+
+            # self.fsm.error(severity=ArtBrainErrorSeverities.INFO,
+            #                error=ArtBrainErrorSeverities.ERROR_LEARNING_NOT_IMPLEMENTED)
             if self.fsm.is_learning_run:
                 self.instruction_fsm[instruction.type].learning_run()
                 # TODO: really?

@@ -1,18 +1,16 @@
 from art_instructions.gui import GuiInstruction
 from PyQt4 import QtCore
-import rospy
-from art_msgs.msg import ProgramItem as ProgIt
 
 translate = QtCore.QCoreApplication.translate
 
 
 class PlaceToPose(GuiInstruction):
 
+    NAME = translate("PlaceToPose", "Place to pose")
+
     def __init__(self, *args, **kwargs):
 
         super(PlaceToPose, self).__init__(*args, **kwargs)
-
-        self.name = translate("PlaceToPose", "Place to pose")
 
 
 class PlaceToPoseLearn(PlaceToPose):
@@ -33,8 +31,7 @@ class PlaceToPoseLearn(PlaceToPose):
 
             for it_id in self.ui.ph.get_items_ids(self.block_id):
 
-                if self.ui.ph.get_item_msg(self.block_id,
-                                           it_id).type != ProgIt.PLACE_TO_POSE:  # TODO get rid of PLACE_TO_POSE
+                if self.ui.ph.get_item_msg(self.block_id, it_id).type != "PlaceToPose":
                     continue
 
                 object_type = None
@@ -97,7 +94,7 @@ class PlaceToPoseRun(PlaceToPose):
         try:
             obj_id = self.flags["SELECTED_OBJECT_ID"]
         except KeyError:
-            rospy.logerr(
+            self.logerr(
                 "PLACE_TO_POSE: SELECTED_OBJECT_ID flag not set")
             return
 
@@ -114,4 +111,25 @@ class PlaceToPoseRun(PlaceToPose):
 
         else:
 
-            rospy.logerr("Selected object_id not found: " + obj_id)
+            self.logerr("Selected object_id not found: " + obj_id)
+
+
+class PlaceToPoseVis(PlaceToPose):
+
+    def __init__(self, *args, **kwargs):
+
+        super(PlaceToPoseVis, self).__init__(*args, **kwargs)
+
+        object_type = None
+        object_id = None
+
+        self.ui.select_object_type(self.ui.ph.get_object(*self.cid)[0][0])
+
+        if self.ui.ph.is_object_set(*self.cid):
+            object_type = self.ui.art.get_object_type(self.ui.ph.get_object(*self.cid)[0][0])
+
+        if object_type is not None:
+            place_pose = self.ui.ph.get_pose(*self.cid)[0][0]
+
+            self.ui.add_place(translate("PlaceToPose", "OBJECT PLACE POSE"),
+                              place_pose, object_type, object_id, fixed=True)
