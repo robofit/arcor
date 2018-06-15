@@ -21,10 +21,14 @@ class VisualInspection(GuiInstruction):
 
         self.bridge = CvBridge()
 
+        topic = ""
         try:
             topic = rospy.get_param("/art/visual_inspection/topic")
         except KeyError:
             self.logerr("Topic for visual inspection not set!")
+
+        if not topic:
+            self.logwarn("Using default topic!")
             topic = "image_color"
 
         self.img_sub = rospy.Subscriber(topic, Image, self.image_callback, queue_size=1)

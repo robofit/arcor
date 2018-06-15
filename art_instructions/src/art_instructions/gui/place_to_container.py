@@ -60,6 +60,7 @@ class PlaceToContainerLearn(PlaceToContainer):
         if not obj.object_type.container:
             self.ui.notif(
                 translate("PlaceToContainer", "Please select container."), temp=True)
+            return
 
         if obj.object_type.name not in self.ui.selected_object_types:
 
@@ -74,8 +75,9 @@ class PlaceToContainerLearn(PlaceToContainer):
 
             sbr = ob.sceneBoundingRect()
 
-            w = ob.pix2m(sbr.width())
-            h = ob.pix2m(sbr.height())
+            r = 2.0
+            w = ob.pix2m(sbr.width()) * r
+            h = ob.pix2m(sbr.height()) * r
 
             poly_points.append((ob.position[0] + w / 2.0, ob.position[1] + h / 2.0))
             poly_points.append((ob.position[0] - w / 2.0, ob.position[1] - h / 2.0))

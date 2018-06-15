@@ -105,6 +105,15 @@ instructions:
         package: art_instructions
         fsm: PlaceToPoseFSM
 
+  PlaceToContainer:
+      gui:
+        package: art_instructions
+        learn: PlaceToContainerLearn
+        run: PlaceToContainerRun
+      brain:
+        package: art_instructions
+        fsm: PlaceToContainerFSM
+
   VisualInspection:
       gui:
         package: art_instructions
@@ -131,3 +140,12 @@ instructions:
       brain:
         package: art_instructions
         fsm: WaitUntilUserFinishesFSM
+
+  Dummy:
+      gui:
+        package: art_instructions
+        learn: WaitUntilUserFinishesLearn
+        run: WaitUntilUserFinishesRun
+      brain:
+        package: art_instructions
+        fsm: DummyFSM

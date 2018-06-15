@@ -2,11 +2,12 @@
 
 import sys
 import rospy
-from art_msgs.msg import Program, ProgramBlock
+from art_msgs.msg import Program, ProgramBlock, ProgramItem
 from copy import deepcopy
 from art_utils import ArtApiHelper
 from art_utils.art_msgs_functions import obj_type, wait_item, feeder_item, grid_item, drill_item, place_item,\
     item, polygon_item, visual_inspection_item
+from geometry_msgs.msg import PolygonStamped
 
 
 def main(args):
@@ -111,11 +112,41 @@ def main(args):
     prog.blocks.append(pb)
 
     pb.items.append(polygon_item(1))
-    pb.items.append(visual_inspection_item(2, ref_id=[1], on_success=3, on_failure=4))
-    pb.items.append(place_item(3, ref_id=[1], on_success=3, on_failure=0))
-    pb.items.append(place_item(4, ref_id=[1], on_success=3, on_failure=0))
-    pb.items.append(item(5, "GetReady", on_success=6, on_failure=0))
-    pb.items.append(wait_item(6, ref_id=[2], on_success=1, on_failure=0))
+    pb.items.append(visual_inspection_item(2, ref_id=[1], on_success=3, on_failure=5))
+    pb.items.append(visual_inspection_item(3, ref_id=[1], on_success=4, on_failure=5))
+    pb.items.append(place_item(4, ref_id=[1], on_success=1, on_failure=0, name="OK parts"))
+    pb.items.append(place_item(5, ref_id=[1], on_success=1, on_failure=0, name="NOK parts"))
+
+    art.store_program(prog)
+    art.program_set_ro(prog.header.id)
+
+    # -------------------------------------------------------------------------------------------
+    # Training program 5
+    # -------------------------------------------------------------------------------------------
+
+    prog = Program()
+    prog.header.id = 5
+    prog.header.name = "Trenink - krabice"
+
+    pb = ProgramBlock()
+    pb.id = 1
+    pb.name = "Polozeni do krabice"
+    pb.on_success = 0
+    pb.on_failure = 0
+    prog.blocks.append(pb)
+
+    pb.items.append(polygon_item(1))
+
+    p = ProgramItem()
+    p.id = 2
+    p.type = "PlaceToContainer"
+    p.polygon.append(PolygonStamped())
+    p.object.append("")
+    p.on_success = 1
+    p.on_failure = 0
+    p.ref_id.append(1)
+
+    pb.items.append(p)
 
     art.store_program(prog)
     art.program_set_ro(prog.header.id)
@@ -125,15 +156,16 @@ def main(args):
     # -------------------------------------------------------------------------------------------
 
     art.store_object_type(obj_type("Spojka", 0.046, 0.046, 0.154))
-    art.store_object_type(obj_type("Kratka_noha", 0.046, 0.046, 0.298))
+    art.store_object_type(obj_type("Kratka_noha", 0.046, 0.046, 0.298, container=True))
     art.store_object_type(obj_type("Dlouha_noha", 0.046, 0.046, 0.398))
+    art.store_object_type(obj_type("Modry_kontejner", 0.1, 0.14, 0.08, container=True))
 
     # -------------------------------------------------------------------------------------------
     # Simplified trolley assembly: program
     # -------------------------------------------------------------------------------------------
 
     prog = Program()
-    prog.header.id = 5
+    prog.header.id = 20
     prog.header.name = "Montaz stolicky"
 
     # --- left side of the trolley ------------------------------------------------------

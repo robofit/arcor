@@ -562,8 +562,11 @@ class ProgramItem(Item):
             self.item_on_failure_btn.set_enabled(of[0] != 0 and not (of[0] == self.block_id and of[1] == self.item_id))
             self.item_on_success_btn.set_enabled(os[0] != 0 and not (os[0] == self.block_id and os[1] == self.item_id))
 
-            if (self.ph.item_requires_learning(*self.cid) and self.ph.item_learned(*self.cid)) or \
-                    self.ph.get_item_msg(*self.cid).type in self.ih.properties.runnable_during_learning:
+            if (self.ph.item_requires_learning(*
+                                               self.cid) and self.ph.item_learned(*
+                                                                                  self.cid)) or (not self.ph.item_requires_learning(*
+                                                                                                                                    self.cid) and self.ph.get_item_msg(*
+                                                                                                                                                                       self.cid).type in self.ih.properties.runnable_during_learning):
                 self.item_run_btn.set_enabled(True)
             else:
                 self.item_run_btn.set_enabled(False)

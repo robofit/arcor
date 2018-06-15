@@ -50,7 +50,6 @@ from art_utils import InstructionsHelper, InstructionsHelperException
 class ArtBrain(object):
 
     def __init__(self):
-
         '''
         # load instructions
         while True and not rospy.is_shutdown():
@@ -113,6 +112,7 @@ class ArtBrain(object):
 
             for state_function in fsm.state_functions:
                 setattr(self.fsm, state_function, getattr(fsm, state_function))
+        self.ih = None
 
         self.fsm.check_robot_in = self.check_robot_in
         self.fsm.check_robot_out = self.check_robot_out
@@ -132,7 +132,6 @@ class ArtBrain(object):
         self.fsm.state_learning_step_error = self.state_learning_step_error
         self.fsm.state_learning_done = self.state_learning_done
         self.fsm.state_update_program_item = self.state_update_program_item
-
 
         self.block_id = None
         self.user_id = 0
@@ -370,6 +369,10 @@ class ArtBrain(object):
 
             if not self.ph.load(program):
                 rospy.logwarn("Could not resume program!")
+                rospy.delete_param('program_id')
+                rospy.delete_param('block_id')
+                rospy.delete_param('item_id')
+                self.state_manager.set_system_state(InterfaceState.STATE_IDLE)
                 return
             if self.program_resume_after_restart:
                 rospy.logdebug('Starting program')
@@ -391,7 +394,6 @@ class ArtBrain(object):
     def state_shutdown(self, event):
         rospy.logdebug('Current state: state_shutdown')
         sys.exit()
-
 
     # ***************************************************************************************
     #                                  STATES PROGRAM
@@ -505,6 +507,7 @@ class ArtBrain(object):
         self.fsm.done()
 
     def state_update_program_item(self, event):
+        rospy.logerr("state_update_program_item")
         self.state_manager.update_program_item(
             self.ph.get_program_id(), self.block_id, self.instruction, auto_send=False)
 
@@ -591,8 +594,6 @@ class ArtBrain(object):
     def state_learning_run(self, event):
         rospy.logdebug('Current state: state_learning_run')
 
-    
-
     def state_learning_step_error(self, event):
         rospy.logdebug('Current state: state_learning_step_error')
         severity = event.kwargs.get('severity', ArtBrainErrorSeverities.SEVERE)
@@ -637,8 +638,6 @@ class ArtBrain(object):
     # ***************************************************************************************
     #                                     MANIPULATION
     # ***************************************************************************************
-
-    
 
     def try_robot_arms_get_ready(self, arm_ids=[], max_attempts=3):
         assert isinstance(arm_ids, list)
@@ -1063,7 +1062,6 @@ class ArtBrain(object):
             # self.fsm.error(severity=ArtBrainErrorSeverities.INFO,
             #                error=ArtBrainErrorSeverities.ERROR_LEARNING_NOT_IMPLEMENTED)
             if self.fsm.is_learning_run:
-                print self.instruction_fsm[instruction.type]
                 self.instruction_fsm[instruction.type].learning_run()
                 # TODO: really?
                 result.success = True

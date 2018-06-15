@@ -8,3 +8,5 @@ from place_to_pose import PlaceToPoseFSM
 from visual_inspection import VisualInspectionFSM
 from wait_for_user import WaitForUserFSM
 from wait_until_user_finishes import WaitUntilUserFinishesFSM
+from dummy import DummyFSM
+from place_to_container import PlaceToContainerFSM

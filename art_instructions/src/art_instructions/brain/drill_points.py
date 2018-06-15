@@ -5,6 +5,7 @@ import rospy
 import copy
 from art_msgs.srv import ObjectFlagSetRequest
 
+
 class DrillPointsFSM(BrainFSM):
     states = [
         State(name='drill_points', on_enter=[
@@ -14,7 +15,7 @@ class DrillPointsFSM(BrainFSM):
             'check_robot_out', 'state_learning_drill_points_exit']),
         State(name='learning_drill_points_run', on_enter=[
             'check_robot_in', 'learning_load_block_id', 'state_learning_drill_points_run'],
-              on_exit=['check_robot_out']),
+            on_exit=['check_robot_out']),
 
     ]
 
@@ -23,6 +24,7 @@ class DrillPointsFSM(BrainFSM):
         ('done', 'drill_points', 'program_load_instruction'),
         ('error', 'drill_points', 'program_error'),
         ('drill_points', 'learning_run', 'learning_drill_points'),
+        ('done', 'learning_drill_points', 'learning_step_done'),
         ('error', 'learning_drill_points', 'learning_step_error'),
         ('drill_points_run', 'learning_run', 'learning_drill_points_run'),
         ('done', 'learning_drill_points_run', 'learning_run'),
@@ -100,7 +102,6 @@ class DrillPointsFSM(BrainFSM):
 
         if not self.brain.check_robot():
             return
-        print instruction
         objects, _ = self.brain.ph.get_object(self.brain.block_id, instruction.id)
 
         # TODO tohle nemuze nastat - kontroluje program helper
@@ -195,4 +196,3 @@ class DrillPointsFSM(BrainFSM):
         rospy.loginfo("Object drilled: " + obj_to_drill.object_id)
 
         self.fsm.done(success=True)
-
