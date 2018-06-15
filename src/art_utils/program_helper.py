@@ -291,7 +291,7 @@ class ProgramHelper(object):
     def _check_for_pose(self, msg):
 
         if msg.type not in self.ih.properties.using_pose:
-            raise ValueError("Instruction type " + str(msg.type) + " does not use 'object'.")
+            raise ValueError("Instruction type " + str(msg.type) + " does not use 'pose'.")
 
     def _check_for_object(self, msg):
 
