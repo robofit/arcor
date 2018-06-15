@@ -32,7 +32,7 @@ from art_brain.brain_utils import ArtBrainUtils, ArtBrainErrors, ArtBrainErrorSe
 from art_brain.art_brain_machine import ArtBrainMachine
 from art_brain.art_gripper import ArtGripper
 
-from art_utils import InstructionsHelper
+from art_utils import InstructionsHelper, InstructionsHelperException
 
 
 # TODO:
@@ -50,7 +50,6 @@ from art_utils import InstructionsHelper
 class ArtBrain(object):
 
     def __init__(self):
-        self.fsm = ArtBrainMachine()
 
         '''
         # load instructions
@@ -99,20 +98,19 @@ class ArtBrain(object):
         '''
 
         self.ih = InstructionsHelper()
-
         states = []
         transitions = []
         self.instruction_fsm = {}
-        for fsm in self.instruction_fsm.items():
-            states += fsm.states
-            transitions += fsm.transitions
-
+        for instruction in self.ih.known_instructions():
+            states += self.ih[instruction].brain.fsm.states
+            transitions += self.ih[instruction].brain.fsm.transitions
         self.fsm = ArtBrainMachine(states, transitions)
 
-        for fsm_module_name, fsm_module in self.instruction_fsm.iteritems():
-            self.instruction_fsm[fsm_module_name] = fsm_module(self.fsm)
+        for instruction in self.ih.known_instructions():
+            self.instruction_fsm[instruction] = self.ih[instruction].brain.fsm(self)
 
-        for fsm in self.instruction_fsm:
+        for _, fsm in self.instruction_fsm.iteritems():
+
             for state_function in fsm.state_functions:
                 setattr(self.fsm, state_function, getattr(fsm, state_function))
 
@@ -123,7 +121,17 @@ class ArtBrain(object):
         self.fsm.state_waiting_for_action = self.state_waiting_for_action
         self.fsm.state_program_init = self.state_program_init
         self.fsm.state_program_run = self.state_program_run
-
+        self.fsm.state_learning_init = self.state_learning_init
+        self.fsm.state_learning_run = self.state_learning_run
+        self.fsm.learning_load_block_id = self.learning_load_block_id
+        self.fsm.state_program_error = self.state_program_error
+        self.fsm.state_program_paused = self.state_program_paused
+        self.fsm.state_program_finished = self.state_program_finished
+        self.fsm.state_program_load_instruction = self.state_program_load_instruction
+        self.fsm.state_learning_step_done = self.state_learning_step_done
+        self.fsm.state_learning_step_error = self.state_learning_step_error
+        self.fsm.state_learning_done = self.state_learning_done
+        self.fsm.state_update_program_item = self.state_update_program_item
 
 
         self.block_id = None
@@ -458,32 +466,14 @@ class ArtBrain(object):
         '''
         self.program_resume_after_restart = False
 
-        instructions = {
-            ProgramItem.GET_READY: self.fsm.get_ready,
-            ProgramItem.PICK_FROM_POLYGON: self.fsm.pick_from_polygon,
-            ProgramItem.PICK_FROM_FEEDER: self.fsm.pick_from_feeder,
-            ProgramItem.PICK_OBJECT_ID: self.fsm.pick_object_id,
-            ProgramItem.PLACE_TO_POSE: self.fsm.place_to_pose,
-            ProgramItem.PLACE_TO_GRID: self.fsm.place_to_grid,
-            ProgramItem.PATH_THROUGH_POINTS: self.fsm.path_through_points,
-            ProgramItem.WELDING_POINTS: self.fsm.welding_points,
-            ProgramItem.WELDING_SEAM: self.fsm.welding_seam,
-            ProgramItem.DRILL_POINTS: self.fsm.drill_points,
-            ProgramItem.WAIT_FOR_USER: self.fsm.wait_for_user,
-            ProgramItem.WAIT_UNTIL_USER_FINISHES: self.fsm.wait_until_user_finishes,
-        }
         rospy.set_param("program_id", self.ph.get_program_id())
         rospy.set_param("block_id", self.block_id)
         rospy.set_param("item_id", self.instruction.id)
-        instruction_transition = instructions.get(self.instruction.type, None)
-        rospy.logdebug(instruction_transition)
-        rospy.logdebug(self.instruction.type)
-        if instruction_transition is None:
+        try:
+            self.instruction_fsm[self.instruction.type].run()
+        except InstructionsHelperException:
             self.fsm.error()
             return
-        instruction_transition()
-
-        
 
     def state_program_load_instruction(self, event):
         rospy.logdebug('Current state: state_program_load_instruction')
@@ -513,6 +503,10 @@ class ArtBrain(object):
             self.fsm.pause()
             return
         self.fsm.done()
+
+    def state_update_program_item(self, event):
+        self.state_manager.update_program_item(
+            self.ph.get_program_id(), self.block_id, self.instruction, auto_send=False)
 
     def state_program_paused(self, event):
         rospy.logdebug('Current state: state_program_paused')
@@ -1069,6 +1063,7 @@ class ArtBrain(object):
             # self.fsm.error(severity=ArtBrainErrorSeverities.INFO,
             #                error=ArtBrainErrorSeverities.ERROR_LEARNING_NOT_IMPLEMENTED)
             if self.fsm.is_learning_run:
+                print self.instruction_fsm[instruction.type]
                 self.instruction_fsm[instruction.type].learning_run()
                 # TODO: really?
                 result.success = True

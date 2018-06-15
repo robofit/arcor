@@ -52,16 +52,16 @@ class ArtBrainMachine(object):
               State(name='learning_step_error', on_enter=[
                   'learning_load_block_id', 'state_learning_step_error'], on_exit=[]),
               State(name='learning_done', on_enter=[
-                  'learning_load_block_id', 'state_learning_done'], on_exit=[])
+                  'learning_load_block_id', 'state_learning_done'], on_exit=[]),
 
-	      # visualize
+              # visualize
 
               State(name='visualize_init', on_enter=[
-	          'visualize_load_block_id', 'state_visualize_init'], on_exit=[]),
-	      State(name='visualize_run', on_enter=[
-		  'visualize_load_block_id', 'state_visualize_run'], on_exit=[]),
-	      State(name='visualize_done', on_enter=[
-		  'state_visualize_done'], on_exit=[])]
+                  'visualize_load_block_id', 'state_visualize_init'], on_exit=[]),
+              State(name='visualize_run', on_enter=[
+                  'visualize_load_block_id', 'state_visualize_run'], on_exit=[]),
+              State(name='visualize_done', on_enter=[
+                  'state_visualize_done'], on_exit=[])]
 
     def __init__(self, states, transitions):
         self.name = 'brain'
