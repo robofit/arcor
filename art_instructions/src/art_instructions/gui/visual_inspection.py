@@ -31,10 +31,14 @@ class VisualInspection(GuiInstruction):
             self.logwarn("Using default topic!")
             topic = "image_color"
 
+        self.showing_result = False
+        self.to_be_cleaned_up = False
+
         self.img_sub = rospy.Subscriber(topic, Image, self.image_callback, queue_size=1)
         self.result_sub = rospy.Subscriber("/art/visual_inspection/result", Bool, self.result_callback, queue_size=10)
 
         try:
+            # TODO maybe this could be in defined in instructions yaml?
             img_origin = array_from_param("/art/visual_inspection/origin", float, 2)
             img_size = array_from_param("/art/visual_inspection/size", float, 2)
             fixed = True
@@ -43,6 +47,7 @@ class VisualInspection(GuiInstruction):
             img_size = (0.2, 0.1)
             fixed = False
 
+        # TODO display image_item after we receive first image?
         self.img_item = ImageItem(self.ui.scene, img_origin[0], img_origin[1], img_size[0], img_size[1], fixed)
 
         self.text_timer = QtCore.QTimer()
@@ -66,6 +71,8 @@ class VisualInspection(GuiInstruction):
         if not self.img_item:
             return
 
+        self.showing_result = True
+
         if msg.data:
             self.img_item.set_text("OK", QtCore.Qt.green)
         else:
@@ -79,6 +86,11 @@ class VisualInspection(GuiInstruction):
             return
 
         self.img_item.set_text()
+        self.showing_result = False
+
+        if self.to_be_cleaned_up:
+            self.ui.scene.removeItem(self.img_item)
+            self.img_item = None
 
     def image_callback(self, msg):
 
@@ -97,8 +109,12 @@ class VisualInspection(GuiInstruction):
 
         self.img_sub.unregister()
         self.result_sub.unregister()
-        self.ui.scene.removeItem(self.img_item)
-        self.img_item = None
+        self.to_be_cleaned_up = True
+
+        if not self.showing_result:
+
+            self.ui.scene.removeItem(self.img_item)
+            self.img_item = None
 
 
 class VisualInspectionLearn(VisualInspection):

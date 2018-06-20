@@ -39,7 +39,12 @@ class GuiInstruction(QtCore.QObject):
         return ""
 
     def cleanup(self):
-        """Removes all previously created scene items (such as dialogs)."""
+        """
+        Removes all previously created scene items (such as dialogs)*.
+
+        * Reference to the instruction is kept even after call to cleanup so, if needed, instruction
+        may finish its job, but it should finish (and delete remaining items) as soon as possible.
+        """
 
         pass
 

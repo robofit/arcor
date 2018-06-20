@@ -219,6 +219,7 @@ class UICoreRos(UICore):
             '/art/interface/projected_gui/calibrate_projectors', Trigger, self.calibrate_projectors_cb)
 
         self.current_instruction = None
+        self.last_instruction = None
         self.vis_instructions = []
 
         self.state_manager = InterfaceStateManager(
@@ -602,6 +603,8 @@ class UICoreRos(UICore):
 
         if self.current_instruction:
             self.current_instruction.cleanup()
+            # keep reference to the instruction in order to allow it finish its job if required
+            self.last_instruction = self.current_instruction
             self.current_instruction = None
 
         for vi in self.vis_instructions:
