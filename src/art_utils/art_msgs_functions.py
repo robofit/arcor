@@ -116,10 +116,11 @@ def item(it_id, it_type, on_success=None, on_failure=0, ref_id=[]):
     return p
 
 
-def obj_type(type_name, bbx, bby, bbz):
+def obj_type(type_name, bbx, bby, bbz, container=False):
 
     ot = ObjectType()
     ot.name = type_name
     ot.bbox.type = SolidPrimitive.BOX
     ot.bbox.dimensions = [bbx, bby, bbz]
+    ot.container = container
     return ot
