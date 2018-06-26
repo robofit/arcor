@@ -83,7 +83,7 @@ class PlaceToContainerFSM(BrainFSM):
         if update_state_manager:
             self.brain.state_manager.update_program_item(
                 self.brain.ph.get_program_id(), self.brain.block_id, self.brain.instruction, {
-                    "SELECTED_OBJECT_ID": self.brain.robot.get_arm_holding_object(arm_id).object_id})
+                    "SELECTED_CONTAINER_ID": self.brain.robot.get_arm_holding_object(arm_id).object_id})
 
         polygon = self.brain.ph.get_polygon(self.brain.block_id, self.brain.instruction.id)[0][0]
         container = ArtBrainUtils.get_pick_obj_from_polygon(

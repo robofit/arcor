@@ -36,7 +36,8 @@ class VisualInspectionFSM(BrainFSM):
             'check_robot_in', 'learning_load_block_id', 'state_learning_visual_inspection'],
             on_exit=['check_robot_out', 'state_learning_visual_inspection_exit']),
         State(name='learning_visual_inspection_run', on_enter=[
-            'check_robot_in', 'learning_load_block_id', 'state_learning_visual_inspection_run'],
+            'check_robot_in', 'learning_load_block_id',
+            'state_learning_visual_inspection_run'],
             on_exit=['check_robot_out'])
     ]
 
@@ -122,6 +123,11 @@ class VisualInspectionFSM(BrainFSM):
                            error=ArtBrainErrors.ERROR_PICK_POSE_NOT_SELECTED)
         else:
             camera_pose = camera_pose[0]
+        if self.brain.robot.get_arm_holding_object(arm_id) is None:
+            self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
+                           error=ArtBrainErrors.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
+            return
+
         severity, error, arm_id = self.brain.robot.move_arm_to_pose(
             camera_pose, arm_id, picking=False)
         if error is not None:

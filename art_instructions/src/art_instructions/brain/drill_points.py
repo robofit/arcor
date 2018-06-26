@@ -142,7 +142,7 @@ class DrillPointsFSM(BrainFSM):
             return
 
         arm_id = self.brain.robot.select_arm_for_drill(
-            obj_to_drill, self.brain.objects.header.frame_id, self.brain.tf_listener)
+            obj_to_drill, self.brain.tf_listener)
         if arm_id != self.brain.last_drill_arm_id:
             if self.brain.last_drill_arm_id is not None:
                 self.brain.robot.arms_get_ready([self.brain.last_drill_arm_id])
