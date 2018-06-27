@@ -6,6 +6,10 @@ from geometry_msgs.msg import Pose, Polygon
 from art_utils import InstructionsHelper
 
 
+class ProgramHelperException(Exception):
+    pass
+
+
 class ProgramHelper(object):
 
     """ProgramHelper simplifies work with Program message.
@@ -236,7 +240,7 @@ class ProgramHelper(object):
         omsg = self._prog.blocks[block_idx].items[item_idx]
 
         if omsg.on_success != msg.on_success or omsg.on_failure != msg.on_failure:
-            raise ValueError("Attempt to change program structure!")
+            raise ProgramHelperException("Attempt to change program structure!")
 
         self._prog.blocks[block_idx].items[item_idx] = msg
 
@@ -255,7 +259,7 @@ class ProgramHelper(object):
 
             if next_block_id == 0:
 
-                return (0, 0)  # end of program
+                return 0, 0  # end of program
 
             return self.get_first_item_id(next_block_id)
 
@@ -291,19 +295,19 @@ class ProgramHelper(object):
     def _check_for_pose(self, msg):
 
         if msg.type not in self.ih.properties.using_pose:
-            raise ValueError("Instruction type " + str(msg.type) + " does not use 'pose'.")
+            raise ProgramHelperException("Instruction type " + str(msg.type) + " does not use 'pose'.")
 
     def _check_for_object(self, msg):
 
         if msg.type not in self.ih.properties.using_object:
 
-            raise ValueError("Instruction type " + str(msg.type) + " does not use 'object'.")
+            raise ProgramHelperException("Instruction type " + str(msg.type) + " does not use 'object'.")
 
     def _check_for_polygon(self, msg):
 
         if msg.type not in self.ih.properties.using_polygon:
 
-            raise ValueError("Instruction type " + str(msg.type) + " does not use 'polygon'.")
+            raise ProgramHelperException("Instruction type " + str(msg.type) + " does not use 'polygon'.")
 
     def get_pose(self, block_id, item_id):
 
@@ -311,21 +315,18 @@ class ProgramHelper(object):
 
         self._check_for_pose(msg)
 
-        if len(msg.pose) > 0:
+        if msg.pose:
 
             return msg.pose, item_id
 
         for ref_id in msg.ref_id:
 
             try:
-                ret = self.get_pose(block_id, ref_id)
-            except ValueError:
+                return self.get_pose(block_id, ref_id)
+            except ProgramHelperException:
                 continue
 
-            if ret is not None:
-                return ret
-
-        return None
+        raise ProgramHelperException("'pose' not found in item, nor in any referenced items.")
 
     def get_object(self, block_id, item_id):
 
@@ -333,21 +334,18 @@ class ProgramHelper(object):
 
         self._check_for_object(msg)
 
-        if len(msg.object) > 0:
+        if msg.object:
 
             return msg.object, item_id
 
         for ref_id in msg.ref_id:
 
             try:
-                ret = self.get_object(block_id, ref_id)
-            except ValueError:
+                return self.get_object(block_id, ref_id)
+            except ProgramHelperException:
                 continue
 
-            if ret is not None:
-                return ret
-
-        return None
+        raise ProgramHelperException("'object' not found in item, nor in any referenced items.")
 
     def get_polygon(self, block_id, item_id):
 
@@ -355,28 +353,22 @@ class ProgramHelper(object):
 
         self._check_for_polygon(msg)
 
-        if len(msg.polygon) > 0:
+        if msg.polygon:
 
             return msg.polygon, item_id
 
         for ref_id in msg.ref_id:
 
             try:
-                ret = self.get_polygon(block_id, ref_id)
-            except ValueError:
+                return self.get_polygon(block_id, ref_id)
+            except ProgramHelperException:
                 continue
 
-            if ret is not None:
-                return ret
-
-        return None
+        raise ProgramHelperException("'polygon' not found in item, nor in any referenced items.")
 
     def is_pose_set(self, block_id, item_id, idx=None):
 
         ret = self.get_pose(block_id, item_id)
-
-        if ret is None:
-            return ValueError("'pose' does not exist in item or its refs.")
 
         if idx is not None:
 
@@ -392,9 +384,6 @@ class ProgramHelper(object):
 
         ret = self.get_object(block_id, item_id)
 
-        if ret is None:
-            return ValueError("'object' does not exist in item or its refs.")
-
         for obj in ret[0]:
             if obj == "":
                 return False
@@ -404,9 +393,6 @@ class ProgramHelper(object):
     def is_polygon_set(self, block_id, item_id):
 
         ret = self.get_polygon(block_id, item_id)
-
-        if ret is None:
-            return ValueError("'polygon' does not exist in item or its refs.")
 
         for poly in ret[0]:
             if poly.polygon == Polygon():
@@ -436,6 +422,60 @@ class ProgramHelper(object):
 
         return True
 
+    def item_takes_params_from_ref(self, block_id, item_id):
+        """Returns True if ref instruction params have to be set first"""
+
+        msg = self.get_item_msg(block_id, item_id)
+
+        if not msg.ref_id:
+            return False
+
+        if msg.type in self.ih.properties.using_object and not msg.object:
+            return True
+
+        if msg.type in self.ih.properties.using_polygon and not msg.polygon:
+            return True
+
+        if msg.type in self.ih.properties.using_pose and not msg.pose:
+            return True
+
+        return False
+
+    def ref_params_learned(self, block_id, item_id):
+
+        if not self.item_takes_params_from_ref(block_id, item_id):
+            raise ProgramHelperException("Item does not take any param from reference.")
+
+        msg = self.get_item_msg(block_id, item_id)
+
+        if msg.type in self.ih.properties.using_object and not msg.object:
+            if not self.is_object_set(block_id, item_id):
+                return False
+
+        if msg.type in self.ih.properties.using_polygon and not msg.polygon:
+            if not self.is_polygon_set(block_id, item_id):
+                return False
+
+        if msg.type in self.ih.properties.using_pose and not msg.pose:
+            if not self.is_pose_set(block_id, item_id):
+                return False
+
+        return True
+
+    def ref_pick_learned(self, block_id, item_id):
+
+        msg = self.get_item_msg(block_id, item_id)
+
+        if msg.type not in self.ih.properties.ref_to_pick:
+            raise ProgramHelperException("Item does not use ref_to_pick.")
+
+        for ref in msg.ref_id:
+
+            if self.get_item_type(block_id, ref) in self.ih.properties.pick:
+                return self.item_learned(block_id, ref)
+
+        raise ProgramHelperException("Could not find pick item in references.")
+
     def item_has_nothing_to_set(self, block_id, item_id):
 
         msg = self.get_item_msg(block_id, item_id)
@@ -459,8 +499,5 @@ class ProgramHelper(object):
 
                 if not ar[1](block_id, item_id):
                     return False
-
-        # TODO how and where to detect non-supported types?
-        # raise NotImplementedError("Not yet supported item type.")
 
         return True
