@@ -14,8 +14,11 @@ class FakeVisualInspection:
         self.vi_result = rospy.Publisher('/art/visual_inspection/result', Bool, queue_size=1)
         self.vi_srv = rospy.Service('/art/visual_inspection/start', Trigger, self.vi_srv_cb)
 
-    def vi_srv_cb(self, request):
+    def timer_cb(self, evt):
         self.vi_result.publish(Bool(data=random.choice(self.l)))
+
+    def vi_srv_cb(self, request):
+        rospy.Timer(rospy.Duration(0.1), self.timer_cb, oneshot=True)
         return TriggerResponse(success=True)
 
 
