@@ -139,23 +139,22 @@ class VisualInspectionFSM(BrainFSM):
             self.fsm.error(severity=severity, error=error)
             return
 
+        self.visual_inspection_result = None
         resp = self.visual_inspection_srv.call(TriggerRequest())
 
         if not resp.success:
             pass
             # TODO: solve error
+
         while self.visual_inspection_result is None and not rospy.is_shutdown():
             rospy.sleep(0.2)
         if rospy.is_shutdown():
             return
         if get_ready_after:
             self.brain.try_robot_arms_get_ready([arm_id])
-        if self.visual_inspection_result:
-            self.visual_inspection_result = None
-            self.fsm.done(success=True)
-        else:
-            self.visual_inspection_result = None
-            self.fsm.done(success=False)
+
+        rospy.sleep(1.0)
+        self.fsm.done(success=self.visual_inspection_result)
 
     def visual_inspection_result_cb(self, success):
         self.visual_inspection_result = success.data
