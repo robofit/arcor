@@ -17,6 +17,9 @@ import tf
 import ast
 from art_utils import array_from_param
 from art_projected_gui.gui import SceneViewer
+import pickle
+import rospkg
+import os
 
 
 class Padding(object):
@@ -130,12 +133,34 @@ class Projector(SceneViewer):
 
         h_matrix = rospy.get_param("~calibration_matrix", None)
 
+        rospack = rospkg.RosPack()
+        self.map_path = os.path.join(rospack.get_path('art_projector'), 'data', self.proj_id + '.ptf')
+
         if h_matrix is not None:
             rospy.loginfo('Loaded calibration from param.')
             self.calibrated = True
             self.calibrated_pub.publish(self.is_calibrated())
-            self.init_map_from_matrix(np.matrix(ast.literal_eval(h_matrix)))
+
+            try:
+                with open(self.map_path, 'rb') as f:
+
+                    self.map_x, self.map_y = pickle.load(f)
+                    self.maps_ready = True
+                    rospy.loginfo("Map loaded from file")
+
+            except (IOError, OSError) as e:  # TODO pickle exceptions?
+                rospy.logwarn("Failed to load map from file")
+                pass
+
+            if not self.maps_ready:
+                self.init_map_from_matrix(np.matrix(ast.literal_eval(h_matrix)))
         else:
+
+            try:
+                os.remove(self.map_path)
+            except (IOError, OSError):
+                pass
+
             self.calibrated_pub.publish(self.is_calibrated())
 
     def init_map_from_matrix(self, m):
@@ -162,6 +187,16 @@ class Projector(SceneViewer):
         self.map_x, self.map_y = cv2.convertMaps(
             self.map_x, self.map_y, cv2.CV_16SC2)
         self.maps_ready = True
+
+        try:
+            with open(self.map_path, 'wb') as f:
+
+                pickle.dump((self.map_x, self.map_y), f)
+
+        except (IOError, OSError) as e:
+            rospy.logerr("Failed to store map to file: " + str(e))
+            pass
+
         rospy.loginfo("Done!")
 
     def show_pix_label_evt(self, show):
