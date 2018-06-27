@@ -17,6 +17,7 @@ class GuiInstruction(QtCore.QObject):
         self.instruction_id = item_id
         self.editable = editable
         self.flags = flags
+        self.notified = False
 
     def logerr(self, msg):
 

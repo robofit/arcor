@@ -377,7 +377,7 @@ class ProgramItem(Item):
 
         # instruction-specific additional text
         # TODO it should use different class when running?
-                text += self.ih[item.type].gui.learn.get_text(self.ph, block_id, item_id)
+        text += self.ih[item.type].gui.learn.get_text(self.ph, block_id, item_id)
 
         text += "\n"
         text += translate("ProgramItem", "     Success: %1, failure: %2").arg(item.on_success).arg(item.on_failure)
@@ -589,7 +589,7 @@ class ProgramItem(Item):
             return False
 
         if self.ph.get_item_type(*self.cid) in self.ih.properties.place | self.ih.properties.ref_to_pick and not \
-                self.ph.ref_pick_learned(*self.cid):
+                self.ph.ref_pick_learned(*self.cid)[0]:
             return False
 
         return True

@@ -50,7 +50,7 @@ class VisualInspection(GuiInstruction):
         # TODO display image_item after we receive first image?
         self.img_item = ImageItem(self.ui.scene, img_origin[0], img_origin[1], img_size[0], img_size[1], fixed)
 
-        self.text_timer = QtCore.QTimer()
+        self.text_timer = QtCore.QTimer(self)
         self.text_timer.timeout.connect(self.text_timer_tick)
         self.text_timer.setSingleShot(True)
 
@@ -67,6 +67,8 @@ class VisualInspection(GuiInstruction):
         return text
 
     def result_callback(self, msg):
+
+        rospy.loginfo("result")
 
         if not self.img_item:
             return
@@ -88,10 +90,6 @@ class VisualInspection(GuiInstruction):
         self.img_item.set_text()
         self.showing_result = False
 
-        if self.to_be_cleaned_up:
-            self.ui.scene.removeItem(self.img_item)
-            self.img_item = None
-
     def image_callback(self, msg):
 
         if not self.img_item:
@@ -107,6 +105,8 @@ class VisualInspection(GuiInstruction):
 
     def cleanup(self):
 
+        rospy.loginfo("cleanup")
+
         self.img_sub.unregister()
         self.result_sub.unregister()
         self.to_be_cleaned_up = True
@@ -115,6 +115,9 @@ class VisualInspection(GuiInstruction):
 
             self.ui.scene.removeItem(self.img_item)
             self.img_item = None
+
+        else:
+            return (self.img_item, rospy.Time.now() + rospy.Duration(1.0)),
 
 
 class VisualInspectionLearn(VisualInspection):
@@ -125,12 +128,20 @@ class VisualInspectionLearn(VisualInspection):
 
         self.dialog = None
 
+        rp_learned, rp_id = self.ui.ph.ref_pick_learned(*self.cid)
+
+        if not rp_learned:
+
+            self.ui.notif(translate("VisualInspection", "Pick instruction (%1) has to be set first.").arg(rp_id))
+            self.notified = True
+
         if self.editable:
 
             self.ui.notif(
                 translate(
                     "VisualInspection",
                     "Now you may adjust pose for visual inspection."))
+            self.notified = True
 
             self.dialog = DialogItem(
                 self.ui.scene, self.ui.width / 2, 0.1, translate(

@@ -12,6 +12,15 @@ class PlaceToPose(GuiInstruction):
 
         super(PlaceToPose, self).__init__(*args, **kwargs)
 
+    def get_name(self, block_id, item_id):
+
+        name = self.ui.ph.get_name(block_id, item_id)
+
+        if name:
+            return name
+
+        return translate("PlaceToPose", "PLACE POSE")
+
 
 class PlaceToPoseLearn(PlaceToPose):
 
@@ -25,7 +34,7 @@ class PlaceToPoseLearn(PlaceToPose):
 
             self.ui.notif(translate(
                 "PlaceToPose", "Select object to be picked up in instruction %1").arg(ref_id))
-            notified = True
+            self.notified = True
 
         else:
 
@@ -53,9 +62,7 @@ class PlaceToPoseLearn(PlaceToPose):
                         if object_type is not None:
                             self.ui.select_object_type(object_type.name)
                             self.ui.add_place(
-                                translate(
-                                    "PlaceToPose",
-                                    "PLACE POSE"),
+                                self.get_name(self.block_id, it_id),
                                 self.ui.ph.get_pose(self.block_id, it_id)[0][0],
                                 object_type,
                                 object_id,
@@ -63,7 +70,7 @@ class PlaceToPoseLearn(PlaceToPose):
                                 fixed=not self.editable)
                     else:
 
-                        self.ui.add_place(translate("PlaceToPose", "PLACE POSE"), self.ui.get_def_pose(
+                        self.ui.add_place(self.ui.select_object_type(object_type.name), self.ui.get_def_pose(
                         ), object_type, object_id, place_cb=self.ui.place_pose_changed, fixed=not self.editable)
 
                     continue
@@ -71,9 +78,7 @@ class PlaceToPoseLearn(PlaceToPose):
                 if self.ui.ph.is_pose_set(self.block_id, it_id):
                     self.ui.add_place(
                         unicode(
-                            translate(
-                                "PlaceToPose",
-                                "PLACE POSE")) + " (" + str(it_id) + ")",
+                            self.get_name(self.block_id, it_id)) + " (" + str(it_id) + ")",
                         self.ui.ph.get_pose(self.block_id, it_id)[0][0],
                         object_type,
                         object_id,
@@ -103,10 +108,7 @@ class PlaceToPoseRun(PlaceToPose):
         if obj is not None:
 
             place_pose = self.ui.ph.get_pose(*self.cid)[0][0]
-
-            self.ui.add_place(translate("PlaceToPose", "OBJECT PLACE POSE"),
-                              place_pose, obj.object_type, obj_id, fixed=True)
-
+            self.ui.add_place(self.get_name(*self.cid), place_pose, obj.object_type, obj_id, fixed=True)
             self.ui.notif(translate("PlaceToPose", "Placing object to pose."))
 
         else:

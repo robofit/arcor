@@ -219,13 +219,35 @@ class UICoreRos(UICore):
             '/art/interface/projected_gui/calibrate_projectors', Trigger, self.calibrate_projectors_cb)
 
         self.current_instruction = None
-        self.last_instruction = None
+        self.items_to_keep = []
         self.vis_instructions = []
+
+        self.items_to_keep_timer = QtCore.QTimer()
+        self.items_to_keep_timer.timeout.connect(self.items_to_keep_timer_tick)
+        self.items_to_keep_timer.start(100)
 
         self.state_manager = InterfaceStateManager(
             "PROJECTED UI", cb=self.interface_state_cb)
 
         rospy.loginfo("Projected GUI ready!")
+
+    def items_to_keep_timer_tick(self):
+
+        now = rospy.Time.now()
+
+        to_delete = []
+
+        for item, ts in self.items_to_keep:
+
+            if ts > now:
+                self.scene.removeItem(item)
+                to_delete.append((item, ts))
+
+        if to_delete:
+            rospy.loginfo("Deleting " + str(len(to_delete)) + " scene item(s).")
+
+        for td in to_delete:
+            self.items_to_keep.remove(td)
 
     def get_error_string(self, error):
 
@@ -602,9 +624,13 @@ class UICoreRos(UICore):
         rospy.logdebug("Clear all")
 
         if self.current_instruction:
-            self.current_instruction.cleanup()
-            # keep reference to the instruction in order to allow it finish its job if required
-            self.last_instruction = self.current_instruction
+            items_to_keep = self.current_instruction.cleanup()
+
+            if items_to_keep:
+
+                rospy.loginfo(str(len(items_to_keep)) + " scene item(s) to be deleted later.")
+                self.items_to_keep.extend(items_to_keep)
+
             self.current_instruction = None
 
         for vi in self.vis_instructions:
@@ -874,10 +900,8 @@ class UICoreRos(UICore):
             self.program_vis.instruction = self.current_instruction  # TODO how to avoid this?
             self.program_vis.set_active(block_id, item_id)
 
-        notified = False
-
         # TODO fix notified - how to get it from instruction?
-        if read_only and not notified:
+        if read_only and self.current_instruction and not self.current_instruction.notified:
 
             if self.ph.item_has_nothing_to_set(block_id, item_id):
                 # TODO check if it really uses reference
