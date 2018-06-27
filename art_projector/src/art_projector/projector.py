@@ -55,13 +55,16 @@ class Projector(SceneViewer):
 
         super(Projector, self).__init__()
 
-        while True:
+        while not rospy.is_shutdown():
             try:
                 self.world_frame = rospy.get_param('/art/conf/world_frame')
                 break
             except KeyError:
                 rospy.loginfo("Waiting for global parameters...")
                 rospy.sleep(1.0)
+
+        if rospy.is_shutdown():
+            return
 
         self.proj_id = rospy.get_param('~projector_id', 'test')
         self.screen = rospy.get_param('~screen_number', 0)
