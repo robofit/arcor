@@ -48,9 +48,10 @@ def visual_inspection_item(it_id, ref_id, on_success=None, on_failure=0):
     return p
 
 
-def place_item(it_id, ref_id, on_success=None, on_failure=0):
+def place_item(it_id, ref_id, on_success=None, on_failure=0, name=""):
 
     p = item(it_id, "PlaceToPose", on_success, on_failure, ref_id=ref_id)
+    p.name = name
     ps = PoseStamped()
     ps.header.frame_id = "marker"
     p.pose.append(ps)

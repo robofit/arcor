@@ -181,15 +181,18 @@ class ProgramHelper(object):
                 # TODO refactor into separate method
                 if template:
 
-                    for i in range(0, len(item.object)):
-                        item.object[i] = ""
+                    if "object" not in item.do_not_clear:
+                        for i in range(0, len(item.object)):
+                            item.object[i] = ""
 
                     # for stamped types we want to keep header (frame_id)
-                    for polygon in item.polygon:
-                        polygon.polygon = Polygon()
+                    if "polygon" not in item.do_not_clear:
+                        for polygon in item.polygon:
+                            polygon.polygon = Polygon()
 
-                    for pose in item.pose:
-                        pose.pose = Pose()
+                    if "pose" not in item.do_not_clear:
+                        for pose in item.pose:
+                            pose.pose = Pose()
 
         return True
 
@@ -308,6 +311,10 @@ class ProgramHelper(object):
         if msg.type not in self.ih.properties.using_polygon:
 
             raise ProgramHelperException("Instruction type " + str(msg.type) + " does not use 'polygon'.")
+
+    def get_name(self, block_id, item_id):
+
+        return self.get_item_msg(block_id, item_id).name
 
     def get_pose(self, block_id, item_id):
 
@@ -466,13 +473,13 @@ class ProgramHelper(object):
 
         msg = self.get_item_msg(block_id, item_id)
 
-        if msg.type not in self.ih.properties.ref_to_pick:
+        if msg.type not in self.ih.properties.ref_to_pick | self.ih.properties.place:
             raise ProgramHelperException("Item does not use ref_to_pick.")
 
         for ref in msg.ref_id:
 
             if self.get_item_type(block_id, ref) in self.ih.properties.pick:
-                return self.item_learned(block_id, ref)
+                return self.item_learned(block_id, ref), ref
 
         raise ProgramHelperException("Could not find pick item in references.")
 
