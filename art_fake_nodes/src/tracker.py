@@ -80,7 +80,6 @@ class FakeObjectTracker:
         return EmptyResponse()
 
 
-
 if __name__ == '__main__':
     rospy.init_node('fake_tracker')
     ''',log_level=rospy.DEBUG'''
