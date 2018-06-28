@@ -1,5 +1,5 @@
 from art_helpers.instructions_helper import InstructionsHelper, InstructionsHelperException
-from art_helpers.program_helper import ProgramHelper
+from art_helpers.program_helper import ProgramHelper, ProgramHelperException
 from art_helpers.art_robot_helper import ArtRobotArmHelper, ArtRobotHelper, UnknownRobot,\
     RobotParametersNotOnParameterServer
 from art_helpers.interface_state_manager import InterfaceStateManager

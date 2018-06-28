@@ -3,7 +3,7 @@
 import rospy
 import unittest
 import rostest
-from art_helpers import ProgramHelper
+from art_helpers import ProgramHelper, ProgramHelperException
 from art_msgs.msg import Program, ProgramBlock, ProgramItem
 import sys
 from copy import deepcopy
@@ -191,7 +191,7 @@ class TestProgramHelper(unittest.TestCase):
         self.assertEquals(len(ret[0]), 1, "ref_id polygon")
         self.assertEquals(ret[1], 2, "ref_id polygon - source item id")
 
-        self.assertRaises(ValueError, self.ph.get_polygon, 10, 1)
+        self.assertRaises(ProgramHelperException, self.ph.get_polygon, 10, 1)
 
     def test_empty_program(self):
 
