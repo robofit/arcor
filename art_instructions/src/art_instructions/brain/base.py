@@ -35,4 +35,3 @@ class BrainFSM(object):
 
         self.brain = brain
         self.fsm = brain.fsm
-
