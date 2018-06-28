@@ -3,9 +3,10 @@
 import sys
 import rospy
 from art_msgs.srv import ProgramIdTrigger, ProgramIdTriggerResponse
-from art_msgs.msg import InterfaceState, ProgramItem, LearningRequestAction, LearningRequestFeedback,\
+from art_msgs.msg import InterfaceState, LearningRequestAction, LearningRequestFeedback,\
     LearningRequestResult
-from art_utils import InterfaceStateManager, ProgramHelper, ArtApiHelper
+from art_helpers import InterfaceStateManager, ProgramHelper
+from art_utils import ArtApiHelper
 import actionlib
 from std_srvs.srv import Trigger, TriggerResponse
 from geometry_msgs.msg import PoseStamped

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>art_utils</name>
+  <name>art_helpers</name>
   <version>0.0.0</version>
-  <description>The art_interface_utils package</description>
+  <description>Common helpers for art_brain, art_projected_gui etc.</description>
 
   <maintainer email="zdenal@todo.todo">zdenal</maintainer>
 

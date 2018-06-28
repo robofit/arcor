@@ -3,7 +3,7 @@
 import rospy
 from art_msgs.msg import Program
 from geometry_msgs.msg import Pose, Polygon
-from art_utils import InstructionsHelper
+from art_helpers import InstructionsHelper
 
 
 class ProgramHelperException(Exception):

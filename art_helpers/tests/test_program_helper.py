@@ -3,7 +3,7 @@
 import rospy
 import unittest
 import rostest
-from art_utils import ProgramHelper
+from art_helpers import ProgramHelper
 from art_msgs.msg import Program, ProgramBlock, ProgramItem
 import sys
 from copy import deepcopy

@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 import rospy
 import sys
-from art_utils import ArtApiHelper, ProgramHelper
+from art_utils import ArtApiHelper
+from art_helpers import ProgramHelper
 import pygraphviz as pgv
 from art_msgs.msg import ProgramItem
 from cgi import escape

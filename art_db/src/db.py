@@ -7,7 +7,7 @@ from art_msgs.srv import getProgram, getProgramResponse, getProgramHeaders, getP
     AddCollisionPrimitive, AddCollisionPrimitiveResponse, ClearCollisionPrimitives, ClearCollisionPrimitivesResponse
 import sys
 import rospy
-from art_utils import ProgramHelper
+from art_helpers import ProgramHelper
 import threading
 
 from mongodb_store.message_store import MessageStoreProxy
