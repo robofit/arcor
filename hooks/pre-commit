@@ -51,6 +51,8 @@ def main():
 
     for name in files:
         filepath = os.path.join(basedir, name)
+        if name.startswith('.'):  # TODO rather fix the regular expression
+            continue
         autopep8(filepath)
         system("git", "add", filepath)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from PyQt4 import QtGui, QtCore, QtNetwork
-from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem, SquareItem, DialogItem
+from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, PolygonItem, SquareItem
 import rospy
 from art_projected_gui.helpers import conversions
 from art_msgs.srv import NotifyUserRequest
@@ -39,12 +39,11 @@ class UICore(QtCore.QObject):
         rpm (int): Resolution per meter (pixels per meter of width/height).
         scene (QGraphicsScene): Holds all Item(s), manages (re)painting etc.
         bottom_label (LabelItem): Label for displaying messages to user.
-        program_vis (ProgramItem): Item to display robot's program.
         scene_items (list): Array to hold all displayed items.
         view (QGraphicsView): To show content of the scene in debug window.
     """
 
-    def __init__(self, x, y, width, height, rpm, scene_server_port):
+    def __init__(self, x, y, width, height, rpm, scene_server_port, notif_origin=(0, 0)):
         """
         Args:
             x (float): x coordinate of the scene's origin (in world coordinate system, meters).
@@ -72,7 +71,7 @@ class UICore(QtCore.QObject):
         # be good for dynamic scenes
 
         self.bottom_label = LabelItem(
-            self.scene, 0.30, 0.07, self.width - 0.2, 0.03)
+            self.scene, notif_origin[0], notif_origin[1], self.width - notif_origin[0], 0.03)
 
         self.selected_object_ids = []
         self.selected_object_types = []

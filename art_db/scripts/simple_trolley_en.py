@@ -2,12 +2,11 @@
 
 import sys
 import rospy
-from art_msgs.msg import Program, ProgramBlock, ProgramItem
+from art_msgs.msg import Program, ProgramBlock
 from copy import deepcopy
 from art_utils import ArtApiHelper
-from art_utils.art_msgs_functions import obj_type, wait_item, feeder_item, grid_item, drill_item, place_item,\
-    item, polygon_item, visual_inspection_item
-from geometry_msgs.msg import PolygonStamped
+from art_utils.art_msgs_functions import obj_type, wait_item, feeder_item, grid_item, drill_item, place_item, item,\
+    polygon_item
 
 
 def main(args):
@@ -31,11 +30,11 @@ def main(args):
 
     prog = Program()
     prog.header.id = 1
-    prog.header.name = "Trenink - oblast"
+    prog.header.name = "Training - polygon"
 
     pb = ProgramBlock()
     pb.id = 1
-    pb.name = "Zvedni ze stolu a poloz"
+    pb.name = "Pick from table and place"
     pb.on_success = 1
     pb.on_failure = 0
     prog.blocks.append(pb)
@@ -54,11 +53,11 @@ def main(args):
 
     prog = Program()
     prog.header.id = 2
-    prog.header.name = "Trenink - podavac"
+    prog.header.name = "Training - feeder"
 
     pb = ProgramBlock()
     pb.id = 1
-    pb.name = "Zvedni z podavace a poloz"
+    pb.name = "Pick from feeder and place"
     pb.on_success = 1
     pb.on_failure = 0
     prog.blocks.append(pb)
@@ -79,11 +78,11 @@ def main(args):
 
     prog = Program()
     prog.header.id = 3
-    prog.header.name = "Trenink - lepidlo"
+    prog.header.name = "Training - glue"
 
     pb = ProgramBlock()
     pb.id = 1
-    pb.name = "Aplikace lepidla"
+    pb.name = "Glue application"
     pb.on_success = 0
     pb.on_failure = 0
     prog.blocks.append(pb)
@@ -97,81 +96,25 @@ def main(args):
     art.program_set_ro(prog.header.id)
 
     # -------------------------------------------------------------------------------------------
-    # Training program 4
-    # -------------------------------------------------------------------------------------------
-
-    prog = Program()
-    prog.header.id = 4
-    prog.header.name = "Trenink - inspekce"
-
-    pb = ProgramBlock()
-    pb.id = 1
-    pb.name = "Vizualni inspekce"
-    pb.on_success = 0
-    pb.on_failure = 0
-    prog.blocks.append(pb)
-
-    pb.items.append(polygon_item(1))
-    pb.items.append(visual_inspection_item(2, ref_id=[1], on_success=3, on_failure=5))
-    pb.items.append(visual_inspection_item(3, ref_id=[1], on_success=4, on_failure=5))
-    pb.items.append(place_item(4, ref_id=[1], on_success=1, on_failure=0, name="OK parts"))
-    pb.items.append(place_item(5, ref_id=[1], on_success=1, on_failure=0, name="NOK parts"))
-
-    art.store_program(prog)
-    art.program_set_ro(prog.header.id)
-
-    # -------------------------------------------------------------------------------------------
-    # Training program 5
-    # -------------------------------------------------------------------------------------------
-
-    prog = Program()
-    prog.header.id = 5
-    prog.header.name = "Trenink - krabice"
-
-    pb = ProgramBlock()
-    pb.id = 1
-    pb.name = "Polozeni do krabice"
-    pb.on_success = 0
-    pb.on_failure = 0
-    prog.blocks.append(pb)
-
-    pb.items.append(polygon_item(1))
-
-    p = ProgramItem()
-    p.id = 2
-    p.type = "PlaceToContainer"
-    p.polygon.append(PolygonStamped())
-    p.object.append("")
-    p.on_success = 1
-    p.on_failure = 0
-    p.ref_id.append(1)
-
-    pb.items.append(p)
-
-    art.store_program(prog)
-    art.program_set_ro(prog.header.id)
-
-    # -------------------------------------------------------------------------------------------
     # Simplified trolley assembly: object types
     # -------------------------------------------------------------------------------------------
 
-    art.store_object_type(obj_type("Spojka", 0.046, 0.046, 0.154))
-    art.store_object_type(obj_type("Kratka_noha", 0.046, 0.046, 0.298, container=True))
-    art.store_object_type(obj_type("Dlouha_noha", 0.046, 0.046, 0.398))
-    art.store_object_type(obj_type("Modry_kontejner", 0.1, 0.14, 0.08, container=True))
+    art.store_object_type(obj_type("Stretcher", 0.046, 0.046, 0.154))
+    art.store_object_type(obj_type("ShortLeg", 0.046, 0.046, 0.298))
+    art.store_object_type(obj_type("LongLeg", 0.046, 0.046, 0.398))
 
     # -------------------------------------------------------------------------------------------
     # Simplified trolley assembly: program
     # -------------------------------------------------------------------------------------------
 
     prog = Program()
-    prog.header.id = 20
-    prog.header.name = "Montaz stolicky"
+    prog.header.id = 4
+    prog.header.name = "Stool assembly"
 
     # --- left side of the trolley ------------------------------------------------------
     pb = ProgramBlock()
     pb.id = 1
-    pb.name = "Bocnice 1"
+    pb.name = "Side 1"
     pb.on_success = 2
     pb.on_failure = 0
     prog.blocks.append(pb)
@@ -199,7 +142,7 @@ def main(args):
     # --- right side of the trolley ------------------------------------------------------
     pb = deepcopy(pb)
     pb.id = 2
-    pb.name = "Bocnice 2"
+    pb.name = "Side 2"
     pb.on_success = 3
     pb.on_failure = 0
     prog.blocks.append(pb)
@@ -207,7 +150,7 @@ def main(args):
     # --- connecting profiles ------------------------------------------------------------
     pb = ProgramBlock()
     pb.id = 3
-    pb.name = "Spojovaci dily"
+    pb.name = "Stretchers"
     pb.on_success = 1
     pb.on_failure = 0
     prog.blocks.append(pb)

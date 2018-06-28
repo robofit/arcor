@@ -6,6 +6,7 @@ import rospy
 from PyQt4 import QtGui, QtCore
 import rospkg
 
+from art_utils import InstructionsHelper, InstructionsHelperException
 from art_projected_gui.gui import UICoreRos
 
 
@@ -15,21 +16,39 @@ def sigint_handler(*args):
     QtGui.QApplication.quit()
 
 
-def main(args):
+def main():
 
     rospy.init_node('projected_gui', anonymous=True, log_level=rospy.DEBUG)
 
-    signal.signal(signal.SIGINT, sigint_handler)
+    try:
+        ih = InstructionsHelper()
+    except InstructionsHelperException as e:
+        rospy.logerr(str(e))
+        return
 
-    app = QtGui.QApplication(sys.argv)
+    signal.signal(signal.SIGINT, sigint_handler)
 
     rospack = rospkg.RosPack()
 
-    translator = QtCore.QTranslator()
-    translator.load(rospy.get_param('~locale', 'cs_CZ') + '.qm', rospack.get_path('art_projected_gui') + '/lang')
-    app.installTranslator(translator)
+    packages = set(ih.packages)
+    packages.add('art_projected_gui')
 
-    ui = UICoreRos()
+    app = QtGui.QApplication(sys.argv)
+
+    loc = rospy.get_param('~locale', 'cs_CZ')
+
+    for package in packages:
+
+        translator = QtCore.QTranslator()
+        try:
+            translator.load(loc + '.qm', rospack.get_path(package) + '/lang')
+        except rospkg.ResourceNotFound:
+            rospy.logerr("Could not find package: " + package)
+            continue
+
+        app.installTranslator(translator)
+
+    ui = UICoreRos(ih, loc)
 
     dbg = rospy.get_param('~show_scene', False)
     if dbg:
@@ -44,6 +63,6 @@ def main(args):
 
 if __name__ == '__main__':
     try:
-        main(sys.argv)
+        main()
     except KeyboardInterrupt:
         print("Shutting down")

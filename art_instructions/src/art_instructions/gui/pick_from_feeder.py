@@ -2,8 +2,6 @@ from art_instructions.gui import GuiInstruction
 from PyQt4 import QtCore
 import rospy
 from art_msgs.msg import InstancesArray
-from art_msgs.srv import NotifyUserRequest
-from geometry_msgs.msg import PoseStamped
 from art_projected_gui.items import DialogItem
 
 translate = QtCore.QCoreApplication.translate
@@ -11,11 +9,23 @@ translate = QtCore.QCoreApplication.translate
 
 class PickFromFeeder(GuiInstruction):
 
-    CONTEXT = "PickFromFeeder"
+    NAME = translate("PickFromFeeder", "Pick from feeder")
 
     def __init__(self, *args, **kwargs):
 
         super(PickFromFeeder, self).__init__(*args, **kwargs)
+
+    @staticmethod
+    def get_text(ph, block_id, item_id):
+
+        text = "\n"
+
+        if ph.is_pose_set(block_id, item_id):
+            text += translate("PickFromFeeder", "     Pose stored.")
+        else:
+            text += translate("PickFromFeeder", "     Pose has to be set.")
+
+        return text
 
 
 class PickFromFeederLearn(PickFromFeeder):
@@ -32,6 +42,7 @@ class PickFromFeederLearn(PickFromFeeder):
         self.grasp_dialog_timer.timeout.connect(self.grasp_dialog_timer_tick)
         self.grasp_dialog_timer.start(1000)
 
+        # TODO delegate getting detections per frame to object helper
         self.obj_raw_sub = rospy.Subscriber(
             '/art/object_detector/object', InstancesArray, self.object_raw_cb, queue_size=1)
 
@@ -48,7 +59,7 @@ class PickFromFeederLearn(PickFromFeeder):
 
             if self.editable:
                 self.ui.notif(
-                    translate(self.CONTEXT, "Select object type to be picked up by tapping on its outline."))
+                    translate("PickFromFeeder", "Select object type to be picked up by tapping on its outline."))
 
     def create_grasp_dialog(self):
 
@@ -57,46 +68,41 @@ class PickFromFeederLearn(PickFromFeeder):
             if not self.ui.ph.is_pose_set(self.ui.program_vis.block_id, self.ui.program_vis.get_current_item().id):
 
                 self.ui.notif(
-                    translate(self.CONTEXT, "Use robot's arm and dialog to teach pose enabling part detection."))
+                    translate("PickFromFeeder", "Use robot's arm and dialog to teach pose enabling part detection."))
 
             else:
 
                 self.ui.notif(
                     translate(
-                        self.CONTEXT,
+                        "PickFromFeeder",
                         "Learned pose for part detection may be updated or different object type could be chosen."))
 
             self.grasp_dialog = DialogItem(
                 self.ui.scene, self.ui.width / 2, 0.1, translate(
-                    self.CONTEXT, "Save gripper pose"), [
-                    translate(
-                        self.CONTEXT, "Right arm (%1)").arg(0), translate(
-                        self.CONTEXT, "Left arm (%1)").arg(0)], self.save_gripper_pose_cb)
+                    "PickFromFeeder", "Save gripper pose"),
+                [arm.name(self.ui.loc) + " (0)" for arm in self.ui.rh.get_robot_arms()], self.save_gripper_pose_cb)
 
             for it in self.grasp_dialog.items:
                 it.set_enabled(False)
 
     def save_gripper_pose_cb(self, idx):
 
-        topics = ['/art/robot/right_arm/gripper/pose',
-                  '/art/robot/left_arm/gripper/pose']
+        ps = self.ui.rh.get_robot_arms()[idx].get_pose()
 
-        # wait for message, set pose
-        try:
-            ps = rospy.wait_for_message(topics[idx], PoseStamped, timeout=2)
-        except rospy.ROSException as e:
-            rospy.logerr(str(e))
-            self.ui.notif(
-                translate(self.CONTEXT, "Failed to store gripper pose."), temp=True,
-                message_type=NotifyUserRequest.WARN)
-            return
+        if ps:
 
-        self.ui.notif(translate(self.CONTEXT, "Gripper pose stored."), temp=True)
-        self.ui.snd_info()
-        self.ui.program_vis.set_pose(ps)
+            self.ui.notif(translate("PickFromFeeder", "Gripper pose stored."), temp=True)
+            self.ui.snd_info()
+            self.ui.program_vis.set_pose(ps)
+            self.grasp_dialog.items[idx].set_caption(translate("PickFromFeeder", "Stored"))
+
+        else:
+
+            self.ui.notif(translate("PickFromFeeder", "Failed to get gripper pose."), temp=True)
+            self.grasp_dialog.items[idx].set_caption(translate("PickFromFeeder", "Failed"))
+            self.ui.snd_warn()
 
         self.grasp_dialog.items[idx].set_enabled(False)
-        self.grasp_dialog.items[idx].set_caption(translate(self.CONTEXT, "Stored"))
 
     def object_raw_cb_evt(self, msg):
 
@@ -120,14 +126,14 @@ class PickFromFeederLearn(PickFromFeeder):
 
         # this type of object is already set
         if msg.object and obj.object_type.name == msg.object[0]:
-            rospy.logdebug("object type " +
-                           obj.object_type.name + " already selected")
+            self.logdebug("object type " +
+                          obj.object_type.name + " already selected")
             return
         else:
             # TODO remove previously inserted polygon, do not insert new
             # place
-            rospy.logdebug("selecting new object type: " +
-                           obj.object_type.name)
+            self.logdebug("selecting new object type: " +
+                          obj.object_type.name)
 
         if obj.object_type.name != self.ui.ph.get_object(self.ui.program_vis.block_id, msg.id)[0][0]:
             self.ui.program_vis.clear_poses()
@@ -150,21 +156,15 @@ class PickFromFeederLearn(PickFromFeeder):
             if now - self.ui.program_vis.get_current_item().pose[0].header.stamp < rospy.Duration(3.0):
                 return
 
-            frames = ["/r_forearm_cam_optical_frame", "/l_forearm_cam_optical_frame"]
-            names = [translate(self.CONTEXT, "Right arm (%1)"), translate("UICoreRos", "Left arm (%1)")]
+            for idx, arm in enumerate(self.ui.rh.get_robot_arms()):
 
-            for i, frame in enumerate(frames):
-
-                if frame in self.objects_by_sensor:
-
-                    cnt = self.objects_by_sensor[frame][0]
-
-                else:
-
+                try:
+                    cnt = self.objects_by_sensor[arm.camera_link][0]
+                except KeyError:
                     cnt = 0
 
-                self.grasp_dialog.items[i].set_enabled(cnt == 1)
-                self.grasp_dialog.items[i].set_caption(names[i].arg(cnt))
+                self.grasp_dialog.items[idx].set_enabled(cnt == 1)
+                self.grasp_dialog.items[idx].set_caption(arm.name(self.ui.loc) + " (" + str(cnt) + ")")
 
     def object_raw_cb(self, msg):
 
@@ -174,6 +174,7 @@ class PickFromFeederLearn(PickFromFeeder):
 
         self.ui.scene.removeItem(self.grasp_dialog)
         self.grasp_dialog = None
+        return ()
 
     def learning_done(self):
 
@@ -206,9 +207,18 @@ class PickFromFeederRun(PickFromFeeder):
 
         ps = self.ui.ph.get_pose(*self.cid)[0][0]
 
-        if ps.pose.position.x < 1.5 / 2.0:
+        if ps.pose.position.x < 1.5 / 2.0:  # TODO this is not nice solution!
             self.ui.notif(
-                translate(self.CONTEXT, "Picking object from feeder on my right."))
+                translate("PickFromFeeder", "Picking object from feeder on my right."))
         else:
             self.ui.notif(
-                translate(self.CONTEXT, "Picking object from feeder on my left."))
+                translate("PickFromFeeder", "Picking object from feeder on my left."))
+
+
+class PickFromFeederVis(PickFromFeeder):
+
+    def __init__(self, *args, **kwargs):
+
+        super(PickFromFeederRun, self).__init__(*args, **kwargs)
+
+        self.ui.select_object_type(self.ui.ph.get_object(*self.cid)[0][0])

@@ -4,6 +4,7 @@ pick:
 place:
   - PlaceToGrid
   - PlaceToPose
+  - PlaceToContainer
 
 using_object:
   - PickFromFeeder
@@ -11,6 +12,7 @@ using_object:
   - DrillPoints
   - PlaceToGrid
   - PlaceToPose
+  - PlaceToContainer
 
 using_pose:
   - PickFromFeeder
@@ -23,107 +25,127 @@ using_polygon:
   - DrillPoints
   - PickFromPolygon
   - PlaceToGrid
+  - PlaceToContainer
 
 ref_to_pick:
   - VisualInspection
+
+runnable_during_learning:
+  - DrillPoints
+  - GetReady
+  - PickFromFeeder
+  - PickFromPolygon
+  - PlaceToGrid
+  - PlaceToPose
+  - VisualInspection
+  - PlaceToContainer
+
+
+# gui classes are expected in package.gui module
+# brain classes are expected in package.brain module
 
 instructions:
 
   DrillPoints:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: DrillPointsLearn
         run: DrillPointsRun
+        vis: DrillPointsVis
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Aplikuj lepidlo
-        en_US: Aplly glue
+        package: art_instructions
+        fsm: DrillPointsFSM
 
   GetReady:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: GetReadyLearn
         run: GetReadyRun
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Připravit
-        en_US: Get Ready
+        package: art_instructions
+        fsm: GetReadyFSM
 
   PickFromFeeder:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: PickFromFeederLearn
         run: PickFromFeederRun
+        vis: PickFromFeederVis
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Zvedni z podavače
-        en_US: Pick from feeder
+        package: art_instructions
+        fsm: PickFromFeederFSM
 
   PickFromPolygon:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: PickFromPolygonLearn
         run: PickFromPolygonRun
+        vis: PickFromPolygonVis
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Zvedni z oblasti
-        en_US: Pick from polygon
+        package: art_instructions
+        fsm: PickFromPolygonFSM
 
   PlaceToGrid:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: PlaceToGridLearn
         run: PlaceToGridRun
+        vis: PlaceToGridVis
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Polož do oblasti
-        en_US: Place to grid
-
+        package: art_instructions
+        fsm: PlaceToGridFSM
+      
   PlaceToPose:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: PlaceToPoseLearn
         run: PlaceToPoseRun
+        vis: PlaceToPoseVis
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Polož na místo
-        en_US: Place to pose
+        package: art_instructions
+        fsm: PlaceToPoseFSM
+
+  PlaceToContainer:
+      gui:
+        package: art_instructions
+        learn: PlaceToContainerLearn
+        run: PlaceToContainerRun
+      brain:
+        package: art_instructions
+        fsm: PlaceToContainerFSM
 
   VisualInspection:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: VisualInspectionLearn
         run: VisualInspectionRun
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Vizuální kontrola
-        en_US: Visual inspection
+        package: art_instructions
+        fsm: VisualInspectionFSM
 
   WaitForUser:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: WaitForUserLearn
         run: WaitForUserRun
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Počkej na uživatele
-        en_US: Wait for user
+        package: art_instructions
+        fsm: WaitForUserFSM
 
   WaitUntilUserFinishes:
       gui:
-        package: art_instructions.gui
+        package: art_instructions
         learn: WaitUntilUserFinishesLearn
         run: WaitUntilUserFinishesRun
       brain:
-        package: art_instructions.brain
-      localised_name:
-        cs_CZ: Počkej až uživatel skončí
-        en_US: Wait until user finishes
+        package: art_instructions
+        fsm: WaitUntilUserFinishesFSM
+
+  Dummy:
+      gui:
+        package: art_instructions
+        learn: WaitUntilUserFinishesLearn
+        run: WaitUntilUserFinishesRun
+      brain:
+        package: art_instructions
+        fsm: DummyFSM

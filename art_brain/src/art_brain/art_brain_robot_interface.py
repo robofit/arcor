@@ -286,7 +286,7 @@ class ArtBrainRobotInterface:
         if arm.holding_object is not None:
             rospy.logwarn(
                 "Pick: gripper " +
-                arm.id +
+                arm.arm_id +
                 " already holding an object (" +
                 arm.holding_object.object_id +
                 ")")

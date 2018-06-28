@@ -9,7 +9,7 @@ translate = QtCore.QCoreApplication.translate
 
 class PickFromPolygon(GuiInstruction):
 
-    CONTEXT = "PickFromPolygon"
+    NAME = translate("PickFromPolygon", "Pick from area")
 
     def __init__(self, *args, **kwargs):
 
@@ -26,7 +26,7 @@ class PickFromPolygonLearn(PickFromPolygon):
 
             if self.editable:
                 self.ui.notif(
-                    translate(self.CONTEXT, "Select object type to be picked up by tapping on its outline."))
+                    translate("PickFromPolygon", "Select object type to be picked up by tapping on its outline."))
 
         else:
 
@@ -39,7 +39,7 @@ class PickFromPolygonLearn(PickFromPolygon):
 
             self.ui.add_polygon(
                 translate(
-                    self.CONTEXT,
+                    "PickFromPolygon",
                     "PICK AREA"),
                 poly_points=conversions.get_pick_polygon_points(polygons),
                 polygon_changed=self.ui.polygon_changed,
@@ -47,7 +47,7 @@ class PickFromPolygonLearn(PickFromPolygon):
 
             if self.editable:
                 self.ui.notif(
-                    translate(self.CONTEXT, "Adjust pick area or select another object type."))
+                    translate("PickFromPolygon", "Adjust pick area or select another object type."))
 
     def object_selected(self, obj, selected, msg):
 
@@ -80,10 +80,10 @@ class PickFromPolygonLearn(PickFromPolygon):
                 poly_points.append((ob.position[0] + w / 2.0, ob.position[1] - h / 2.0))
                 poly_points.append((ob.position[0] - w / 2.0, ob.position[1] + h / 2.0))
 
-            self.ui.add_polygon(translate(self.CONTEXT, "PICK POLYGON"),
+            self.ui.add_polygon(translate("PickFromPolygon", "PICK POLYGON"),
                                 poly_points, polygon_changed=self.ui.polygon_changed)
             self.ui.notif(
-                translate(self.CONTEXT, "Check and adjust pick polygon. You may also change object type."))
+                translate("PickFromPolygon", "Check and adjust pick polygon. You may also change object type."))
 
 
 class PickFromPolygonRun(PickFromPolygon):
@@ -96,8 +96,7 @@ class PickFromPolygonRun(PickFromPolygon):
         try:
             obj_id = self.flags["SELECTED_OBJECT_ID"]
         except KeyError:
-            rospy.logerr(
-                "PICK_FROM_POLYGON: SELECTED_OBJECT_ID flag not set")
+            self.logerr("SELECTED_OBJECT_ID flag not set")
 
         if obj_id is not None:
             self.ui.select_object(obj_id)
@@ -106,23 +105,38 @@ class PickFromPolygonRun(PickFromPolygon):
             if obj is not None:
                 self.ui.notif(
                     translate(
-                        self.CONTEXT,
+                        "PickFromPolygon",
                         "Going to pick object ID ") +
                     obj_id +
                     translate(
-                        self.CONTEXT,
+                        "PickFromPolygon",
                         " of type ") +
                     obj.object_type.name +
                     translate(
-                        self.CONTEXT,
+                        "PickFromPolygon",
                         " from polygon."))
 
         self.ui.add_polygon(
             translate(
-                self.CONTEXT,
+                "PickFromPolygon",
                 "PICK POLYGON"),
             poly_points=conversions.get_pick_polygon_points(
                 self.ui.ph.get_polygon(
                     self.block_id,
                     self.instruction_id)[0]),
             fixed=True)
+
+
+class PickFromPolygonVis(PickFromPolygon):
+
+    def __init__(self, *args, **kwargs):
+
+        super(PickFromPolygonVis, self).__init__(*args, **kwargs)
+
+        self.select_object_type(self.ph.get_object(*self.cid)[0][0])
+
+        self.add_polygon(
+            translate(
+                "PickFromPolygon",
+                "PICK POLYGON"),
+            poly_points=conversions.get_pick_polygon_points(self.ph.get_polygon(*self.cid)[0]), fixed=True)
