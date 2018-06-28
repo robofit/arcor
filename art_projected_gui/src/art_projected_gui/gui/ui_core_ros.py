@@ -9,15 +9,15 @@ from art_msgs.msg import HololensState
 from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, TouchPointsItem, LabelItem,\
     TouchTableItem, ProgramListItem, ProgramItem, DialogItem, PolygonItem
 from art_projected_gui.helpers import ProjectorHelper, conversions
-from art_utils import InterfaceStateManager, ArtApiHelper, ProgramHelper
+from art_helpers import InterfaceStateManager, ProgramHelper, ArtRobotHelper, UnknownRobot,\
+    RobotParametersNotOnParameterServer
 from art_msgs.srv import TouchCalibrationPoints, TouchCalibrationPointsResponse, NotifyUser, NotifyUserResponse,\
     ProgramErrorResolve, ProgramErrorResolveRequest, ProgramIdTrigger, ProgramIdTriggerRequest, NotifyUserRequest
 from std_msgs.msg import Empty, Bool
 from std_srvs.srv import Trigger, TriggerResponse
 from geometry_msgs.msg import PoseStamped
 import actionlib
-from art_utils import array_from_param
-from art_utils import ArtRobotHelper, UnknownRobot, RobotParametersNotOnParameterServer
+from art_utils import array_from_param, ArtApiHelper
 import tf
 
 

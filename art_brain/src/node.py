@@ -15,8 +15,9 @@ from art_msgs.msg import UserStatus, UserActivity, InterfaceState, SystemState, 
 from shape_msgs.msg import SolidPrimitive
 from art_msgs.srv import getObjectType, ProgramErrorResolveRequest, ProgramErrorResolveResponse, ProgramErrorResolve
 import numpy as np
-from art_utils import InterfaceStateManager, ArtApiHelper, ProgramHelper, ArtRobotHelper, \
+from art_helpers import InterfaceStateManager, ProgramHelper, ArtRobotHelper, \
     UnknownRobot, RobotParametersNotOnParameterServer, InstructionsHelper, InstructionsHelperException
+from art_utils import ArtApiHelper
 
 from tf import TransformListener
 from art_brain import ArtBrainRobotInterface

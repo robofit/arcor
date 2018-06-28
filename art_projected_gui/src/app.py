@@ -6,7 +6,7 @@ import rospy
 from PyQt4 import QtGui, QtCore
 import rospkg
 
-from art_utils import InstructionsHelper, InstructionsHelperException
+from art_helpers import InstructionsHelper, InstructionsHelperException
 from art_projected_gui.gui import UICoreRos
 
 
