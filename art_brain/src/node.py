@@ -7,11 +7,10 @@ import importlib
 
 import actionlib
 from std_srvs.srv import Empty, EmptyRequest, Trigger, TriggerResponse
-from art_msgs.msg import UserStatus, UserActivity, InterfaceState
 from art_msgs.srv import ProgramIdTrigger, ProgramIdTriggerResponse, \
     ObjectFlagClear, ObjectFlagSet
 from std_msgs.msg import Bool
-from art_msgs.msg import SystemState, InstancesArray, ProgramItem, \
+from art_msgs.msg import UserStatus, UserActivity, InterfaceState, SystemState, InstancesArray, \
     LearningRequestAction, LearningRequestGoal, LearningRequestResult
 from shape_msgs.msg import SolidPrimitive
 from art_msgs.srv import getObjectType, ProgramErrorResolveRequest, ProgramErrorResolveResponse, ProgramErrorResolve
@@ -41,51 +40,6 @@ from art_brain.art_brain_machine import ArtBrainMachine
 class ArtBrain(object):
 
     def __init__(self):
-        '''
-        # load instructions
-        while True and not rospy.is_shutdown():
-            try:
-                instructions = rospy.get_param("/art/instructions")
-                break
-            except KeyError:
-                rospy.loginfo("Waiting for /art/instructions param...")
-                rospy.sleep(0.5)
-
-        pi = ProgramItem()
-        if pi.type == "":
-
-            self.instruction_fsm = {}
-            self.instruction_fsm_modules = {}
-
-            # dynamic loading of instructions based on their definition on parameter server
-            for k, v in instructions["instructions"].iteritems():
-                mod = importlib.import_module(v["gui"]["package"] + ".gui")
-                self.instruction_fsm_modules[k] = getattr(mod, v["gui"]["fsm"])
-
-        else:
-
-            # TODO remove this - used only for compatibility with numeric instruction type (in ProgramItem)
-
-            from art_instructions.brain import DrillPointsFSM, \
-                GetReadyFSM, \
-                PickFromFeederFSM, \
-                PickFromPolygonFSM, \
-                PlaceToGridFSM, \
-                PlaceToPoseFSM, \
-                VisualInspectionFSM, \
-                WaitForUserFSM, \
-                WaitUntilUserFinishesFSM
-
-            self.instruction_fsm = {ProgramItem.DRILL_POINTS: DrillPointsFSM,
-                                    ProgramItem.GET_READY: GetReadyFSM,
-                                    ProgramItem.PICK_FROM_FEEDER: PickFromFeederFSM,
-                                    ProgramItem.PICK_FROM_POLYGON: PickFromPolygonFSM,
-                                    ProgramItem.PLACE_TO_GRID: PlaceToGridFSM,
-                                    ProgramItem.PLACE_TO_POSE: PlaceToPoseFSM,
-                                    #ProgramItem.VISUAL_INSPECTION: VisualInspectionFSM,
-                                    ProgramItem.WAIT_FOR_USER: WaitForUserFSM,
-                                    ProgramItem.WAIT_UNTIL_USER_FINISHES: WaitUntilUserFinishesFSM}
-        '''
 
         self.ih = InstructionsHelper()
         states = []
