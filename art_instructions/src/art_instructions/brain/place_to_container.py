@@ -36,9 +36,6 @@ class PlaceToContainerFSM(BrainFSM):
         'state_learning_place_to_container_run'
     ]
 
-    def __init__(self, *args, **kwargs):
-        super(PlaceToContainerFSM, self).__init__(*args, **kwargs)
-
     def run(self):
         self.fsm.place_to_container()
 
@@ -56,7 +53,6 @@ class PlaceToContainerFSM(BrainFSM):
 
     def state_learning_place_to_container(self, event):
         rospy.logdebug('Current state: state_learning_place_to_container')
-        pass
 
     def state_learning_place_to_container_run(self, event):
         rospy.logdebug('Current state: state_learning_place_to_container_run')

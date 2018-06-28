@@ -5,38 +5,30 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 import math
 
+
 class PickFromFeeder(BrainInstruction):
-
-    def __init__(self, *args, **kwargs):
-
-        super(PickFromFeeder, self).__init__(*args, **kwargs)
+    pass
 
 
 class PickFromFeederLearn(PickFromFeeder):
-
-    def __init__(self, *args, **kwargs):
-
-        super(PickFromFeederLearn, self).__init__(*args, **kwargs)
+    pass
 
 
 class PickFromFeederRun(PickFromFeeder):
-
-    def __init__(self, *args, **kwargs):
-
-        super(PickFromFeederRun, self).__init__(*args, **kwargs)
+    pass
 
 
 class PickFromFeederFSM(BrainFSM):
     states = [
         State(name='pick_from_feeder', on_enter=[
             'state_update_program_item', 'check_robot_in', 'state_pick_from_feeder'],
-              on_exit=['check_robot_out']),
+            on_exit=['check_robot_out']),
         State(name='learning_pick_from_feeder_run', on_enter=[
             'check_robot_in', 'learning_load_block_id', 'state_learning_pick_from_feeder_run'],
-              on_exit=['check_robot_out']),
+            on_exit=['check_robot_out']),
         State(name='learning_pick_from_feeder', on_enter=[
             'check_robot_in', 'learning_load_block_id', 'state_learning_pick_from_feeder'],
-              on_exit=['check_robot_out', 'state_learning_pick_from_feeder_exit'])
+            on_exit=['check_robot_out', 'state_learning_pick_from_feeder_exit'])
     ]
 
     transitions = [
@@ -57,10 +49,6 @@ class PickFromFeederFSM(BrainFSM):
         'state_learning_pick_from_feeder',
         'state_learning_pick_from_feeder_exit'
     ]
-
-    def __init__(self, *args, **kwargs):
-
-        super(PickFromFeederFSM, self).__init__(*args, **kwargs)
 
     def run(self):
         self.fsm.pick_from_feeder()

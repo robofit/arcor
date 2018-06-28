@@ -119,6 +119,8 @@ class VisualInspection(GuiInstruction):
         else:
             return (self.img_item, rospy.Time.now() + rospy.Duration(1.0)),
 
+        return ()
+
 
 class VisualInspectionLearn(VisualInspection):
 
@@ -179,6 +181,8 @@ class VisualInspectionLearn(VisualInspection):
         if self.dialog:
             self.ui.scene.removeItem(self.dialog)
             self.dialog = None
+
+        return ()
 
     def dialog_timer_tick(self):
 

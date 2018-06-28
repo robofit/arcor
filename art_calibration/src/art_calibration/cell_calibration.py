@@ -3,15 +3,12 @@
 from art_utils import ArtCalibrationHelper
 from tf import transformations
 import rospy
-from ar_track_alvar_msgs.msg import AlvarMarker, AlvarMarkers
+from ar_track_alvar_msgs.msg import AlvarMarkers
 from std_msgs.msg import Bool
 import ast
-from sensor_msgs.msg import PointCloud2
-import sensor_msgs.point_cloud2 as pc2
 import numpy as np
-from geometry_msgs.msg import Transform, TransformStamped, Vector3, Quaternion
+from geometry_msgs.msg import Transform
 import tf
-from std_msgs.msg import Header
 from copy import deepcopy
 
 

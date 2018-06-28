@@ -33,10 +33,6 @@ class DummyFSM(BrainFSM):
         'state_learning_dummy_run'
     ]
 
-    def __init__(self, *args, **kwargs):
-
-        super(DummyFSM, self).__init__(*args, **kwargs)
-
     def run(self):
         self.fsm.dummy()
 

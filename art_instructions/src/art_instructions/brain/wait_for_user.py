@@ -5,19 +5,15 @@ from art_msgs.msg import UserActivity
 
 
 class WaitForUser(BrainInstruction):
-    def __init__(self, *args, **kwargs):
-        super(WaitForUser, self).__init__(*args, **kwargs)
+    pass
 
 
 class WaitForUserLearn(WaitForUser):
-    def __init__(self, *args, **kwargs):
-        super(WaitForUserLearn, self).__init__(*args, **kwargs)
-        # TODO: not implemented
+    pass
 
 
 class WaitForUserRun(WaitForUser):
-    def __init__(self, *args, **kwargs):
-        super(WaitForUserRun, self).__init__(*args, **kwargs)
+    pass
 
 
 class WaitForUserFSM(BrainFSM):
@@ -36,9 +32,6 @@ class WaitForUserFSM(BrainFSM):
     state_functions = [
         'state_wait_for_user'
     ]
-
-    def __init__(self, *args, **kwargs):
-        super(WaitForUserFSM, self).__init__(*args, **kwargs)
 
     def run(self):
         self.fsm.wait_for_user()

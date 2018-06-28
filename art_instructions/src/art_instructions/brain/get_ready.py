@@ -4,24 +4,15 @@ import rospy
 
 
 class GetReady(BrainInstruction):
-
-    def __init__(self, *args, **kwargs):
-
-        super(GetReady, self).__init__(*args, **kwargs)
+    pass
 
 
 class GetReadyLearn(GetReady):
-
-    def __init__(self, *args, **kwargs):
-
-        super(GetReadyLearn, self).__init__(*args, **kwargs)
+    pass
 
 
 class GetReadyRun(GetReady):
-
-    def __init__(self, *args, **kwargs):
-
-        super(GetReadyRun, self).__init__(*args, **kwargs)
+    pass
 
 
 class GetReadyFSM(BrainFSM):
@@ -46,10 +37,6 @@ class GetReadyFSM(BrainFSM):
         'state_get_ready',
         'state_learning_get_ready_run'
     ]
-
-    def __init__(self, *args, **kwargs):
-
-        super(GetReadyFSM, self).__init__(*args, **kwargs)
 
     def run(self):
         self.fsm.get_ready()
@@ -86,4 +73,3 @@ class GetReadyFSM(BrainFSM):
             self.fsm.error(severity=severity, error=error)
         else:
             self.fsm.done(success=True)
-

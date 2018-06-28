@@ -5,26 +5,22 @@ from art_msgs.msg import UserActivity
 
 
 class WaitUntilUserFinishes(BrainInstruction):
-    def __init__(self, *args, **kwargs):
-        super(WaitUntilUserFinishes, self).__init__(*args, **kwargs)
+    pass
 
 
 class WaitUntilUserFinishesLearn(WaitUntilUserFinishes):
-    def __init__(self, *args, **kwargs):
-        super(WaitUntilUserFinishesLearn, self).__init__(*args, **kwargs)
-        # TODO: not implemented
+    pass
 
 
 class WaitUntilUserFinishesRun(WaitUntilUserFinishes):
-    def __init__(self, *args, **kwargs):
-        super(WaitUntilUserFinishesRun, self).__init__(*args, **kwargs)
+    pass
 
 
 class WaitUntilUserFinishesFSM(BrainFSM):
     states = [
         State(name='wait_until_user_finishes', on_enter=[
             'state_update_program_item', 'check_robot_in', 'state_wait_until_user_finishes'],
-              on_exit=['check_robot_out']),
+            on_exit=['check_robot_out']),
     ]
 
     transitions = [
@@ -36,9 +32,6 @@ class WaitUntilUserFinishesFSM(BrainFSM):
     state_functions = [
         'state_wait_until_user_finishes'
     ]
-
-    def __init__(self, *args, **kwargs):
-        super(WaitUntilUserFinishesFSM, self).__init__(*args, **kwargs)
 
     def run(self):
         self.fsm.wait_until_user_finishes()

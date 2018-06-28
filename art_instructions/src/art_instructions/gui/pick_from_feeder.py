@@ -174,6 +174,7 @@ class PickFromFeederLearn(PickFromFeeder):
 
         self.ui.scene.removeItem(self.grasp_dialog)
         self.grasp_dialog = None
+        return ()
 
     def learning_done(self):
 

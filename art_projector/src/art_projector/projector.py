@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
+import pickle
+import os
+import ast
 from PyQt4 import QtGui, QtCore
-import rospkg
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image, CameraInfo
 import rospy
@@ -14,12 +16,9 @@ import message_filters
 from image_geometry import PinholeCameraModel
 from geometry_msgs.msg import PointStamped, Pose, PoseArray
 import tf
-import ast
 from art_utils import array_from_param
 from art_projected_gui.gui import SceneViewer
-import pickle
 import rospkg
-import os
 
 
 class Padding(object):
@@ -153,7 +152,6 @@ class Projector(SceneViewer):
 
             except (IOError, OSError) as e:  # TODO pickle exceptions?
                 rospy.logwarn("Failed to load map from file")
-                pass
 
             if not self.maps_ready:
                 self.init_map_from_matrix(np.matrix(ast.literal_eval(h_matrix)))
@@ -198,7 +196,6 @@ class Projector(SceneViewer):
 
         except (IOError, OSError) as e:
             rospy.logerr("Failed to store map to file: " + str(e))
-            pass
 
         rospy.loginfo("Done!")
 

@@ -7,24 +7,15 @@ from art_brain import ArtBrainErrors, ArtBrainErrorSeverities, ArtBrainUtils
 
 
 class VisualInspection(BrainInstruction):
-
-    def __init__(self, *args, **kwargs):
-
-        super(VisualInspection, self).__init__(*args, **kwargs)
+    pass
 
 
 class VisualInspectionLearn(VisualInspection):
-
-    def __init__(self, *args, **kwargs):
-
-        super(VisualInspectionLearn, self).__init__(*args, **kwargs)
+    pass
 
 
 class VisualInspectionRun(VisualInspection):
-
-    def __init__(self, *args, **kwargs):
-
-        super(VisualInspectionRun, self).__init__(*args, **kwargs)
+    pass
 
 
 class VisualInspectionFSM(BrainFSM):

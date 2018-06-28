@@ -71,6 +71,7 @@ class DrillPointsLearn(DrillPoints):
 
         self.ui.scene.removeItem(self.drill_dialog)
         self.drill_dialog = None
+        return ()
 
     def object_selected(self, obj, selected, msg):
 

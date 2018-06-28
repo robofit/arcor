@@ -6,30 +6,27 @@ from art_brain import ArtBrainErrors, ArtBrainErrorSeverities
 
 
 class PlaceToGrid(BrainInstruction):
-    def __init__(self, *args, **kwargs):
-        super(PlaceToGrid, self).__init__(*args, **kwargs)
+    pass
 
 
 class PlaceToGridLearn(PlaceToGrid):
-    def __init__(self, *args, **kwargs):
-        super(PlaceToGridLearn, self).__init__(*args, **kwargs)
+    pass
 
 
 class PlaceToGridRun(PlaceToGrid):
-    def __init__(self, *args, **kwargs):
-        super(PlaceToGridRun, self).__init__(*args, **kwargs)
+    pass
 
 
 class PlaceToGridFSM(BrainFSM):
     states = [
         State(name='place_to_grid', on_enter=[
             'state_update_program_item', 'check_robot_in', 'state_place_to_grid'],
-              on_exit=['check_robot_out']),
+            on_exit=['check_robot_out']),
         State(name='learning_place_to_grid', on_enter=[
             'learning_load_block_id', 'state_learning_place_to_grid'], on_exit=[]),
         State(name='learning_place_to_grid_run', on_enter=[
             'check_robot_in', 'learning_load_block_id', 'state_learning_place_to_grid_run'],
-              on_exit=['check_robot_out']),
+            on_exit=['check_robot_out']),
     ]
 
     transitions = [
@@ -50,9 +47,6 @@ class PlaceToGridFSM(BrainFSM):
         'state_learning_place_to_grid_run'
     ]
 
-    def __init__(self, *args, **kwargs):
-        super(PlaceToGridFSM, self).__init__(*args, **kwargs)
-
     def run(self):
         self.fsm.place_to_grid()
 
@@ -70,11 +64,9 @@ class PlaceToGridFSM(BrainFSM):
 
     def state_learning_place_to_grid(self, event):
         rospy.logdebug('Current state: state_learning_place_to_grid')
-        pass
 
     def state_learning_place_to_grid_run(self, event):
         rospy.logdebug('Current state: state_learning_place_to_grid_run')
-        pass
 
     def place_object_to_grid(
             self, instruction, update_state_manager=True, get_ready_after_place=True):
@@ -120,7 +112,7 @@ class PlaceToGridFSM(BrainFSM):
                     {"SELECTED_OBJECT_ID": gripper.holding_object.object_id})
 
             if self.brain.place_object(gripper.holding_object,
-                                 pose[0], gripper, pick_only_y_axis=False):
+                                       pose[0], gripper, pick_only_y_axis=False):
                 instruction.pose.pop(0)
                 gripper.holding_object = None
                 if get_ready_after_place:
@@ -130,9 +122,7 @@ class PlaceToGridFSM(BrainFSM):
                 else:
                     self.fsm.error(severity=ArtBrainErrorSeverities.ERROR,
                                    error=ArtBrainErrors.ERROR_NOT_ENOUGH_PLACE_POSES)
-                return
             else:
                 gripper.get_ready()
                 self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                                error=ArtBrainErrors.ERROR_PLACE_FAILED)
-                return

@@ -2,37 +2,28 @@
 # coding=utf-8
 
 import rospy
-import copy
 import sys
-import math
 import importlib
 
 import actionlib
 from std_srvs.srv import Empty, EmptyRequest, Trigger, TriggerResponse
 from art_msgs.msg import UserStatus, UserActivity, InterfaceState
 from art_msgs.srv import ProgramIdTrigger, ProgramIdTriggerResponse, \
-    ObjectFlagClear, ObjectFlagSet, ObjectFlagSetRequest
-from geometry_msgs.msg import PoseStamped
+    ObjectFlagClear, ObjectFlagSet
 from std_msgs.msg import Bool
-from art_msgs.msg import PickPlaceGoal, SystemState, ObjInstance, InstancesArray, ProgramItem, \
+from art_msgs.msg import SystemState, InstancesArray, ProgramItem, \
     LearningRequestAction, LearningRequestGoal, LearningRequestResult
 from shape_msgs.msg import SolidPrimitive
 from art_msgs.srv import getObjectType, ProgramErrorResolveRequest, ProgramErrorResolveResponse, ProgramErrorResolve
 import numpy as np
 from art_utils import InterfaceStateManager, ArtApiHelper, ProgramHelper, ArtRobotHelper, \
-    UnknownRobot, RobotParametersNotOnParameterServer
+    UnknownRobot, RobotParametersNotOnParameterServer, InstructionsHelper, InstructionsHelperException
 
 from tf import TransformListener
 from art_brain import ArtBrainRobotInterface
 
-
-import logging
-
 from art_brain.brain_utils import ArtBrainUtils, ArtBrainErrors, ArtBrainErrorSeverities
 from art_brain.art_brain_machine import ArtBrainMachine
-from art_brain.art_gripper import ArtGripper
-
-from art_utils import InstructionsHelper, InstructionsHelperException
 
 
 # TODO:
@@ -1046,13 +1037,12 @@ class ArtBrain(object):
                 self.state_manager.state.edit_enabled = True
                 self.state_manager.send()
                 self.as_learning_request.set_succeeded(result)
-                return
             else:
                 result.success = False
                 result.message = "Not in learning state!"
                 self.as_learning_request.set_aborted(result)
-                return
-                # TODO: handle error
+
+            # TODO: handle error
         elif goal.request == LearningRequestGoal.EXECUTE_ITEM:
             self.ph.set_item_msg(
                 self.state_manager.state.block_id, instruction)
@@ -1067,24 +1057,23 @@ class ArtBrain(object):
                 result.success = True
 
                 self.as_learning_request.set_succeeded(result)
-                return
             else:
                 result.success = False
                 result.message = "Not in learning state!"
                 self.as_learning_request.set_aborted(result)
-                return
+
         elif goal.request == LearningRequestGoal.DONE:
             # Great!
             result.success = True
 
             self.fsm.done()
             self.as_learning_request.set_succeeded(result)
-            return
+        else:
 
-        result.success = False
-        result.message = "Unkwnown request"
+            result.success = False
+            result.message = "Unkwnown request"
 
-        self.as_learning_request.set_aborted(result)
+            self.as_learning_request.set_aborted(result)
 
 
 if __name__ == '__main__':

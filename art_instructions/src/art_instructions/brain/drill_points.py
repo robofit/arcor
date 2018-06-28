@@ -39,10 +39,6 @@ class DrillPointsFSM(BrainFSM):
         'state_learning_drill_points_exit'
     ]
 
-    def __init__(self, *args, **kwargs):
-
-        super(DrillPointsFSM, self).__init__(*args, **kwargs)
-
     def run(self):
         self.fsm.drill_points()
 

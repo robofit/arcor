@@ -9,7 +9,6 @@ from art_projected_gui.helpers import conversions
 from list_item import ListItem
 from art_projected_gui.helpers.items import group_enable, group_visible
 from geometry_msgs.msg import PoseStamped
-import rospy
 
 translate = QtCore.QCoreApplication.translate
 
@@ -577,8 +576,8 @@ class ProgramItem(Item):
 
         if self.ph.item_requires_learning(*self.cid):
             return self.ph.item_learned(*self.cid)
-        else:
-            return self.ph.get_item_msg(*self.cid).type in self.ih.properties.runnable_during_learning
+
+        return self.ph.get_item_msg(*self.cid).type in self.ih.properties.runnable_during_learning
 
     def _item_editable(self):
 

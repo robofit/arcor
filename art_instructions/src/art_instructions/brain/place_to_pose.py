@@ -6,30 +6,27 @@ from art_msgs.msg import ProgramItem, InterfaceState
 
 
 class PlaceToPose(BrainInstruction):
-    def __init__(self, *args, **kwargs):
-        super(PlaceToPose, self).__init__(*args, **kwargs)
+    pass
 
 
 class PlaceToPoseLearn(PlaceToPose):
-    def __init__(self, *args, **kwargs):
-        super(PlaceToPoseLearn, self).__init__(*args, **kwargs)
+    pass
 
 
 class PlaceToPoseRun(PlaceToPose):
-    def __init__(self, *args, **kwargs):
-        super(PlaceToPoseRun, self).__init__(*args, **kwargs)
+    pass
 
 
 class PlaceToPoseFSM(BrainFSM):
     states = [
         State(name='place_to_pose', on_enter=[
             'state_update_program_item', 'check_robot_in', 'state_place_to_pose'],
-              on_exit=['check_robot_out']),
+            on_exit=['check_robot_out']),
         State(name='learning_place_to_pose', on_enter=[
             'learning_load_block_id', 'state_learning_place_to_pose'], on_exit=[]),
         State(name='learning_place_to_pose_run', on_enter=[
             'check_robot_in', 'learning_load_block_id', 'state_learning_place_to_pose_run'],
-              on_exit=['check_robot_out']),
+            on_exit=['check_robot_out']),
     ]
 
     transitions = [
@@ -50,9 +47,6 @@ class PlaceToPoseFSM(BrainFSM):
         'state_learning_place_to_pose_run'
     ]
 
-    def __init__(self, *args, **kwargs):
-        super(PlaceToPoseFSM, self).__init__(*args, **kwargs)
-
     def run(self):
         self.fsm.place_to_pose()
 
@@ -70,7 +64,6 @@ class PlaceToPoseFSM(BrainFSM):
 
     def state_learning_place_to_pose(self, event):
         rospy.logdebug('Current state: state_learning_place_to_pose')
-        pass
 
     def state_learning_place_to_pose_run(self, event):
         rospy.logdebug('Current state: state_learning_place_to_pose_run')
@@ -127,9 +120,7 @@ class PlaceToPoseFSM(BrainFSM):
                     self.fsm.error(severity=severity, error=error, halted=True)
                     return
                 self.fsm.error(severity=severity, error=error)
-                return
             else:
                 if get_ready_after_place:
                     self.brain.try_robot_arms_get_ready([arm_id])
                 self.fsm.done(success=True)
-                return

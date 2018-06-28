@@ -5,30 +5,27 @@ from art_brain import ArtBrainErrors, ArtBrainErrorSeverities, ArtBrainUtils
 
 
 class PickFromPolygon(BrainInstruction):
-    def __init__(self, *args, **kwargs):
-        super(PickFromPolygon, self).__init__(*args, **kwargs)
+    pass
 
 
 class PickFromPolygonLearn(PickFromPolygon):
-    def __init__(self, *args, **kwargs):
-        super(PickFromPolygonLearn, self).__init__(*args, **kwargs)
+    pass
 
 
 class PickFromPolygonRun(PickFromPolygon):
-    def __init__(self, *args, **kwargs):
-        super(PickFromPolygonRun, self).__init__(*args, **kwargs)
+    pass
 
 
 class PickFromPolygonFSM(BrainFSM):
     states = [
         State(name='pick_from_polygon', on_enter=[
             'state_update_program_item', 'check_robot_in', 'state_pick_from_polygon'],
-              on_exit=['check_robot_out']),
+            on_exit=['check_robot_out']),
         State(name='learning_pick_from_polygon', on_enter=[
             'learning_load_block_id', 'state_learning_pick_from_polygon'], on_exit=[]),
         State(name='learning_pick_from_polygon_run', on_enter=[
             'check_robot_in', 'learning_load_block_id', 'state_learning_pick_from_polygon_run'],
-              on_exit=['check_robot_out']),
+            on_exit=['check_robot_out']),
     ]
 
     transitions = [
@@ -48,10 +45,6 @@ class PickFromPolygonFSM(BrainFSM):
         'state_learning_pick_from_polygon',
         'state_learning_pick_from_polygon_run'
     ]
-
-    def __init__(self, *args, **kwargs):
-        super(PickFromPolygonFSM, self).__init__(*args, **kwargs)
-
 
     def run(self):
         self.fsm.pick_from_polygon()
@@ -73,13 +66,10 @@ class PickFromPolygonFSM(BrainFSM):
         rospy.logdebug('Current state: state_learning_pick_from_polygon')
         # i have nothing to do yet
 
-        pass
-
     def state_learning_pick_from_polygon_run(self, event):
         rospy.logdebug('Current state: state_learning_pick_from_polygon_run')
         instruction = self.brain.state_manager.state.program_current_item  # type: ProgramItem
         self.pick_object_from_polygon(instruction, update_state_manager=False)
-        pass
 
     def pick_object_from_polygon(self, instruction, update_state_manager=True):
 
@@ -113,4 +103,3 @@ class PickFromPolygonFSM(BrainFSM):
 
         else:
             self.fsm.done(success=True)
-

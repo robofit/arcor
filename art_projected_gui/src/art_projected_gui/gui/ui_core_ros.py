@@ -3,7 +3,7 @@
 from art_projected_gui.gui import UICore
 from PyQt4 import QtCore
 import rospy
-from art_msgs.msg import InstancesArray, InterfaceState, ProgramItem as ProgIt, LearningRequestAction,\
+from art_msgs.msg import InstancesArray, InterfaceState, LearningRequestAction,\
     LearningRequestGoal
 from art_msgs.msg import HololensState
 from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, TouchPointsItem, LabelItem,\
@@ -14,13 +14,11 @@ from art_msgs.srv import TouchCalibrationPoints, TouchCalibrationPointsResponse,
     ProgramErrorResolve, ProgramErrorResolveRequest, ProgramIdTrigger, ProgramIdTriggerRequest, NotifyUserRequest
 from std_msgs.msg import Empty, Bool
 from std_srvs.srv import Trigger, TriggerResponse
-from std_srvs.srv import Empty as EmptyService
 from geometry_msgs.msg import PoseStamped
 import actionlib
 from art_utils import array_from_param
 from art_utils import ArtRobotHelper, UnknownRobot, RobotParametersNotOnParameterServer
 import tf
-import importlib
 
 
 translate = QtCore.QCoreApplication.translate
@@ -770,7 +768,6 @@ class UICoreRos(UICore):
         if resp is not None and resp.success:
             self.notif(
                 translate("UICoreRos", "Program visualization stopped."))
-            return True
 
         else:
             self.notif(
@@ -779,7 +776,7 @@ class UICoreRos(UICore):
                     "Failed to stop program visualization."),
                 temp=True,
                 message_type=NotifyUserRequest.ERROR)
-            return True
+        return True
 
     def vis_pause_cb(self, visualization_paused):
         """Callback for PAUSE button while visualizing.
