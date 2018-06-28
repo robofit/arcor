@@ -1,4 +1,5 @@
 <launch>
+  <include file="$(find art_instructions)/launch/upload.launch"/>
   <include file="$(find art_db)/launch/art_db.launch"/>
   <test test-name="test_art_db_api" pkg="art_db" type="test_art_db_api.py" />
 </launch>
