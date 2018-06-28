@@ -6,6 +6,7 @@
     <arg name="scene_size" default="1.0,0.5"/>
     <arg name="scene_origin" default="0,0"/>
     <arg name="rpm" default="2000"/>
+    <arg name="notif_origin" default="0.05,0.05"/>
 
     <group ns="/art/interface/projected_gui">
 
@@ -14,6 +15,7 @@
         <param name="rpm" value="$(arg rpm)"/>
         <param name="scene_server" value="$(arg scene_server)"/>
         <param name="scene_server_port" value="1234"/>
+        <param name="notif_origin" value="$(arg notif_origin)"/>
     
         <node pkg="art_projected_gui" name="app" type="app.py" output="screen" launch-prefix="xvfb-run"> <!-- launch-prefix="python -m cProfile -o art_projected_gui.txt"-->
 

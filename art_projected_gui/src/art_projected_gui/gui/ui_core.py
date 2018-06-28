@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from PyQt4 import QtGui, QtCore, QtNetwork
-from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, ProgramItem, PolygonItem, SquareItem, DialogItem
+from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, PolygonItem, SquareItem
 import rospy
 from art_projected_gui.helpers import conversions
 from art_msgs.srv import NotifyUserRequest
@@ -28,7 +28,8 @@ class UICore(QtCore.QObject):
 
     There are methods for manipulation (add, find, delete) with items.
     There should not be any ROS-related stuff, just basic things.
-    All items to be displayed (objects, places etc.) are inserted into array with few exceptions (e.g. program visualization, notifications).
+    All items to be displayed (objects, places etc.) are inserted into array with few exceptions
+    (e.g. program visualization, notifications).
 
     Attributes:
         x (float): x coordinate of the scene's origin (in world coordinate system, meters).
@@ -38,12 +39,11 @@ class UICore(QtCore.QObject):
         rpm (int): Resolution per meter (pixels per meter of width/height).
         scene (QGraphicsScene): Holds all Item(s), manages (re)painting etc.
         bottom_label (LabelItem): Label for displaying messages to user.
-        program_vis (ProgramItem): Item to display robot's program.
         scene_items (list): Array to hold all displayed items.
         view (QGraphicsView): To show content of the scene in debug window.
     """
 
-    def __init__(self, x, y, width, height, rpm, scene_server_port):
+    def __init__(self, x, y, width, height, rpm, scene_server_port, notif_origin=(0, 0)):
         """
         Args:
             x (float): x coordinate of the scene's origin (in world coordinate system, meters).
@@ -71,7 +71,7 @@ class UICore(QtCore.QObject):
         # be good for dynamic scenes
 
         self.bottom_label = LabelItem(
-            self.scene, 0.30, 0.07, self.width - 0.2, 0.03)
+            self.scene, notif_origin[0], notif_origin[1], self.width - notif_origin[0], 0.03)
 
         self.selected_object_ids = []
         self.selected_object_types = []
@@ -177,7 +177,8 @@ class UICore(QtCore.QObject):
         Args:
             msg (str): Message to be displayed.
             min_duration (:obj:`float`, optional): Message should be displayed for min_duration seconds at least.
-            temp (:obj:`bool`, optional): temporal message disappears after min_duration and last non-temporal message is displayed instead.
+            temp (:obj:`bool`, optional): temporal message disappears after min_duration and last non-temporal message
+                                          is displayed instead.
         """
 
         log_func = rospy.loginfo
@@ -282,7 +283,10 @@ class UICore(QtCore.QObject):
                 it.set_selected(False)
 
     def select_object_type(self, obj_type_name, unselect_others=True):
-        """Sets all ObjectItems with geiven object_type and selected. By default, all objects of other types are unselected."""
+        """
+        Sets all ObjectItems with geiven object_type and selected.
+        By default, all objects of other types are unselected.
+        """
 
         if unselect_others:
             self.selected_object_types = []
@@ -339,10 +343,32 @@ class UICore(QtCore.QObject):
         Method which creates instance of SquareItem class.
     '''
 
-    def add_square(self, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points=[], square_changed=None, fixed=False):
+    def add_square(
+            self,
+            caption,
+            min_x,
+            min_y,
+            square_width,
+            square_height,
+            object_type,
+            poses,
+            grid_points=[],
+            square_changed=None,
+            fixed=False):
 
-        SquareItem(self.scene, caption, min_x, min_y, square_width, square_height, object_type, poses, grid_points, self.scene.items,
-                   square_changed, fixed)
+        SquareItem(
+            self.scene,
+            caption,
+            min_x,
+            min_y,
+            square_width,
+            square_height,
+            object_type,
+            poses,
+            grid_points,
+            self.scene.items,
+            square_changed,
+            fixed)
 
     def clear_places(self):
 

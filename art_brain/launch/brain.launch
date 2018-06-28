@@ -1,15 +1,11 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="robot_type" default="$(optenv ROBOT)"/>
-    <arg name="robot_ns" default="/art/robot"/>
-
-    <rosparam command="delete" param="$(arg robot_ns)"/>
-    <rosparam command="load" ns="$(arg robot_ns)" file="$(find art_brain)/robots/$(arg robot_type).yaml"/>
+    <arg name="robot_interface" default=""/>
 
     <group ns="/art/brain">
 
-        <param name="robot_ns" value="$(arg robot_ns)"/>
+        <param name="robot_interface" value="$(arg robot_interface)"/>
         <node pkg="art_brain" name="brain" type="node.py" output="screen">
 
         </node>

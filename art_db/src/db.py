@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
-from art_msgs.msg import Program, ObjectType
+from art_msgs.msg import Program, ObjectType, CollisionPrimitive
 from art_msgs.srv import getProgram, getProgramResponse, getProgramHeaders, getProgramHeadersResponse, \
-    storeProgram, storeProgramResponse, getObjectType, getObjectTypeResponse, storeObjectType, storeObjectTypeResponse, ProgramIdTrigger, ProgramIdTriggerResponse
+    storeProgram, storeProgramResponse, getObjectType, getObjectTypeResponse, storeObjectType, storeObjectTypeResponse,\
+    ProgramIdTrigger, ProgramIdTriggerResponse, GetCollisionPrimitives, GetCollisionPrimitivesResponse,\
+    AddCollisionPrimitive, AddCollisionPrimitiveResponse, ClearCollisionPrimitives, ClearCollisionPrimitivesResponse
 import sys
 import rospy
 from art_utils import ProgramHelper
@@ -19,17 +21,123 @@ class ArtDB:
         self.lock = threading.RLock()
 
         self.srv_get_program = rospy.Service('/art/db/program/get', getProgram, self.srv_get_program_cb)
-        self.srv_get_program_headers = rospy.Service('/art/db/program_headers/get', getProgramHeaders, self.srv_get_program_headers_cb)
+        self.srv_get_program_headers = rospy.Service('/art/db/program_headers/get',
+                                                     getProgramHeaders,
+                                                     self.srv_get_program_headers_cb)
+
         self.srv_store_program = rospy.Service('/art/db/program/store', storeProgram, self.srv_store_program_cb)
         self.srv_delete_program = rospy.Service('/art/db/program/delete', ProgramIdTrigger, self.srv_delete_program_cb)
-        self.srv_ro_set_program = rospy.Service('/art/db/program/readonly/set', ProgramIdTrigger, self.srv_ro_set_program_cb)
+        self.srv_ro_set_program = rospy.Service('/art/db/program/readonly/set',
+                                                ProgramIdTrigger,
+                                                self.srv_ro_set_program_cb)
         self.srv_ro_clear_program = rospy.Service('/art/db/program/readonly/clear', ProgramIdTrigger,
                                                   self.srv_ro_clear_program_cb)
 
         self.srv_get_object = rospy.Service('/art/db/object_type/get', getObjectType, self.srv_get_object_cb)
         self.srv_store_object = rospy.Service('/art/db/object_type/store', storeObjectType, self.srv_store_object_cb)
 
+        self.srv_get_collision_primitives = rospy.Service('/art/db/collision_primitives/get', GetCollisionPrimitives,
+                                                          self.srv_get_collision_primitives_cb)
+        self.srv_add_collision_primitive = rospy.Service('/art/db/collision_primitives/add', AddCollisionPrimitive,
+                                                         self.srv_add_collision_primitive_cb)
+        self.srv_clear_collision_primitive = rospy.Service('/art/db/collision_primitives/clear',
+                                                           ClearCollisionPrimitives,
+                                                           self.srv_clear_collision_primitives_cb)
+
         rospy.loginfo('art_db ready')
+
+    def srv_clear_collision_primitives_cb(self, req):
+
+        resp = ClearCollisionPrimitivesResponse(success=False)
+
+        try:
+
+            # if any name is given, remove all
+            if not req.names:
+
+                primitives = self.db.query(CollisionPrimitive._type)
+
+                rospy.loginfo("Removing " + str(len(primitives)) + " collision primitives.")
+                for prim in primitives:
+
+                    self.db.delete(str(prim[1]["_id"]))
+
+            else:
+
+                for name in req.names:
+
+                    if name == "":
+                        rospy.logwarn("Ignoring empty name.")
+                        continue
+
+                    primitive = self.db.query(
+                        CollisionPrimitive._type, message_query={
+                            "name": name, "setup": req.setup}, single=True)
+
+                    if None in primitive:
+                        rospy.logwarn("Unknown primitive name: " + name)
+                        continue
+
+                    self.db.delete(str(primitive[1]["_id"]))
+
+        except rospy.ServiceException as e:
+
+            rospy.logerr("Service call failed: " + str(e))
+            return resp
+
+        resp.success = True
+        return resp
+
+    def srv_add_collision_primitive_cb(self, req):
+
+        resp = AddCollisionPrimitiveResponse(success=False)
+
+        if req.primitive.name == "":
+            rospy.logerr("Empty primitive name!")
+            return resp
+
+        if req.primitive.setup == "":
+            rospy.logerr("Empty setup name!")
+            return resp
+
+        try:
+            ret = self.db.update_named("collision_primitive_" + req.primitive.name + "_" + req.primitive.setup,
+                                       req.primitive, upsert=True)
+        except rospy.ServiceException as e:
+            rospy.logerr("Service call failed: " + str(e))
+            return resp
+
+        resp.success = ret.success
+        return resp
+
+    def srv_get_collision_primitives_cb(self, req):
+
+        resp = GetCollisionPrimitivesResponse()
+
+        for name in req.names:
+
+            if name == "":
+                rospy.logwarn("Ignoring empty name.")
+                continue
+
+            prim = self.db.query(CollisionPrimitive._type,
+                                 message_query={"name": name, "setup": req.setup},
+                                 single=True)
+
+            if None in prim:
+                rospy.logwarn("Unknown primitive name: " + name)
+                continue
+
+            resp.primitives.append(prim[0])
+
+        if not req.names:
+
+            primitives = self.db.query(CollisionPrimitive._type, message_query={"setup": req.setup})
+
+            for prim in primitives:
+                resp.primitives.append(prim[0])
+
+        return resp
 
     def _program_set_ro(self, program_id, ro):
 
@@ -43,6 +151,10 @@ class ArtDB:
                 prog = self.db.query_named(name, Program._type)[0]
             except rospy.ServiceException as e:
                 resp.error = str(e)
+                return resp
+
+            if not prog:
+                resp.error = "Program does not exist"
                 return resp
 
             prog.header.readonly = ro

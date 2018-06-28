@@ -23,10 +23,13 @@ class LabelItem(Item):
         self.icons_path = rospack.get_path('art_projected_gui') + '/icons/'
 
         self.icons = {}
-        self.icons[NotifyUserRequest.INFO] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_dialog-information.svg', self)
+        self.icons[NotifyUserRequest.INFO] = QtSvg.QGraphicsSvgItem(
+            self.icons_path + 'Antu_dialog-information.svg', self)
         self.icons[NotifyUserRequest.WARN] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_dialog-warning.svg', self)
-        self.icons[NotifyUserRequest.ERROR] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_emblem-important.svg', self)
-        self.icons[NotifyUserRequest.YES_NO_QUESTION] = QtSvg.QGraphicsSvgItem(self.icons_path + 'Antu_dialog-question.svg', self)
+        self.icons[NotifyUserRequest.ERROR] = QtSvg.QGraphicsSvgItem(
+            self.icons_path + 'Antu_emblem-important.svg', self)
+        self.icons[NotifyUserRequest.YES_NO_QUESTION] = QtSvg.QGraphicsSvgItem(
+            self.icons_path + 'Antu_dialog-question.svg', self)
 
         s = self.m2pix(self.h)
         for k, v in self.icons.iteritems():
@@ -124,4 +127,11 @@ class LabelItem(Item):
         h = self.m2pix(self.h)
         left_padding = h + self.m2pix(0.02)
 
-        painter.drawText(left_padding, (h - metrics.height()) / 2, self.m2pix(self.w) - left_padding, h, QtCore.Qt.AlignLeft, msg["msg"])
+        painter.drawText(
+            left_padding,
+            (h - metrics.height()) / 2,
+            self.m2pix(
+                self.w) - left_padding,
+            h,
+            QtCore.Qt.AlignLeft,
+            msg["msg"])

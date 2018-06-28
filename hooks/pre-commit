@@ -13,7 +13,7 @@ import tempfile
 select_codes = []
 ignore_codes = ['E721']
 # Add things like "--max-line-length=120" below
-overrides = ["--max-line-length=250"]
+overrides = ["--max-line-length=120"]
 
 
 def system(*args, **kwargs):
@@ -51,6 +51,8 @@ def main():
 
     for name in files:
         filepath = os.path.join(basedir, name)
+        if name.startswith('.'):  # TODO rather fix the regular expression
+            continue
         autopep8(filepath)
         system("git", "add", filepath)
 

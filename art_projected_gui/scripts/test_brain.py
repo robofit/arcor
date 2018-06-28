@@ -3,7 +3,8 @@
 import sys
 import rospy
 from art_msgs.srv import ProgramIdTrigger, ProgramIdTriggerResponse
-from art_msgs.msg import InterfaceState, ProgramItem, LearningRequestAction, LearningRequestFeedback, LearningRequestResult
+from art_msgs.msg import InterfaceState, ProgramItem, LearningRequestAction, LearningRequestFeedback,\
+    LearningRequestResult
 from art_utils import InterfaceStateManager, ProgramHelper, ArtApiHelper
 import actionlib
 from std_srvs.srv import Trigger, TriggerResponse
@@ -59,7 +60,7 @@ def timer_callback(event):
 
     flags = {}
     it = ph.get_item_msg(*current_item)
-    if it.type == ProgramItem.PICK_FROM_POLYGON or it.type == ProgramItem.PLACE_TO_POSE:
+    if it.type == "PickFromPolygon" or it.type == "PlaceToPose":
         flags["SELECTED_OBJECT_ID"] = "my_object"
 
     state_manager.update_program_item(ph.get_program().header.id, current_item[

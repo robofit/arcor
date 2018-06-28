@@ -4,9 +4,7 @@ project(art_projected_gui)
 find_package(catkin REQUIRED COMPONENTS
   roslint
   art_msgs
-  cv_bridge
   geometry_msgs
-  image_geometry
   rospy
   std_msgs
   roslaunch
@@ -16,7 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_python_setup()
 
-set(ROSLINT_PYTHON_OPTS "--max-line-length=250")
+set(ROSLINT_PYTHON_OPTS "--max-line-length=120")
 roslint_python()
 roslint_add_test()
 
@@ -39,7 +37,4 @@ install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
 
 catkin_install_python(PROGRAMS src/app.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
-catkin_install_python(PROGRAMS src/projector_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
