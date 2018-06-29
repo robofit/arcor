@@ -138,7 +138,7 @@ class FakeGrasping:
             else:
                 self.holding = False
 
-        result.result = RobotMoveResult.SUCCESS
+        result.result = RobotMoveResult.SUCCES
         self.server.set_succeeded(result)
         rospy.loginfo("SUCCESS")
         print("Finished")
