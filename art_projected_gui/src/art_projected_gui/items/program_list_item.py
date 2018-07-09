@@ -4,6 +4,7 @@ from PyQt4 import QtGui, QtCore
 from item import Item
 from button_item import ButtonItem
 from list_item import ListItem
+from desc_item import DescItem
 
 translate = QtCore.QCoreApplication.translate
 
@@ -36,6 +37,10 @@ class ProgramListItem(Item):
 
         self.fixed = False
         self.setZValue(100)
+
+        title = DescItem(self.scene(), 0, 0, self)
+        title.set_content(translate("ProgramListItem", "Program list"), 1.2)
+        title.setPos(QtCore.QPointF(self.m2pix(0.01), self.m2pix(0.01)))  # TODO it should take coords given to __init__
 
         data = []
         self.map_from_idx_to_program_id = {}
@@ -72,14 +77,28 @@ class ProgramListItem(Item):
             self.list.set_current_idx(self.map_from_program_id_to_idx[selected_program_id])
 
         sp = self.m2pix(0.005)
-        h = 50
+        h = title.mapToParent(title.boundingRect().bottomLeft()).y() + sp
         self.list.setPos(sp, h)
         h += self.list._height()
         h += 2 * sp
 
-        self. _place_childs_horizontally(h, sp, [self.run_btn, self.edit_btn, self.template_btn, self.visualize_btn])
+        btns = (self.run_btn, self.edit_btn, self.template_btn, self.visualize_btn)
 
-        h += self.run_btn._height()
+        if sum(btn.boundingRect().width() for btn in btns) > self.boundingRect().width():
+
+            hl = len(btns) / 2
+
+            self._place_childs_horizontally(h, sp, btns[:hl])
+            h += btns[0]._height() + sp
+
+            self._place_childs_horizontally(h, sp, btns[hl:])
+            h += btns[hl]._height()
+
+        else:
+
+            self._place_childs_horizontally(h, sp, btns)
+            h += self.run_btn._height()
+
         h += 3 * sp
 
         self.h = h
@@ -154,14 +173,6 @@ class ProgramListItem(Item):
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-
-        font = QtGui.QFont('Arial', 14)
-        painter.setFont(font)
-
-        painter.setPen(QtCore.Qt.white)
-
-        sp = self.m2pix(0.01)
-        painter.drawText(sp, 2 * sp, translate("ProgramListItem", "Program list"))
 
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.NoPen)

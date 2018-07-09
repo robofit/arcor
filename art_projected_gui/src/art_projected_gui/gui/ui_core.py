@@ -43,7 +43,7 @@ class UICore(QtCore.QObject):
         view (QGraphicsView): To show content of the scene in debug window.
     """
 
-    def __init__(self, x, y, width, height, rpm, scene_server_port, notif_origin=(0, 0)):
+    def __init__(self, x, y, width, height, rpm, scene_server_port, notif_origin=(0, 0), font_scale=1.0):
         """
         Args:
             x (float): x coordinate of the scene's origin (in world coordinate system, meters).
@@ -66,6 +66,7 @@ class UICore(QtCore.QObject):
 
         self.scene = QtGui.QGraphicsScene(0, 0, int(w), int(h))
         self.scene.rpm = rpm
+        self.scene.font_scale = font_scale
         self.scene.setBackgroundBrush(QtCore.Qt.black)
         # self.scene.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex) # should
         # be good for dynamic scenes

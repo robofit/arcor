@@ -50,7 +50,8 @@ class UICoreRos(UICore):
         port = rospy.get_param("scene_server_port")
 
         super(UICoreRos, self).__init__(
-            origin[0], origin[1], size[0], size[1], rpm, port, notif_origin=array_from_param("notif_origin", float, 2))
+            origin[0], origin[1], size[0], size[1], rpm, port, notif_origin=array_from_param("notif_origin", float, 2),
+            font_scale=rospy.get_param("font_scale", 1.0))
 
         self.tfl = tf.TransformListener()
 
