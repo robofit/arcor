@@ -3,7 +3,9 @@
 import rospy
 from actionlib import SimpleActionServer
 import random
-from kinali_msgs.msg import RobotMoveAction, RobotMoveGoal, RobotMoveResult, RobotMoveFeedback
+from kinali_msgs.msg import RobotMoveAction, RobotMoveGoal, RobotMoveResult, RobotMoveFeedback, RobotStatus
+from geometry_msgs.msg import PoseStamped, Pose
+from std_msgs.msg import Header
 
 
 class FakeGrasping:
@@ -25,10 +27,19 @@ class FakeGrasping:
         self.pick_length = 2  # how long (sec) takes to pick an object
         self.place_length = 2  # how long (sec) takes to place an object
 
+        self.robot_state_pub = rospy.Publisher("/robot_status", RobotStatus, queue_size=1, latch=True)
+        self.publish_robot_status(RobotStatus.STOPPED)
+
         random.seed()
 
+    def publish_robot_status(self, status):
+        self.robot_state_pub.publish(RobotStatus(status=status,
+                                                 actual_pose=PoseStamped(header=Header(frame_id="marker"))))
+
     def robot_move_cb(self, goal):
+        self.publish_robot_status(RobotStatus.MOVING)
         self.robot_move(goal)
+        self.publish_robot_status(RobotStatus.STOPPED)
 
     def robot_move(self, goal):
         result = RobotMoveResult()
