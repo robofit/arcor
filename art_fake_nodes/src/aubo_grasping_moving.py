@@ -12,7 +12,7 @@ class FakeGrasping:
     RANDOM = 2
 
     def __init__(self):
-        self.server = SimpleActionServer('/art/robot/arm/move', RobotMoveAction,
+        self.server = SimpleActionServer('/robot_move', RobotMoveAction,
                                          execute_cb=self.robot_move_cb)
 
         self.objects = self.ALWAYS
@@ -22,8 +22,8 @@ class FakeGrasping:
         self.grasp_randomness = 0.4
         self.place_randomness = 0.4
         self.holding = None
-        self.pick_length = 1  # how long (sec) takes to pick an object
-        self.place_length = 1  # how long (sec) takes to place an object
+        self.pick_length = 2  # how long (sec) takes to pick an object
+        self.place_length = 2  # how long (sec) takes to place an object
 
         random.seed()
 
@@ -59,7 +59,7 @@ class FakeGrasping:
 
         if goal.move_type == RobotMoveGoal.PICK:
             rospy.sleep(self.pick_length)
-            if self.holding:
+            if False and self.holding:
                 result.result = RobotMoveResult.BUSY
                 rospy.logerr("Failure, already holding object in arm")
                 self.server.set_aborted(
