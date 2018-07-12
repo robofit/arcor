@@ -381,7 +381,7 @@ class ArtBrain(object):
         rospy.logdebug('Current state: state_program_run')
 
         if not self.executing_program:
-            self.finished()
+            self.fsm.finished()
             return
         if self.instruction is None:
             self.fsm.error(severity=ArtBrainErrorSeverities.SEVERE,
@@ -800,6 +800,10 @@ class ArtBrain(object):
         if self.executing_program:
             rospy.logdebug('Stopping program')
             self.executing_program = False
+            if self.program_paused:
+                self.program_paused = False
+                rospy.Timer(rospy.Duration(
+                    0, 100), self.program_resume_timer_cb, oneshot=True)
         else:
             resp.success = False
             resp.message = "Program is not running"
