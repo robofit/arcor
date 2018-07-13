@@ -9,6 +9,7 @@ from art_projected_gui.helpers import conversions
 from list_item import ListItem
 from art_projected_gui.helpers.items import group_enable, group_visible
 from geometry_msgs.msg import PoseStamped
+from desc_item import DescItem
 
 translate = QtCore.QCoreApplication.translate
 
@@ -65,6 +66,9 @@ class ProgramItem(Item):
 
         super(ProgramItem, self).__init__(scene, x, y)
 
+        self.title = DescItem(self.scene(), 0, 0, self)
+        self.title.setPos(QtCore.QPointF(self.m2pix(0.01), self.m2pix(0.01)))  # TODO it should take coords given to __init__
+
         self.w = self.m2pix(0.2)
         self.h = self.m2pix(0.25)
         self.sp = self.m2pix(0.005)
@@ -111,7 +115,7 @@ class ProgramItem(Item):
 
             self._update_block(v)
 
-        y = 50
+        y = self.title.mapToParent(self.title.boundingRect().bottomLeft()).y() + self.sp
         self.blocks_list.setPos(self.sp, y)
         y += self.blocks_list._height() + self.sp
 
@@ -200,6 +204,30 @@ class ProgramItem(Item):
         if self.item_switched_cb:
             self.item_switched_cb(None, None, blocks=True)
 
+    def _update_title(self):
+
+        color = QtCore.Qt.white
+
+        if self.items_list is not None:
+
+            if not self.block_learned and not self.readonly:
+
+                color = QtCore.Qt.red
+
+            self.title.set_content(translate(
+                "ProgramItem",
+                "Program %1, block %2").arg(
+                self.ph.get_program_id()).arg(
+                self.block_id), scale=1.2, color=color)
+
+        else:
+
+            if not self.program_learned and not self.readonly:
+                color = QtCore.Qt.red
+
+            self.title.set_content(translate("ProgramItem", "Program %1").arg(self.ph.get_program_id()),
+                                   scale=1.2, color=color)
+
     def pr_pause_btn_cb(self, btn):
 
         if self.pause_cb is not None:
@@ -283,6 +311,7 @@ class ProgramItem(Item):
         if self.block_id is not None:
             self.block_learned = self.ph.block_learned(self.block_id)
         self.program_learned = self.ph.program_learned()
+        self._update_title()
 
     def set_readonly(self, readonly):
 
@@ -332,6 +361,8 @@ class ProgramItem(Item):
 
             group_visible((self.block_finished_btn, self.block_edit_btn, self.block_on_failure_btn,
                            self.block_visualize_btn, self.block_back_btn), False)
+
+        self._update_title()
 
     def get_text_for_item(self, block_id, item_id):
 
@@ -413,7 +444,7 @@ class ProgramItem(Item):
             else:
                 self.items_list.items[k].set_enabled(False)
 
-        y = 50
+        y = self.title.mapToParent(self.title.boundingRect().bottomLeft()).y() + self.sp
         self.items_list.setPos(self.sp, y)
         y += self.items_list._height() + self.sp
 
@@ -461,10 +492,27 @@ class ProgramItem(Item):
         # in learning state
         else:
 
-            self. _place_childs_horizontally(
-                y, self.sp, [self.item_edit_btn, self.item_run_btn, self.item_on_success_btn, self.item_on_failure_btn])
+            btns = (self.item_edit_btn, self.item_run_btn, self.item_on_success_btn, self.item_on_failure_btn)
 
-            y += self.item_finished_btn._height() + self.sp
+            self. _place_childs_horizontally(
+                y, self.sp, btns)
+
+            if sum(btn.boundingRect().width() for btn in btns) > self.boundingRect().width():
+
+                hl = len(btns) / 2
+
+                self._place_childs_horizontally(y, self.sp, btns[:hl])
+                y += btns[0]._height() + self.sp
+
+                self._place_childs_horizontally(y, self.sp, btns[hl:])
+                y += btns[hl]._height()
+
+            else:
+
+                self._place_childs_horizontally(y, self.sp, btns)
+                y += max(btn._height() for btn in btns)
+
+            y += self.sp
 
             self. _place_childs_horizontally(
                 y, self.sp, [self.item_finished_btn])
@@ -482,6 +530,7 @@ class ProgramItem(Item):
             self.show_visualization_buttons(False)
 
         self.h = y
+        self._update_title()
         self.update()
         if self.item_switched_cb:
             self.item_switched_cb(self.block_id, None, blocks=False)
@@ -643,6 +692,7 @@ class ProgramItem(Item):
 
             self.item_switched_cb(*self.cid)
 
+        self._update_title()
         self.update()
 
     def item_on_failure_btn_cb(self, btn):
@@ -873,38 +923,6 @@ class ProgramItem(Item):
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-
-        font = QtGui.QFont('Arial', 14)
-        painter.setFont(font)
-
-        painter.setPen(QtCore.Qt.white)
-
-        # TODO measure text size / use label
-
-        sp = self.m2pix(0.01)
-
-        if self.items_list is not None:
-
-            if not self.block_learned and not self.readonly:
-
-                painter.setPen(QtCore.Qt.red)
-
-            painter.drawText(
-                sp,
-                2 *
-                sp,
-                translate(
-                    "ProgramItem",
-                    "Program %1, block %2").arg(
-                    self.ph.get_program_id()).arg(
-                    self.block_id))
-        else:
-
-            if not self.program_learned and not self.readonly:
-
-                painter.setPen(QtCore.Qt.red)
-
-            painter.drawText(sp, 2 * sp, translate("ProgramItem", "Program %1").arg(self.ph.get_program_id()))
 
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.NoPen)

@@ -10,6 +10,8 @@ class DescItem(Item):
 
         self.text = ""
         self.scale = 1.0
+        self.color = QtCore.Qt.gray
+        self.hover_color = QtCore.Qt.white
 
         super(DescItem, self).__init__(scene, x, y, parent=parent)
 
@@ -30,11 +32,15 @@ class DescItem(Item):
                 QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop | QtCore.Qt.TextWordWrap,
                 self.text))
 
-    def set_content(self, text, scale=1.0):
+    def set_content(self, text, scale=1.0, color=None, hover_color=None):
 
         self.prepareGeometryChange()
         self.scale = scale
         self.text = text
+        if color:
+            self.color = color
+        if hover_color:
+            self.hover_color = hover_color
         self.update()
 
     def paint(self, painter, option, widget):
@@ -47,13 +53,13 @@ class DescItem(Item):
 
         if self.parentItem() and self.parentItem().hover:
 
-            painter.setBrush(QtCore.Qt.white)
-            painter.setPen(QtCore.Qt.white)
+            painter.setBrush(self.hover_color)
+            painter.setPen(self.hover_color)
 
         else:
 
-            painter.setBrush(QtCore.Qt.gray)
-            painter.setPen(QtCore.Qt.gray)
+            painter.setBrush(self.color)
+            painter.setPen(self.color)
 
         font = QtGui.QFont(self.default_font, self.get_font_size(self.scale))
         painter.setFont(font)
