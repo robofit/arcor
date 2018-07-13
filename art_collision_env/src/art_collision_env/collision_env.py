@@ -7,6 +7,7 @@ from art_msgs.msg import CollisionObjects
 import uuid
 from threading import RLock
 from shape_msgs.msg import SolidPrimitive
+from art_utils import array_from_param
 
 """
 TODO
@@ -35,6 +36,8 @@ class CollisionEnv(object):
         self.api = ArtApiHelper()
         rospy.loginfo("Waiting for DB API")
         self.api.wait_for_db_api()
+        self.ignored_prefixes = array_from_param("~ignored_prefixes")
+        rospy.loginfo("Will ignore following prefixes: " + str(self.ignored_prefixes))
 
         self.lock = RLock()
 
@@ -147,6 +150,9 @@ class CollisionEnv(object):
 
             for k in self.artificial_objects.keys():
 
+                if self.is_ignored(k):
+                    continue
+
                 self.ps.remove_world_object(k)
 
             self.artificial_objects = {}
@@ -204,6 +210,14 @@ class CollisionEnv(object):
 
         return ret
 
+    def is_ignored(self, name):
+
+        for ip in self.ignored_prefixes:
+            if name.startswith(ip):
+                return True
+
+        return False
+
     def timer_cb(self, evt):
 
         if self.paused:
@@ -215,7 +229,7 @@ class CollisionEnv(object):
 
             for name in known_objects:
 
-                if name not in self.artificial_objects and name not in self.oh.objects:
+                if name not in self.artificial_objects and name not in self.oh.objects and not self.is_ignored(name):
 
                     rospy.loginfo("Removing outdated detected object: " + name)
                     self.clear_detected(name)
