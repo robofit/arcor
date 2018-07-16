@@ -5,6 +5,7 @@ from item import Item
 from button_item import ButtonItem
 from list_item import ListItem
 from desc_item import DescItem
+import rospkg
 
 translate = QtCore.QCoreApplication.translate
 
@@ -62,10 +63,13 @@ class ProgramListItem(Item):
             if not self.learned_dict[self.map_from_idx_to_program_id[idx]]:
                 self.list.items[idx].set_background_color(QtCore.Qt.red)
 
-        self.run_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Run"), self, self.run_btn_cb)
-        self.edit_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Edit"), self, self.edit_btn_cb)
-        self.template_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Template"), self, self.template_btn_cb)
-        self.visualize_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Visualize"), self, self.visualize_btn_cb)
+        rospack = rospkg.RosPack()
+        icons_path = rospack.get_path('art_projected_gui') + '/icons/'
+
+        self.run_btn = ButtonItem(scene, 0, 0, "BTN", self, self.run_btn_cb, image_path=icons_path + "run.svg")
+        self.edit_btn = ButtonItem(scene, 0, 0, "BTN", self, self.edit_btn_cb, image_path=icons_path + "edit.svg")
+        self.template_btn = ButtonItem(scene, 0, 0, "BTN", self, self.template_btn_cb, image_path=icons_path + "template.svg")
+        self.visualize_btn = ButtonItem(scene, 0, 0, "BTN", self, self.visualize_btn_cb, image_path=icons_path + "visualize.svg")
 
         self.run_btn.set_enabled(False)
         self.edit_btn.set_enabled(False)
@@ -77,27 +81,17 @@ class ProgramListItem(Item):
             self.list.set_current_idx(self.map_from_program_id_to_idx[selected_program_id])
 
         sp = self.m2pix(0.005)
-        h = title.mapToParent(title.boundingRect().bottomLeft()).y() + sp
+        # h = title.mapToParent(title.boundingRect().bottomLeft()).y() + sp
+        h = 0
+
         self.list.setPos(sp, h)
         h += self.list._height()
         h += 2 * sp
 
         btns = (self.run_btn, self.edit_btn, self.template_btn, self.visualize_btn)
 
-        if sum(btn.boundingRect().width() for btn in btns) > self.boundingRect().width():
-
-            hl = len(btns) / 2
-
-            self._place_childs_horizontally(h, sp, btns[:hl])
-            h += btns[0]._height() + sp
-
-            self._place_childs_horizontally(h, sp, btns[hl:])
-            h += btns[hl]._height()
-
-        else:
-
-            self._place_childs_horizontally(h, sp, btns)
-            h += self.run_btn._height()
+        self._place_childs_horizontally(h, sp, btns)
+        h += self.run_btn._height()
 
         h += 3 * sp
 

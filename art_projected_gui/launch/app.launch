@@ -8,6 +8,7 @@
     <arg name="rpm" default="2000"/>
     <arg name="notif_origin" default="0.05,0.05"/>
     <arg name="font_scale" default="1.0"/>
+    <arg name="program_widget_pos" default="0.2,0.4"/>
 
     <group ns="/art/interface/projected_gui">
 
@@ -18,6 +19,7 @@
         <param name="scene_server_port" value="1234"/>
         <param name="notif_origin" value="$(arg notif_origin)"/>
         <param name="font_scale" value="$(arg font_scale)"/>
+        <param name="program_widget_pos" value="$(arg program_widget_pos)"/>
     
         <node pkg="art_projected_gui" name="app" type="app.py" output="screen" launch-prefix="xvfb-run"> <!-- launch-prefix="python -m cProfile -o art_projected_gui.txt"-->
 

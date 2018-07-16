@@ -91,7 +91,7 @@ class UICoreRos(UICore):
         self.program_list = None
         self.program_vis = None
         self.template = False  # TODO this should be stored in program_vis?
-        self.last_prog_pos = (0.2, self.height - 0.2)
+        self.program_widget_pos = array_from_param("program_widget_pos", float, 2, [0.2, self.height - 0.2])
         self.last_edited_prog_id = None
 
         self.ph = ProgramHelper()
@@ -529,8 +529,8 @@ class UICoreRos(UICore):
         rospy.logdebug("Showing ProgramItem with readonly=" + str(readonly) + ", stopped=" + str(stopped))
         self.program_vis = ProgramItem(
             self.scene,
-            self.last_prog_pos[0],
-            self.last_prog_pos[1],
+            self.program_widget_pos[0],
+            self.program_widget_pos[1],
             self.ph,
             self.current_instruction,
             self.ih,
@@ -646,7 +646,7 @@ class UICoreRos(UICore):
                 if it is None:
                     continue
                 try:
-                    self.last_prog_pos = it.get_pos()
+                    self.program_widget_pos = it.get_pos()
                 except AttributeError:
                     pass
                 break
@@ -1263,8 +1263,8 @@ class UICoreRos(UICore):
 
         self.program_list = ProgramListItem(
             self.scene,
-            self.last_prog_pos[0],
-            self.last_prog_pos[1],
+            self.program_widget_pos[0],
+            self.program_widget_pos[1],
             headers_to_show,
             d,
             self.last_edited_prog_id,
