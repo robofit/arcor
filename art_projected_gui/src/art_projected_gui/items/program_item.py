@@ -86,12 +86,15 @@ class ProgramItem(Item):
         self.program_learned = False
 
         # block "view"
-        self.block_finished_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.block_finished_btn_cb, image_path=icons_path + "back.svg")
-        self.block_edit_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.block_edit_btn_cb, image_path=icons_path + "edit.svg")
+        self.block_finished_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.block_finished_btn_cb,
+                                             image_path=icons_path + "back.svg")
+        self.block_edit_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.block_edit_btn_cb,
+                                         image_path=icons_path + "edit.svg")
 
         self.block_on_success_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.block_on_success_btn_cb,
                                                image_path=icons_path + "success.svg")
-        self.block_on_failure_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.block_on_failure_btn_cb, image_path=icons_path + "failure.svg")
+        self.block_on_failure_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.block_on_failure_btn_cb,
+                                               image_path=icons_path + "failure.svg")
 
         # block "view" when in visualization
         self.block_visualize_btn = ButtonItem(self.scene(), 0, 0, translate(
@@ -108,7 +111,8 @@ class ProgramItem(Item):
 
             bmsg = self.ph.get_program().blocks[i]
 
-            bdata.append(translate("ProgramItem", "Block %1\n%2\nSuccess: %3, failure: %4").arg(bmsg.id).arg(bmsg.name).arg(bmsg.on_success).arg(bmsg.on_failure))
+            bdata.append(translate("ProgramItem", "Block %1\n%2\nSuccess: %3, failure: %4").arg(bmsg.id).arg(bmsg.name).
+                         arg(bmsg.on_success).arg(bmsg.on_failure))
             idx = len(bdata) - 1
             self.blocks_map[idx] = bmsg.id
             self.blocks_map_rev[bmsg.id] = idx
@@ -132,7 +136,8 @@ class ProgramItem(Item):
             self.block_back_btn.set_enabled(True)
             self.block_visualize_btn.set_enabled(False)
             # hide edit block buttons
-            group_visible((self.block_finished_btn, self.block_edit_btn, self.block_on_failure_btn, self.block_on_success_btn), False)
+            group_visible((self.block_finished_btn, self.block_edit_btn, self.block_on_failure_btn,
+                           self.block_on_success_btn), False)
 
         else:
             self._place_childs_horizontally(y, self.sp, [
@@ -149,10 +154,14 @@ class ProgramItem(Item):
         # items "view"
         self.item_edit_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Ed"), self, self.item_edit_btn_cb, image_path=icons_path + "edit.svg")
-        self.item_run_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.item_run_btn_cb, image_path=icons_path + "run.svg")
-        self.item_on_success_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.item_on_success_btn_cb, image_path=icons_path + "success.svg")
-        self.item_on_failure_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.item_on_failure_btn_cb, image_path=icons_path + "failure.svg")
-        self.item_finished_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.item_finished_btn_cb, image_path=icons_path + "back.svg")
+        self.item_run_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.item_run_btn_cb,
+                                       image_path=icons_path + "run.svg")
+        self.item_on_success_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.item_on_success_btn_cb,
+                                              image_path=icons_path + "success.svg")
+        self.item_on_failure_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.item_on_failure_btn_cb,
+                                              image_path=icons_path + "failure.svg")
+        self.item_finished_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.item_finished_btn_cb,
+                                            image_path=icons_path + "back.svg")
 
         self.items_list = None
 
@@ -160,12 +169,14 @@ class ProgramItem(Item):
                        self.item_on_success_btn, self.item_on_failure_btn, self.item_edit_btn), False)
 
         # readonly (program running) "view"
-        self.pr_pause_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.pr_pause_btn_cb, image_path=icons_path + "pause.svg")
+        self.pr_pause_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.pr_pause_btn_cb,
+                                       image_path=icons_path + "pause.svg")
 
         if self.stopped:
             self.pr_pause_btn.set_image(icons_path + "run.svg")
 
-        self.pr_cancel_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.pr_cancel_btn_cb, image_path=icons_path + "stop.svg")
+        self.pr_cancel_btn = ButtonItem(self.scene(), 0, 0, "BTN", self, self.pr_cancel_btn_cb,
+                                        image_path=icons_path + "stop.svg")
 
         group_visible((self.pr_pause_btn, self.pr_cancel_btn), False)
 
@@ -358,7 +369,8 @@ class ProgramItem(Item):
             self._handle_item_btns()
 
             group_visible((self.block_finished_btn, self.block_edit_btn, self.block_on_failure_btn,
-                           self.block_on_success_btn, self.block_visualize_btn, self.block_back_btn, self.blocks_list), False)
+                           self.block_on_success_btn, self.block_visualize_btn, self.block_back_btn,
+                           self.blocks_list), False)
 
         else:
 

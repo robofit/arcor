@@ -68,8 +68,10 @@ class ProgramListItem(Item):
 
         self.run_btn = ButtonItem(scene, 0, 0, "BTN", self, self.run_btn_cb, image_path=icons_path + "run.svg")
         self.edit_btn = ButtonItem(scene, 0, 0, "BTN", self, self.edit_btn_cb, image_path=icons_path + "edit.svg")
-        self.template_btn = ButtonItem(scene, 0, 0, "BTN", self, self.template_btn_cb, image_path=icons_path + "template.svg")
-        self.visualize_btn = ButtonItem(scene, 0, 0, "BTN", self, self.visualize_btn_cb, image_path=icons_path + "visualize.svg")
+        self.template_btn = ButtonItem(scene, 0, 0, "BTN", self, self.template_btn_cb,
+                                       image_path=icons_path + "template.svg")
+        self.visualize_btn = ButtonItem(scene, 0, 0, "BTN", self, self.visualize_btn_cb,
+                                        image_path=icons_path + "visualize.svg")
 
         self.run_btn.set_enabled(False)
         self.edit_btn.set_enabled(False)
