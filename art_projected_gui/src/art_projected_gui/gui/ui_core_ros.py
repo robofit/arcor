@@ -138,7 +138,7 @@ class UICoreRos(UICore):
             '/art/interface/hololens/active/', Bool, self.hololens_active_cb)
         self.hololens_connected = False
         self.hololens_state_pub = rospy.Publisher(
-            '/art/interface/hololens/state', HololensState)
+            '/art/interface/hololens/state', HololensState, queue_size=1)
 
         self.art = ArtApiHelper()
 
@@ -866,8 +866,6 @@ class UICoreRos(UICore):
         if old_state.timestamp == rospy.Time(0) or old_state.timestamp - state.timestamp > rospy.Duration(0):
 
             rospy.logdebug('Got state with newer timestamp!')
-            item = self.ph.get_item_msg(state.block_id, state.program_current_item.id)
-            item = state.program_current_item
             self.clear_all()
 
             self.learning_vis(state)
@@ -917,8 +915,6 @@ class UICoreRos(UICore):
 
         rospy.logdebug("Program ID:" + str(self.ph.get_program_id()) + ", active item ID: " +
                        str((block_id, item_id)) + ", blocks: " + str(blocks) + ", ro: " + str(read_only))
-
-        self.clear_all()
 
         if blocks:
 

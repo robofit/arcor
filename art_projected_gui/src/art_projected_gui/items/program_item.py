@@ -119,7 +119,7 @@ class ProgramItem(Item):
 
             self._update_block(v)
 
-        y = self.title.mapToParent(self.title.boundingRect().bottomLeft()).y() + self.sp
+        y = self.title.mapToParent(self.title.boundingRect().bottomLeft()).y()
         self.blocks_list.setPos(self.sp, y)
         y += self.blocks_list._height() + self.sp
 
@@ -340,6 +340,8 @@ class ProgramItem(Item):
 
     def set_active(self, block_id, item_id):
 
+        print block_id, item_id
+
         old_block_id = self.block_id
 
         self.block_id = block_id
@@ -356,7 +358,7 @@ class ProgramItem(Item):
             self._handle_item_btns()
 
             group_visible((self.block_finished_btn, self.block_edit_btn, self.block_on_failure_btn,
-                           self.block_on_success_btn, self.block_visualize_btn, self.block_back_btn), False)
+                           self.block_on_success_btn, self.block_visualize_btn, self.block_back_btn, self.blocks_list), False)
 
         else:
 

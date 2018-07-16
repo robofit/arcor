@@ -86,24 +86,14 @@ class ListItem(Item):
 
         self.middle_item_idx = max(idx, min(1, len(self.items) - 1))
 
-        if self.isEnabled():
-
-            if self.middle_item_idx == min(1, len(self.items) - 1):
-                self.up_btn.set_enabled(False)
-            else:
-                self.up_btn.set_enabled(True)
-
-            if idx < len(self.items) - 2:
-                self.down_btn.set_enabled(True)
-            else:
-                self.down_btn.set_enabled(False)
-
         for it in self.items:
 
             it.setVisible(False)
 
             if select:
                 it.set_pressed(False)
+
+        displayed = [self.middle_item_idx]
 
         # selected item is always vertically centered
         self.items[self.middle_item_idx].setPos(
@@ -127,7 +117,9 @@ class ListItem(Item):
 
             self.items[idx].setPos(0, y)
             self.items[idx].setVisible(True)
+            displayed.append(idx)
             vspace += self.sp + h
+            displayed.append(idx)
 
         # fill space below middle item
         for idx in range(self.middle_item_idx + 1, len(self.items)):
@@ -142,6 +134,12 @@ class ListItem(Item):
             self.items[idx].setPos(0, y)
             self.items[idx].setVisible(True)
             vspace += self.sp + h
+            displayed.append(idx)
+
+        if self.isEnabled():
+
+            self.up_btn.set_enabled(min(displayed) > 0)
+            self.down_btn.set_enabled(max(displayed) < len(self.items) - 1)
 
     def up_btn_cb(self, btn):
 
