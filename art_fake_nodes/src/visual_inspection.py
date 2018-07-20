@@ -8,7 +8,7 @@ import random
 
 class FakeVisualInspection:
 
-    l = (True, True)
+    l = (True, True, False)
 
     def __init__(self):
         self.vi_result = rospy.Publisher('/art/visual_inspection/result', Bool, queue_size=1)
