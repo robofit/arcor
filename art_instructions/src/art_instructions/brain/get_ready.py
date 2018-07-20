@@ -54,7 +54,7 @@ class GetReadyFSM(BrainFSM):
         # TODO handle if it fails
         severity, error, arm_id = self.brain.robot.arms_get_ready()
         if error is not None:
-            rospy.logerr("Error while geting ready: ", arm_id)
+            rospy.logerr("Error while geting ready: " + arm_id)
             self.fsm.error(severity=severity, error=error)
         else:
             self.fsm.done(success=True)
@@ -69,7 +69,7 @@ class GetReadyFSM(BrainFSM):
         # TODO handle if it fails
         severity, error, arm_id = self.brain.robot.arms_get_ready()
         if error is not None:
-            rospy.logerr("Error while geting ready: ", arm_id)
+            rospy.logerr("Error while geting ready: " + arm_id)
             self.fsm.error(severity=severity, error=error)
         else:
             self.fsm.done(success=True)
