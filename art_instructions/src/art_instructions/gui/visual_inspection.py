@@ -117,7 +117,7 @@ class VisualInspection(GuiInstruction):
             self.img_item = None
 
         else:
-            return (self.img_item, rospy.Time.now() + rospy.Duration(1.0)),
+            return (self.img_item, rospy.Time.now() + rospy.Duration(5.0)),
 
         return ()
 
