@@ -110,6 +110,8 @@ instructions:
         package: art_instructions
         learn: PlaceToContainerLearn
         run: PlaceToContainerRun
+        params:
+          show_area_run: True
       brain:
         package: art_instructions
         fsm: PlaceToContainerFSM

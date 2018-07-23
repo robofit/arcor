@@ -114,10 +114,16 @@ class PlaceToContainerRun(PlaceToContainer):
             if obj_id:
                 self.ui.notif(translate("PlaceToContainer", "Placing %1 to %2...").arg(obj_id).arg(cont_id))
 
-        self.ui.add_polygon(
-            translate(
-                "PlaceToContainer",
-                "Containers"),
-            poly_points=conversions.get_pick_polygon_points(
-                self.ui.ph.get_polygon(*self.cid)[0]),
-            fixed=True)
+        try:
+            show_area = self.ui.ih["PlaceToContainer"].gui.params["show_area_run"]
+        except KeyError:
+            show_area = True
+
+        if show_area:
+            self.ui.add_polygon(
+                translate(
+                    "PlaceToContainer",
+                    "Containers"),
+                poly_points=conversions.get_pick_polygon_points(
+                    self.ui.ph.get_polygon(*self.cid)[0]),
+                fixed=True)
