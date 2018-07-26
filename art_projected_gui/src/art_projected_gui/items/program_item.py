@@ -351,7 +351,7 @@ class ProgramItem(Item):
 
     def set_active(self, block_id, item_id):
 
-        print block_id, item_id
+        # print "set_active", block_id, item_id
 
         old_block_id = self.block_id
 
@@ -529,7 +529,7 @@ class ProgramItem(Item):
         self._update_title()
         self.update()
         if self.item_switched_cb:
-            self.item_switched_cb(self.block_id, None, blocks=False)
+            self.item_switched_cb(self.block_id, self.item_id, blocks=False)
 
     def block_edit_btn_cb(self, btn):
 

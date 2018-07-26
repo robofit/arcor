@@ -955,7 +955,12 @@ class UICoreRos(UICore):
                     translate("UICoreRos",
                               "Select instruction or return to blocks."))
 
+        if block_id and item_id is None:
+            self.clear_all()
+
         if None not in (block_id, item_id):
+
+            self.clear_all()  # TODO melo by se zavolat i pri odvybrani instrukce!
 
             self.state_manager.update_program_item(
                 self.ph.get_program_id(), block_id, self.ph.get_item_msg(block_id, item_id))

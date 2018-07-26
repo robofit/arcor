@@ -22,6 +22,7 @@ class DescItem(Item):
 
         font = QtGui.QFont(self.default_font, self.get_font_size(self.scale))
         metrics = QtGui.QFontMetrics(font)
+
         return QtCore.QRectF(
             metrics.boundingRect(
                 QtCore.QRect(
