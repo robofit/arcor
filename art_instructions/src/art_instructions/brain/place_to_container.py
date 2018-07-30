@@ -93,7 +93,7 @@ class PlaceToContainerFSM(BrainFSM):
         place_pose.header.frame_id = "marker"
         place_pose.pose = container.pose
 
-        place_pose.pose.position.z += container_bb[2] / 2.0 + 0.05  # TODO plus half of bb height of the picked object
+        place_pose.pose.position.z += container_bb[2] / 2.0 + 0.1  # TODO plus half of bb height of the picked object
         severity, error, _ = self.brain.robot.place_object_to_pose(
             place_pose, arm_id)
         if error is not None:
