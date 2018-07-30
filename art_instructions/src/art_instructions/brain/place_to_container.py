@@ -76,11 +76,6 @@ class PlaceToContainerFSM(BrainFSM):
                            error=InterfaceState.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
             return
 
-        if update_state_manager:
-            self.brain.state_manager.update_program_item(
-                self.brain.ph.get_program_id(), self.brain.block_id, self.brain.instruction, {
-                    "SELECTED_CONTAINER_ID": self.brain.robot.get_arm_holding_object(arm_id).object_id})
-
         polygon = self.brain.ph.get_polygon(self.brain.block_id, self.brain.instruction.id)[0][0]
         container = ArtBrainUtils.get_pick_obj_from_polygon(
             container_type, polygon, self.brain.objects)
@@ -88,12 +83,19 @@ class PlaceToContainerFSM(BrainFSM):
             self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                            error=ArtBrainErrors.ERROR_OBJECT_MISSING_IN_POLYGON)
             return
+
+        if update_state_manager:
+            self.brain.state_manager.update_program_item(
+                self.brain.ph.get_program_id(), self.brain.block_id, self.brain.instruction, {
+                    "SELECTED_OBJECT_ID": self.brain.robot.get_arm_holding_object(arm_id).object_id,
+                    "SELECTED_CONTAINER_ID": container.object_id})
+
         container_bb = self.brain.art.get_object_type(container_type).bbox.dimensions
         place_pose = PoseStamped()
         place_pose.header.frame_id = "marker"
         place_pose.pose = container.pose
 
-        place_pose.pose.position.z += container_bb[2] / 2.0 + 0.1  # TODO plus half of bb height of the picked object
+        place_pose.pose.position.z += container_bb[2] / 2.0 + 0.065  # TODO plus half of bb height of the picked object
         severity, error, _ = self.brain.robot.place_object_to_pose(
             place_pose, arm_id)
         if error is not None:
