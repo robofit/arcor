@@ -34,9 +34,6 @@ class VisualInspection(GuiInstruction):
         self.showing_result = False
         self.to_be_cleaned_up = False
 
-        self.img_sub = rospy.Subscriber(topic, Image, self.image_callback, queue_size=1)
-        self.result_sub = rospy.Subscriber("/art/visual_inspection/result", Bool, self.result_callback, queue_size=10)
-
         try:
             # TODO maybe this could be in defined in instructions yaml?
             img_origin = array_from_param("/art/visual_inspection/origin", float, 2)
@@ -49,6 +46,9 @@ class VisualInspection(GuiInstruction):
 
         # TODO display image_item after we receive first image?
         self.img_item = ImageItem(self.ui.scene, img_origin[0], img_origin[1], img_size[0], img_size[1], fixed)
+
+        self.img_sub = rospy.Subscriber(topic, Image, self.image_callback, queue_size=1)
+        self.result_sub = rospy.Subscriber("/art/visual_inspection/result", Bool, self.result_callback, queue_size=10)
 
         self.text_timer = QtCore.QTimer(self)
         self.text_timer.timeout.connect(self.text_timer_tick)
@@ -68,8 +68,6 @@ class VisualInspection(GuiInstruction):
 
     def result_callback(self, msg):
 
-        rospy.loginfo("result")
-
         if not self.img_item:
             return
 
@@ -80,7 +78,7 @@ class VisualInspection(GuiInstruction):
         else:
             self.img_item.set_text("NOK", QtCore.Qt.red)
 
-        self.text_timer.start(1000)
+        self.text_timer.start(5000)
 
     def text_timer_tick(self):
 
@@ -104,8 +102,6 @@ class VisualInspection(GuiInstruction):
         self.img_item.set_image(qimage2ndarray.array2qimage(cv_image))
 
     def cleanup(self):
-
-        rospy.loginfo("cleanup")
 
         self.img_sub.unregister()
         self.result_sub.unregister()

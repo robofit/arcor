@@ -113,6 +113,8 @@ class PlaceToContainerRun(PlaceToContainer):
 
             if obj_id:
                 self.ui.notif(translate("PlaceToContainer", "Placing %1 to %2...").arg(obj_id).arg(cont_id))
+            else:
+                self.ui.notif(translate("PlaceToContainer", "Placing to %1...").arg(cont_id))
 
         try:
             show_area = self.ui.ih["PlaceToContainer"].gui.params["show_area_run"]

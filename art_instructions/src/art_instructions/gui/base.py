@@ -19,6 +19,10 @@ class GuiInstruction(QtCore.QObject):
         self.flags = flags
         self.notified = False
 
+    def loginfo(self, msg):
+
+        rospy.loginfo(self.NAME + ": " + msg)
+
     def logerr(self, msg):
 
         rospy.logerr(self.NAME + ": " + msg)
