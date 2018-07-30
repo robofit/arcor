@@ -177,7 +177,7 @@ class ArtGripper(object):
         self.manip_client.send_goal(goal)
         rospy.sleep(1)
         self.manip_client.wait_for_result()
-        print self.manip_client.get_result().result
+        # print self.manip_client.get_result().result
         if self.manip_client.get_result().result == ArmNavigationResult.SUCCESS:
             return True
         else:

@@ -58,7 +58,6 @@ class ArtBrain(object):
 
             for state_function in fsm.state_functions:
                 setattr(self.fsm, state_function, getattr(fsm, state_function))
-        self.ih = None
 
         self.fsm.check_robot_in = self.check_robot_in
         self.fsm.check_robot_out = self.check_robot_out
@@ -426,15 +425,15 @@ class ArtBrain(object):
     def state_program_load_instruction(self, event):
         rospy.logdebug('Current state: state_program_load_instruction')
         success = event.kwargs.get('success', True)
-        self.state_manager.set_error(0, 0)
+        self.state_manager.set_error(0, 0, auto_send=False)
         if not self.executing_program:
             self.fsm.finished()
             return
         if success:
-            (self.block_id, item_id) = self.ph.get_id_on_success(
+            self.block_id, item_id = self.ph.get_id_on_success(
                 self.block_id, self.instruction.id)
         else:
-            (self.block_id, item_id) = self.ph.get_id_on_failure(
+            self.block_id, item_id = self.ph.get_id_on_failure(
                 self.block_id, self.instruction.id)
 
         if self.block_id == 0:
@@ -617,7 +616,7 @@ class ArtBrain(object):
 
     def check_robot_out(self, event):
         halted = event.kwargs.get('halted', False)
-        print halted
+        # print halted
         if halted:
             return
         self.check_robot()

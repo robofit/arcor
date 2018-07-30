@@ -56,7 +56,7 @@ class ArtBrainRobotInterface:
         Returns:
 
         """
-        print data
+        # print data
         if len(data.arm_ids) == 0:
             for arm in self._arms:
                 arm.re_init()
@@ -135,7 +135,7 @@ class ArtBrainRobotInterface:
         # arm.pp_client.wait_for_result()
         severity, error, _ = self.wait_for_action_result(arm.pp_client)
         if error is not None:
-            print "returning 2"
+            # print "returning 2"
             return severity, error, arm_id
         # TODO: make some error msg etc
         rospy.logdebug('Results from p&p server')
@@ -189,10 +189,10 @@ class ArtBrainRobotInterface:
     def wait_for_action_result(self, action_client):
         r = rospy.Rate(5)
         while not rospy.is_shutdown() and action_client.simple_state != SimpleGoalState.DONE:
-            print self.is_halted()
+            # print self.is_halted()
             if self.is_halted():
                 action_client.cancel_goal()
-                print "returning"
+                # print "returning"
                 return ArtBrainErrorSeverities.WARNING, ArtBrainErrors.ERROR_ROBOT_HALTED, None
             r.sleep()
         return None, None, None
