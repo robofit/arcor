@@ -9,6 +9,7 @@
     <arg name="notif_origin" default="0.05,0.05"/>
     <arg name="font_scale" default="1.0"/>
     <arg name="program_widget_pos" default="0.2,0.4"/>
+    <arg name="locale" default="en_US"/>
 
     <group ns="/art/interface/projected_gui">
 
@@ -25,6 +26,7 @@
 
             <!--rosparam param="cursors">["cokoliv"]</rosparam-->
 
+            <param name="locale" value="$(arg locale)"/>
             <param name="projectors" value="$(arg projectors)"/>
 
             <!-- open window with scene - for debugging purposes (can be controlled using mouse) -->
