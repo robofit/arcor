@@ -228,27 +228,12 @@ class UICoreRos(UICore):
         self.state_manager = InterfaceStateManager(
             "PROJECTED UI", cb=self.interface_state_cb)
 
-        # TODO show some icon instead
-        self.user_pres_notif = LabelItem(self.scene, 0.05, 0.08, 0.2, 0.03)
-        QtCore.QObject.connect(self, QtCore.SIGNAL(
-            'user_pres_evt'), self.user_pres_evt)
-        self.user_pres = None
-        self.user_pres_sub = rospy.Subscriber("/art/interface/user/present", Bool, self.user_pres_cb)
+        # TODO import plugins dynamically
+        from art_projected_gui.plugins import UserPresentPlugin
+        self.plugins = []
+        self.plugins.append(UserPresentPlugin(self))
 
         rospy.loginfo("Projected GUI ready!")
-
-    def user_pres_cb(self, msg):
-
-        self.emit(QtCore.SIGNAL('user_pres_evt'), msg)
-
-    def user_pres_evt(self, msg):
-
-        if self.user_pres is None or msg.data != self.user_pres:
-            self.user_pres = msg.data
-            if self.user_pres:
-                self.user_pres_notif.add_msg("User detected", NotifyUserRequest.INFO)
-            else:
-                self.user_pres_notif.add_msg("User not present", NotifyUserRequest.INFO)
 
     def items_to_keep_timer_tick(self):
 
