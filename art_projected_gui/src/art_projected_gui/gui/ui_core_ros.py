@@ -6,14 +6,14 @@ import rospy
 from art_msgs.msg import InstancesArray, InterfaceState, LearningRequestAction,\
     LearningRequestGoal
 from art_msgs.msg import HololensState
-from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, TouchPointsItem, LabelItem,\
-    TouchTableItem, ProgramListItem, ProgramItem, DialogItem, PolygonItem
+from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, LabelItem,\
+    ProgramListItem, ProgramItem, DialogItem, PolygonItem
 from art_projected_gui.helpers import ProjectorHelper, conversions
 from art_helpers import InterfaceStateManager, ProgramHelper, ArtRobotHelper, UnknownRobot,\
     RobotParametersNotOnParameterServer
-from art_msgs.srv import TouchCalibrationPoints, TouchCalibrationPointsResponse, NotifyUser, NotifyUserResponse,\
+from art_msgs.srv import NotifyUser, NotifyUserResponse,\
     ProgramErrorResolve, ProgramErrorResolveRequest, ProgramIdTrigger, ProgramIdTriggerRequest, NotifyUserRequest
-from std_msgs.msg import Empty, Bool
+from std_msgs.msg import Bool
 from std_srvs.srv import Trigger, TriggerResponse
 from geometry_msgs.msg import PoseStamped
 import actionlib
@@ -80,10 +80,6 @@ class UICoreRos(UICore):
             'interface_state'), self.interface_state_evt)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL(
-            'touch_calibration_points_evt'), self.touch_calibration_points_evt)
-        QtCore.QObject.connect(self, QtCore.SIGNAL(
-            'touch_detected_evt'), self.touch_detected_evt)
-        QtCore.QObject.connect(self, QtCore.SIGNAL(
             'notify_user_evt'), self.notify_user_evt)
         QtCore.QObject.connect(self, QtCore.SIGNAL(
             'learning_request_done_evt'), self.learning_request_done_evt)
@@ -99,15 +95,6 @@ class UICoreRos(UICore):
         cursors = rospy.get_param("~cursors", [])
         for cur in cursors:
             PoseStampedCursorItem(self.scene, cur)
-
-        TouchTableItem(
-            self.scene,
-            '/art/interface/touchtable/touch',
-            list(
-                self.get_scene_items_by_type(PoseStampedCursorItem)),
-            show_touch_points=rospy.get_param(
-                "~show_touch_points",
-                False))
 
         self.projectors = []
 
@@ -181,9 +168,6 @@ class UICoreRos(UICore):
         self.obj_sub = rospy.Subscriber(
             '/art/object_detector/object_filtered', InstancesArray, self.object_cb, queue_size=1)
 
-        self.touch_points = None
-        self.touch_calib_srv = rospy.Service(
-            '/art/interface/projected_gui/touch_calibration', TouchCalibrationPoints, self.touch_calibration_points_cb)
         self.notify_user_srv = rospy.Service(
             '/art/interface/projected_gui/notify_user', NotifyUser, self.notify_user_srv_cb)
         try:
@@ -229,9 +213,10 @@ class UICoreRos(UICore):
             "PROJECTED UI", cb=self.interface_state_cb)
 
         # TODO import plugins dynamically
-        from art_projected_gui.plugins import UserPresentPlugin
+        from art_projected_gui.plugins import UserPresentPlugin, TouchTablePlugin
         self.plugins = []
         self.plugins.append(UserPresentPlugin(self))
+        self.plugins.append(TouchTablePlugin(self))
 
         rospy.loginfo("Projected GUI ready!")
 
@@ -260,60 +245,6 @@ class UICoreRos(UICore):
             return "Undefined error"
 
         return self.error_dict[error]
-
-    def touch_calibration_points_evt(self, pts):
-
-        for it in self.scene.items():
-
-            if isinstance(it, LabelItem):
-                continue
-
-            it.setVisible(False)  # TODO remember settings (how?)
-
-        self.notif(translate(
-            "UICoreRos", "Touch table calibration started. Please press the white point."))
-        self.touch_points = TouchPointsItem(self.scene, pts)
-
-    def touch_calibration_points_cb(self, req):
-
-        resp = TouchCalibrationPointsResponse()
-
-        pts = []
-
-        for pt in req.points:
-
-            pts.append((pt.point.x, pt.point.y))
-
-        self.emit(QtCore.SIGNAL('touch_calibration_points_evt'), pts)
-        self.touched_sub = rospy.Subscriber(
-            '/art/interface/touchtable/touch_detected', Empty, self.touch_detected_cb, queue_size=10)
-        resp.success = True
-        return resp
-
-    def touch_detected_evt(self, msg):
-
-        if self.touch_points is None:
-            return
-
-        if not self.touch_points.next():
-
-            for it in self.scene.items():
-
-                if isinstance(it, LabelItem):
-                    continue
-
-                # TODO fix this - in makes visible even items that are invisible by purpose
-                it.setVisible(True)
-
-            self.notif(
-                translate("UICoreRos", "Touch table calibration finished."), temp=False)
-            self.scene.removeItem(self.touch_points)
-            self.touch_points = None
-            self.touched_sub.unregister()
-
-    def touch_detected_cb(self, msg):
-
-        self.emit(QtCore.SIGNAL('touch_detected_evt'), msg)
 
     def calibrate_projectors_cb(self, req):
 
