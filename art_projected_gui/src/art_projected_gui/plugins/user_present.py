@@ -1,7 +1,7 @@
-from PyQt4 import QtSvg
 from art_projected_gui.plugins import GuiPlugin
 import rospy
 from std_msgs.msg import Bool
+from art_projected_gui.items import IconItem
 import rospkg
 
 from PyQt4 import QtCore
@@ -18,12 +18,9 @@ class UserPresentPlugin(GuiPlugin):
         rospack = rospkg.RosPack()
         icons_path = rospack.get_path('art_projected_gui') + '/icons/'
 
-        self.icon = QtSvg.QGraphicsSvgItem(icons_path + 'person.svg', self)
-        self.icon.setVisible(False)
-
         # TODO make position/size configurable
-        self.icon.setScale(self.m2pix(0.05)/self.icon.boundingRect().height())
-        self.icon.setPos(self.m2pix(0.05), self.m2pix(0.08))
+        self.icon = IconItem(self.ui.scene, 0.06, 0.09, 0.03, 0.03, icons_path + 'person.svg')
+        self.icon.setVisible(False)
 
         self.texts = {True: translate("UserPresentPlugin", "User detected."),
                       False: translate("UserPresentPlugin", "User left.")}
@@ -43,4 +40,4 @@ class UserPresentPlugin(GuiPlugin):
         if self.user_pres is None or msg.data != self.user_pres:
             self.user_pres = msg.data
             self.icon.setVisible(self.user_pres)
-            self.ui.notif(self.texts[self.user_pres])
+            self.ui.notif(self.texts[self.user_pres], temp=True)
