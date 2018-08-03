@@ -12,9 +12,9 @@ translate = QtCore.QCoreApplication.translate
 
 class HololensGuiPlugin(GuiPlugin):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, ui, parameters):
 
-        super(HololensGuiPlugin, self).__init__(*args, **kwargs)
+        super(HololensGuiPlugin, self).__init__(ui)
 
         # HoloLens visualization
         self.start_visualizing_srv = rospy.ServiceProxy(

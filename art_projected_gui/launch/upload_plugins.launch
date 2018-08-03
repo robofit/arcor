@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+
+    <rosparam command="delete" param="/art/interface/projected_gui/plugins"/>
+    <rosparam command="load" ns="/art/interface/projected_gui/plugins" file="$(find art_projected_gui)/config/plugins.yaml"/>
+
+</launch>

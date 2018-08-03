@@ -112,7 +112,7 @@ class Projector(SceneViewer):
         self.setPalette(p)
 
         self.projectors_calibrated_sub = rospy.Subscriber(
-            '/art/interface/projected_gui/app/projectors_calibrated', Bool, self.projectors_calibrated_cb,
+            '/art/interface/projected_gui/projectors_calibrated', Bool, self.projectors_calibrated_cb,
             queue_size=10)
         self.projectors_calibrated = False
 

@@ -157,14 +157,14 @@ class VisualInspectionLearn(VisualInspection):
         if ps:
 
             self.ui.notif(translate("VisualInspection", "Pose was stored."), temp=True)
-            self.ui.snd_info()
+            self.ui.notify_info()
             self.ui.program_vis.set_pose(ps)
             self.dialog.items[idx].set_caption(translate("VisualInspection", "Stored"))
 
         else:
 
             self.ui.notif(translate("VisualInspection", "Failed to get pose."), temp=True)
-            self.ui.snd_warn()
+            self.ui.notify_warn()
             self.dialog.items[idx].set_caption(translate("VisualInspection", "Failed"))
 
         self.dialog.items[idx].set_enabled(False)

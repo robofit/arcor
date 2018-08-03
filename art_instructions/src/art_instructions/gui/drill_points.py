@@ -253,7 +253,7 @@ class DrillPointsLearn(DrillPoints):
                     "Gripper pose relative to object %1 stored").arg(
                     c_obj.object_id),
                 temp=True)
-            self.ui.snd_info()
+            self.ui.notify_info()
             self.ui.program_vis.update_pose(ps, self.drill_pose_idx)
 
             self.drill_pose_idx += 1
@@ -270,7 +270,7 @@ class DrillPointsLearn(DrillPoints):
                     "Failed to find object near gripper."),
                 temp=True,
                 message_type=NotifyUserRequest.WARN)
-            self.ui.snd_warn()
+            self.ui.notify_warn()
 
 
 class DrillPointsRun(DrillPoints):

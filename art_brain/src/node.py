@@ -152,7 +152,7 @@ class ArtBrain(object):
             "/art/system/calibrated", Bool, self.system_calibrated_cb)
 
         self.projectors_calibrated_sub = rospy.Subscriber(
-            "/art/interface/projected_gui/app/projectors_calibrated", Bool, self.projectors_calibrated_cb)
+            "/art/interface/projected_gui/projectors_calibrated", Bool, self.projectors_calibrated_cb)
 
         self.srv_program_start = rospy.Service(
             'program/start', ProgramIdTrigger, self.program_start_cb)

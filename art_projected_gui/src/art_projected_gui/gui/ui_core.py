@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-from PyQt4 import QtGui, QtCore, QtNetwork
+from PyQt4 import QtGui, QtCore
 from art_projected_gui.items import ObjectItem, PlaceItem, LabelItem, PolygonItem, SquareItem
 import rospy
 from art_projected_gui.helpers import conversions
 from art_msgs.srv import NotifyUserRequest
-from std_srvs.srv import Empty, EmptyRequest
+from std_srvs.srv import Empty
 # import time
 import unicodedata
 
@@ -43,7 +43,7 @@ class UICore(QtCore.QObject):
         view (QGraphicsView): To show content of the scene in debug window.
     """
 
-    def __init__(self, x, y, width, height, rpm, scene_server_port, notif_origin=(0, 0), font_scale=1.0):
+    def __init__(self, x, y, width, height, rpm, notif_origin=(0, 0), font_scale=1.0):
         """
         Args:
             x (float): x coordinate of the scene's origin (in world coordinate system, meters).
@@ -59,7 +59,6 @@ class UICore(QtCore.QObject):
         self.y = y
         self.width = width
         self.height = height
-        self.port = scene_server_port
 
         w = self.width * rpm
         h = self.height / self.width * w
@@ -81,95 +80,6 @@ class UICore(QtCore.QObject):
         self.view.setRenderHint(QtGui.QPainter.Antialiasing)
         self.view.setViewportUpdateMode(QtGui.QGraphicsView.FullViewportUpdate)
         self.view.setStyleSheet("QGraphicsView { border-style: none; }")
-
-        self.tcpServer = QtNetwork.QTcpServer(self)
-        if not self.tcpServer.listen(port=self.port):
-
-            rospy.logerr(
-                'Failed to start scene TCP server on port ' + str(self.port))
-
-        self.tcpServer.newConnection.connect(self.new_connection)
-        self.connections = []
-
-        self.scene_timer = QtCore.QTimer()
-        self.connect(
-            self.scene_timer,
-            QtCore.SIGNAL('timeout()'),
-            self.send_to_clients_evt)
-        self.scene_timer.start(1.0 / 15 * 1000)
-
-        self.sound_info_srv = rospy.ServiceProxy("/art/interface/sound/info", Empty)
-        self.sound_warning_srv = rospy.ServiceProxy("/art/interface/sound/warning", Empty)
-
-        rospy.loginfo("Waiting for sound services...")
-        self.sound_info_srv.wait_for_service()
-        self.sound_warning_srv.wait_for_service()
-
-    def new_connection(self):
-
-        rospy.loginfo('Some projector node just connected.')
-        self.connections.append(self.tcpServer.nextPendingConnection())
-        self.connections[-1].setSocketOption(
-            QtNetwork.QAbstractSocket.LowDelayOption, 1)
-
-        # TODO deal with disconnected clients!
-        # self.connections[-1].disconnected.connect(clientConnection.deleteLater)
-
-    def send_to_clients_evt(self):
-
-        if len(self.connections) == 0:
-            return
-
-        # start = time.time()
-
-        pix = QtGui.QImage(
-            self.scene.width(),
-            self.scene.height(),
-            QtGui.QImage.Format_RGB888)
-        painter = QtGui.QPainter(pix)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        self.scene.render(painter)
-        painter.end()
-        pix = pix.mirrored()
-
-        block = QtCore.QByteArray()
-        out = QtCore.QDataStream(block, QtCore.QIODevice.WriteOnly)
-        out.setVersion(QtCore.QDataStream.Qt_4_0)
-        out.writeUInt32(0)
-
-        img = QtCore.QByteArray()
-        buffer = QtCore.QBuffer(img)
-        buffer.open(QtCore.QIODevice.WriteOnly)
-        pix.save(buffer, "JPG", 95)
-        out << img
-
-        out.device().seek(0)
-        out.writeUInt32(block.size() - 4)
-
-        # print block.size()
-
-        for con in self.connections:
-
-            con.write(block)
-
-        # end = time.time()
-        # rospy.logdebug("Image sent in: " + str(end-start))
-
-    def snd_info(self):
-
-        try:
-            self.sound_info_srv.call()
-        except rospy.ServiceException:
-            rospy.logerr("Sound service call failed!")
-            pass
-
-    def snd_warn(self):
-
-        try:
-            self.sound_warning_srv.call()
-        except rospy.ServiceException:
-            rospy.logerr("Sound service call failed!")
-            pass
 
     def notif(self, msg, min_duration=10.0, temp=False,
               message_type=NotifyUserRequest.INFO):

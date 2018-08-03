@@ -8,17 +8,18 @@ from art_msgs.msg import InstancesArray, InterfaceState, LearningRequestAction,\
 from art_msgs.msg import HololensState
 from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, LabelItem,\
     ProgramListItem, ProgramItem, DialogItem, PolygonItem
-from art_projected_gui.helpers import ProjectorHelper, conversions
+from art_projected_gui.helpers import conversions
 from art_helpers import InterfaceStateManager, ProgramHelper, ArtRobotHelper, UnknownRobot,\
     RobotParametersNotOnParameterServer
 from art_msgs.srv import NotifyUser, NotifyUserResponse,\
     ProgramErrorResolve, ProgramErrorResolveRequest, ProgramIdTrigger, ProgramIdTriggerRequest, NotifyUserRequest
 from std_msgs.msg import Bool
-from std_srvs.srv import Trigger, TriggerResponse
+from std_srvs.srv import Trigger
 from geometry_msgs.msg import PoseStamped
 import actionlib
 from art_utils import array_from_param, ArtApiHelper
 import tf
+import importlib
 
 
 translate = QtCore.QCoreApplication.translate
@@ -29,12 +30,7 @@ class UICoreRos(UICore):
     """The class builds on top of UICore and adds ROS-related stuff and application logic.
 
     Attributes:
-        fsm (FSM): state machine maintaining current state of the interface and proper transitions between states
         state_manager (interface_state_manager): synchronization of interfaces within the ARTable system
-        scene_pub (rospy.Publisher): publisher for scene images
-        last_scene_update (rospy.Time): time when the last scene image was published
-        scene_img_deq (Queue.Queue): thread-safe queue for scene images (which are published in separate thread)
-        projectors (list): array of ProjectorHelper instances
         art (ArtApiHelper): easy access to ARTable services
 
     """
@@ -47,10 +43,9 @@ class UICoreRos(UICore):
         origin = array_from_param("scene_origin", float, 2)
         size = array_from_param("scene_size", float, 2)
         rpm = rospy.get_param("rpm")
-        port = rospy.get_param("scene_server_port")
 
         super(UICoreRos, self).__init__(
-            origin[0], origin[1], size[0], size[1], rpm, port, notif_origin=array_from_param("notif_origin", float, 2),
+            origin[0], origin[1], size[0], size[1], rpm, notif_origin=array_from_param("notif_origin", float, 2),
             font_scale=rospy.get_param("font_scale", 1.0))
 
         self.tfl = tf.TransformListener()
@@ -96,20 +91,6 @@ class UICoreRos(UICore):
         for cur in cursors:
             PoseStampedCursorItem(self.scene, cur)
 
-        self.projectors = []
-
-        try:
-
-            for proj in array_from_param("~projectors"):
-                if len(proj) > 0:
-                    self.projectors.append(ProjectorHelper(proj))
-
-        except KeyError:
-            pass
-
-        if len(self.projectors) == 0:
-            rospy.loginfo("Starting with no projector.")
-
         rospy.loginfo("Waiting for /art/brain/learning_request")
         self.learning_action_cl = actionlib.SimpleActionClient(
             '/art/brain/learning_request', LearningRequestAction)
@@ -128,10 +109,6 @@ class UICoreRos(UICore):
             '/art/interface/hololens/state', HololensState, queue_size=1)
 
         self.art = ArtApiHelper()
-
-        self.projectors_calibrated_pub = rospy.Publisher(
-            "~projectors_calibrated", Bool, queue_size=1, latch=True)
-        self.projectors_calibrated_pub.publish(False)
 
         self.start_learning_srv = rospy.ServiceProxy(
             '/art/brain/learning/start', ProgramIdTrigger)  # TODO wait for service? where?
@@ -180,27 +157,6 @@ class UICoreRos(UICore):
 
         self.robot_arms = self.rh.get_robot_arms()
 
-        proj_calib = True
-
-        if len(self.projectors) > 0:
-            rospy.loginfo("Waiting for projector nodes...")
-            for proj in self.projectors:
-                proj.wait_until_available()
-                if not proj.is_calibrated():
-                    proj_calib = False
-
-        if proj_calib:
-
-            rospy.loginfo('Projectors already calibrated.')
-            self.projectors_calibrated_pub.publish(True)
-
-        else:
-
-            rospy.loginfo('Projectors not calibrated yet - waiting for command...')
-
-        self.projector_calib_srv = rospy.Service(
-            '/art/interface/projected_gui/calibrate_projectors', Trigger, self.calibrate_projectors_cb)
-
         self.current_instruction = None
         self.items_to_keep = []
         self.vis_instructions = []
@@ -212,13 +168,36 @@ class UICoreRos(UICore):
         self.state_manager = InterfaceStateManager(
             "PROJECTED UI", cb=self.interface_state_cb)
 
-        # TODO import plugins dynamically
-        from art_projected_gui.plugins import UserPresentPlugin, TouchTablePlugin
         self.plugins = []
-        self.plugins.append(UserPresentPlugin(self))
-        self.plugins.append(TouchTablePlugin(self))
+
+        plugins = rospy.get_param("/art/interface/projected_gui/plugins", {"plugins": {}})
+
+        for k, v in plugins["plugins"].iteritems():
+
+            try:
+                mod = importlib.import_module(v["package"])
+            except (KeyError, ValueError, ImportError) as e:
+                rospy.logerr(k + ": " + str(e))
+
+            if "params" not in v:
+                v["params"] = {}
+
+            self.plugins.append(getattr(mod, k)(self, v["params"]))
+
+        for plugin in self.plugins:
+            plugin.init()
 
         rospy.loginfo("Projected GUI ready!")
+
+    def notify_info(self):
+
+        for plugin in self.plugins:
+            plugin.notify_info()
+
+    def notify_warn(self):
+
+        for plugin in self.plugins:
+            plugin.notify_warn()
 
     def items_to_keep_timer_tick(self):
 
@@ -245,16 +224,6 @@ class UICoreRos(UICore):
             return "Undefined error"
 
         return self.error_dict[error]
-
-    def calibrate_projectors_cb(self, req):
-
-        resp = TriggerResponse()
-        resp.success = True
-
-        # call to start_projector_calibration is blocking
-        self.proj_calib_timer = rospy.Timer(rospy.Duration(0.001), self.start_projector_calibration, oneshot=True)
-
-        return resp
 
     def notify_user_srv_cb(self, req):
 
@@ -946,64 +915,6 @@ class UICoreRos(UICore):
             self.program_vis.set_place_pose(place)
             self.state_manager.update_program_item(self.ph.get_program_id(
             ), self.program_vis.block_id, self.program_vis.get_current_item())
-
-    def calib_done_cb(self, proj):
-
-        if proj.is_calibrated():
-
-            self.calib_proj_cnt += 1
-
-            while self.calib_proj_cnt < len(self.projectors):
-
-                if self.projectors[self.calib_proj_cnt].is_calibrated():
-                    self.calib_proj_cnt += 1
-                    continue
-
-                self.projectors[self.calib_proj_cnt].calibrate(
-                    self.calib_done_cb)
-                return
-
-            rospy.loginfo('Projectors calibrated.')
-            self.projectors_calibrated_pub.publish(True)
-
-        else:
-
-            # calibration failed - let's try again
-            rospy.logerr('Calibration failed for projector: ' + proj.proj_id)
-            proj.calibrate(self.calib_done_cb)
-
-    def start_projector_calibration(self, evt):
-
-        if len(self.projectors) == 0:
-
-            rospy.loginfo('No projectors to calibrate.')
-            self.projectors_calibrated_pub.publish(True)
-
-        else:
-
-            self.projectors_calibrated_pub.publish(False)
-            rospy.loginfo('Starting calibration of ' +
-                          str(len(self.projectors)) + ' projector(s)')
-
-            self.calib_proj_cnt = 0
-
-            for proj in self.projectors:
-
-                if proj.is_calibrated():
-
-                    self.calib_proj_cnt += 1
-                    continue
-
-                else:
-
-                    if not proj.calibrate(self.calib_done_cb):
-                        # TODO what to do?
-                        rospy.logerr("Failed to start projector calibration")
-
-                    return
-
-            rospy.loginfo('Projectors calibrated.')
-            self.projectors_calibrated_pub.publish(True)
 
     def is_template(self):
 

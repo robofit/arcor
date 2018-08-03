@@ -11,9 +11,9 @@ translate = QtCore.QCoreApplication.translate
 
 class UserPresentPlugin(GuiPlugin):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, ui, parameters):
 
-        super(UserPresentPlugin, self).__init__(*args, **kwargs)
+        super(UserPresentPlugin, self).__init__(ui)
 
         rospack = rospkg.RosPack()
         icons_path = rospack.get_path('art_projected_gui') + '/icons/'

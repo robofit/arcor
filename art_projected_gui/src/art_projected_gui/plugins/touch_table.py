@@ -14,9 +14,9 @@ translate = QtCore.QCoreApplication.translate
 
 class TouchTablePlugin(GuiPlugin):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, ui, parameters):
 
-        super(TouchTablePlugin, self).__init__(*args, **kwargs)
+        super(TouchTablePlugin, self).__init__(ui)
 
         QtCore.QObject.connect(self, QtCore.SIGNAL(
             'touch_calibration_points_evt'), self.touch_calibration_points_evt)
