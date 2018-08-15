@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="projectors" default=""/>
-    <arg name="scene_server" default="localhost" />
+    <arg name="scene_server" default="localhost" />  <!-- TODO plugin param -->
     <arg name="scene_size" default="1.0,0.5"/>
     <arg name="scene_origin" default="0,0"/>
     <arg name="rpm" default="2000"/>
@@ -27,7 +26,6 @@
             <!--rosparam param="cursors">["cokoliv"]</rosparam-->
 
             <param name="locale" value="$(arg locale)"/>
-            <param name="projectors" value="$(arg projectors)"/>
 
             <!-- open window with scene - for debugging purposes (can be controlled using mouse) -->
             <param name="show_scene" value="false"/>
