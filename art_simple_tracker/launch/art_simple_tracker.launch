@@ -1,3 +1,9 @@
+<?xml version="1.0"?>
 <launch>
-	<node name="art_simple_tracker" pkg="art_simple_tracker" type="tracker.py" respawn="false" output="screen" />
+
+	<arg name="ground_objects_on_table" default="false"/>
+
+	<node name="art_simple_tracker" pkg="art_simple_tracker" type="tracker.py" respawn="false" output="screen">
+		<param name="ground_objects_on_table" value="$(arg ground_objects_on_table)"/>
+	</node>
 </launch>
