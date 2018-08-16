@@ -95,7 +95,7 @@ class TrackedObject:
         for frame_id in frames_to_delete:
             del self.meas[frame_id]
 
-    def inst(self, table_size, ground_objects_on_table=False):
+    def inst(self, table_size, ground_objects_on_table=False, ground_bb_axis=SolidPrimitive.BOX_Z):
 
         inst = ObjInstance()
         inst.object_id = self.object_id
@@ -151,7 +151,7 @@ class TrackedObject:
 
         if inst.on_table and ground_objects_on_table:
             # TODO consider orientation!
-            inst.pose.position.z = self.object_type.bbox.dimensions[SolidPrimitive.BOX_Z] / 2.0
+            inst.pose.position.z = self.object_type.bbox.dimensions[ground_bb_axis] / 2.0
         else:
             inst.pose.position.z = np.average(pz, weights=w)
 
@@ -197,6 +197,7 @@ class ArtSimpleTracker:
         self.use_forearm_cams = False
         self.table_size = array_from_param("/art/conf/table/size", float, 2, wait=True)
         self.ground_objects_on_table = rospy.get_param("~ground_objects_on_table", False)
+        self.ground_bb_axis = rospy.get_param("~ground_bb_axis", SolidPrimitive.BOX_Z)
         if self.ground_objects_on_table:
             rospy.loginfo("Objects on table will be grounded.")
         self.api = ArtApiHelper()
@@ -347,7 +348,7 @@ class ArtSimpleTracker:
 
             for k, v in self.objects.iteritems():
 
-                inst = v.inst(self.table_size, self.ground_objects_on_table)
+                inst = v.inst(self.table_size, self.ground_objects_on_table, self.ground_bb_axis)
 
                 if inst is None:  # new object might not have enough measurements yet
 
