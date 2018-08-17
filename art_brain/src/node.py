@@ -973,9 +973,15 @@ class ArtBrain(object):
 
     def learning_request_cb(self, goal):
         result = LearningRequestResult()
+        result.success = True
+
         if not self.fsm.is_learning_run:
+            rospy.logerr("Not in learning mode but got learning request goal: " + str(goal.request))
             result.success = False
             result.message = "Not in learning mode!"
+            self.as_learning_request.set_aborted(result)
+            return
+
         rospy.logdebug("Learning_request goal: " + str(goal.request))
 
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
@@ -988,49 +994,27 @@ class ArtBrain(object):
 
             self.state_manager.state.edit_enabled = True
 
-            if self.fsm.is_learning_run:
-                self.instruction_fsm[instruction.type].learning()
-                # TODO: really?
-                result.success = True
-                self.state_manager.state.edit_enabled = True
-                self.state_manager.send()
-                self.as_learning_request.set_succeeded(result)
-            else:
-                result.success = False
-                result.message = "Not in learning state!"
-                self.as_learning_request.set_aborted(result)
+            self.instruction_fsm[instruction.type].learning()  # TODO check and handle errors
 
-            # TODO: handle error
+            self.state_manager.state.edit_enabled = True
+            self.state_manager.send()
+            self.as_learning_request.set_succeeded(result)
+
         elif goal.request == LearningRequestGoal.EXECUTE_ITEM:
             self.ph.set_item_msg(
                 self.state_manager.state.block_id, instruction)
 
-            # TODO let ui(s) know that item is being executed
-
-            # self.fsm.error(severity=ArtBrainErrorSeverities.INFO,
-            #                error=ArtBrainErrorSeverities.ERROR_LEARNING_NOT_IMPLEMENTED)
-            if self.fsm.is_learning_run:
-                self.instruction_fsm[instruction.type].learning_run()
-                # TODO: really?
-                result.success = True
-
-                self.as_learning_request.set_succeeded(result)
-            else:
-                result.success = False
-                result.message = "Not in learning state!"
-                self.as_learning_request.set_aborted(result)
+            self.instruction_fsm[instruction.type].learning_run()  # TODO check and handle errors
+            self.as_learning_request.set_succeeded(result)
 
         elif goal.request == LearningRequestGoal.DONE:
-            # Great!
-            result.success = True
 
-            self.fsm.done()
+            self.fsm.done()   # TODO check and handle errors?
             self.as_learning_request.set_succeeded(result)
         else:
 
             result.success = False
-            result.message = "Unkwnown request"
-
+            result.message = "Unknown request"
             self.as_learning_request.set_aborted(result)
 
 
