@@ -22,8 +22,8 @@ class UserPresentPlugin(GuiPlugin):
         self.icon = IconItem(self.ui.scene, 0.06, 0.09, 0.03, 0.03, icons_path + 'person.svg')
         self.icon.setVisible(False)
 
-        self.texts = {True: translate("UserPresentPlugin", "User detected."),
-                      False: translate("UserPresentPlugin", "User left.")}
+        # self.texts = {True: translate("UserPresentPlugin", "User detected."),
+        #              False: translate("UserPresentPlugin", "User left.")}
 
         QtCore.QObject.connect(self, QtCore.SIGNAL('user_pres_evt'), self.user_pres_evt)
         self.user_pres = None
@@ -40,4 +40,4 @@ class UserPresentPlugin(GuiPlugin):
         if self.user_pres is None or msg.data != self.user_pres:
             self.user_pres = msg.data
             self.icon.setVisible(self.user_pres)
-            self.ui.notif(self.texts[self.user_pres], temp=True)
+            # self.ui.notif(self.texts[self.user_pres], temp=True)
