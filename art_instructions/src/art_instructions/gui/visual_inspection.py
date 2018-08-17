@@ -170,16 +170,6 @@ class VisualInspectionLearn(VisualInspection):
         self.dialog.items[idx].set_enabled(False)
         self.dialog_timer.start(1000)
 
-    def cleanup(self):
-
-        super(VisualInspectionLearn, self).cleanup()
-
-        if self.dialog:
-            self.ui.scene.removeItem(self.dialog)
-            self.dialog = None
-
-        return ()
-
     def dialog_timer_tick(self):
 
         for idx, arm in enumerate(self.ui.rh.get_robot_arms()):
@@ -187,6 +177,12 @@ class VisualInspectionLearn(VisualInspection):
 
         for v in self.dialog.items:
             v.set_enabled(True)
+
+    def learning_done(self):
+
+        if self.dialog:
+            self.ui.scene.removeItem(self.dialog)
+            self.dialog = None
 
 
 class VisualInspectionRun(VisualInspection):
