@@ -145,121 +145,101 @@ class ArtTouchDriver:
         return None
 
     def process(self):
-        # print 1 if self.device._eventq else 0
+
         try:
             event = self.device.read()
         except (OSError, TypeError):
-            rospy.logdebug("Reconnecting...")
-            rospy.sleep(0.1)
-            try:
-                self.device.find(name=self.device_name)
-            except IOError:
-                pass
+            rospy.signal_shutdown("Failed to read data...")
             return
 
-        while True:
-            if event.evtype == 3 and event.code == 47 and event.value >= 0:
-                # MT_SLOT
-                self.slot = self.get_slot_by_id(event.value)
-                if self.slot is None:
-                    self.slot = Slot(slot_id=event.value)
-                    self.slots.append(self.slot)
+        if event.evtype == 3 and event.code == 47 and event.value >= 0:
+            # MT_SLOT
+            self.slot = self.get_slot_by_id(event.value)
+            if self.slot is None:
+                self.slot = Slot(slot_id=event.value)
+                self.slots.append(self.slot)
 
-            elif event.evtype == 3 and event.code == 57 and event.value >= 0:
-                # MT_TRACK_ID start
-                if self.slot is None:
-                    self.slot = Slot(track_id=event.value, slot_id=0)
-                    self.slots.append(self.slot)
-                else:
-                    self.slot.track_id = event.value
+        elif event.evtype == 3 and event.code == 57 and event.value >= 0:
+            # MT_TRACK_ID start
+            if self.slot is None:
+                self.slot = Slot(track_id=event.value, slot_id=0)
+                self.slots.append(self.slot)
+            else:
+                self.slot.track_id = event.value
 
-            elif event.evtype == 3 and event.code == 57 and event.value < 0:
-                # MT_TRACK_ID end
-                if self.slot is not None:
-                    self.to_delete_id = self.slot.track_id
-                    self.slots.remove(self.slot)
-                    self.slot = None
+        elif event.evtype == 3 and event.code == 57 and event.value < 0:
+            # MT_TRACK_ID end
+            if self.slot is not None:
+                self.to_delete_id = self.slot.track_id
+                self.slots.remove(self.slot)
+                self.slot = None
 
-            elif event.evtype == 3 and event.code == 53:
-                # x position
-                self.slot.x = event.value
+        elif event.evtype == 3 and event.code == 53:
+            # x position
+            self.slot.x = event.value
 
-            elif event.evtype == 3 and event.code == 54:
-                # y position
-                self.slot.y = event.value
+        elif event.evtype == 3 and event.code == 54:
+            # y position
+            self.slot.y = event.value
 
-            elif event.evtype == 0:
+        elif event.evtype == 0:
 
-                touch = Touch()
-                if self.slot is None:
-                    touch.id = self.to_delete_id
-                    touch.touch = False
-                else:
-                    touch.touch = True
-                    touch.id = self.slot.track_id
-                    touch.point = PointStamped()
-                    touch.point.header.stamp = rospy.Time.now()
-                    touch.point.header.frame_id = self.target_frame
-
-                    if self.calibrated:
-
-                        pt = [self.slot.x, self.slot.y, 1]
-
-                        pt = self.h_matrix.dot(
-                            np.array(pt, dtype='float64')).tolist()
-                        # print pt
-                        touch.point.point.x = pt[0][0]
-                        touch.point.point.y = pt[0][1]
-
-                    if self.calibrating:
-
-                        dist = None
-
-                        if len(self.calib_points) > 0:
-
-                            pp = np.array(self.calib_points[-1])
-                            p = np.array((self.slot.x, self.slot.y))
-
-                            # calculate distance from previous touch - in order
-                            # to avoid unintended touches
-                            dist = np.linalg.norm(pp - p)
-
-                            rospy.logdebug(
-                                "Distance from previous touch: " + str(dist))
-
-                        if self.touch_cnt < len(self.ref_points) and (
-                                dist is None or dist > 500):
-
-                            self.calib_points.append(
-                                (self.slot.x, self.slot.y))
-                            self.touch_det_pub.publish()
-                            self.touch_cnt += 1
-
-                            if self.touch_cnt == len(self.ref_points):
-
-                                self.calculate_calibration()
-                                self.set_calibrating(False)
+            touch = Touch()
+            if self.slot is None:
+                touch.id = self.to_delete_id
+                touch.touch = False
+            else:
+                touch.touch = True
+                touch.id = self.slot.track_id
+                touch.point = PointStamped()
+                touch.point.header.stamp = rospy.Time.now()
+                touch.point.header.frame_id = self.target_frame
 
                 if self.calibrated:
-                    self.touch_pub.publish(touch)
 
-            else:
-                pass
-            # print event
+                    pt = [self.slot.x, self.slot.y, 1]
 
-            if not self.device._eventq:
-                break
+                    pt = self.h_matrix.dot(
+                        np.array(pt, dtype='float64')).tolist()
+                    # print pt
+                    touch.point.point.x = pt[0][0]
+                    touch.point.point.y = pt[0][1]
 
-            try:
-                event = self.device.read()
-            except (OSError, TypeError):
-                rospy.logdebug("Reconnecting...")
-                rospy.sleep(0.1)
-                try:
-                    self.device.find(name=self.device_name)
-                except IOError:
-                    pass
-                return
+                if self.calibrating:
+
+                    dist = None
+
+                    if len(self.calib_points) > 0:
+
+                        pp = np.array(self.calib_points[-1])
+                        p = np.array((self.slot.x, self.slot.y))
+
+                        # calculate distance from previous touch - in order
+                        # to avoid unintended touches
+                        dist = np.linalg.norm(pp - p)
+
+                        rospy.logdebug(
+                            "Distance from previous touch: " + str(dist))
+
+                    if self.touch_cnt < len(self.ref_points) and (
+                            dist is None or dist > 500):
+
+                        self.calib_points.append(
+                            (self.slot.x, self.slot.y))
+                        self.touch_det_pub.publish()
+                        self.touch_cnt += 1
+
+                        if self.touch_cnt == len(self.ref_points):
+
+                            self.calculate_calibration()
+                            self.set_calibrating(False)
+
+            if self.calibrated:
+                self.touch_pub.publish(touch)
+
+        # wtf?
+        # if not self.device._eventq:
+        #    break
 
     def calculate_calibration(self):
 
