@@ -98,6 +98,7 @@ class PlaceToPoseFSM(BrainFSM):
 
             arm_id = self.brain.robot.select_arm_for_place(
                 obj_type, instruction.ref_id)
+
             if arm_id is None:
                 if update_state_manager:
                     self.brain.state_manager.update_program_item(
@@ -105,10 +106,16 @@ class PlaceToPoseFSM(BrainFSM):
                 self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
                                error=InterfaceState.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT)
                 return
+            if self.brain.robot.get_arm_holding_object(arm_id):
+                obj_id = self.brain.robot.get_arm_holding_object(arm_id).object_id
+            else:
+                self.fsm.error(severity=ArtBrainErrorSeverities.WARNING,
+                               error=ArtBrainErrors.ERROR_GRIPPER_NOT_HOLDING_SELECTED_OBJECT, halted=True)
+                return
             if update_state_manager:
                 self.brain.state_manager.update_program_item(
                     self.brain.ph.get_program_id(), self.brain.block_id, instruction, {
-                        "SELECTED_OBJECT_ID": self.brain.robot.get_arm_holding_object(arm_id).object_id})
+                        "SELECTED_OBJECT_ID": obj_id})
             place_pose = self.brain.ph.get_pose(self.brain.block_id, instruction.id)[0][0]
 
             severity, error, _ = self.brain.robot.place_object_to_pose(
@@ -121,6 +128,7 @@ class PlaceToPoseFSM(BrainFSM):
                     return
                 self.fsm.error(severity=severity, error=error)
             else:
+                self.brain.robot.get_arm_by_id(arm_id).last_pick_instruction_id = None
                 if get_ready_after_place:
                     self.brain.try_robot_arms_get_ready([arm_id])
                 self.fsm.done(success=True)
