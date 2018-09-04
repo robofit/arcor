@@ -219,6 +219,6 @@ class PickFromFeederVis(PickFromFeeder):
 
     def __init__(self, *args, **kwargs):
 
-        super(PickFromFeederRun, self).__init__(*args, **kwargs)
+        super(PickFromFeederVis, self).__init__(*args, **kwargs)
 
         self.ui.select_object_type(self.ui.ph.get_object(*self.cid)[0][0])

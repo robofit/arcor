@@ -133,10 +133,10 @@ class PickFromPolygonVis(PickFromPolygon):
 
         super(PickFromPolygonVis, self).__init__(*args, **kwargs)
 
-        self.select_object_type(self.ph.get_object(*self.cid)[0][0])
+        self.ui.select_object_type(self.ui.ph.get_object(*self.cid)[0][0])
 
-        self.add_polygon(
+        self.ui.add_polygon(
             translate(
                 "PickFromPolygon",
                 "PICK POLYGON"),
-            poly_points=conversions.get_pick_polygon_points(self.ph.get_polygon(*self.cid)[0]), fixed=True)
+            poly_points=conversions.get_pick_polygon_points(self.ui.ph.get_polygon(*self.cid)[0]), fixed=True)

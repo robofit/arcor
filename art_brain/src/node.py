@@ -77,6 +77,9 @@ class ArtBrain(object):
         self.fsm.state_learning_step_error = self.state_learning_step_error
         self.fsm.state_learning_done = self.state_learning_done
         self.fsm.state_update_program_item = self.state_update_program_item
+        self.fsm.visualize_load_block_id = self.visualize_load_block_id
+        self.fsm.state_visualize_run = self.state_visualize_run
+        self.fsm.state_visualize_done = self.state_visualize_done
 
         self.block_id = None
         self.user_id = 0
@@ -577,6 +580,27 @@ class ArtBrain(object):
 
     def state_learning_done(self, event):
         rospy.logdebug('Current state: state_learning_done')
+        self.fsm.done()
+        pass
+
+    # ***************************************************************************************
+    #                                  STATES VISUALIZING
+    # ***************************************************************************************
+
+    '''def state_visualize_init(self, event):
+        rospy.logdebug('Current state: Visualize init')
+        self.visualizing = True
+        rospy.set_param("visualize_program", True)
+        #self.fsm.init_done()'''
+
+    def visualize_load_block_id(self, event):
+        self.block_id = self.state_manager.state.block_id
+
+    def state_visualize_run(self, event):
+        rospy.logdebug('Current state: state_visualize_run')
+
+    def state_visualize_done(self, event):
+        rospy.logdebug('Current state: state_visualize_done')
         self.fsm.done()
         pass
 

@@ -149,7 +149,9 @@ class TrackedObject:
 
         inst.on_table = 0 < inst.pose.position.x < table_size[0] and 0 < inst.pose.position.y < table_size[1]
 
-        if inst.on_table and ground_objects_on_table:
+        # ground objects that are really sitting on the table (exclude those in the air)
+        if inst.on_table and ground_objects_on_table and np.average(
+                pz, weights=w) < self.object_type.bbox.dimensions[ground_bb_axis] / 2.0 + 0.02:
             # TODO consider orientation!
             inst.pose.position.z = self.object_type.bbox.dimensions[ground_bb_axis] / 2.0
         else:

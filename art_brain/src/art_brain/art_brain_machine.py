@@ -56,12 +56,13 @@ class ArtBrainMachine(object):
 
               # visualize
 
-              State(name='visualize_init', on_enter=[
-                  'visualize_load_block_id', 'state_visualize_init'], on_exit=[]),
+              # State(name='visualize_init', on_enter=[
+              #   'visualize_load_block_id', 'state_visualize_init'], on_exit=[]),
               State(name='visualize_run', on_enter=[
                   'visualize_load_block_id', 'state_visualize_run'], on_exit=[]),
               State(name='visualize_done', on_enter=[
-                  'state_visualize_done'], on_exit=[])]
+                  'state_visualize_done'], on_exit=[])
+              ]
 
     def __init__(self, states, transitions):
         self.name = 'brain'
@@ -79,7 +80,7 @@ class ArtBrainMachine(object):
         self.machine.add_transition(
             'learning_start', 'waiting_for_action', 'learning_init')
         self.machine.add_transition(
-            'visualize_start', 'waiting_for_action', 'visualize_init')
+            'visualize_start', 'waiting_for_action', 'visualize_run')
 
         # program
         self.machine.add_transition(
@@ -127,6 +128,11 @@ class ArtBrainMachine(object):
             'done', 'learning_done', 'waiting_for_action')
         self.machine.add_transition(
             'learning_done', 'learning_run', 'learning_done')
+
+        self.machine.add_transition(
+            'visualize_done', 'visualize_run', 'visualize_done')
+        self.machine.add_transition(
+            'done', 'visualize_done', 'waiting_for_action')
 
         for transition in transitions:
             self.machine.add_transition(transition[0], transition[1], transition[2])

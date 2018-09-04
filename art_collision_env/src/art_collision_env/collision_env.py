@@ -8,6 +8,8 @@ import uuid
 from threading import RLock
 from shape_msgs.msg import SolidPrimitive
 from art_utils import array_from_param
+from tf import TransformListener
+import tf
 
 """
 TODO
@@ -32,6 +34,8 @@ class CollisionEnv(object):
         self.ready = False
         self.setup = setup
         self.world_frame = world_frame
+
+        self.tf_listener = TransformListener()
 
         self.api = ArtApiHelper()
         rospy.loginfo("Waiting for DB API")
@@ -108,6 +112,15 @@ class CollisionEnv(object):
         msg = CollisionObjects()
 
         for v in self.artificial_objects.values():
+            # transform all collision primitives into world frame (= marker)
+            if v.pose.header.frame_id != self.world_frame:
+                try:
+                    self.tf_listener.waitForTransform(
+                        v.pose.header.frame_id, self.world_frame, rospy.Time(), rospy.Duration(5.0))
+                    transformed_pose = self.tf_listener.transformPose(self.world_frame, v.pose)
+                    v.pose = transformed_pose
+                except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                    pass
 
             msg.primitives.append(v)
 
