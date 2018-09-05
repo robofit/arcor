@@ -1,0 +1,6 @@
+<launch>
+
+    <node pkg="art_bridge" type="bridge_to_json_msg.py" name="bridge_to_json_msg" output="screen">
+    </node>
+
+</launch>
