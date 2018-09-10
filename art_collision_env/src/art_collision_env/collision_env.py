@@ -116,11 +116,11 @@ class CollisionEnv(object):
             if v.pose.header.frame_id != self.world_frame:
                 try:
                     self.tf_listener.waitForTransform(
-                        v.pose.header.frame_id, self.world_frame, rospy.Time(), rospy.Duration(5.0))
-                    transformed_pose = self.tf_listener.transformPose(self.world_frame, v.pose)
-                    v.pose = transformed_pose
-                except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                    pass
+                        v.pose.header.frame_id, self.world_frame, rospy.Time(0), rospy.Duration(1.0))
+                    v.pose = self.tf_listener.transformPose(self.world_frame, v.pose)
+                except tf.Exception as e:
+                    rospy.logwarn("Failed to transform artificial object: " + str(e))
+                    continue
 
             msg.primitives.append(v)
 
@@ -319,4 +319,42 @@ class CollisionEnv(object):
                 ret.append(name)
 
         rospy.loginfo("Removed " + str(len(ret)) + " detected objects.")
+        return ret
+
+    def get_attached(self, transform_to_world=True):
+        """
+        keep in mind - attached objects might not be detected
+        """
+
+        ret = []
+
+        with self.lock:
+
+            ao = self.ps.get_attached_objects()
+
+        for k, v in ao.iteritems():
+
+            if len(v.primitives) != 1 or len(v.primitive_poses) != 1:
+                rospy.logwarn("Unsupported type of attached object: " + k)
+                continue
+
+            if v.primitives[0].type != SolidPrimitive.BOX:
+                rospy.logwarn("Only box-like attached objects are supported so far.")
+                continue
+
+            ps = PoseStamped()
+            ps.header = v.header
+            ps.pose = v.primitive_poses[0]
+
+            if transform_to_world and ps.header.frame_id != self.world_frame:
+                try:
+                    self.tf_listener.waitForTransform(
+                        ps.header.frame_id, self.world_frame, ps.header.stamp, rospy.Duration(1.0))
+                    ps = self.tf_listener.transformPose(self.world_frame, ps)
+                except tf.Exception as e:
+                    rospy.logwarn("Failed to transform attached object: " + str(e))
+                    continue
+
+            ret.append((k, ps, v.primitives[0]))
+
         return ret
