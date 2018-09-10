@@ -149,14 +149,6 @@ class TrackedObject:
 
         inst.on_table = 0 < inst.pose.position.x < table_size[0] and 0 < inst.pose.position.y < table_size[1]
 
-        # ground objects that are really sitting on the table (exclude those in the air)
-        if inst.on_table and ground_objects_on_table and np.average(
-                pz, weights=w) < self.object_type.bbox.dimensions[ground_bb_axis] / 2.0 + 0.02:
-            # TODO consider orientation!
-            inst.pose.position.z = self.object_type.bbox.dimensions[ground_bb_axis] / 2.0
-        else:
-            inst.pose.position.z = np.average(pz, weights=w)
-
         ar = np.average(r, axis=0, weights=w)
         ap = np.average(p, axis=0, weights=w)
         ay = np.average(y, axis=0, weights=w)
@@ -167,10 +159,26 @@ class TrackedObject:
 
         cur_rpy = [fr, fp, fy]
 
-        a2q(inst.pose.orientation, transformations.quaternion_from_euler(*cur_rpy))
+        q_arr = transformations.quaternion_from_euler(*cur_rpy)
 
-        # TODO "fix" roll and pitch so they are only 0, 90, 180 or 270 degrees
-        # yaw (in table coordinates) may stay as it is
+        # ground objects that are really sitting on the table (exclude those in the air)
+        if inst.on_table and ground_objects_on_table and np.average(
+                pz, weights=w) < self.object_type.bbox.dimensions[ground_bb_axis] / 2.0 + 0.02:
+            # TODO consider orientation!
+            inst.pose.position.z = self.object_type.bbox.dimensions[ground_bb_axis] / 2.0
+
+            # TODO more intelligent solution would be to "fix" roll and pitch so they are only 0, 90, 180 or 270 degrees
+            # keep only yaw
+            q_arr[0] = 0.0
+            q_arr[1] = 0.0
+            q_arr[3] = 0.0
+
+            q_arr = transformations.unit_vector(q_arr)
+
+        else:
+            inst.pose.position.z = np.average(pz, weights=w)
+
+        a2q(inst.pose.orientation, q_arr)
 
         for (key, value) in self.flags.iteritems():
             kv = KeyValue()
