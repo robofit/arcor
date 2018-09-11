@@ -71,7 +71,9 @@ class ProgramItem(Item):
         super(ProgramItem, self).__init__(scene, x, y)
 
         self.title = DescItem(self.scene(), 0, 0, self)
-        self.title.setPos(QtCore.QPointF(self.m2pix(0.01), self.m2pix(0.01)))  # TODO it should take coords given to __init__
+
+        # TODO it should take coords given to __init__
+        self.title.setPos(QtCore.QPointF(self.m2pix(0.01), self.m2pix(0.01)))
 
         self.w = self.m2pix(0.2)
         self.h = self.m2pix(0.25)
