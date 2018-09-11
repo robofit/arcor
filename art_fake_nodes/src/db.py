@@ -2,16 +2,14 @@
 
 import rospy
 from std_msgs.msg import Bool, Header
-from std_srvs.srv import Empty, EmptyResponse
 from art_msgs.srv import getProgram, getProgramResponse, getProgramHeaders, getProgramHeadersResponse, \
     storeProgram, storeProgramResponse, getObjectType, getObjectTypeResponse, storeObjectType, storeObjectTypeResponse,\
     ProgramIdTrigger, ProgramIdTriggerResponse, GetCollisionPrimitives, GetCollisionPrimitivesResponse,\
     AddCollisionPrimitive, AddCollisionPrimitiveResponse, ClearCollisionPrimitives, ClearCollisionPrimitivesResponse
 
-from art_msgs.msg import Program, ProgramBlock, ProgramItem, ProgramHeader, ObjectType, CollisionPrimitive
+from art_msgs.msg import Program, ProgramBlock, ProgramItem, ProgramHeader, ObjectType
 from geometry_msgs.msg import PoseStamped, PolygonStamped, Pose, Point, Quaternion, Polygon, Point32
 from shape_msgs.msg import SolidPrimitive
-
 
 
 class FakeCalibration:
@@ -124,10 +122,11 @@ class FakeCalibration:
         return ProgramIdTriggerResponse(success=True)
 
     def srv_get_object_cb(self, request):
-        return getObjectTypeResponse(success=True, object_type=ObjectType(name=request.name,
-                                                                          container=True,
-                                                                          bbox=SolidPrimitive(type=1,
-                                                                                              dimensions=[0.1, 0.1, 0.1])))
+        return getObjectTypeResponse(success=True,
+                                     object_type=ObjectType(
+                                         name=request.name,
+                                         container=True,
+                                         bbox=SolidPrimitive(type=1, dimensions=[0.1, 0.1, 0.1])))
 
     def srv_store_object_cb(self, request):
         return storeObjectTypeResponse(success=True)

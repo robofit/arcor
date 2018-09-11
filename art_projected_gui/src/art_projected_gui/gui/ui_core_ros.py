@@ -6,8 +6,7 @@ import rospy
 from art_msgs.msg import InstancesArray, InterfaceState, LearningRequestAction,\
     LearningRequestGoal
 from art_msgs.msg import HololensState
-from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, LabelItem,\
-    ProgramListItem, ProgramItem, DialogItem, PolygonItem
+from art_projected_gui.items import PoseStampedCursorItem, ProgramListItem, ProgramItem, DialogItem
 from art_projected_gui.helpers import conversions
 from art_helpers import InterfaceStateManager, ProgramHelper, ArtRobotHelper, UnknownRobot,\
     RobotParametersNotOnParameterServer
