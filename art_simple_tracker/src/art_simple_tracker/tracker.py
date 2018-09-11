@@ -95,7 +95,8 @@ class TrackedObject:
         for frame_id in frames_to_delete:
             del self.meas[frame_id]
 
-    def inst(self, table_size, ground_objects_on_table=False, ground_bb_axis=SolidPrimitive.BOX_Z):
+    def inst(self, table_size, ground_objects_on_table=False, ground_bb_axis=SolidPrimitive.BOX_Z,
+             yaw_only_on_table=False):
 
         inst = ObjInstance()
         inst.object_id = self.object_id
@@ -163,17 +164,18 @@ class TrackedObject:
 
         # ground objects that are really sitting on the table (exclude those in the air)
         if inst.on_table and ground_objects_on_table and np.average(
-                pz, weights=w) < self.object_type.bbox.dimensions[ground_bb_axis] / 2.0 + 0.02:
+                pz, weights=w) < self.object_type.bbox.dimensions[ground_bb_axis] / 2.0 + 0.05:
             # TODO consider orientation!
             inst.pose.position.z = self.object_type.bbox.dimensions[ground_bb_axis] / 2.0
 
-            # TODO more intelligent solution would be to "fix" roll and pitch so they are only 0, 90, 180 or 270 degrees
-            # keep only yaw
-            q_arr[0] = 0.0
-            q_arr[1] = 0.0
-            q_arr[3] = 0.0
+            if yaw_only_on_table:
 
-            q_arr = transformations.unit_vector(q_arr)
+                # TODO figure out which axis should be kept
+                # ...like this it only works for some objects (containers)
+                q_arr[0] = 0.0
+                q_arr[1] = 0.0
+
+                q_arr = transformations.unit_vector(q_arr)
 
         else:
             inst.pose.position.z = np.average(pz, weights=w)
@@ -207,6 +209,7 @@ class ArtSimpleTracker:
         self.use_forearm_cams = False
         self.table_size = array_from_param("/art/conf/table/size", float, 2, wait=True)
         self.ground_objects_on_table = rospy.get_param("~ground_objects_on_table", False)
+        self.yaw_only_on_table = rospy.get_param("~yaw_only_on_table", False)
         self.ground_bb_axis = rospy.get_param("~ground_bb_axis", SolidPrimitive.BOX_Z)
         if self.ground_objects_on_table:
             rospy.loginfo("Objects on table will be grounded.")
@@ -358,7 +361,8 @@ class ArtSimpleTracker:
 
             for k, v in self.objects.iteritems():
 
-                inst = v.inst(self.table_size, self.ground_objects_on_table, self.ground_bb_axis)
+                inst = v.inst(self.table_size, self.ground_objects_on_table, self.ground_bb_axis,
+                              self.yaw_only_on_table)
 
                 if inst is None:  # new object might not have enough measurements yet
 
