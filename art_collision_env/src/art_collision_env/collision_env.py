@@ -334,17 +334,17 @@ class CollisionEnv(object):
 
         for k, v in ao.iteritems():
 
-            if len(v.primitives) != 1 or len(v.primitive_poses) != 1:
+            if len(v.object.primitives) != 1 or len(v.object.primitive_poses) != 1:
                 rospy.logwarn("Unsupported type of attached object: " + k)
                 continue
 
-            if v.primitives[0].type != SolidPrimitive.BOX:
+            if v.object.primitives[0].type != SolidPrimitive.BOX:
                 rospy.logwarn("Only box-like attached objects are supported so far.")
                 continue
 
             ps = PoseStamped()
-            ps.header = v.header
-            ps.pose = v.primitive_poses[0]
+            ps.header = v.object.header
+            ps.pose = v.object.primitive_poses[0]
 
             if transform_to_world and ps.header.frame_id != self.world_frame:
                 try:
@@ -355,6 +355,6 @@ class CollisionEnv(object):
                     rospy.logwarn("Failed to transform attached object: " + str(e))
                     continue
 
-            ret.append((k, ps, v.primitives[0]))
+            ret.append((k, ps, v.object.primitives[0]))
 
         return ret
