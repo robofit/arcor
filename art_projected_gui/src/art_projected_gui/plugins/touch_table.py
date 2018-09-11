@@ -33,15 +33,19 @@ class TouchTablePlugin(GuiPlugin):
         self.touch_points = None
         self.touch_calib_srv = rospy.Service('/art/interface/projected_gui/touch_calibration', TouchCalibrationPoints,
                                              self.touch_calibration_points_cb)
+        self.items_state = {}
 
     def touch_calibration_points_evt(self, pts):
 
+        self.items_state = {}
+
         for it in self.ui.scene.items():
 
-            if isinstance(it, LabelItem):
+            if isinstance(it, LabelItem):  # ...to keep notification area displayed
                 continue
 
-            it.setVisible(False)  # TODO come up with more intelligent way how to hide scene content (overlay?)
+            self.items_state[it] = it.isVisible()
+            it.setVisible(False)
 
         self.ui.notif(translate(
             "TouchTablePlugin", "Touch table calibration started. Please press the white point."))
@@ -70,19 +74,21 @@ class TouchTablePlugin(GuiPlugin):
 
         if not self.touch_points.next():
 
+            self.ui.scene.removeItem(self.touch_points)
+            self.touch_points = None
+            self.touched_sub.unregister()
+
             for it in self.ui.scene.items():
 
                 if isinstance(it, LabelItem):
                     continue
 
-                # TODO fix this - in makes visible even items that are invisible by purpose
-                it.setVisible(True)
+                it.setVisible(self.items_state[it])
+
+            self.items_state = {}
 
             self.ui.notif(
                 translate("TouchTablePlugin", "Touch table calibration finished."), temp=False)
-            self.ui.scene.removeItem(self.touch_points)
-            self.touch_points = None
-            self.touched_sub.unregister()
 
     def touch_detected_cb(self, msg):
 
