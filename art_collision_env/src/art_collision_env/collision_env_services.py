@@ -11,7 +11,7 @@ class CollisionEnvServices(CollisionEnv):
     def __init__(self, setup, world_frame):
 
         super(CollisionEnvServices, self).__init__(setup, world_frame)
-
+        # TODO reload nic nenacte ..nejdriv sem musel zavolat rosrun art_setup_1 init.py
         self.srv_art_clear_all = rospy.Service(self.NS + "artificial/reload", EmptySrv, self.srv_art_reload_cb)
         self.srv_art_clear_all = rospy.Service(self.NS + "artificial/clear/all", EmptySrv, self.srv_art_clear_all_cb)
         self.srv_art_clear_name = rospy.Service(
