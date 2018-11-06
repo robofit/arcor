@@ -28,7 +28,7 @@ class FakeDetector:
 
         self.obj = ObjInstance()
         self.obj.object_id = obj_id
-        self.obj.object_type = "profile_20_60"
+        self.obj.object_type = "fake_object_type"
 
         angles = list(rpy)
 
@@ -68,4 +68,4 @@ if __name__ == '__main__':
     except rospy.ROSInterruptException:
         pass
     except IndexError:
-        print "Arguments: obj_id frame_id x y z r p y noise"
+        print("Arguments: obj_id frame_id x y z r p y noise")

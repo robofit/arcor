@@ -435,4 +435,4 @@ if __name__ == '__main__':
         ArtSimpleTracker()
         rospy.spin()
     except rospy.ROSInterruptException:
-        print "program interrupted before completion"
+        print("program interrupted before completion")
