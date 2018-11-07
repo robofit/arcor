@@ -7,6 +7,9 @@ import rospkg
 
 translate = QtCore.QCoreApplication.translate
 
+rospack = rospkg.RosPack()
+icons_path = rospack.get_path('art_projected_gui') + '/icons/'
+
 
 class ListItem(Item):
 
@@ -34,16 +37,15 @@ class ListItem(Item):
             self.items.append(ButtonItem(self.scene(), 0, 0,
                                          d, self, self.item_clicked_cb, width=w, push_button=True))
 
-        rospack = rospkg.RosPack()
-        icons_path = rospack.get_path('art_projected_gui') + '/icons/'
+        # TODO down_btn is not properly aligned
+        self.up_btn = ButtonItem(self.scene(), 0, 0, "", self, self.up_btn_cb, width=w / 2 - 0.005 / 2,
+                                 image_path=icons_path + "arrow-up.svg")
+        self.down_btn = ButtonItem(self.scene(), 0, 0, "", self, self.down_btn_cb, width=w / 2 - 0.005 / 2,
+                                   image_path=icons_path + "arrow-down.svg")
 
-        self.up_btn = ButtonItem(self.scene(), 0, 0, translate(
-            "ProgramItem", "Up"), self, self.up_btn_cb, width=w, image_path=icons_path + "arrow-up.svg")
-        self.down_btn = ButtonItem(self.scene(), 0, 0, translate(
-            "ProgramItem", "Down"), self, self.down_btn_cb, width=w, image_path=icons_path + "arrow-down.svg")
-
-        self.up_btn.setPos(0, 0)
-        self.down_btn.setPos(0, self.h - self.down_btn.boundingRect().height())
+        self.up_btn.setPos(0, self.h - self.down_btn.boundingRect().height())
+        self.down_btn.setPos(self.up_btn.boundingRect().width() + self.sp,
+                             self.h - self.down_btn.boundingRect().height())
 
         self.set_current_idx(min(1, len(self.items) - 1))
 
@@ -87,24 +89,14 @@ class ListItem(Item):
 
         self.middle_item_idx = max(idx, min(1, len(self.items) - 1))
 
-        if self.isEnabled():
-
-            if self.middle_item_idx == min(1, len(self.items) - 1):
-                self.up_btn.set_enabled(False)
-            else:
-                self.up_btn.set_enabled(True)
-
-            if idx < len(self.items) - 2:
-                self.down_btn.set_enabled(True)
-            else:
-                self.down_btn.set_enabled(False)
-
         for it in self.items:
 
             it.setVisible(False)
 
             if select:
                 it.set_pressed(False)
+
+        displayed = [self.middle_item_idx]
 
         # selected item is always vertically centered
         self.items[self.middle_item_idx].setPos(
@@ -123,12 +115,14 @@ class ListItem(Item):
             h = self.items[idx].boundingRect().height()
             y = self.items[idx + 1].y() - self.sp - h
 
-            if y < self.up_btn.y() + self.up_btn.boundingRect().height():
+            if y < 0:
                 break
 
             self.items[idx].setPos(0, y)
             self.items[idx].setVisible(True)
+            displayed.append(idx)
             vspace += self.sp + h
+            displayed.append(idx)
 
         # fill space below middle item
         for idx in range(self.middle_item_idx + 1, len(self.items)):
@@ -143,6 +137,12 @@ class ListItem(Item):
             self.items[idx].setPos(0, y)
             self.items[idx].setVisible(True)
             vspace += self.sp + h
+            displayed.append(idx)
+
+        if self.isEnabled():
+
+            self.up_btn.set_enabled(min(displayed) > 0)
+            self.down_btn.set_enabled(max(displayed) < len(self.items) - 1)
 
     def up_btn_cb(self, btn):
 

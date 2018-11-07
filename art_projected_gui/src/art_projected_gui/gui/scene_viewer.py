@@ -8,6 +8,8 @@ class SceneViewer(QtGui.QWidget):
 
     def __init__(self):
 
+        self.kill_now = False
+
         self.pix_label = None
 
         super(SceneViewer, self).__init__()
@@ -33,7 +35,6 @@ class SceneViewer(QtGui.QWidget):
         self.tcpSocket.error.connect(self.on_error)
 
         rospy.loginfo("Scene viewer ready")
-        self.connect()
 
     def keyPressEvent(self, e):
 
@@ -44,19 +45,21 @@ class SceneViewer(QtGui.QWidget):
 
         r = rospy.Rate(1.0 / 5)
 
-        while not self.tcpSocket.waitForConnected(1):
+        while not self.tcpSocket.waitForConnected(1) and not self.kill_now:
 
-            if rospy.is_shutdown():
-                return
             rospy.loginfo("Waiting for scene server...")
             self.tcpSocket.connectToHost(self.server, self.port)
             r.sleep()
 
-        rospy.loginfo('Connected to scene server.')
+        if not self.kill_now:
+            rospy.loginfo('Connected to scene server.')
 
     def on_error(self):
 
         rospy.logerr("socket error")
+        if self.kill_now:
+            self.tcpSocket.close()
+            return
         QtCore.QTimer.singleShot(0, self.connect)
 
     def getScene(self):
@@ -64,7 +67,7 @@ class SceneViewer(QtGui.QWidget):
         instr = QtCore.QDataStream(self.tcpSocket)
         instr.setVersion(QtCore.QDataStream.Qt_4_0)
 
-        while True:
+        while not self.kill_now:
 
             if self.blockSize == 0:
                 if self.tcpSocket.bytesAvailable() < 4:

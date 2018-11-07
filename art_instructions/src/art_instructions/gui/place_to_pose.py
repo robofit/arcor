@@ -70,7 +70,7 @@ class PlaceToPoseLearn(PlaceToPose):
                                 fixed=not self.editable)
                     else:
 
-                        self.ui.add_place(self.ui.select_object_type(object_type.name), self.ui.get_def_pose(
+                        self.ui.add_place(self.get_name(self.block_id, it_id), self.ui.get_def_pose(
                         ), object_type, object_id, place_cb=self.ui.place_pose_changed, fixed=not self.editable)
 
                     continue

@@ -6,6 +6,5 @@
     </group>
 
     <include file="$(find art_db)/launch/art_db.launch"></include>
-   	<include file="$(find art_simple_tracker)/launch/art_simple_tracker.launch"></include>
 
 </launch>

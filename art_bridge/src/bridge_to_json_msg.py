@@ -38,6 +38,7 @@ class BridgeToJsonMsg:
             if not resp.success:
                 rospy.logwarn("Object type " + str(req.name) + " not in DB, skipping")
                 continue
+            # TODO publikuje se automaticky Z poloha na 0.023 .. opravit
             to_json = {'name': obj.object_id,
                        'type': obj.object_type,
                        'position': {'x': obj.pose.position.x,  # in meters

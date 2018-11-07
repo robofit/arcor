@@ -4,16 +4,15 @@ from art_msgs.msg import InstancesArray, ObjInstance, KeyValue
 from art_msgs.srv import ObjectFlagSetResponse, ObjectFlagSet, ObjectFlagClear, ObjectFlagClearResponse
 from std_srvs.srv import Empty, EmptyResponse
 import tf
-from geometry_msgs.msg import Pose, PoseStamped
-from math import sqrt
+from geometry_msgs.msg import PoseStamped
 import numpy as np
 from scipy.spatial import distance
 import threading
 from tf import transformations
-from math import pi, cos, sin, atan2
+from math import cos, sin, atan2
+from art_utils import ArtApiHelper, array_from_param
+from shape_msgs.msg import SolidPrimitive
 
-
-# TODO publish TF
 
 def q2a(q):
     return [q.x, q.y, q.z, q.w]
@@ -96,12 +95,12 @@ class TrackedObject:
         for frame_id in frames_to_delete:
             del self.meas[frame_id]
 
-    @property
-    def inst(self):
+    def inst(self, table_size, ground_objects_on_table=False, ground_bb_axis=SolidPrimitive.BOX_Z,
+             yaw_only_on_table=False):
 
         inst = ObjInstance()
         inst.object_id = self.object_id
-        inst.object_type = self.object_type
+        inst.object_type = self.object_type.name
 
         w = []
 
@@ -148,10 +147,8 @@ class TrackedObject:
 
         inst.pose.position.x = np.average(px, weights=w)
         inst.pose.position.y = np.average(py, weights=w)
-        inst.pose.position.z = np.average(pz, weights=w)
 
-        # TODO read table size from param
-        inst.on_table = 0 < inst.pose.position.x < 1.5 and 0 < inst.pose.position.x < 0.7
+        inst.on_table = 0 < inst.pose.position.x < table_size[0] and 0 < inst.pose.position.y < table_size[1]
 
         ar = np.average(r, axis=0, weights=w)
         ap = np.average(p, axis=0, weights=w)
@@ -163,10 +160,27 @@ class TrackedObject:
 
         cur_rpy = [fr, fp, fy]
 
-        a2q(inst.pose.orientation, transformations.quaternion_from_euler(*cur_rpy))
+        q_arr = transformations.quaternion_from_euler(*cur_rpy)
 
-        # TODO "fix" roll and pitch so they are only 0, 90, 180 or 270 degrees
-        # yaw (in table coordinates) may stay as it is
+        # ground objects that are really sitting on the table (exclude those in the air)
+        if inst.on_table and ground_objects_on_table and np.average(
+                pz, weights=w) < self.object_type.bbox.dimensions[ground_bb_axis] / 2.0 + 0.05:
+            # TODO consider orientation!
+            inst.pose.position.z = self.object_type.bbox.dimensions[ground_bb_axis] / 2.0
+
+            if yaw_only_on_table:
+
+                # TODO figure out which axis should be kept
+                # ...like this it only works for some objects (containers)
+                q_arr[0] = 0.0
+                q_arr[1] = 0.0
+
+                q_arr = transformations.unit_vector(q_arr)
+
+        else:
+            inst.pose.position.z = np.average(pz, weights=w)
+
+        a2q(inst.pose.orientation, q_arr)
 
         for (key, value) in self.flags.iteritems():
             kv = KeyValue()
@@ -193,6 +207,14 @@ class ArtSimpleTracker:
         self.lock = threading.Lock()
         self.detection_enabled = True
         self.use_forearm_cams = False
+        self.table_size = array_from_param("/art/conf/table/size", float, 2, wait=True)
+        self.ground_objects_on_table = rospy.get_param("~ground_objects_on_table", False)
+        self.yaw_only_on_table = rospy.get_param("~yaw_only_on_table", False)
+        self.ground_bb_axis = rospy.get_param("~ground_bb_axis", SolidPrimitive.BOX_Z)
+        if self.ground_objects_on_table:
+            rospy.loginfo("Objects on table will be grounded.")
+        self.api = ArtApiHelper()
+        self.api.wait_for_db_api()
 
         self.meas_max_age = rospy.Duration(5.0)
         self.prune_timer = rospy.Timer(rospy.Duration(1.0), self.prune_timer_cb)
@@ -339,7 +361,8 @@ class ArtSimpleTracker:
 
             for k, v in self.objects.iteritems():
 
-                inst = v.inst
+                inst = v.inst(self.table_size, self.ground_objects_on_table, self.ground_bb_axis,
+                              self.yaw_only_on_table)
 
                 if inst is None:  # new object might not have enough measurements yet
 
@@ -390,9 +413,15 @@ class ArtSimpleTracker:
 
                 else:
 
+                    object_type = self.api.get_object_type(inst.object_type)
+
+                    if not object_type:
+                        rospy.logerr("Unknown object type: " + inst.object_type)
+                        continue
+
                     rospy.loginfo("Adding new object: " + inst.object_id)
                     self.objects[inst.object_id] = TrackedObject(self.target_frame, self.tfl, inst.object_id,
-                                                                 inst.object_type)
+                                                                 object_type)
 
                 ps = PoseStamped()
                 ps.header = msg.header
@@ -406,4 +435,4 @@ if __name__ == '__main__':
         ArtSimpleTracker()
         rospy.spin()
     except rospy.ROSInterruptException:
-        print "program interrupted before completion"
+        print("program interrupted before completion")

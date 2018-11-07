@@ -1,0 +1,19 @@
+plugins:
+
+  UserPresentPlugin:
+      package: art_projected_gui.plugins
+
+  TouchTablePlugin:
+      package: art_projected_gui.plugins
+
+  ScenePublisherPlugin:
+      package: art_projected_gui.plugins
+
+  ProjectorsPlugin:
+      package: art_projected_gui.plugins
+      params:
+        projectors: ""
+
+  SoundPlugin:
+      package: art_projected_gui.plugins
+

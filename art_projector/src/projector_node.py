@@ -6,14 +6,23 @@ import rospy
 from PyQt4 import QtGui, QtCore
 from art_projector import Projector
 
+proj = None
+
 
 def sigint_handler(*args):
+
+    global proj
+
     """Handler for the SIGINT signal."""
     sys.stderr.write('\r')
+    proj.kill_now = True
+    proj.close()
     QtGui.QApplication.quit()
 
 
 def main(args):
+
+    global proj
 
     rospy.init_node('projected_gui_projector', anonymous=True)
     rospy.sleep(1)
@@ -22,11 +31,15 @@ def main(args):
 
     app = QtGui.QApplication(sys.argv)
 
-    Projector()
+    proj = Projector()
+    proj.connect()
 
     timer = QtCore.QTimer()
     timer.start(500)
     timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
+
+    if proj.kill_now:
+        return
 
     sys.exit(app.exec_())
 

@@ -18,7 +18,7 @@ class TestUICore(unittest.TestCase):
 
     def setUp(self):
 
-        self.ui_core = UICore(0, 0, 2, 1, 1000, 1234)
+        self.ui_core = UICore(0, 0, 2, 1, 1000)
 
         self.type1 = ObjectType()
         self.type1.name = "type1"

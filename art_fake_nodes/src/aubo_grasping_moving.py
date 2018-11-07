@@ -3,7 +3,9 @@
 import rospy
 from actionlib import SimpleActionServer
 import random
-from kinali_msgs.msg import RobotMoveAction, RobotMoveGoal, RobotMoveResult, RobotMoveFeedback
+from kinali_msgs.msg import RobotMoveAction, RobotMoveGoal, RobotMoveResult, RobotMoveFeedback, RobotStatus
+from geometry_msgs.msg import PoseStamped, Pose
+from std_msgs.msg import Header
 
 
 class FakeGrasping:
@@ -12,7 +14,7 @@ class FakeGrasping:
     RANDOM = 2
 
     def __init__(self):
-        self.server = SimpleActionServer('/art/robot/arm/move', RobotMoveAction,
+        self.server = SimpleActionServer('/robot_move', RobotMoveAction,
                                          execute_cb=self.robot_move_cb)
 
         self.objects = self.ALWAYS
@@ -22,13 +24,22 @@ class FakeGrasping:
         self.grasp_randomness = 0.4
         self.place_randomness = 0.4
         self.holding = None
-        self.pick_length = 1  # how long (sec) takes to pick an object
-        self.place_length = 1  # how long (sec) takes to place an object
+        self.pick_length = 2  # how long (sec) takes to pick an object
+        self.place_length = 2  # how long (sec) takes to place an object
+
+        self.robot_state_pub = rospy.Publisher("/robot_status", RobotStatus, queue_size=1, latch=True)
+        self.publish_robot_status(RobotStatus.STOPPED)
 
         random.seed()
 
+    def publish_robot_status(self, status):
+        self.robot_state_pub.publish(RobotStatus(status=status,
+                                                 actual_pose=PoseStamped(header=Header(frame_id="marker"))))
+
     def robot_move_cb(self, goal):
+        self.publish_robot_status(RobotStatus.MOVING)
         self.robot_move(goal)
+        self.publish_robot_status(RobotStatus.STOPPED)
 
     def robot_move(self, goal):
         result = RobotMoveResult()
@@ -59,7 +70,7 @@ class FakeGrasping:
 
         if goal.move_type == RobotMoveGoal.PICK:
             rospy.sleep(self.pick_length)
-            if self.holding:
+            if False and self.holding:
                 result.result = RobotMoveResult.BUSY
                 rospy.logerr("Failure, already holding object in arm")
                 self.server.set_aborted(
@@ -138,7 +149,7 @@ class FakeGrasping:
             else:
                 self.holding = False
 
-        result.result = RobotMoveResult.SUCCESS
+        result.result = RobotMoveResult.SUCCES
         self.server.set_succeeded(result)
         rospy.loginfo("SUCCESS")
         print("Finished")

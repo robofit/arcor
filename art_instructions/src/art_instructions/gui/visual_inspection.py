@@ -34,9 +34,6 @@ class VisualInspection(GuiInstruction):
         self.showing_result = False
         self.to_be_cleaned_up = False
 
-        self.img_sub = rospy.Subscriber(topic, Image, self.image_callback, queue_size=1)
-        self.result_sub = rospy.Subscriber("/art/visual_inspection/result", Bool, self.result_callback, queue_size=10)
-
         try:
             # TODO maybe this could be in defined in instructions yaml?
             img_origin = array_from_param("/art/visual_inspection/origin", float, 2)
@@ -49,6 +46,9 @@ class VisualInspection(GuiInstruction):
 
         # TODO display image_item after we receive first image?
         self.img_item = ImageItem(self.ui.scene, img_origin[0], img_origin[1], img_size[0], img_size[1], fixed)
+
+        self.img_sub = rospy.Subscriber(topic, Image, self.image_callback, queue_size=1)
+        self.result_sub = rospy.Subscriber("/art/visual_inspection/result", Bool, self.result_callback, queue_size=10)
 
         self.text_timer = QtCore.QTimer(self)
         self.text_timer.timeout.connect(self.text_timer_tick)
@@ -68,8 +68,6 @@ class VisualInspection(GuiInstruction):
 
     def result_callback(self, msg):
 
-        rospy.loginfo("result")
-
         if not self.img_item:
             return
 
@@ -80,7 +78,7 @@ class VisualInspection(GuiInstruction):
         else:
             self.img_item.set_text("NOK", QtCore.Qt.red)
 
-        self.text_timer.start(1000)
+        self.text_timer.start(5000)
 
     def text_timer_tick(self):
 
@@ -105,8 +103,6 @@ class VisualInspection(GuiInstruction):
 
     def cleanup(self):
 
-        rospy.loginfo("cleanup")
-
         self.img_sub.unregister()
         self.result_sub.unregister()
         self.to_be_cleaned_up = True
@@ -117,7 +113,7 @@ class VisualInspection(GuiInstruction):
             self.img_item = None
 
         else:
-            return (self.img_item, rospy.Time.now() + rospy.Duration(1.0)),
+            return (self.img_item, rospy.Time.now() + rospy.Duration(5.0)),
 
         return ()
 
@@ -161,28 +157,18 @@ class VisualInspectionLearn(VisualInspection):
         if ps:
 
             self.ui.notif(translate("VisualInspection", "Pose was stored."), temp=True)
-            self.ui.snd_info()
+            self.ui.notify_info()
             self.ui.program_vis.set_pose(ps)
             self.dialog.items[idx].set_caption(translate("VisualInspection", "Stored"))
 
         else:
 
             self.ui.notif(translate("VisualInspection", "Failed to get pose."), temp=True)
-            self.ui.snd_warn()
+            self.ui.notify_warn()
             self.dialog.items[idx].set_caption(translate("VisualInspection", "Failed"))
 
         self.dialog.items[idx].set_enabled(False)
         self.dialog_timer.start(1000)
-
-    def cleanup(self):
-
-        super(VisualInspectionLearn, self).cleanup()
-
-        if self.dialog:
-            self.ui.scene.removeItem(self.dialog)
-            self.dialog = None
-
-        return ()
 
     def dialog_timer_tick(self):
 
@@ -191,6 +177,12 @@ class VisualInspectionLearn(VisualInspection):
 
         for v in self.dialog.items:
             v.set_enabled(True)
+
+    def learning_done(self):
+
+        if self.dialog:
+            self.ui.scene.removeItem(self.dialog)
+            self.dialog = None
 
 
 class VisualInspectionRun(VisualInspection):

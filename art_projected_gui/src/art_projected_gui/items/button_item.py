@@ -42,12 +42,17 @@ class ButtonItem(Item):
 
         if image_path is not None:
 
-            self.img = QtGui.QImage()
-            self.img.load(image_path)
-            self.img = self.img.scaled(self.boundingRect().width() * 0.9, self.boundingRect(
-            ).height() * 0.9, QtCore.Qt.KeepAspectRatio | QtCore.Qt.SmoothTransformation)
+            self.set_image(image_path)
 
         self.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
+
+    def set_image(self, image_path):
+
+        self.img = QtGui.QImage()
+        self.img.load(image_path)
+        self.img = self.img.scaled(self.boundingRect().width() * 0.8, self.boundingRect(
+        ).height() * 0.8, QtCore.Qt.KeepAspectRatio | QtCore.Qt.SmoothTransformation)
+        self.update()
 
     def boundingRect(self):
 

@@ -22,18 +22,17 @@ class DialogItem(Item):
         self.fixed = False
 
         self.desc = DescItem(scene, 0, 0, self)
-        self.desc.set_content(caption)
+        self.desc.set_content(caption, color=QtCore.Qt.white)
 
         self.items = []
-
-        # TODO create button, measure them, arrange them
-        self.w = (len(answers) + 1) * self.sp
 
         for answer in answers:
 
             btn = ButtonItem(self.scene(), 0, 0, answer, self, self.answer_cb)
             self.items.append(btn)
-            self.w += btn._width()
+
+        self.w = max(self.desc.boundingRect().width(),
+                     sum(btn.boundingRect().width() for btn in self.items)) + 2 * self.sp
 
         y = self.sp
         self._place_childs_horizontally(y, self.sp, [self.desc])
@@ -75,4 +74,7 @@ class DialogItem(Item):
         return QtCore.QRectF(0, 0, self.w, self.h)
 
     def set_caption(self, caption):
-        self.desc.set_content(caption)
+        self.desc.set_content(caption, color=QtCore.Qt.white)
+
+        self.w = max(self.desc.boundingRect().width(),
+                     sum(btn.boundingRect().width() for btn in self.items)) + 2 * self.sp

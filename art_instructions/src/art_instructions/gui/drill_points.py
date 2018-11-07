@@ -253,7 +253,7 @@ class DrillPointsLearn(DrillPoints):
                     "Gripper pose relative to object %1 stored").arg(
                     c_obj.object_id),
                 temp=True)
-            self.ui.snd_info()
+            self.ui.notify_info()
             self.ui.program_vis.update_pose(ps, self.drill_pose_idx)
 
             self.drill_pose_idx += 1
@@ -270,7 +270,7 @@ class DrillPointsLearn(DrillPoints):
                     "Failed to find object near gripper."),
                 temp=True,
                 message_type=NotifyUserRequest.WARN)
-            self.ui.snd_warn()
+            self.ui.notify_warn()
 
 
 class DrillPointsRun(DrillPoints):
@@ -305,7 +305,7 @@ class DrillPointsVis(DrillPoints):
 
         super(DrillPointsVis, self).__init__(*args, **kwargs)
 
-        self.ui.select_object_type(self.ph.get_object(*self.cid)[0][0])
+        self.ui.select_object_type(self.ui.ph.get_object(*self.cid)[0][0])
 
         polygons = self.ui.ph.get_polygon(*self.cid)[0]
 

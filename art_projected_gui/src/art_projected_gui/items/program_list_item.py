@@ -4,6 +4,8 @@ from PyQt4 import QtGui, QtCore
 from item import Item
 from button_item import ButtonItem
 from list_item import ListItem
+from desc_item import DescItem
+import rospkg
 
 translate = QtCore.QCoreApplication.translate
 
@@ -37,6 +39,10 @@ class ProgramListItem(Item):
         self.fixed = False
         self.setZValue(100)
 
+        title = DescItem(self.scene(), 0, 0, self)
+        title.set_content(translate("ProgramListItem", "Program list"), 1.2)
+        title.setPos(QtCore.QPointF(self.m2pix(0.01), self.m2pix(0.01)))  # TODO it should take coords given to __init__
+
         data = []
         self.map_from_idx_to_program_id = {}
         self.map_from_program_id_to_idx = {}
@@ -57,10 +63,15 @@ class ProgramListItem(Item):
             if not self.learned_dict[self.map_from_idx_to_program_id[idx]]:
                 self.list.items[idx].set_background_color(QtCore.Qt.red)
 
-        self.run_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Run"), self, self.run_btn_cb)
-        self.edit_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Edit"), self, self.edit_btn_cb)
-        self.template_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Template"), self, self.template_btn_cb)
-        self.visualize_btn = ButtonItem(scene, 0, 0, translate("ProgramItem", "Visualize"), self, self.visualize_btn_cb)
+        rospack = rospkg.RosPack()
+        icons_path = rospack.get_path('art_projected_gui') + '/icons/'
+
+        self.run_btn = ButtonItem(scene, 0, 0, "BTN", self, self.run_btn_cb, image_path=icons_path + "run.svg")
+        self.edit_btn = ButtonItem(scene, 0, 0, "BTN", self, self.edit_btn_cb, image_path=icons_path + "edit.svg")
+        self.template_btn = ButtonItem(scene, 0, 0, "BTN", self, self.template_btn_cb,
+                                       image_path=icons_path + "template.svg")
+        self.visualize_btn = ButtonItem(scene, 0, 0, "BTN", self, self.visualize_btn_cb,
+                                        image_path=icons_path + "visualize.svg")
 
         self.run_btn.set_enabled(False)
         self.edit_btn.set_enabled(False)
@@ -72,14 +83,18 @@ class ProgramListItem(Item):
             self.list.set_current_idx(self.map_from_program_id_to_idx[selected_program_id])
 
         sp = self.m2pix(0.005)
-        h = 50
+        # h = title.mapToParent(title.boundingRect().bottomLeft()).y() + sp
+        h = 0
+
         self.list.setPos(sp, h)
         h += self.list._height()
         h += 2 * sp
 
-        self. _place_childs_horizontally(h, sp, [self.run_btn, self.edit_btn, self.template_btn, self.visualize_btn])
+        btns = (self.run_btn, self.edit_btn, self.template_btn, self.visualize_btn)
 
+        self._place_childs_horizontally(h, sp, btns)
         h += self.run_btn._height()
+
         h += 3 * sp
 
         self.h = h
@@ -154,14 +169,6 @@ class ProgramListItem(Item):
 
         painter.setClipRect(option.exposedRect)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-
-        font = QtGui.QFont('Arial', 14)
-        painter.setFont(font)
-
-        painter.setPen(QtCore.Qt.white)
-
-        sp = self.m2pix(0.01)
-        painter.drawText(sp, 2 * sp, translate("ProgramListItem", "Program list"))
 
         pen = QtGui.QPen()
         pen.setStyle(QtCore.Qt.NoPen)

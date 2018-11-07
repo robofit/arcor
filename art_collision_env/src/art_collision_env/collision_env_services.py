@@ -68,35 +68,30 @@ class CollisionEnvServices(CollisionEnv):
 
     def srv_collision_primitive_cb(self, req):
 
-        with self.lock:
+        if req.primitive.bbox.type != SolidPrimitive.BOX:
+            rospy.logwarn("Only BOX is supported so far.")
+            return AddCollisionPrimitiveResponse(name=req.primitive.name, success=False)
 
-            if req.primitive.bbox.type != SolidPrimitive.BOX:
-                rospy.logwarn("Only BOX is supported so far.")
-                return AddCollisionPrimitiveResponse(name=req.primitive.name, success=False)
+        if len(req.primitive.bbox.dimensions) < 3:
+            rospy.logwarn("BOX needs three dimensions.")
+            return AddCollisionPrimitiveResponse(name=req.primitive.name, success=False)
 
-            if len(req.primitive.bbox.dimensions) < 3:
-                rospy.logwarn("BOX needs three dimensions.")
-                return AddCollisionPrimitiveResponse(name=req.primitive.name, success=False)
+        if req.primitive.pose.header.frame_id == "":
+            rospy.logwarn("Empty frame_id!")
+            return AddCollisionPrimitiveResponse(name=req.primitive.name, success=False)
 
-            if req.primitive.pose.header.frame_id == "":
-                rospy.logwarn("Empty frame_id!")
-                return AddCollisionPrimitiveResponse(name=req.primitive.name, success=False)
+        if req.primitive.name == "":
+            req.primitive.name = self._generate_name()
 
-            if req.primitive.name == "":
-                req.primitive.name = self._generate_name()
+        req.primitive.setup = self.setup
 
-            req.primitive.setup = self.setup
+        if req.primitive.name in self.artificial_objects:
+            rospy.loginfo("Adding collision primitive: " + req.primitive.name)
+        else:
+            rospy.loginfo("Updating collision primitive: " + req.primitive.name)
 
-            if req.primitive.name in self.artificial_objects:
-                rospy.loginfo("Adding collision primitive: " + req.primitive.name)
-            else:
-                rospy.loginfo("Updating collision primitive: " + req.primitive.name)
-
-            self.add_primitive(req.primitive)
-            self.pub_artificial()
-
-        if not self.api.add_collision_primitive(req.primitive):
-            self.logwarn("Failed to save to permanent storage.")
+        self.add_primitive(req.primitive)
+        self.pub_artificial()
 
         return AddCollisionPrimitiveResponse(name=req.primitive.name, success=True)
 

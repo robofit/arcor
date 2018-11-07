@@ -54,7 +54,7 @@ class Projector(SceneViewer):
 
         super(Projector, self).__init__()
 
-        while not rospy.is_shutdown():
+        while not self.kill_now:
             try:
                 self.world_frame = rospy.get_param('/art/conf/world_frame')
                 break
@@ -62,7 +62,7 @@ class Projector(SceneViewer):
                 rospy.loginfo("Waiting for global parameters...")
                 rospy.sleep(1.0)
 
-        if rospy.is_shutdown():
+        if self.kill_now:
             return
 
         self.proj_id = rospy.get_param('~projector_id', 'test')
@@ -112,7 +112,7 @@ class Projector(SceneViewer):
         self.setPalette(p)
 
         self.projectors_calibrated_sub = rospy.Subscriber(
-            '/art/interface/projected_gui/app/projectors_calibrated', Bool, self.projectors_calibrated_cb,
+            '/art/interface/projected_gui/projectors_calibrated', Bool, self.projectors_calibrated_cb,
             queue_size=10)
         self.projectors_calibrated = False
 

@@ -7,6 +7,8 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 import tf
 from art_msgs.msg import InstancesArray
+from art_utils import ArtApiHelper
+from art_utils.art_msgs_functions import obj_type
 
 
 class TestSimpleTrackerRos(unittest.TestCase):
@@ -17,6 +19,10 @@ class TestSimpleTrackerRos(unittest.TestCase):
         rospy.sleep(2.0)
         self.world_frame = "marker"
         self.object_id = "21"
+
+        api = ArtApiHelper()
+        api.wait_for_db_api()
+        api.store_object_type(obj_type("fake_object_type", 0.046, 0.046, 0.154))
 
     def test_object_transform(self):
 

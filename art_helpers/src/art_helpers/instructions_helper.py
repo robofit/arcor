@@ -8,10 +8,18 @@ class InstructionsHelperException(Exception):
     pass
 
 
-class GuiInstruction(object):
+class BaseInstruction(object):
 
     def __init__(self):
 
+        self.params = {}
+
+
+class GuiInstruction(BaseInstruction):
+
+    def __init__(self):
+
+        super(GuiInstruction, self).__init__()
         self.learn = None
         self.run = None
         self.vis = None
@@ -19,13 +27,14 @@ class GuiInstruction(object):
     @property
     def mandatory(self):
 
-        return ("learn", "run")
+        return "learn", "run"
 
 
-class BrainInstruction(object):
+class BrainInstruction(BaseInstruction):
 
     def __init__(self):
 
+        super(BrainInstruction, self).__init__()
         self.fsm = None
 
     @property
@@ -103,7 +112,7 @@ class InstructionsHelper(object):
 
             ins = Instruction()
 
-            for art_module in ins.__dict__.keys():
+            for art_module, value in ins.__dict__.iteritems():
 
                 self._import_instruction(k, ins_conf, ins.__dict__[art_module], art_module)
 
@@ -142,7 +151,10 @@ class InstructionsHelper(object):
             rospy.logerr(str(e))
             raise InstructionsHelperException("Could not import module: " + pkg + "." + art_module)
 
-        for t in ins_cls.__dict__.keys():  # learn/run/vis/fsm
+        for t, v in ins_cls.__dict__.iteritems():  # learn/run/vis/fsm
+
+            if v is not None:
+                continue
 
             try:
                 cls = ins_conf[art_module][t]
@@ -160,6 +172,11 @@ class InstructionsHelper(object):
 
                 rospy.logerr(str(e))
                 raise InstructionsHelperException("Invalid instruction, class " + cls + " does not exist.")
+
+        try:
+            ins_cls.params = ins_conf[art_module]["params"]
+        except KeyError:
+            pass
 
     def known_instructions(self):
 

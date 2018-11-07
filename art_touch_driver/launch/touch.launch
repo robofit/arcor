@@ -6,7 +6,7 @@
     <arg name="calib_y_min"/>
     <arg name="calib_y_max"/>
 	
-	<node ns="/art/interface/touchtable" name="driver_node" pkg="art_touch_driver" type="node.py" output="screen">
+	<node ns="/art/interface/touchtable" name="driver_node" pkg="art_touch_driver" type="node.py" output="screen" respawn="true" respawn_delay="1.0" >
 	  <param name="calib_x_min" value="$(arg calib_x_min)"/>
  	  <param name="calib_x_max" value="$(arg calib_x_max)"/>
 	  <param name="calib_y_min" value="$(arg calib_y_min)"/>

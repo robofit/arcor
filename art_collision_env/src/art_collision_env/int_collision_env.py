@@ -6,6 +6,7 @@ from art_msgs.msg import CollisionPrimitive
 from shape_msgs.msg import SolidPrimitive
 from art_collision_env.int_funcs import *
 from geometry_msgs.msg import PoseStamped
+import rospy
 
 
 class IntCollisionEnv(CollisionEnvServices):
@@ -15,6 +16,8 @@ class IntCollisionEnv(CollisionEnvServices):
         super(IntCollisionEnv, self).__init__(setup, world_frame)
 
         self.im_server = InteractiveMarkerServer(self.NS + "markers")
+
+        self.check_attached_timer = rospy.Timer(rospy.Duration(0.1), self.check_attached_timer_cb)
 
         self.create_menus()
 
@@ -247,3 +250,15 @@ class IntCollisionEnv(CollisionEnvServices):
         super(IntCollisionEnv, self).clear_detected(name)
         self.im_server.erase(name)
         self.im_server.applyChanges()
+
+    def check_attached_timer_cb(self, evt):
+
+        for name, ps, bbox in self.get_attached():
+
+            p = CollisionPrimitive()
+            p.name = name
+            p.pose = ps
+            p.bbox = bbox
+
+            self.im_server.insert(make_def(p, color=(1, 0, 0)), self.process_im_feedback)
+            self.im_server.applyChanges()

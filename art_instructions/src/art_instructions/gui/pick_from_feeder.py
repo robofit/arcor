@@ -92,7 +92,7 @@ class PickFromFeederLearn(PickFromFeeder):
         if ps:
 
             self.ui.notif(translate("PickFromFeeder", "Gripper pose stored."), temp=True)
-            self.ui.snd_info()
+            self.ui.notify_info()
             self.ui.program_vis.set_pose(ps)
             self.grasp_dialog.items[idx].set_caption(translate("PickFromFeeder", "Stored"))
 
@@ -100,7 +100,7 @@ class PickFromFeederLearn(PickFromFeeder):
 
             self.ui.notif(translate("PickFromFeeder", "Failed to get gripper pose."), temp=True)
             self.grasp_dialog.items[idx].set_caption(translate("PickFromFeeder", "Failed"))
-            self.ui.snd_warn()
+            self.ui.notify_warn()
 
         self.grasp_dialog.items[idx].set_enabled(False)
 
@@ -219,6 +219,6 @@ class PickFromFeederVis(PickFromFeeder):
 
     def __init__(self, *args, **kwargs):
 
-        super(PickFromFeederRun, self).__init__(*args, **kwargs)
+        super(PickFromFeederVis, self).__init__(*args, **kwargs)
 
         self.ui.select_object_type(self.ui.ph.get_object(*self.cid)[0][0])

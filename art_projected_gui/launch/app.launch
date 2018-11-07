@@ -1,12 +1,14 @@
 <?xml version="1.0"?>
 <launch>
 
-    <arg name="projectors" default=""/>
-    <arg name="scene_server" default="localhost" />
+    <arg name="scene_server" default="localhost" />  <!-- TODO plugin param -->
     <arg name="scene_size" default="1.0,0.5"/>
     <arg name="scene_origin" default="0,0"/>
     <arg name="rpm" default="2000"/>
     <arg name="notif_origin" default="0.05,0.05"/>
+    <arg name="font_scale" default="1.0"/>
+    <arg name="program_widget_pos" default="0.2,0.4"/>
+    <arg name="locale" default="en_US"/>
 
     <group ns="/art/interface/projected_gui">
 
@@ -16,12 +18,14 @@
         <param name="scene_server" value="$(arg scene_server)"/>
         <param name="scene_server_port" value="1234"/>
         <param name="notif_origin" value="$(arg notif_origin)"/>
+        <param name="font_scale" value="$(arg font_scale)"/>
+        <param name="program_widget_pos" value="$(arg program_widget_pos)"/>
     
         <node pkg="art_projected_gui" name="app" type="app.py" output="screen" launch-prefix="xvfb-run"> <!-- launch-prefix="python -m cProfile -o art_projected_gui.txt"-->
 
             <!--rosparam param="cursors">["cokoliv"]</rosparam-->
 
-            <param name="projectors" value="$(arg projectors)"/>
+            <param name="locale" value="$(arg locale)"/>
 
             <!-- open window with scene - for debugging purposes (can be controlled using mouse) -->
             <param name="show_scene" value="false"/>

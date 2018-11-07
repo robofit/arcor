@@ -58,7 +58,6 @@ class ArtBrain(object):
 
             for state_function in fsm.state_functions:
                 setattr(self.fsm, state_function, getattr(fsm, state_function))
-        self.ih = None
 
         self.fsm.check_robot_in = self.check_robot_in
         self.fsm.check_robot_out = self.check_robot_out
@@ -78,6 +77,9 @@ class ArtBrain(object):
         self.fsm.state_learning_step_error = self.state_learning_step_error
         self.fsm.state_learning_done = self.state_learning_done
         self.fsm.state_update_program_item = self.state_update_program_item
+        self.fsm.visualize_load_block_id = self.visualize_load_block_id
+        self.fsm.state_visualize_run = self.state_visualize_run
+        self.fsm.state_visualize_done = self.state_visualize_done
 
         self.block_id = None
         self.user_id = 0
@@ -153,7 +155,7 @@ class ArtBrain(object):
             "/art/system/calibrated", Bool, self.system_calibrated_cb)
 
         self.projectors_calibrated_sub = rospy.Subscriber(
-            "/art/interface/projected_gui/app/projectors_calibrated", Bool, self.projectors_calibrated_cb)
+            "/art/interface/projected_gui/projectors_calibrated", Bool, self.projectors_calibrated_cb)
 
         self.srv_program_start = rospy.Service(
             'program/start', ProgramIdTrigger, self.program_start_cb)
@@ -381,7 +383,7 @@ class ArtBrain(object):
         rospy.logdebug('Current state: state_program_run')
 
         if not self.executing_program:
-            self.finished()
+            self.fsm.finished()
             return
         if self.instruction is None:
             self.fsm.error(severity=ArtBrainErrorSeverities.SEVERE,
@@ -426,15 +428,15 @@ class ArtBrain(object):
     def state_program_load_instruction(self, event):
         rospy.logdebug('Current state: state_program_load_instruction')
         success = event.kwargs.get('success', True)
-        self.state_manager.set_error(0, 0)
+        self.state_manager.set_error(0, 0, auto_send=False)
         if not self.executing_program:
             self.fsm.finished()
             return
         if success:
-            (self.block_id, item_id) = self.ph.get_id_on_success(
+            self.block_id, item_id = self.ph.get_id_on_success(
                 self.block_id, self.instruction.id)
         else:
-            (self.block_id, item_id) = self.ph.get_id_on_failure(
+            self.block_id, item_id = self.ph.get_id_on_failure(
                 self.block_id, self.instruction.id)
 
         if self.block_id == 0:
@@ -582,6 +584,27 @@ class ArtBrain(object):
         pass
 
     # ***************************************************************************************
+    #                                  STATES VISUALIZING
+    # ***************************************************************************************
+
+    '''def state_visualize_init(self, event):
+        rospy.logdebug('Current state: Visualize init')
+        self.visualizing = True
+        rospy.set_param("visualize_program", True)
+        #self.fsm.init_done()'''
+
+    def visualize_load_block_id(self, event):
+        self.block_id = self.state_manager.state.block_id
+
+    def state_visualize_run(self, event):
+        rospy.logdebug('Current state: state_visualize_run')
+
+    def state_visualize_done(self, event):
+        rospy.logdebug('Current state: state_visualize_done')
+        self.fsm.done()
+        pass
+
+    # ***************************************************************************************
     #                                     MANIPULATION
     # ***************************************************************************************
 
@@ -617,7 +640,7 @@ class ArtBrain(object):
 
     def check_robot_out(self, event):
         halted = event.kwargs.get('halted', False)
-        print halted
+        # print halted
         if halted:
             return
         self.check_robot()
@@ -800,6 +823,10 @@ class ArtBrain(object):
         if self.executing_program:
             rospy.logdebug('Stopping program')
             self.executing_program = False
+            if self.program_paused:
+                self.program_paused = False
+                rospy.Timer(rospy.Duration(
+                    0, 100), self.program_resume_timer_cb, oneshot=True)
         else:
             resp.success = False
             resp.message = "Program is not running"
@@ -970,9 +997,15 @@ class ArtBrain(object):
 
     def learning_request_cb(self, goal):
         result = LearningRequestResult()
+        result.success = True
+
         if not self.fsm.is_learning_run:
+            rospy.logerr("Not in learning mode but got learning request goal: " + str(goal.request))
             result.success = False
             result.message = "Not in learning mode!"
+            self.as_learning_request.set_aborted(result)
+            return
+
         rospy.logdebug("Learning_request goal: " + str(goal.request))
 
         instruction = self.state_manager.state.program_current_item  # type: ProgramItem
@@ -985,49 +1018,27 @@ class ArtBrain(object):
 
             self.state_manager.state.edit_enabled = True
 
-            if self.fsm.is_learning_run:
-                self.instruction_fsm[instruction.type].learning()
-                # TODO: really?
-                result.success = True
-                self.state_manager.state.edit_enabled = True
-                self.state_manager.send()
-                self.as_learning_request.set_succeeded(result)
-            else:
-                result.success = False
-                result.message = "Not in learning state!"
-                self.as_learning_request.set_aborted(result)
+            self.instruction_fsm[instruction.type].learning()  # TODO check and handle errors
 
-            # TODO: handle error
+            self.state_manager.state.edit_enabled = True
+            self.state_manager.send()
+            self.as_learning_request.set_succeeded(result)
+
         elif goal.request == LearningRequestGoal.EXECUTE_ITEM:
             self.ph.set_item_msg(
                 self.state_manager.state.block_id, instruction)
 
-            # TODO let ui(s) know that item is being executed
-
-            # self.fsm.error(severity=ArtBrainErrorSeverities.INFO,
-            #                error=ArtBrainErrorSeverities.ERROR_LEARNING_NOT_IMPLEMENTED)
-            if self.fsm.is_learning_run:
-                self.instruction_fsm[instruction.type].learning_run()
-                # TODO: really?
-                result.success = True
-
-                self.as_learning_request.set_succeeded(result)
-            else:
-                result.success = False
-                result.message = "Not in learning state!"
-                self.as_learning_request.set_aborted(result)
+            self.instruction_fsm[instruction.type].learning_run()  # TODO check and handle errors
+            self.as_learning_request.set_succeeded(result)
 
         elif goal.request == LearningRequestGoal.DONE:
-            # Great!
-            result.success = True
 
-            self.fsm.done()
+            self.fsm.done()   # TODO check and handle errors?
             self.as_learning_request.set_succeeded(result)
         else:
 
             result.success = False
-            result.message = "Unkwnown request"
-
+            result.message = "Unknown request"
             self.as_learning_request.set_aborted(result)
 
 
