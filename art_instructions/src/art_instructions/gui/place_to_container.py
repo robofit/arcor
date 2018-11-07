@@ -75,7 +75,7 @@ class PlaceToContainerLearn(PlaceToContainer):
 
             sbr = ob.sceneBoundingRect()
 
-            r = 2.0
+            r = 1.2
             w = ob.pix2m(sbr.width()) * r
             h = ob.pix2m(sbr.height()) * r
 

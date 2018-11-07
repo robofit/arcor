@@ -5,9 +5,9 @@
     <arg name="scene_size" default="1.0,0.5"/>
     <arg name="scene_origin" default="0,0"/>
     <arg name="rpm" default="2000"/>
-    <arg name="notif_origin" default="0.05,0.05"/>
+    <arg name="notif_origin" default="0.15,0.05"/>
     <arg name="font_scale" default="1.0"/>
-    <arg name="program_widget_pos" default="0.2,0.4"/>
+    <arg name="program_widget_pos" default="0.4,0.4"/>
     <arg name="locale" default="en_US"/>
 
     <group ns="/art/interface/projected_gui">

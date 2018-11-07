@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import rospy
 from art_msgs.msg import InterfaceState
 from art_helpers import InterfaceStateManager
