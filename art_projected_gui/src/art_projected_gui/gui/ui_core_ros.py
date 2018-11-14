@@ -957,7 +957,7 @@ class UICoreRos(UICore):
     def hololens_active_cb(self, msg):
         # temporarily set by default to true to avoid rosbridge crashing
         self.hololens_connected = True
-        #self.hololens_connected = msg.data
+        # self.hololens_connected = msg.data
 
     def program_selected_cb(self, prog_id, run=False, template=False, visualize=False):
 
