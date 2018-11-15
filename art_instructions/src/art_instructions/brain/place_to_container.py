@@ -107,6 +107,7 @@ class PlaceToContainerFSM(BrainFSM):
             self.fsm.error(severity=severity, error=error)
             return
         else:
+            self.brain.robot.get_arm_by_id(arm_id).last_pick_instruction_id = None
             if get_ready_after_place:
                 self.brain.try_robot_arms_get_ready([arm_id])
             self.fsm.done(success=True)

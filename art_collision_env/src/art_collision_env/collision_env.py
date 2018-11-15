@@ -1,6 +1,6 @@
 import rospy
 from moveit_commander import PlanningSceneInterface
-from art_utils import ObjectHelper, ArtApiHelper
+from art_utils import ObjectHelper, ArtApiHelper, ArtApiException
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Bool
 from art_msgs.msg import CollisionObjects
@@ -41,6 +41,7 @@ class CollisionEnv(object):
         rospy.loginfo("Waiting for DB API")
         self.api.wait_for_db_api()
         self.ignored_prefixes = array_from_param("~ignored_prefixes")
+
         rospy.loginfo("Will ignore following prefixes: " + str(self.ignored_prefixes))
 
         self.lock = RLock()
@@ -171,8 +172,11 @@ class CollisionEnv(object):
             self.artificial_objects = {}
             self.pub_artificial()
 
-        if permanent and not self.api.clear_collision_primitives(self.setup):
-            rospy.logwarn("Failed to remove from permanent storage")
+        try:
+            if permanent and not self.api.clear_collision_primitives(self.setup):
+                rospy.logwarn("Failed to remove from permanent storage")
+        except ArtApiException as e:
+            rospy.logerr(str(e))
 
     def reload(self):
 
@@ -244,7 +248,7 @@ class CollisionEnv(object):
 
                 if name not in self.artificial_objects and name not in self.oh.objects and not self.is_ignored(name):
 
-                    rospy.loginfo("Removing outdated detected object: " + name)
+                    rospy.loginfo("Removing outdated object: " + name)
                     self.clear_detected(name)
 
             # restore artificial objects if they are lost somehow (e.g. by restart  of MoveIt!)

@@ -99,8 +99,10 @@ class ProgramItem(Item):
                                                image_path=icons_path + "failure.svg")
 
         # block "view" when in visualization
+        self.program_visualize_btn = ButtonItem(self.scene(), 0, 0, translate(
+            "ProgramItem", "Visualize Program"), self, self.program_visualize_btn_cb)
         self.block_visualize_btn = ButtonItem(self.scene(), 0, 0, translate(
-            "ProgramItem", "Visualize"), self, self.block_visualize_btn_cb)
+            "ProgramItem", "Visualize Block"), self, self.block_visualize_btn_cb)
         self.block_back_btn = ButtonItem(self.scene(), 0, 0, translate(
             "ProgramItem", "Back"), self, self.block_back_btn_cb)
 
@@ -131,12 +133,14 @@ class ProgramItem(Item):
 
         if visualize:
             self._place_childs_horizontally(y, self.sp, [
-                self.block_visualize_btn, self.block_back_btn])
+                self.program_visualize_btn, self.block_visualize_btn, self.block_back_btn])
 
             y += self.block_visualize_btn._height() + self.sp
 
             self.block_back_btn.set_enabled(True)
             self.block_visualize_btn.set_enabled(False)
+            self.program_visualize_btn.set_enabled(True)
+
             # hide edit block buttons
             group_visible((self.block_finished_btn, self.block_edit_btn, self.block_on_failure_btn,
                            self.block_on_success_btn), False)
@@ -149,7 +153,7 @@ class ProgramItem(Item):
 
             group_enable((self.block_edit_btn, self.block_on_failure_btn, self.block_on_success_btn), False)
             # hide visualization block buttons
-            group_visible((self.block_visualize_btn, self.block_back_btn), False)
+            group_visible((self.block_visualize_btn, self.program_visualize_btn, self.block_back_btn), False)
 
         self.h = y
 
@@ -300,8 +304,10 @@ class ProgramItem(Item):
             self.vis_back_to_blocks_cb()
 
         # go back to blocks view from visualization
-        group_visible((self.block_visualize_btn, self.block_back_btn, self.blocks_list), True)
+        group_visible((self.block_visualize_btn, self.program_visualize_btn,
+                       self.block_back_btn, self.blocks_list), True)
         self.block_back_btn.set_enabled(True)
+        self.program_visualize_btn.set_enabled(True)
         self.show_visualization_buttons(False)
         self.block_selected_cb()  # TODO extract method to set buttons to proper state
         self.blocks_list.setEnabled(True)
@@ -361,7 +367,10 @@ class ProgramItem(Item):
         self.item_id = item_id
 
         if old_block_id != self.block_id and item_id is not None:
-
+            # remove old list first
+            self.scene().removeItem(self.items_list)
+            self.items_list = None
+            # init new one
             self._init_items_list()
 
         if self.item_id is not None:
@@ -370,9 +379,15 @@ class ProgramItem(Item):
 
             self._handle_item_btns()
 
-            group_visible((self.block_finished_btn, self.block_edit_btn, self.block_on_failure_btn,
-                           self.block_on_success_btn, self.block_visualize_btn, self.block_back_btn,
-                           self.blocks_list), False)
+            group_visible((self.block_finished_btn,
+                           self.block_edit_btn,
+                           self.block_on_failure_btn,
+                           self.block_on_success_btn,
+                           self.block_visualize_btn,
+                           self.program_visualize_btn,
+                           self.block_back_btn,
+                           self.blocks_list),
+                          False)
 
         else:
 
@@ -543,18 +558,31 @@ class ProgramItem(Item):
 
     def block_visualize_btn_cb(self, btn):
 
-        group_visible((self.block_visualize_btn, self.block_back_btn, self.blocks_list), False)
+        group_visible((self.block_visualize_btn, self.program_visualize_btn,
+                       self.block_back_btn, self.blocks_list), False)
 
         # callback which notifies HoloLens that visualization started
         if self.v_visualize_cb is not None:
-            self.v_visualize_cb()
+            self.v_visualize_cb(visualize_whole_program=False)
 
+        self._init_items_list()
+
+    def program_visualize_btn_cb(self, btn):
+
+        group_visible((self.block_visualize_btn, self.program_visualize_btn,
+                       self.block_back_btn, self.blocks_list), False)
+
+        # callback which notifies HoloLens that visualization started
+        if self.v_visualize_cb is not None:
+            self.v_visualize_cb(visualize_whole_program=True)
+
+        self.block_id = self.ph.get_first_block_id()
         self._init_items_list()
 
     # go back from block view visualization into main menu
     def block_back_btn_cb(self, btn):
 
-        group_visible((self.block_visualize_btn, self.block_back_btn), False)
+        group_visible((self.block_visualize_btn, self.program_visualize_btn, self.block_back_btn), False)
 
         # callback which notifies HoloLens that visualization ended
         if self.v_back_cb is not None:

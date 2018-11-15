@@ -4,9 +4,9 @@ from art_projected_gui.gui import UICore
 from PyQt4 import QtCore
 import rospy
 from art_msgs.msg import InstancesArray, InterfaceState, LearningRequestAction,\
-    LearningRequestGoal
-from art_msgs.msg import HololensState
-from art_projected_gui.items import PoseStampedCursorItem, ProgramListItem, ProgramItem, DialogItem
+    LearningRequestGoal, HololensState, KeyValue
+from art_projected_gui.items import ObjectItem, ButtonItem, PoseStampedCursorItem, LabelItem,\
+    ProgramListItem, ProgramItem, DialogItem, PolygonItem
 from art_projected_gui.helpers import conversions
 from art_helpers import InterfaceStateManager, ProgramHelper, ArtRobotHelper, UnknownRobot,\
     RobotParametersNotOnParameterServer
@@ -103,7 +103,8 @@ class UICoreRos(UICore):
         # for checking if HoloLens is connected
         self.hololens_active_sub = rospy.Subscriber(
             '/art/interface/hololens/active/', Bool, self.hololens_active_cb)
-        self.hololens_connected = False
+        # temporarily set by default to true to avoid rosbridge crashing
+        self.hololens_connected = True
         self.hololens_state_pub = rospy.Publisher(
             '/art/interface/hololens/state', HololensState, queue_size=1)
 
@@ -614,7 +615,7 @@ class UICoreRos(UICore):
                 if value == "PAUSE":
                     self.program_vis.vis_pause_btn_cb(None)
 
-    def create_hololens_state_msg(self, hololens_state, visualization_state=None):
+    def create_hololens_state_msg(self, hololens_state, visualization_state=None, visualize_whole_program=None):
 
         msg = HololensState()
         msg.hololens_state = hololens_state
@@ -625,9 +626,16 @@ class UICoreRos(UICore):
         else:
             msg.visualization_state = HololensState.VISUALIZATION_DISABLED
 
+        if visualize_whole_program is not None:
+            msg.visualize_whole_program = visualize_whole_program
+            # if visualize_whole_program:
+            #     msg.flags.append(KeyValue("visualize_whole_program", "true"))
+            # else:
+            #     msg.flags.append(KeyValue("visualize_whole_program", "false"))
+
         return msg
 
-    def v_visualize_cb(self):
+    def v_visualize_cb(self, visualize_whole_program=True):
         """Callback for VISUALIZE button in visualization mode.
             Notify HoloLens device that visualization started.
             Draw all elements of current program."""
@@ -635,7 +643,8 @@ class UICoreRos(UICore):
         self.hololens_state_pub.publish(
             self.create_hololens_state_msg(
                 HololensState.STATE_VISUALIZING,
-                HololensState.VISUALIZATION_RUN))
+                HololensState.VISUALIZATION_RUN,
+                visualize_whole_program=visualize_whole_program))
 
         self.show_all_instructions_at_once(self.state_manager.state)
 
@@ -946,7 +955,9 @@ class UICoreRos(UICore):
             return
 
     def hololens_active_cb(self, msg):
-        self.hololens_connected = msg.data
+        # temporarily set by default to true to avoid rosbridge crashing
+        self.hololens_connected = True
+        # self.hololens_connected = msg.data
 
     def program_selected_cb(self, prog_id, run=False, template=False, visualize=False):
 

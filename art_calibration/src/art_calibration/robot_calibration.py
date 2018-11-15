@@ -65,6 +65,8 @@ class ArtRobotCalibration(ArtCellCalibration):
                 self.positions[self.robot_looking_for_id - 10] += p
 
                 self.count += 1
+                rospy.loginfo("Robot" +
+                              " gets marker id " + str(self.robot_looking_for_id) + ", cnt: " + str(self.count))
                 if self.count >= self.avg:
                     self.positions[self.robot_looking_for_id - 10] /= self.count
                     self.count = 0
