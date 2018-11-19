@@ -1,4 +1,4 @@
-# ARCOR (formerly known as arcor) - the main repository
+# ARCOR (formerly known as ARTable) - the main repository
 
 [![Build Status](https://travis-ci.org/robofit/arcor.svg)](https://travis-ci.org/robofit/arcor)
 
