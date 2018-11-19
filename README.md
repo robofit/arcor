@@ -25,25 +25,25 @@ This repository holds the main components of the system, which are not specific 
 Additional repositories:
 
  * [arcor-msgs](https://github.com/robofit/arcor-msgs) [![Build Status](https://travis-ci.org/robofit/arcor-msgs.svg?branch=master)](https://travis-ci.org/robofit/arcor-msgs) - ROS messages, services, actions.
- * [arcor-utils](https://github.com/robofit/arcor-utils) (https://travis-ci.org/robofit/arcor-utils.svg?branch=master)](https://travis-ci.org/robofit/arcor-utils) - Python helper classes.
- * [arcor-detectors](https://github.com/robofit/arcor-detectors) (https://travis-ci.org/robofit/arcor-detectors.svg?branch=master)](https://travis-ci.org/robofit/arcor-detectors) - detectors (currently, only AR code detector wrapper).
+ * [arcor-utils](https://github.com/robofit/arcor-utils) [![Build Status](https://travis-ci.org/robofit/arcor-utils.svg?branch=master)](https://travis-ci.org/robofit/arcor-utils) - Python helper classes.
+ * [arcor-detectors](https://github.com/robofit/arcor-detectors) [![Build Status](https://travis-ci.org/robofit/arcor-detectors.svg?branch=master)](https://travis-ci.org/robofit/arcor-detectors) - detectors (currently, only AR code detector wrapper).
 
 For each integrated robot, there are two repositories: one with custom packages providing high-level functions compatible with arcor ROS API and one with implementation of art_brain plugin (```-interface``` one):
 
 * PR2
-  * [https://github.com/robofit/arcor-pr2](https://github.com/robofit/arcor-pr2) (https://travis-ci.org/robofit/arcor-pr2.svg?branch=master)](https://travis-ci.org/robofit/arcor-pr2)
-  * [https://github.com/robofit/arcor-pr2-interface](https://github.com/robofit/arcor-pr2-interface) (https://travis-ci.org/robofit/arcor-pr2-interface.svg?branch=master)](https://travis-ci.org/robofit/arcor-pr2-interface)
+  * [https://github.com/robofit/arcor-pr2](https://github.com/robofit/arcor-pr2) [![Build Status](https://travis-ci.org/robofit/arcor-pr2.svg?branch=master)](https://travis-ci.org/robofit/arcor-pr2)
+  * [https://github.com/robofit/arcor-pr2-interface](https://github.com/robofit/arcor-pr2-interface) [![Build Status](https://travis-ci.org/robofit/arcor-pr2-interface.svg?branch=master)](https://travis-ci.org/robofit/arcor-pr2-interface)
 * DOBOT Magician
-  * [https://github.com/robofit/arcor-dobot](https://github.com/robofit/arcor-dobot) (https://travis-ci.org/robofit/arcor-dobot.svg?branch=master)](https://travis-ci.org/robofit/arcor-dobot)
-  * [https://github.com/robofit/arcor-dobot-interface](https://github.com/robofit/arcor-dobot-interface) (https://travis-ci.org/robofit/arcor-dobot-interface.svg?branch=master)](https://travis-ci.org/robofit/arcor-dobot-interface)
+  * [https://github.com/robofit/arcor-dobot](https://github.com/robofit/arcor-dobot) [![Build Status](https://travis-ci.org/robofit/arcor-dobot.svg?branch=master)](https://travis-ci.org/robofit/arcor-dobot)
+  * [https://github.com/robofit/arcor-dobot-interface](https://github.com/robofit/arcor-dobot-interface) [![Build Status](https://travis-ci.org/robofit/arcor-dobot-interface.svg?branch=master)](https://travis-ci.org/robofit/arcor-dobot-interface)
 * Empty (dummy) arm
-  * [https://github.com/robofit/arcor-empty-arm](https://github.com/robofit/arcor-empty-arm) (https://travis-ci.org/robofit/arcor-empty-arm.svg?branch=master)](https://travis-ci.org/robofit/arcor-empty-arm)
+  * [https://github.com/robofit/arcor-empty-arm](https://github.com/robofit/arcor-empty-arm) [![Build Status](https://travis-ci.org/robofit/arcor-empty-arm.svg?branch=master)](https://travis-ci.org/robofit/arcor-empty-arm)
 
 Currently supported setups (see links for further information):
 
- * [arcor setup 1](https://github.com/robofit/arcor-setup-1) (https://travis-ci.org/robofit/arcor-setup-1.svg?branch=master)](https://travis-ci.org/robofit/arcor-setup-1)
- * [arcor setup 2](https://github.com/robofit/arcor-setup-2) (https://travis-ci.org/robofit/arcor-setup-2.svg?branch=master)](https://travis-ci.org/robofit/arcor-setup-2)
- * [arcor setup 3](https://github.com/robofit/arcor-setup-3) (https://travis-ci.org/robofit/arcor-setup-3.svg?branch=master)](https://travis-ci.org/robofit/arcor-setup-3)
+ * [arcor setup 1](https://github.com/robofit/arcor-setup-1) [![Build Status](https://travis-ci.org/robofit/arcor-setup-1.svg?branch=master)](https://travis-ci.org/robofit/arcor-setup-1)
+ * [arcor setup 2](https://github.com/robofit/arcor-setup-2) [![Build Status](https://travis-ci.org/robofit/arcor-setup-2.svg?branch=master)](https://travis-ci.org/robofit/arcor-setup-2)
+ * [arcor setup 3](https://github.com/robofit/arcor-setup-3) [![Build Status](https://travis-ci.org/robofit/arcor-setup-3.svg?branch=master)](https://travis-ci.org/robofit/arcor-setup-3)
  
  Any supported setup may be used with any supported robot (or even without one).
 
