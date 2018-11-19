@@ -98,7 +98,7 @@ class PlaceToPoseFSM(BrainFSM):
 
             arm_id = self.brain.robot.select_arm_for_place(
                 obj_type, instruction.ref_id)
-
+            print arm_id
             if arm_id is None:
                 if update_state_manager:
                     self.brain.state_manager.update_program_item(

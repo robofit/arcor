@@ -102,7 +102,7 @@ class CollisionEnvServices(CollisionEnv):
 
     def srv_art_clear_all_cb(self, req):
 
-        self.clear_all()
+        self.clear_all(permanent=False)
         return EmptyResponse()
 
     def srv_det_set_pose_cb(self, req):
