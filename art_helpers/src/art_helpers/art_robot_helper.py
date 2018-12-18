@@ -61,6 +61,8 @@ class ArtRobotArmHelper(object):
         self.capabilities = []
         self.gripper_link = parameters.get("gripper_link", None)
         self.camera_link = parameters.get("camera_link", None)  # TODO make it mandatory for pick from feeder capability
+        self.base_link = parameters.get("base_link", None)  # where the arm is mounted
+        self.range = (parameters.get("min_range", 0), parameters.get("max_range", 0))
         self.idx = parameters.get("idx", None)
         self._name = parameters.get("name", {})
 

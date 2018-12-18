@@ -1,7 +1,50 @@
 from art_instructions.gui import GuiInstruction
-from PyQt4 import QtCore
+from PyQt4 import QtCore, QtGui
+from art_projected_gui.items import Item
+from geometry_msgs.msg import PoseStamped
+import tf
 
 translate = QtCore.QCoreApplication.translate
+
+
+class RangeVisItem(Item):
+
+    def __init__(self, scene, x, y, min_range=0.1, max_range=0.3):
+
+        super(RangeVisItem, self).__init__(scene, x, y)
+
+        self.min_range = self.m2pix(min_range)
+        self.max_range = self.m2pix(max_range)
+
+        self.setZValue(-500)
+
+    def boundingRect(self):
+        # robot is in the middle
+        return QtCore.QRectF(-self.max_range, -self.max_range, 2 * self.max_range, 2 * self.max_range)
+
+    def paint(self, painter, option, widget):
+
+        if not self.scene():
+            return
+
+        painter.setClipRect(option.exposedRect)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        painter.setBrush(QtCore.Qt.NoBrush)
+
+        dr = self.max_range - self.min_range
+
+        pen = QtGui.QPen()
+        pen.setWidth(dr)
+        pen.setColor(QtCore.Qt.white)
+        # pen.setCosmetic(True)
+        # pen.setJoinStyle(QtCore.Qt.RoundJoin)
+        painter.setPen(pen)
+
+        painter.setOpacity(0.2)
+
+        # it would be more sophisticated to use QtGui.QPainterPath()...
+        painter.drawEllipse(QtCore.QPointF(0, 0), self.max_range - dr / 2, self.max_range - dr / 2)
 
 
 class PlaceToPose(GuiInstruction):
@@ -28,6 +71,8 @@ class PlaceToPoseLearn(PlaceToPose):
 
         super(PlaceToPoseLearn, self).__init__(*args, **kwargs)
 
+        self.range_ind = []
+
         if not self.ui.ph.is_object_set(*self.cid):
 
             (obj_arr, ref_id) = self.ui.ph.get_object(*self.cid)
@@ -52,6 +97,22 @@ class PlaceToPoseLearn(PlaceToPose):
                 if it_id == self.instruction_id:
 
                     if self.editable:
+
+                        for arm in self.ui.rh.get_robot_arms():
+
+                            p = PoseStamped()
+                            p.header.frame_id = arm.base_link
+
+                            # TODO get world frame from ui (where it should be read from param)
+                            try:
+                                p = self.ui.tfl.transformPose("marker", p)
+                            except tf.Exception as e:
+                                self.logerr(str(e))
+                                continue
+
+                            self.range_ind.append(RangeVisItem(self.ui.scene, p.pose.position.x, p.pose.position.y,
+                                                               *arm.range))
+
                         self.ui.notif(
                             translate(
                                 "PlaceToPose",
@@ -88,6 +149,15 @@ class PlaceToPoseLearn(PlaceToPose):
     def object_selected(self, obj, selected, msg):
 
         return
+
+    def cleanup(self):
+
+        for ind in self.range_ind:
+            self.ui.scene.removeItem(ind)
+
+        self.range_ind = []
+
+        return ()
 
 
 class PlaceToPoseRun(PlaceToPose):
