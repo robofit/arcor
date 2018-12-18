@@ -14,8 +14,12 @@ import tf
 from art_projected_gui.helpers import conversions
 import math
 import rospy
+import rospkg
 
 translate = QtCore.QCoreApplication.translate
+
+rospack = rospkg.RosPack()
+icons_path = rospack.get_path('art_projected_gui') + '/icons/'
 
 # TODO podle orientace nastavit Z
 
@@ -55,6 +59,7 @@ class PlaceItem(ObjectItem):
         self.rot_point = rot_point
         self.other_items = []
         self.point = None
+        self.img = None
 
         # TODO temp "fix"
         if quaternion == (0, 0, 0, 1):
@@ -84,10 +89,26 @@ class PlaceItem(ObjectItem):
         self.rotation_changed = rotation_changed
 
         if not self.fixed:
+
+            # TODO use rather ImageItem
+            self.img = QtGui.QImage()
+            self.img.load(icons_path + "move.svg")
+
+            s = min(self.boundingRect().width() * 0.6, self.boundingRect().height() * 0.6)
+
+            self.img = self.img.scaled(s, s, QtCore.Qt.KeepAspectRatio | QtCore.Qt.SmoothTransformation)
+
             self.set_color(QtCore.Qt.white)
             if self.rot:
                 if rot_point is None:
-                    self.point = PointItem(scene, 0, 0, self, self.point_changed)  # TODO option to pass pixels?
+                    self.point = PointItem(
+                        scene,
+                        0,
+                        0,
+                        self,
+                        self.point_changed,
+                        img_path=icons_path +
+                        "rotate.svg")  # TODO option to pass pixels?
                     self.point.setPos(self.boundingRect().topLeft())
 
                     '''
@@ -319,3 +340,17 @@ class PlaceItem(ObjectItem):
 
     def set_other_items(self, items):
         self.other_items = items
+
+    def paint(self, painter, option, widget):
+
+        super(PlaceItem, self).paint(painter, option, widget)
+
+        if self.img and not self.hover:
+
+            painter.drawImage(
+                QtCore.QRectF(
+                    -self.img.width() / 2,
+                    -self.img.height() / 2,
+                    self.img.width(),
+                    self.img.height()),
+                self.img)

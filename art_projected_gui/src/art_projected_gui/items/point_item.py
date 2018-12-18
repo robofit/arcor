@@ -6,12 +6,21 @@ from item import Item
 
 class PointItem(Item):
 
-    def __init__(self, scene, x, y, parent, changed_cb=None, fixed=False):
+    def __init__(self, scene, x, y, parent, changed_cb=None, fixed=False, img_path=None):
 
         self.outline_diameter = 0.025
         self.changed_cb = changed_cb
+        self.img = None
         super(PointItem, self).__init__(scene, x, y, parent=parent)
         self.fixed = fixed
+
+        if img_path:
+
+            self.img = QtGui.QImage()
+            self.img.load(img_path)
+
+            s = self.boundingRect().width() * 1.0
+            self.img = self.img.scaled(s, s, QtCore.Qt.KeepAspectRatio | QtCore.Qt.SmoothTransformation)
 
         if not self.fixed:
             self.setFlag(QtGui.QGraphicsItem.ItemIsMovable, True)
@@ -78,3 +87,12 @@ class PointItem(Item):
         painter.setPen(QtCore.Qt.cyan)
 
         painter.drawEllipse(QtCore.QPoint(0, 0), es / 2, es / 2)
+
+        if self.img and not self.hover:
+            painter.drawImage(
+                QtCore.QRectF(
+                    -self.img.width() / 2,
+                    -self.img.height() / 2,
+                    self.img.width(),
+                    self.img.height()),
+                self.img)
